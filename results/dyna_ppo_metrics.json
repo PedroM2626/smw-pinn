@@ -1,0 +1,20 @@
+{
+    "Dyna_PPO_Hard_PINN": {
+        "survived_frames": 173,
+        "total_progress_pixels": 115.0,
+        "max_progress_pixels": 115.0,
+        "mean_vx": 19.471263885498047
+    },
+    "Dyna_PPO_Statistical_MLP": {
+        "survived_frames": 213,
+        "total_progress_pixels": 93.125,
+        "max_progress_pixels": 93.125,
+        "mean_vx": 8.369158744812012
+    },
+    "Random_Baseline": {
+        "survived_frames": 456,
+        "total_progress_pixels": 126.75,
+        "max_progress_pixels": 126.75,
+        "mean_vx": 5.816192626953125
+    }
+}
