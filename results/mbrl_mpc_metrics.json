@@ -1,0 +1,30 @@
+{
+    "Hard_PINN_World_Model": {
+        "survived_frames": 300,
+        "total_progress_pixels": 164.75,
+        "max_progress_pixels": 164.75,
+        "mean_vx": 15.41333293914795,
+        "mean_alignment_error_pixels": 3.766657880736681
+    },
+    "Soft_PINN_World_Model": {
+        "survived_frames": 300,
+        "total_progress_pixels": 141.125,
+        "max_progress_pixels": 141.125,
+        "mean_vx": 9.526666641235352,
+        "mean_alignment_error_pixels": 140.74586788251966
+    },
+    "Statistical_MLP_World_Model": {
+        "survived_frames": 300,
+        "total_progress_pixels": 150.8125,
+        "max_progress_pixels": 150.8125,
+        "mean_vx": 9.176666259765625,
+        "mean_alignment_error_pixels": 81.74894031382996
+    },
+    "Random_Baseline": {
+        "survived_frames": 300,
+        "total_progress_pixels": 120.375,
+        "max_progress_pixels": 120.8125,
+        "mean_vx": -0.8233333230018616,
+        "mean_alignment_error_pixels": 0.0
+    }
+}
