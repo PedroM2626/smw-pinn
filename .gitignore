@@ -1,0 +1,35 @@
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+
+# PyTorch & Machine Learning
+*.pt
+*.pth
+*.onnx
+runs/
+events.out.tfevents.*
+wandb/
+
+# Data & ROMs
+data/raw/*.sfc
+data/raw/*.smc
+data/raw/*.zip
+data/raw/*.bk2
+roms/
+
+# Jupyter & IDE
+.ipynb_checkpoints
+.vscode/
+.idea/
+
+# Distribution & Build
+dist/
+build/
+*.egg-info/
