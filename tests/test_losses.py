@@ -1,6 +1,6 @@
 """
 test_losses.py
-Testes unitários rigorosos para as funções de perda físicas (PINN).
+Rigorous unit tests for physical PINN loss functions.
 """
 
 import pytest
@@ -14,12 +14,12 @@ from src.losses.physics_losses import (
 
 
 def test_discrete_kinematics_loss_zero_when_exact():
-    """Quando o deslocamento predito respeita exatamente dx = vx/16 e dy = vy/16, o loss deve ser zero."""
+    """When predicted displacement strictly satisfies dx = vx/16 and dy = vy/16, loss must be zero."""
     kin_loss = DiscreteKinematicsLoss(subpixels_per_pixel=16.0)
 
-    # Estado atual: X=100.0, Y=200.0, vx=32.0 (2 pixels), vy=-48.0 (-3 pixels)
+    # Current state: X=100.0, Y=200.0, vx=32.0 (2 pixels), vy=-48.0 (-3 pixels)
     curr_state = torch.tensor([[100.0, 200.0, 32.0, -48.0]], dtype=torch.float32)
-    # Próximo estado exato: X_next = 100 + 2 = 102.0, Y_next = 200 - 3 = 197.0
+    # Exact next state: X_next = 100 + 2 = 102.0, Y_next = 200 - 3 = 197.0
     pred_next = torch.tensor([[102.0, 197.0, 32.0, -45.0]], dtype=torch.float32)
 
     loss = kin_loss(curr_state, pred_next)
@@ -27,11 +27,11 @@ def test_discrete_kinematics_loss_zero_when_exact():
 
 
 def test_discrete_kinematics_loss_penalizes_drift():
-    """Quando o modelo prevê posições que violam a velocidade, o loss deve ser estritamente positivo."""
+    """When the model predicts coordinates violating velocity, loss must be strictly positive."""
     kin_loss = DiscreteKinematicsLoss(subpixels_per_pixel=16.0)
 
     curr_state = torch.tensor([[100.0, 200.0, 32.0, 0.0]], dtype=torch.float32)
-    # Posição predita com drift (ex: moveu 10 pixels em vez de 2)
+    # Predicted position with drift (e.g., moved 10 pixels instead of 2)
     pred_next = torch.tensor([[110.0, 200.0, 32.0, 0.0]], dtype=torch.float32)
 
     loss = kin_loss(curr_state, pred_next)
@@ -40,14 +40,14 @@ def test_discrete_kinematics_loss_penalizes_drift():
 
 
 def test_velocity_bounds_loss():
-    """Verifica se velocidades acima dos limites máximos de SMW geram penalidade."""
+    """Verifies that velocities exceeding SMW structural maximums produce penalties."""
     bounds_loss = VelocityBoundsLoss(max_vx=72.0, terminal_vy=64.0, min_vy=-80.0)
 
-    # Dentro dos limites
+    # Within bounds
     valid_state = torch.tensor([[0.0, 0.0, 48.0, 30.0]], dtype=torch.float32)
     assert torch.isclose(bounds_loss(valid_state), torch.tensor(0.0), atol=1e-6)
 
-    # Fora dos limites: vx = 82 (+10 excesso), vy = 74 (+10 excesso de queda)
+    # Out of bounds: vx = 82 (+10 excess), vy = 74 (+10 fall excess)
     invalid_state = torch.tensor([[0.0, 0.0, 82.0, 74.0]], dtype=torch.float32)
     loss = bounds_loss(invalid_state)
     # excess_vx = 10, excess_vy = 10 -> loss = 10^2 + 10^2 = 200
@@ -55,10 +55,10 @@ def test_velocity_bounds_loss():
 
 
 def test_ground_contact_loss():
-    """Verifica se no chão sem salto, velocidades verticais são penalizadas."""
+    """Verifies that downward vertical velocities while grounded without jump are penalized."""
     contact_loss = GroundContactConsistencyLoss()
 
-    # No chão (c_ground=1.0), sem salto (jump=0.0), mas com vy descendente predita de 16.0
+    # On ground (c_ground=1.0), no jump (jump=0.0), but predicted downward vy = 16.0
     curr_state = torch.tensor([[100.0, 200.0, 0.0, 0.0, 1.0]], dtype=torch.float32)
     action = torch.tensor([[0.0]], dtype=torch.float32)
     pred_state = torch.tensor([[100.0, 200.0, 0.0, 16.0]], dtype=torch.float32)
@@ -68,7 +68,7 @@ def test_ground_contact_loss():
 
 
 def test_composite_pinn_loss_gradients():
-    """Verifica se o loss composto produz gradientes válidos e retropropaga corretamente."""
+    """Verifies that composite PINN loss produces valid non-zero gradients across backpropagation."""
     loss_fn = CompositePINNLoss(lambda_kin=1.0, lambda_bound=1.0, lambda_contact=1.0)
 
     curr_state = torch.tensor([[100.0, 200.0, 16.0, -32.0, 0.0]], requires_grad=False)

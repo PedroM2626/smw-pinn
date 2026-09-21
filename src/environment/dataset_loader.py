@@ -1,7 +1,7 @@
 """
 dataset_loader.py
-Gerenciamento, filtragem, divisão e carregamento de dados genuínos da RAM do Super Mario World
-para treinamento e avaliação de modelos estatísticos e PINN.
+Dataset handling, anomaly filtering, temporal splitting, and DataLoader construction
+for genuine Super Mario World RAM telemetry for statistical and PINN models.
 """
 
 from typing import Dict, Optional, Tuple
@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 
 class SMWTransitionDataset(Dataset):
     """
-    Dataset PyTorch para transições individuais (s_t, a_t, s_{t+1}).
+    PyTorch Dataset for single-step transitions (s_t, a_t, s_{t+1}).
     """
 
     def __init__(
@@ -34,7 +34,7 @@ class SMWTransitionDataset(Dataset):
 
 class SMWSequenceDataset(Dataset):
     """
-    Dataset para modelos temporais (LSTM) processando janelas deslizantes de comprimento K.
+    PyTorch Dataset for sequential models (LSTM) processing sliding windows of length K.
     """
 
     def __init__(
@@ -84,8 +84,8 @@ def load_and_preprocess_data(
     seed: int = 42,
 ) -> Dict[str, np.ndarray]:
     """
-    Carrega o dataset bruto da RAM, filtra frames espúrios de morte/fora da tela
-    e divide os episódios completos em Train, Val e Test.
+    Loads raw WRAM telemetry dataset, filters anomalous pit-death frames,
+    and performs episodic temporal partitioning into Train, Val, and Test splits.
     """
     raw_data = np.load(dataset_path)
     states = raw_data["states"]
@@ -93,7 +93,7 @@ def load_and_preprocess_data(
     next_states = raw_data["next_states"]
     episodes = raw_data["episodes"]
 
-    # 1. Filtrar anomalias (queda em buraco / morte onde Y > 500 ou Y < 0)
+    # 1. Filter out-of-bounds death anomalies (pit falls where Y > 500 or Y < 0)
     valid_mask = (
         (states[:, 1] >= 0)
         & (states[:, 1] <= 500)
@@ -106,7 +106,7 @@ def load_and_preprocess_data(
     next_states = next_states[valid_mask]
     episodes = episodes[valid_mask]
 
-    # 2. Divisão por episódios para manter a integridade temporal de trajetórias
+    # 2. Episodic splitting to preserve contiguous temporal trajectory dynamics
     unique_eps = np.unique(episodes)
     np.random.seed(seed)
     shuffled_eps = np.random.permutation(unique_eps)
@@ -119,7 +119,7 @@ def load_and_preprocess_data(
     val_eps = shuffled_eps[n_train : n_train + n_val]
     test_eps = shuffled_eps[n_train + n_val :]
     if len(test_eps) == 0:
-        test_eps = val_eps  # fallback seguro se número de episódios for pequeno
+        test_eps = val_eps  # fallback if episode count is low
 
     train_mask = np.isin(episodes, train_eps)
     val_mask = np.isin(episodes, val_eps)
@@ -146,7 +146,7 @@ def create_dataloaders(
     batch_size: int = 128,
     num_workers: int = 0,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    """Cria DataLoaders PyTorch padrão para transições de passo único."""
+    """Constructs standard PyTorch DataLoaders for single-step transitions."""
     train_ds = SMWTransitionDataset(
         data_dict["train_states"],
         data_dict["train_actions"],

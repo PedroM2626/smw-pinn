@@ -1,8 +1,8 @@
 """
 snes_emulator.py
-Interface em ctypes puro para o core libretro do Snes9x.
-Permite emulação de alta performance, sem interface gráfica (headless),
-com acesso direto quadro a quadro à memória RAM (WRAM de 128 KB) do Super Mario World.
+Pure ctypes wrapper for the Snes9x Libretro core.
+Provides high-performance, headless emulation with direct frame-by-frame
+access to Super Mario World Working RAM (128 KB WRAM).
 """
 
 import os
@@ -10,7 +10,7 @@ import ctypes
 from typing import Dict, Optional, Tuple
 import numpy as np
 
-# Constantes do Libretro API (libretro.h)
+# Libretro API Constants (libretro.h)
 RETRO_DEVICE_JOYPAD = 1
 RETRO_DEVICE_ID_JOYPAD_B = 0
 RETRO_DEVICE_ID_JOYPAD_Y = 1
@@ -26,9 +26,9 @@ RETRO_DEVICE_ID_JOYPAD_L = 10
 RETRO_DEVICE_ID_JOYPAD_R = 11
 
 RETRO_MEMORY_SAVE_RAM = 0    # 2KB SRAM (Save RAM)
-RETRO_MEMORY_SYSTEM_RAM = 2  # 128KB WRAM do SNES ($7E:0000 - $7F:FFFF)
+RETRO_MEMORY_SYSTEM_RAM = 2  # 128KB SNES WRAM ($7E:0000 - $7F:FFFF)
 
-# Tipos de Callback em ctypes
+# Callback types in ctypes
 ENV_CALLBACK = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_uint, ctypes.c_void_p)
 VIDEO_REFRESH_CALLBACK = ctypes.CFUNCTYPE(
     None, ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_size_t
@@ -54,12 +54,12 @@ class RetroGameInfo(ctypes.Structure):
 
 class SnesLibretroEmulator:
     """
-    Controlador do emulador SNES baseado em Snes9x Libretro via ctypes.
+    SNES emulator controller based on Snes9x Libretro via ctypes.
     """
 
     def __init__(self, core_path: str):
         if not os.path.exists(core_path):
-            raise FileNotFoundError(f"Core libretro não encontrado em: {core_path}")
+            raise FileNotFoundError(f"Libretro core not found at: {core_path}")
 
         self.core = ctypes.CDLL(core_path)
         self.rom_data = None
@@ -67,16 +67,16 @@ class SnesLibretroEmulator:
         self.wram_buffer = None
         self.is_loaded = False
 
-        # Estado dos botões do controle 1 (dicionário de id -> 1 ou 0)
+        # Joypad 1 button state (id -> 1 or 0)
         self.current_input: Dict[int, int] = {i: 0 for i in range(12)}
 
-        # Configurar assinaturas de funções C do libretro
+        # Setup C function signatures
         self._setup_signatures()
 
-        # Registrar callbacks
+        # Register callbacks
         self._setup_callbacks()
 
-        # Inicializar o core
+        # Initialize core
         self.core.retro_init()
 
     def _setup_signatures(self):
@@ -137,7 +137,7 @@ class SnesLibretroEmulator:
             return False
 
         def video_refresh(data, width, height, pitch):
-            # Headless: ignora renderização de pixels para máxima velocidade
+            # Headless execution: discard pixel rendering for maximum speed
             pass
 
         def audio_sample(left, right):
@@ -154,7 +154,7 @@ class SnesLibretroEmulator:
                 return self.current_input.get(id_, 0)
             return 0
 
-        # Manter referências para evitar garbage collection
+        # Retain callback references to prevent garbage collection
         self._c_env = ENV_CALLBACK(env_callback)
         self._c_video = VIDEO_REFRESH_CALLBACK(video_refresh)
         self._c_audio = AUDIO_SAMPLE_CALLBACK(audio_sample)
@@ -169,13 +169,13 @@ class SnesLibretroEmulator:
         self.core.retro_set_input_poll(self._c_poll)
         self.core.retro_set_input_state(self._c_input)
 
-        # Conectar controle Joypad nas portas 0 e 1
+        # Connect Joypad device to Ports 0 and 1
         self.core.retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD)
         self.core.retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD)
 
     def load_rom(self, rom_path: str):
         if not os.path.exists(rom_path):
-            raise FileNotFoundError(f"ROM não encontrada em: {rom_path}")
+            raise FileNotFoundError(f"ROM not found at: {rom_path}")
 
         with open(rom_path, "rb") as f:
             self.rom_data = f.read()
@@ -190,54 +190,54 @@ class SnesLibretroEmulator:
 
         success = self.core.retro_load_game(ctypes.byref(game_info))
         if not success:
-            raise RuntimeError("Falha ao carregar a ROM no core Libretro Snes9x.")
+            raise RuntimeError("Failed to load ROM in Libretro Snes9x core.")
 
-        # Obter ponteiro direto para a memória WRAM (128 KB)
+        # Obtain direct pointer to WRAM memory (128 KB)
         wram_ptr = self.core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM)
         wram_size = self.core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM)
 
         if not wram_ptr or wram_size < 0x20000:
-            raise RuntimeError(f"WRAM inacessível ou tamanho inesperado: {wram_size}")
+            raise RuntimeError(f"WRAM inaccessible or invalid size: {wram_size}")
 
         self.wram_buffer = (ctypes.c_uint8 * wram_size).from_address(wram_ptr)
         self.is_loaded = True
 
     def read_wram_u8(self, addr: int) -> int:
-        """Lê um byte sem sinal da WRAM (offset 0x0000 a 0x1FFFF)."""
+        """Reads an unsigned byte from WRAM (offset 0x0000 to 0x1FFFF)."""
         offset = addr & 0x1FFFF
         return self.wram_buffer[offset]
 
     def read_wram_s8(self, addr: int) -> int:
-        """Lê um byte com sinal (complemento de dois) da WRAM."""
+        """Reads a signed byte (two's complement) from WRAM."""
         val = self.read_wram_u8(addr)
         return val - 256 if val >= 128 else val
 
     def read_wram_u16_le(self, addr: int) -> int:
-        """Lê palavra de 16-bits little-endian."""
+        """Reads a 16-bit little-endian word from WRAM."""
         b0 = self.read_wram_u8(addr)
         b1 = self.read_wram_u8(addr + 1)
         return b0 | (b1 << 8)
 
     def get_smw_state(self) -> Dict[str, float]:
         """
-        Extrai as grandezas físicas fundamentais do Mario diretamente da RAM.
+        Extracts fundamental physical state variables directly from RAM.
         """
-        # Posições em pixels e subpixels
+        # Integer pixel and subpixel coordinates
         x_pos = self.read_wram_u16_le(0x0094)
         y_pos = self.read_wram_u16_le(0x0096)
         x_sub = self.read_wram_u8(0x13DA)
         y_sub = self.read_wram_u8(0x13DC)
 
-        # Posição contínua exata: 1 pixel = 256 unidades de registrador ($7E:13DA / $7E:13DC)
-        # Onde 16 subpixels = 1 pixel, logo cada unidade é 1/256 de pixel.
+        # Exact continuous coordinates: 1 pixel = 256 register units ($7E:13DA / $7E:13DC)
+        # Where 16 subpixels = 1 pixel, each unit is 1/256 pixel.
         total_x = float(x_pos) + (float(x_sub) / 256.0)
         total_y = float(y_pos) + (float(y_sub) / 256.0)
 
-        # Velocidades em subpixels/frame
+        # Velocities in subpixels/frame
         vx = float(self.read_wram_s8(0x007B))
         vy = float(self.read_wram_s8(0x007D))
 
-        # Status de colisão e contato ($7E:0077)
+        # Collision flags ($7E:0077)
         # SxxMUDLR: Bit 0=R, Bit 1=L, Bit 2=D(ground), Bit 3=U(ceiling)
         blocked = self.read_wram_u8(0x0077)
         c_right = float(bool(blocked & 0x01))
@@ -263,7 +263,7 @@ class SnesLibretroEmulator:
 
     def set_input(self, actions: Dict[str, bool]):
         """
-        Mapeia ações semânticas para os botões do controle SNES.
+        Maps semantic actions to SNES controller buttons.
         """
         self.current_input[RETRO_DEVICE_ID_JOYPAD_B] = 1 if actions.get("B", False) else 0
         self.current_input[RETRO_DEVICE_ID_JOYPAD_Y] = 1 if actions.get("Y", False) else 0
@@ -275,24 +275,24 @@ class SnesLibretroEmulator:
         self.current_input[RETRO_DEVICE_ID_JOYPAD_RIGHT] = 1 if actions.get("RIGHT", False) else 0
 
     def step_frame(self):
-        """Avança exatamente 1 frame (1/60 de segundo) no emulador."""
+        """Advances emulator execution by exactly 1 frame (1/60 second)."""
         self.core.retro_run()
 
     def save_state(self) -> bytes:
-        """Serializa o estado completo da máquina (savestate) em bytes."""
+        """Serializes complete machine state into raw bytes."""
         size = self.core.retro_serialize_size()
         buf = ctypes.create_string_buffer(size)
         success = self.core.retro_serialize(buf, size)
         if not success:
-            raise RuntimeError("Falha ao salvar savestate do Libretro.")
+            raise RuntimeError("Failed to serialize Libretro savestate.")
         return buf.raw
 
     def load_state(self, state_bytes: bytes):
-        """Restaura o estado completo da máquina a partir de bytes de savestate."""
+        """Restores complete machine state from raw savestate bytes."""
         buf = ctypes.create_string_buffer(state_bytes, len(state_bytes))
         success = self.core.retro_unserialize(buf, len(state_bytes))
         if not success:
-            raise RuntimeError("Falha ao restaurar savestate do Libretro.")
+            raise RuntimeError("Failed to unserialize Libretro savestate.")
 
     def close(self):
         if self.is_loaded:

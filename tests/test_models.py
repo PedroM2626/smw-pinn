@@ -1,7 +1,7 @@
 """
 test_models.py
-Testes unitários automatizados para as arquiteturas neurais:
-MLP, LSTM, Soft PINN e Hard-Residual PINN.
+Automated unit tests for neural architectures:
+MLP, LSTM, Soft PINN, and Hard-Residual PINN.
 """
 
 import pytest
@@ -64,10 +64,10 @@ def test_soft_pinn_forward():
 
 def test_hard_residual_pinn_exact_kinematic_guarantee():
     """
-    O Hard Residual PINN deve respeitar RIGOROSAMENTE:
+    Hard Residual PINN must STRICTLY satisfy:
         hat_X = X_t + hat_vx / 16.0
         hat_Y = Y_t + hat_vy / 16.0
-    sem nenhum erro numérico de drift cinemático.
+    with zero kinematic integration residual.
     """
     B, state_dim, action_dim = 16, 8, 6
     model = HardResidualPINNDynamics(state_dim=state_dim, action_dim=action_dim)
@@ -77,13 +77,13 @@ def test_hard_residual_pinn_exact_kinematic_guarantee():
 
     pred = model(state, action)
 
-    # Verificação exata da garantia cinemática por construção
+    # Exact kinematic guarantee by structural construction
     expected_x = state[:, 0] + (pred[:, 2] / 16.0)
     expected_y = state[:, 1] + (pred[:, 3] / 16.0)
 
     assert torch.allclose(pred[:, 0], expected_x, atol=1e-6)
     assert torch.allclose(pred[:, 1], expected_y, atol=1e-6)
 
-    # Verificação de limites de velocidade por clamp
+    # Velocity saturation clamping limits
     assert (pred[:, 2] <= 72.0 + 1e-5).all() and (pred[:, 2] >= -72.0 - 1e-5).all()
     assert (pred[:, 3] <= 64.0 + 1e-5).all() and (pred[:, 3] >= -80.0 - 1e-5).all()

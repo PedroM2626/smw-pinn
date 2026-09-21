@@ -1,8 +1,8 @@
 """
 pinn_soft.py
-Rede Neural Informada pela Física com Regularização Suave (Soft-Constrained PINN).
-Possui a mesma capacidade arquitetural da MLP baseline para garantir comparabilidade direta,
-sendo otimizada conjuntamente via perda empírica supervisionada e perdas físicas de resíduo.
+Physics-Informed Neural Network with Soft Regularization (Soft-Constrained PINN).
+Maintains identical architectural capacity to the baseline MLP to ensure fair comparison,
+optimized jointly via supervised empirical loss and physical residual losses.
 """
 
 from typing import List
@@ -13,10 +13,10 @@ from src.models.statistical_mlp import StatisticalMLPDynamics
 
 class SoftPINNDynamics(nn.Module):
     """
-    PINN com Restrição Suave.
-    Arquitetura isomórfica à MLP estatística, permitindo testar diretamente a hipótese
-    de se os termos de regularização física na função de perda guiam os gradientes para
-    representações mais plausíveis e com menor drift multi-passo.
+    Soft-Constrained PINN.
+    Isomorphic architecture to the statistical MLP, isolating the experimental variable
+    to determine whether physical regularization terms in the objective function guide
+    gradients toward physically grounded representations with lower multi-step rollout drift.
     """
 
     def __init__(
@@ -28,7 +28,7 @@ class SoftPINNDynamics(nn.Module):
         dropout: float = 0.0,
     ):
         super().__init__()
-        # Utiliza exatamente a mesma estrutura para isolar a variável experimental
+        # Employs identical structure to isolate the experimental loss variable
         self.backbone = StatisticalMLPDynamics(
             state_dim=state_dim,
             action_dim=action_dim,

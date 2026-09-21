@@ -1,7 +1,7 @@
 """
 statistical_mlp.py
-Baseline Estatístico: Perceptron Multicamadas (MLP) puramente orientado a dados,
-sem incorporação de leis físicas ou restrições cinemáticas.
+Statistical Baseline: Multilayer Perceptron (MLP) purely data-driven,
+without explicit physical priors or kinematic constraints.
 """
 
 from typing import List
@@ -11,7 +11,7 @@ import torch.nn as nn
 
 class StatisticalMLPDynamics(nn.Module):
     """
-    Rede Neural Densa feedforward para predição direta do próximo estado:
+    Feedforward Dense Neural Network for direct next-state prediction:
         hat_s_{t+1} = MLP([s_t, a_t])
     """
 
@@ -40,7 +40,7 @@ class StatisticalMLPDynamics(nn.Module):
                 layers.append(nn.Dropout(dropout))
             current_dim = h_dim
 
-        # Camada de saída para o próximo estado
+        # Output projection layer predicting full next state
         layers.append(nn.Linear(current_dim, state_dim))
         self.network = nn.Sequential(*layers)
 

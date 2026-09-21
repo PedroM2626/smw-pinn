@@ -1,7 +1,7 @@
 """
 physics_losses.py
-Módulo contendo as funções de perda informadas pela física (PINN)
-para sistemas dinâmicos discretos inspirados no Super Mario World.
+Module containing Physics-Informed Neural Network (PINN) loss functions
+for discrete dynamical systems modeled from Super Mario World.
 """
 
 from typing import Dict, Tuple
@@ -12,10 +12,10 @@ import torch.nn.functional as F
 
 class DiscreteKinematicsLoss(nn.Module):
     """
-    Penaliza violações da conservação cinemática euleriana de tempo discreto:
+    Penalizes violations of discrete-time Eulerian kinematic conservation:
         R_x = (X_{t+1} - X_t) - (v_{x,t} / 16.0)
         R_y = (Y_{t+1} - Y_t) - (v_{y,t} / 16.0)
-    Em Super Mario World, 16 subpixels equivalem a 1 pixel de deslocamento por frame.
+    In Super Mario World, 16 subpixels correspond to exactly 1 pixel displacement per frame.
     """
 
     def __init__(self, subpixels_per_pixel: float = 16.0):
@@ -29,11 +29,11 @@ class DiscreteKinematicsLoss(nn.Module):
     ) -> torch.Tensor:
         """
         Args:
-            current_state: [B, D] contendo [X_t, Y_t, vx_t, vy_t, ...]
-            predicted_next_state: [B, D] contendo [hat_X_{t+1}, hat_Y_{t+1}, hat_vx_{t+1}, hat_vy_{t+1}, ...]
+            current_state: [B, D] containing [X_t, Y_t, vx_t, vy_t, ...]
+            predicted_next_state: [B, D] containing [hat_X_{t+1}, hat_Y_{t+1}, hat_vx_{t+1}, hat_vy_{t+1}, ...]
 
         Returns:
-            loss_kinematics: escalar (MSE do resíduo cinemático)
+            loss_kinematics: scalar tensor (MSE of kinematic residual)
         """
         x_t = current_state[:, 0]
         y_t = current_state[:, 1]
@@ -57,10 +57,10 @@ class DiscreteKinematicsLoss(nn.Module):
 
 class VelocityBoundsLoss(nn.Module):
     """
-    Penaliza velocidades que excedem os limites físicos estruturais do jogo:
+    Penalizes velocities exceeding structural engine limits:
         |v_x| <= max_vx (72 subpixels/frame = 4.5 pixels/frame)
-        v_y <= terminal_vy (64 subpixels/frame = 4.0 pixels/frame queda máxima)
-        v_y >= min_vy (-80 subpixels/frame = impulso de salto máximo)
+        v_y <= terminal_vy (64 subpixels/frame = 4.0 pixels/frame maximum fall)
+        v_y >= min_vy (-80 subpixels/frame = maximum upward jump impulse)
     """
 
     def __init__(
@@ -88,8 +88,8 @@ class VelocityBoundsLoss(nn.Module):
 
 class GroundContactConsistencyLoss(nn.Module):
     """
-    Penaliza velocidade vertical descendente quando o Mario está em solo sólido
-    sem intenção de salto.
+    Penalizes spurious downward vertical velocity when resting on solid ground
+    without an active jump command.
     """
 
     def __init__(self):
@@ -102,26 +102,26 @@ class GroundContactConsistencyLoss(nn.Module):
         predicted_next_state: torch.Tensor,
     ) -> torch.Tensor:
         """
-        current_state[:, 4]: ground_contact_flag (1 se no chão, 0 se no ar)
-        action[:, 0]: jump_button_flag (1 se botão de salto ativo)
+        current_state[:, 4]: ground_contact_flag (1 if grounded, 0 if airborne)
+        action[:, 0]: jump_button_flag (1 if jump button active)
         """
         ground_contact = current_state[:, 4]
         jump_action = action[:, 0]
         hat_vy_next = predicted_next_state[:, 3]
 
-        # Condição de repouso no chão: grounded == 1 e sem salto
+        # Grounded stationary condition: grounded == 1 and no jump commanded
         stationary_ground_mask = (ground_contact > 0.5) & (jump_action < 0.5)
 
         if stationary_ground_mask.any():
             ground_vy = hat_vy_next[stationary_ground_mask]
-            # No solo, vy deve ser exatamente 0 (não deve afundar nem flutuar)
+            # On ground, vy must be exactly zero (no sinking, no floating)
             return torch.mean(ground_vy**2)
         return torch.tensor(0.0, device=current_state.device)
 
 
 class CompositePINNLoss(nn.Module):
     """
-    Função de perda total para PINN discreta:
+    Composite total loss function for discrete PINN:
         L_total = L_data + lambda_kin * L_kin + lambda_bound * L_bound + lambda_contact * L_contact
     """
 
@@ -150,16 +150,16 @@ class CompositePINNLoss(nn.Module):
         predicted_next_state: torch.Tensor,
         target_next_state: torch.Tensor,
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
-        # 1. Perda de dados empíricos supervisionados
+        # 1. Supervised empirical data loss
         loss_data = self.data_loss_fn(predicted_next_state, target_next_state)
 
-        # 2. Perda cinemática euleriana
+        # 2. Eulerian kinematic integration loss
         loss_kin = self.kin_loss_fn(current_state, predicted_next_state)
 
-        # 3. Limites de velocidade físicos
+        # 3. Physical velocity saturation bounds
         loss_bound = self.bound_loss_fn(predicted_next_state)
 
-        # 4. Consistência de contato
+        # 4. Ground contact support consistency
         loss_contact = self.contact_loss_fn(current_state, action, predicted_next_state)
 
         total_loss = (

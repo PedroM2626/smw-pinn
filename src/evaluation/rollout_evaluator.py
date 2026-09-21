@@ -1,7 +1,7 @@
 """
 rollout_evaluator.py
-Avaliador rigoroso de desvio de trajetória em horizonte longo (Multi-step Autoregressive Rollout).
-Mede o acúmulo de erro (drift) em relação à trajetória real do jogo ao longo de H frames.
+Rigorous long-horizon trajectory drift evaluator (Multi-step Autoregressive Rollout).
+Measures error accumulation (drift) against the ground-truth game trajectory across H frames.
 """
 
 from typing import Dict, List
@@ -12,9 +12,9 @@ import torch.nn as nn
 
 class RolloutEvaluator:
     """
-    Avalia a estabilidade autorregressiva de modelos de dinâmica:
+    Evaluates autoregressive stability of dynamic models:
         hat_s_{t+1} = f(hat_s_t, a_t)
-    e compara diretamente com a trajetória do chão de verdade (Ground Truth).
+    and directly compares against ground-truth game trajectories.
     """
 
     def __init__(self, device: torch.device):
@@ -30,13 +30,15 @@ class RolloutEvaluator:
         ground_truth_states: np.ndarray,  # [H, state_dim]
     ) -> Dict[str, np.ndarray]:
         """
-        Executa o rollout autorregressivo completo de comprimento H.
+        Executes a complete multi-step autoregressive rollout of length H.
 
         Returns:
-            dict contendo:
+            dict containing:
                 predicted_trajectory: [H, state_dim]
                 ground_truth_trajectory: [H, state_dim]
-                euclidean_drift: [H] (distância euclidiana em pixels a cada passo)
+                euclidean_drift: [H] (Euclidean distance in pixels at each frame)
+                mean_drift: float
+                final_drift: float
                 kinematic_violations: int
                 velocity_violations: int
         """
@@ -47,8 +49,8 @@ class RolloutEvaluator:
         pred_traj = np.zeros((H, state_dim), dtype=np.float32)
         curr_state = torch.tensor(initial_state, dtype=torch.float32, device=self.device).unsqueeze(0)
 
-        # Buffer para LSTM se aplicável
-        if model_type.lower() == "lstm":
+        # Buffer for recurrent LSTM if applicable
+        if "lstm" in model_type.lower():
             hidden = None
 
         kin_violations = 0
@@ -59,7 +61,7 @@ class RolloutEvaluator:
                 action_sequence[t], dtype=torch.float32, device=self.device
             ).unsqueeze(0)
 
-            if model_type.lower() == "lstm":
+            if "lstm" in model_type.lower():
                 curr_input_state = curr_state.unsqueeze(1)  # [1, 1, D]
                 curr_input_action = curr_action.unsqueeze(1)  # [1, 1, A]
                 pred_out, hidden = model(curr_input_state, curr_input_action, hidden)
@@ -67,24 +69,24 @@ class RolloutEvaluator:
             else:
                 next_state_pred = model(curr_state, curr_action)
 
-            # Verificar violações físicas no passo predito
+            # Check physical violations in predicted step
             hat_vx = next_state_pred[0, 2].item()
             hat_vy = next_state_pred[0, 3].item()
             hat_x = next_state_pred[0, 0].item()
             prev_x = curr_state[0, 0].item()
 
-            # Violação cinemática (> 0.2 pixels de desvio de dx = vx/16)
+            # Kinematic violation (> 0.2 pixels deviation from dx = vx/16.0)
             if abs((hat_x - prev_x) - (curr_state[0, 2].item() / 16.0)) > 0.2:
                 kin_violations += 1
 
-            # Violação de limites de velocidade
+            # Velocity saturation boundary violation
             if abs(hat_vx) > 72.0 or hat_vy > 64.0:
                 vel_violations += 1
 
             pred_traj[t] = next_state_pred[0].cpu().numpy()
-            curr_state = next_state_pred  # Realimentação autorregressiva pura
+            curr_state = next_state_pred  # Pure open-loop autoregressive feedback
 
-        # Cálculo do desvio euclidiano no espaço 2D (X, Y) em pixels
+        # Compute Euclidean spatial drift in 2D space (X, Y) in pixels
         gt_xy = ground_truth_states[:, :2]
         pred_xy = pred_traj[:, :2]
         euclidean_drift = np.sqrt(np.sum((pred_xy - gt_xy) ** 2, axis=-1))

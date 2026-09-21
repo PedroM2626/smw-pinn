@@ -1,9 +1,8 @@
 """
 benchmark_experiment.py
-Script orquestrador do experimento comparativo acadêmico completo:
-Treina os 4 modelos sob as mesmas condições, avalia acurácia de passo único,
-estabilidade em horizonte longo (rollout drift), curva de eficiência amostral
-e gera gráficos analíticos comparativos.
+Orchestrator script for the complete academic comparative benchmark:
+Trains all 4 models under identical conditions, evaluates single-step accuracy,
+long-horizon stability (rollout drift), and generates comparative analytical figures.
 """
 
 import json
@@ -40,36 +39,36 @@ def run_comprehensive_benchmark(
     output_dir: str = "results",
 ):
     print("====================================================================")
-    print("  EXPERIMENTO ACADÊMICO: ML ESTATÍSTICO VS. PINN EM SUPER MARIO WORLD")
+    print("  ACADEMIC BENCHMARK: STATISTICAL ML VS. PINN ON SUPER MARIO WORLD  ")
     print("====================================================================")
 
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Dispositivo de processamento: {device}")
+    print(f"Compute Device: {device}")
     if device.type == "cuda":
-        print(f"GPU detectada: {torch.cuda.get_device_name(0)}")
+        print(f"Detected GPU: {torch.cuda.get_device_name(0)}")
 
     os.makedirs(output_dir, exist_ok=True)
     fig_dir = os.path.join(output_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
 
-    # 1. Carregamento dos dados reais
-    print("\n[1/5] Carregando e particionando dados genuínos da RAM...")
+    # 1. Load genuine RAM telemetry dataset
+    print("\n[1/5] Loading and partitioning genuine WRAM transitions...")
     data_dict = load_and_preprocess_data(dataset_path=dataset_path, seed=seed)
     train_loader, val_loader, test_loader = create_dataloaders(data_dict, batch_size=batch_size)
 
     print(
-        f"Transições - Treino: {len(data_dict['train_states'])}, "
-        f"Validação: {len(data_dict['val_states'])}, "
-        f"Teste: {len(data_dict['test_states'])}"
+        f"Transitions - Train: {len(data_dict['train_states'])}, "
+        f"Validation: {len(data_dict['val_states'])}, "
+        f"Test: {len(data_dict['test_states'])}"
     )
 
     state_dim = data_dict["train_states"].shape[1]
     action_dim = data_dict["train_actions"].shape[1]
 
-    # 2. Instanciação dos Modelos
-    print("\n[2/5] Inicializando arquiteturas neurais comparativas...")
+    # 2. Instantiate comparative neural architectures
+    print("\n[2/5] Initializing comparative neural architectures...")
     models = {
         "Statistical_MLP": StatisticalMLPDynamics(state_dim=state_dim, action_dim=action_dim),
         "Statistical_LSTM": StatisticalLSTMDynamics(state_dim=state_dim, action_dim=action_dim),
@@ -80,7 +79,7 @@ def run_comprehensive_benchmark(
     trainers: Dict[str, DynamicsTrainer] = {}
     histories: Dict[str, dict] = {}
 
-    # Dataset sequencial específico para LSTM
+    # Sequential dataset specifically for LSTM
     train_seq_ds = SMWSequenceDataset(
         data_dict["train_states"],
         data_dict["train_actions"],
@@ -107,8 +106,8 @@ def run_comprehensive_benchmark(
     val_seq_loader = torch.utils.data.DataLoader(val_seq_ds, batch_size=batch_size, shuffle=False)
     test_seq_loader = torch.utils.data.DataLoader(test_seq_ds, batch_size=batch_size, shuffle=False)
 
-    # 3. Treinamento comparativo
-    print("\n[3/5] Treinando modelos com protocolo unificado...")
+    # 3. Comparative Training Loop
+    print("\n[3/5] Training models under unified experimental protocol...")
     for name, model in models.items():
         if "lstm" in name.lower():
             m_type = "lstm"
@@ -140,8 +139,8 @@ def run_comprehensive_benchmark(
         )
         histories[name] = hist
 
-    # 4. Avaliação de Passo Único no Conjunto de Teste
-    print("\n[4/5] Avaliando acurácia de passo único no Test Split...")
+    # 4. Single-Step Accuracy Evaluation on Independent Test Split
+    print("\n[4/5] Evaluating single-step accuracy on test split...")
     single_step_results = {}
     for name, trainer in trainers.items():
         cur_test_loader = test_seq_loader if "lstm" in name.lower() else test_loader
@@ -155,11 +154,11 @@ def run_comprehensive_benchmark(
             f"Kinematic Residual: {eval_metrics['val_loss_kinematics']:.4f}"
         )
 
-    # 5. Avaliação de Rollout Multi-passo (Trajetória Longa)
-    print("\n[5/5] Executando rollouts autorregressivos multi-passo (Drift Test)...")
+    # 5. Long-Horizon Multi-Step Autoregressive Rollout Evaluation
+    print("\n[5/5] Executing multi-step autoregressive rollouts (Drift Test)...")
     evaluator = RolloutEvaluator(device=device)
 
-    # Selecionar uma sequência contínua de 120 frames (2 segundos a 60 FPS) do conjunto de teste
+    # Select continuous 120-frame sequence (2 seconds at 60 FPS) from test split
     test_states = data_dict["test_states"]
     test_actions = data_dict["test_actions"]
     test_next_states = data_dict["test_next_states"]
@@ -189,29 +188,29 @@ def run_comprehensive_benchmark(
         }
         trajectories[name] = res["predicted_trajectory"]
         print(
-            f"{name:20s} | Desvio Médio: {res['mean_drift']:.2f} px | "
-            f"Desvio Final: {res['final_drift']:.2f} px | "
-            f"Violações Cinemáticas: {res['kinematic_violations']:3d}/{H} | "
-            f"Violações Vel: {res['velocity_violations']:3d}/{H}"
+            f"{name:20s} | Mean Drift: {res['mean_drift']:.2f} px | "
+            f"Final Drift: {res['final_drift']:.2f} px | "
+            f"Kinematic Violations: {res['kinematic_violations']:3d}/{H} | "
+            f"Velocity Violations: {res['velocity_violations']:3d}/{H}"
         )
 
-    # 6. Geração de Gráficos e Visualizações
-    print("\nGerando gráficos comparativos de alta resolução...")
+    # 6. Generate High-Resolution Figures
+    print("\nGenerating high-resolution comparative figures...")
     sns.set_theme(style="whitegrid")
 
-    # Gráfico 1: Curvas de Val Loss durante o Treinamento
+    # Figure 1: Validation Loss Convergence Curves
     plt.figure(figsize=(10, 5))
     for name, hist in histories.items():
         plt.plot(hist["val_loss"], label=f"{name} (Val MSE)", linewidth=2)
-    plt.title("Convergência do Erro de Validação ao Longo das Épocas", fontsize=14, fontweight="bold")
-    plt.xlabel("Época")
-    plt.ylabel("Loss de Validação (Smooth L1)")
+    plt.title("Validation Error Convergence Across Training Epochs", fontsize=14, fontweight="bold")
+    plt.xlabel("Epoch")
+    plt.ylabel("Validation Loss (Smooth L1)")
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, "training_convergence.png"), dpi=300)
     plt.close()
 
-    # Gráfico 2: Desvio Euclidiano da Trajetória (Drift) ao Longo do Horizonte H
+    # Figure 2: Euclidean Rollout Drift Over Horizon H
     plt.figure(figsize=(11, 6))
     time_steps = np.arange(1, H + 1)
     for name, model in models.items():
@@ -219,38 +218,38 @@ def run_comprehensive_benchmark(
         r = evaluator.evaluate_rollout(model, m_type, init_state, action_seq, ground_truth)
         plt.plot(time_steps, r["euclidean_drift"], label=f"{name}", linewidth=2.5)
     plt.title(
-        "Acúmulo de Erro Autorregressivo na Trajetória do Mario (Horizonte de 120 frames / 2s)",
+        "Autoregressive Trajectory Drift on Super Mario World (120-Frame / 2s Horizon)",
         fontsize=13,
         fontweight="bold",
     )
-    plt.xlabel("Frame do Horizonte (t)", fontsize=11)
-    plt.ylabel("Desvio Euclidiano em Relação ao Jogo Real (Pixels)", fontsize=11)
+    plt.xlabel("Rollout Frame (t)", fontsize=11)
+    plt.ylabel("Euclidean Deviation from Ground Truth (Pixels)", fontsize=11)
     plt.legend(fontsize=11)
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, "rollout_drift_comparison.png"), dpi=300)
     plt.close()
 
-    # Gráfico 3: Trajetória 2D no Espaço do Jogo (X vs Y)
+    # Figure 3: 2D Spatial Trajectory Traversal (X vs Y)
     plt.figure(figsize=(12, 6))
     plt.plot(
         ground_truth[:, 0],
         ground_truth[:, 1],
         "k--",
-        label="Jogo Real (Ground Truth)",
+        label="Ground Truth (Console WRAM)",
         linewidth=3.0,
     )
     for name, traj in trajectories.items():
         plt.plot(traj[:, 0], traj[:, 1], label=f"{name}", linewidth=2.0, alpha=0.85)
-    plt.gca().invert_yaxis()  # No SNES, Y=0 é o topo da tela
-    plt.title("Trajetória do Mario no Plano 2D (X vs Y)", fontsize=14, fontweight="bold")
-    plt.xlabel("Posição Horizontal X (Pixels)")
-    plt.ylabel("Posição Vertical Y (Pixels - Invertido)")
+    plt.gca().invert_yaxis()  # In SNES coordinate space, Y=0 is top of screen
+    plt.title("Mario Trajectory in 2D Space (X vs Y)", fontsize=14, fontweight="bold")
+    plt.xlabel("Horizontal Position X (Pixels)")
+    plt.ylabel("Vertical Position Y (Pixels - Inverted)")
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, "trajectory_2d_space.png"), dpi=300)
     plt.close()
 
-    # Salvar resultados em JSON
+    # Save summary metrics to JSON
     all_summary = {
         "single_step_results": single_step_results,
         "rollout_metrics": rollout_metrics,
@@ -258,7 +257,7 @@ def run_comprehensive_benchmark(
     with open(os.path.join(output_dir, "benchmark_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(all_summary, f, indent=4)
 
-    print("\nBenchmark principal concluído com sucesso!")
+    print("\nMain benchmark completed successfully!")
     return all_summary
 
 

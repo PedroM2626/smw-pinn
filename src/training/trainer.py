@@ -1,7 +1,7 @@
 """
 trainer.py
-Motor unificado de treinamento e otimização para todos os modelos do benchmark:
-MLP Estatística, LSTM Temporal, Soft PINN e Hard-Residual PINN.
+Unified training and optimization engine for all benchmark models:
+Statistical MLP, Temporal LSTM, Soft PINN, and Hard Residual PINN.
 """
 
 from typing import Callable, Dict, List, Optional
@@ -15,8 +15,8 @@ from src.losses.physics_losses import CompositePINNLoss
 
 class DynamicsTrainer:
     """
-    Treinador com suporte a perdas supervisionadas puras ou informadas pela física (PINN),
-    early stopping, escalonador de learning rate e métricas detalhadas.
+    Trainer supporting pure supervised data losses as well as physics-informed (PINN) losses,
+    early stopping, learning rate scheduling, and fine-grained metric tracking.
     """
 
     def __init__(
@@ -48,10 +48,10 @@ class DynamicsTrainer:
             patience=5,
         )
 
-        # Se não fornecido, usa perda padrão apropriada
+        # Assign default loss if not explicitly provided
         if loss_fn is not None:
             self.loss_fn = loss_fn
-        elif self.model_type == "pinn_soft":
+        elif "pinn_soft" in self.model_type:
             self.loss_fn = CompositePINNLoss(
                 lambda_kin=1.0,
                 lambda_bound=0.5,
@@ -68,7 +68,7 @@ class DynamicsTrainer:
         num_batches = 0
 
         for batch in dataloader:
-            if self.model_type == "lstm":
+            if "lstm" in self.model_type:
                 state_seq, action_seq, target_next = [b.to(self.device) for b in batch]
                 pred_seq, _ = self.model(state_seq, action_seq)
                 pred_next = pred_seq[:, -1, :]
@@ -87,7 +87,7 @@ class DynamicsTrainer:
             else:
                 loss = self.loss_fn(pred_next, target_next)
                 data_loss_sum += loss.item()
-                # Computa métrica cinemática para monitoramento imparcial mesmo em baselines
+                # Compute kinematic metric for unbiased comparative monitoring
                 with torch.no_grad():
                     dx_pred = pred_next[:, 0] - curr_state[:, 0]
                     dx_exp = curr_state[:, 2] / 16.0
@@ -116,7 +116,7 @@ class DynamicsTrainer:
         num_batches = 0
 
         for batch in dataloader:
-            if self.model_type == "lstm":
+            if "lstm" in self.model_type:
                 state_seq, action_seq, target_next = [b.to(self.device) for b in batch]
                 pred_seq, _ = self.model(state_seq, action_seq)
                 pred_next = pred_seq[:, -1, :]
@@ -196,15 +196,15 @@ class DynamicsTrainer:
 
             if patience_counter >= patience:
                 if verbose:
-                    print(f"Early stopping ativado na época {epoch}.")
+                    print(f"Early stopping triggered at epoch {epoch}.")
                 break
 
-        # Restaurar melhor modelo salvo
+        # Restore best model checkpoint
         if os.path.exists(best_model_path):
-            self.model.load_state_dict(torch.load(best_model_path, map_location=self.device))
+            self.model.load_state_dict(torch.load(best_model_path, map_location=self.device, weights_only=True))
 
         elapsed = time.time() - t0
         if verbose:
-            print(f"Treinamento finalizado em {elapsed:.2f}s. Melhor Val Loss: {best_val_loss:.4f}")
+            print(f"Training completed in {elapsed:.2f}s. Best Val Loss: {best_val_loss:.4f}")
 
         return history

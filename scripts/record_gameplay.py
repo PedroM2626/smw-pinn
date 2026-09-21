@@ -1,8 +1,8 @@
 """
 record_gameplay.py
-Grava trajetórias 100% genuínas e interativas da memória RAM do Super Mario World.
-O emulador inicializa o jogo, entra no Modo de Fase Interativo (Game Mode 0x14)
-onde o controle comanda o Mario diretamente e em tempo real pela fase.
+Records 100% genuine, interactive telemetry transitions from Super Mario World WRAM.
+The emulator boots the game, enters Interactive Level Mode (Game Mode 0x14)
+where controller inputs directly drive Mario in real-time through the level.
 """
 
 import os
@@ -15,7 +15,7 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 
 
 def extract_vector(state_dict: dict) -> np.ndarray:
-    """Converte o dicionário de estado em vetor numpy de 8 dimensões."""
+    """Converts the state dictionary into an 8-dimensional numpy vector."""
     return np.array(
         [
             state_dict["x"],
@@ -32,7 +32,7 @@ def extract_vector(state_dict: dict) -> np.ndarray:
 
 
 def extract_action_vector(action_dict: dict) -> np.ndarray:
-    """Converte o dicionário de ações em vetor numpy de 6 dimensões [B, Y, UP, DOWN, LEFT, RIGHT]."""
+    """Converts the action dictionary into a 6-dimensional numpy vector [B, Y, UP, DOWN, LEFT, RIGHT]."""
     return np.array(
         [
             1.0 if action_dict.get("B", False) else 0.0,
@@ -54,11 +54,11 @@ def record_interactive_trajectories(
     frames_per_episode: int = 1000,
 ):
     print("==========================================================")
-    print("  GRAVAÇÃO DE DADOS GENUÍNOS E INTERATIVOS (MODO 0x14)    ")
+    print("  RECORDING GENUINE INTERACTIVE GAMEPLAY (MODE 0x14)      ")
     print("==========================================================")
     print(f"ROM: {rom_path}")
     print(f"Core: {core_path}")
-    print(f"Episódios: {num_episodes} | Frames por episódio: {frames_per_episode}")
+    print(f"Episodes: {num_episodes} | Frames per episode: {frames_per_episode}")
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -70,8 +70,8 @@ def record_interactive_trajectories(
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
 
-    # 1. Avançar boot e ativar Modo de Fase Interativo (0x14)
-    print("Inicializando emulador e habilitando modo de fase interativo (0x14)...")
+    # 1. Advance boot routine and enable Interactive Gameplay Mode (0x14)
+    print("Initializing emulator and enabling interactive level mode (0x14)...")
     for _ in range(410):
         emu.step_frame()
 
@@ -79,23 +79,23 @@ def record_interactive_trajectories(
     for _ in range(30):
         emu.step_frame()
 
-    # Capturar o savestate de início da fase onde Mario é 100% controlável
+    # Capture initial savestate where Mario is 100% controllable by player I/O
     initial_savestate = emu.save_state()
     initial_state = emu.get_smw_state()
-    print(f"Savestate interativo capturado com sucesso! Mario inicial: {initial_state}")
+    print(f"Interactive savestate captured successfully! Initial state: {initial_state}")
 
-    # Padrões de ação diversificados para cobrir todo o envelope físico
+    # Diverse action behaviors to cover the complete dynamic envelope
     action_behaviors = [
-        {"RIGHT": True, "Y": True},                 # Corrida contínua
-        {"RIGHT": True, "Y": True, "B": True},       # Corrida com salto alto
-        {"RIGHT": True, "B": True},                 # Caminhada com salto
-        {"RIGHT": True},                            # Caminhada simples
-        {"LEFT": True, "Y": True},                  # Corrida para esquerda / derrapagem
-        {"LEFT": True},                             # Caminhada para esquerda
-        {},                                         # Inércia / desaceleração natural por atrito
-        {"B": True},                                # Salto vertical estacionário
-        {"RIGHT": True, "DOWN": True},              # Deslizamento agachado
-        {"RIGHT": True, "Y": True, "A": True},       # Spin Jump correndo
+        {"RIGHT": True, "Y": True},                 # Continuous run
+        {"RIGHT": True, "Y": True, "B": True},       # Running jump
+        {"RIGHT": True, "B": True},                 # Walking jump
+        {"RIGHT": True},                            # Simple walk
+        {"LEFT": True, "Y": True},                  # Left run / skidding
+        {"LEFT": True},                             # Left walk
+        {},                                         # Idle / natural surface friction deceleration
+        {"B": True},                                # Stationary vertical jump
+        {"RIGHT": True, "DOWN": True},              # Crouched slide
+        {"RIGHT": True, "Y": True, "A": True},       # Running Spin Jump
     ]
 
     total_transitions = 0
@@ -112,9 +112,9 @@ def record_interactive_trajectories(
         curr_state_dict = emu.get_smw_state()
 
         for f in range(frames_per_episode):
-            # Alternância de padrões com viés para exploração horizontal
+            # Dynamic pattern switching biased toward forward exploration
             if pattern_timer >= pattern_duration:
-                # 60% chance de ações para frente (direita), 40% de manobras/saltos/inércias
+                # 65% forward progress, 35% maneuvers/jumps/friction
                 if np.random.rand() < 0.65:
                     curr_pattern = np.random.choice([0, 1, 2, 3, 9])
                 else:
@@ -124,19 +124,19 @@ def record_interactive_trajectories(
 
             action_dict = action_behaviors[curr_pattern]
 
-            # Injetar comando no controle do SNES
+            # Inject control command into SNES joypad
             emu.set_input(action_dict)
 
             s_vec = extract_vector(curr_state_dict)
             a_vec = extract_action_vector(action_dict)
 
-            # Executar 1 frame da física do jogo
+            # Advance 1 frame of hardware simulation
             emu.step_frame()
 
             next_state_dict = emu.get_smw_state()
             next_s_vec = extract_vector(next_state_dict)
 
-            # Só registra se Mario ainda estiver em coordenadas válidas da fase
+            # Record only if player is in valid level coordinate bounds
             if 0 <= next_s_vec[1] <= 500:
                 states_t.append(s_vec)
                 actions_t.append(a_vec)
@@ -147,15 +147,15 @@ def record_interactive_trajectories(
             curr_state_dict = next_state_dict
             pattern_timer += 1
 
-            # Se Mario morreu ou caiu no buraco, reinicia o episódio
+            # End episode on pit fall death
             if next_s_vec[1] > 500 or next_s_vec[1] < 0:
                 break
 
         print(
-            f"Episódio {ep+1:2d}/{num_episodes} concluído | "
-            f"Mario Final: X={curr_state_dict['x']:.1f}, Y={curr_state_dict['y']:.1f}, "
+            f"Episode {ep+1:2d}/{num_episodes} completed | "
+            f"Final Mario: X={curr_state_dict['x']:.1f}, Y={curr_state_dict['y']:.1f}, "
             f"vx={curr_state_dict['vx']:.1f}, vy={curr_state_dict['vy']:.1f} | "
-            f"Transições válidas acumuladas: {total_transitions}"
+            f"Accumulated transitions: {total_transitions}"
         )
 
     emu.close()
@@ -175,11 +175,11 @@ def record_interactive_trajectories(
     )
 
     print("\n==========================================================")
-    print(f"Dataset 100% interativo salvo em: {output_path}")
-    print(f"Total de transições registradas: {len(states_t_arr)}")
-    print(f"Dimensões de estados: {states_t_arr.shape}")
-    print(f"Dimensões de ações: {actions_t_arr.shape}")
-    print(f"Tempo de emulação: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
+    print(f"100% genuine interactive dataset saved at: {output_path}")
+    print(f"Total transitions recorded: {len(states_t_arr)}")
+    print(f"State dimensions: {states_t_arr.shape}")
+    print(f"Action dimensions: {actions_t_arr.shape}")
+    print(f"Emulation time: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
     print("==========================================================")
 
 

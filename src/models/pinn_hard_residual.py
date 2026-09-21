@@ -1,10 +1,10 @@
 """
 pinn_hard_residual.py
-Rede Neural com Viés Indutivo Forte / PINN Residual Cinemática.
-Integra a cinemática discreta diretamente no grafo computacional, garantindo por construção:
+Hard Inductive Bias Neural Network / Kinematic Residual PINN.
+Embeds discrete kinematics directly into the computational graph, guaranteeing by construction:
     hat_X_{t+1} = X_t + hat_vx_{t+1} / 16.0
     hat_Y_{t+1} = Y_t + hat_vy_{t+1} / 16.0
-A rede neural parametriza apenas as acelerações não-lineares, atritos e reações de contato.
+The neural network only parameterizes non-linear accelerations, friction, and contact forces.
 """
 
 from typing import List
@@ -14,9 +14,9 @@ import torch.nn as nn
 
 class HardResidualPINNDynamics(nn.Module):
     """
-    Arquitetura Híbrida Grey-Box:
-    - Conservação Cinemática Analítica Exata (Viés Indutivo Rígido).
-    - Rede Densa para Forças / Acelerações Residuais (Delta Velocidade).
+    Hybrid Grey-Box Architecture:
+    - Exact Analytical Kinematic Conservation (Hard Inductive Bias).
+    - Dense Residual Network for Forces and Accelerations (Delta Velocity).
     """
 
     def __init__(
@@ -46,9 +46,9 @@ class HardResidualPINNDynamics(nn.Module):
             layers.append(nn.GELU())
             curr_dim = h_dim
 
-        # A rede prediz:
+        # Network predicts:
         # [delta_vx, delta_vy, hat_c_ground, hat_c_ceiling, hat_c_left, hat_c_right]
-        aux_dim = state_dim - 2  # velocidades + contatos
+        aux_dim = state_dim - 2  # velocities + contact flags
         layers.append(nn.Linear(curr_dim, aux_dim))
         self.force_net = nn.Sequential(*layers)
 
@@ -71,17 +71,17 @@ class HardResidualPINNDynamics(nn.Module):
 
         delta_vx = force_out[:, 0]
         delta_vy = force_out[:, 1]
-        aux_pred = force_out[:, 2:]  # predições de contatos/flags
+        aux_pred = force_out[:, 2:]  # contact predictions / flags
 
-        # 1. Integração da velocidade com saturação física
+        # 1. Velocity integration with physical saturation clamping
         hat_vx_next = torch.clamp(vx_t + delta_vx, -self.max_vx, self.max_vx)
         hat_vy_next = torch.clamp(vy_t + delta_vy, self.min_vy, self.terminal_vy)
 
-        # 2. Integração analítica exata da posição (Zero Resíduo Cinemático)
+        # 2. Exact analytical position integration (Zero Kinematic Residual)
         hat_x_next = x_t + (hat_vx_next / self.subpixels_per_pixel)
         hat_y_next = y_t + (hat_vy_next / self.subpixels_per_pixel)
 
-        # 3. Montagem do vetor de estado completo
+        # 3. Assemble complete state vector
         next_state = torch.cat(
             [
                 hat_x_next.unsqueeze(-1),

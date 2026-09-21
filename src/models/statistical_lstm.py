@@ -1,7 +1,7 @@
 """
 statistical_lstm.py
-Baseline Temporal Recorrente: LSTM processando janelas históricas de transições
-para capturar inércia e acelerações latentes puramente via dados.
+Temporal Recurrent Baseline: LSTM processing sequence windows of transitions
+to model inertia and latent accelerations purely from empirical observations.
 """
 
 from typing import Optional, Tuple
@@ -11,7 +11,7 @@ import torch.nn as nn
 
 class StatisticalLSTMDynamics(nn.Module):
     """
-    Rede Recorrente LSTM para predição autorregressiva do próximo estado:
+    Recurrent Neural Network (LSTM) for autoregressive next-state forecasting:
         h_t, c_t = LSTM([s_t, a_t], (h_{t-1}, c_{t-1}))
         hat_s_{t+1} = Linear(h_t)
     """
@@ -55,11 +55,11 @@ class StatisticalLSTMDynamics(nn.Module):
         Args:
             state_seq: [B, T, state_dim]
             action_seq: [B, T, action_dim]
-            hidden: estado oculto prévio (h_0, c_0)
+            hidden: prior hidden state tuple (h_0, c_0)
 
         Returns:
             next_state_seq: [B, T, state_dim]
-            hidden: estado oculto atualizado (h_T, c_T)
+            hidden: updated hidden state tuple (h_T, c_T)
         """
         x = torch.cat([state_seq, action_seq], dim=-1)
         out, (h_n, c_n) = self.lstm(x, hidden)

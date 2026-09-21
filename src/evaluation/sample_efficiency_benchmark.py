@@ -1,8 +1,8 @@
 """
 sample_efficiency_benchmark.py
-Avalia a eficiência amostral (Sample Efficiency Pareto):
-Mede o impacto da física conhecida quando o volume de dados de treinamento varia
-de escasso (200 transições) até abundante (5000+ transições).
+Evaluates sample efficiency (Sample Efficiency Pareto):
+Measures the empirical impact of known physics across training sample sizes
+ranging from extremely scarce (200 transitions) to abundant (5000+ transitions).
 """
 
 import json
@@ -39,7 +39,7 @@ def run_sample_efficiency_study(
     output_dir: str = "results",
 ):
     print("====================================================================")
-    print("  ESTUDO DE EFICIÊNCIA AMOSTRAL (SAMPLE EFFICIENCY PARETO)          ")
+    print("  SAMPLE EFFICIENCY STUDY (DATA PARETO FRONTIER BENCHMARK)          ")
     print("====================================================================")
 
     torch.manual_seed(seed)
@@ -74,7 +74,7 @@ def run_sample_efficiency_study(
     state_dim = data_dict["train_states"].shape[1]
     action_dim = data_dict["train_actions"].shape[1]
 
-    # Modelos avaliados no estudo de eficiência
+    # Models evaluated in sample efficiency study
     model_factories = {
         "Statistical_MLP": lambda: StatisticalMLPDynamics(state_dim, action_dim),
         "Soft_PINN": lambda: SoftPINNDynamics(state_dim, action_dim),
@@ -93,8 +93,8 @@ def run_sample_efficiency_study(
     ground_truth = test_next_states[:H]
 
     for N in sample_sizes:
-        print(f"\n>>> Avaliando regime com N = {N} transições de treino <<<")
-        # Subamostragem aleatória com semente fixa
+        print(f"\n>>> Evaluating training regime with N = {N} transitions <<<")
+        # Subsampling with fixed seed
         indices = np.random.choice(len(full_train_ds), size=N, replace=False)
         sub_train_ds = Subset(full_train_ds, indices)
         sub_train_loader = DataLoader(sub_train_ds, batch_size=min(64, N), shuffle=True)
@@ -124,11 +124,11 @@ def run_sample_efficiency_study(
                 verbose=False,
             )
 
-            # Teste de 1 passo
+            # Single-step evaluation
             test_res = trainer.evaluate(test_loader)
             test_mse = test_res["val_loss_data"]
 
-            # Teste de rollout
+            # Rollout evaluation
             roll_res = evaluator.evaluate_rollout(model, "mlp", init_state, action_seq, ground_truth)
             mean_drift = roll_res["mean_drift"]
 
@@ -137,38 +137,38 @@ def run_sample_efficiency_study(
 
             print(f"  {name:20s} | N={N:4d} | Test MSE: {test_mse:.4f} | Rollout Drift: {mean_drift:.2f} px")
 
-    # Gráficos de Eficiência Amostral
+    # Sample Efficiency Plots
     fig_dir = os.path.join(output_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
     sns.set_theme(style="whitegrid")
 
-    # Gráfico 1: Test MSE vs Tamanho do Dataset
+    # Plot 1: Test MSE vs Training Dataset Size
     plt.figure(figsize=(9, 5))
     for name, res in efficiency_results.items():
         plt.plot(sample_sizes, res["test_mse"], marker="o", linewidth=2.5, label=name)
     plt.xscale("log")
-    plt.title("Curva de Eficiência Amostral: Test MSE vs Volume de Dados de Treino", fontsize=13, fontweight="bold")
-    plt.xlabel("Número de Transições de Treinamento (N - Escala Log)", fontsize=11)
-    plt.ylabel("Erro Quadrático no Conjunto de Teste (MSE)", fontsize=11)
+    plt.title("Sample Efficiency Curve: Test MSE vs. Training Dataset Volume", fontsize=13, fontweight="bold")
+    plt.xlabel("Number of Training Transitions (N - Log Scale)", fontsize=11)
+    plt.ylabel("Test Set Mean Squared Error (MSE)", fontsize=11)
     plt.legend(fontsize=11)
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, "sample_efficiency_mse.png"), dpi=300)
     plt.close()
 
-    # Gráfico 2: Rollout Drift vs Tamanho do Dataset
+    # Plot 2: Rollout Drift vs Training Dataset Size
     plt.figure(figsize=(9, 5))
     for name, res in efficiency_results.items():
         plt.plot(sample_sizes, res["mean_drift"], marker="s", linewidth=2.5, label=name)
     plt.xscale("log")
-    plt.title("Estabilidade em Horizonte Longo vs Volume de Dados de Treino", fontsize=13, fontweight="bold")
-    plt.xlabel("Número de Transições de Treinamento (N - Escala Log)", fontsize=11)
-    plt.ylabel("Desvio Médio de Trajetória (Pixels)", fontsize=11)
+    plt.title("Long-Horizon Rollout Stability vs. Training Dataset Volume", fontsize=13, fontweight="bold")
+    plt.xlabel("Number of Training Transitions (N - Log Scale)", fontsize=11)
+    plt.ylabel("Mean Trajectory Drift (Pixels)", fontsize=11)
     plt.legend(fontsize=11)
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, "sample_efficiency_drift.png"), dpi=300)
     plt.close()
 
-    # Salvar resultados
+    # Save summary metrics
     with open(os.path.join(output_dir, "sample_efficiency_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -179,7 +179,7 @@ def run_sample_efficiency_study(
             indent=4,
         )
 
-    print("\nEstudo de eficiência amostral finalizado com sucesso!")
+    print("\nSample efficiency study completed successfully!")
     return efficiency_results
 
 
