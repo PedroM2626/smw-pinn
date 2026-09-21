@@ -1,0 +1,46 @@
+{
+    "single_step_results": {
+        "Statistical_MLP": {
+            "test_loss_data": 2.8543937814078832,
+            "test_kinematic_error": 10.875754397950674
+        },
+        "Statistical_LSTM": {
+            "test_loss_data": 4.288178426654715,
+            "test_kinematic_error": 62.87456077023556
+        },
+        "Soft_PINN": {
+            "test_loss_data": 3.6089398892302262,
+            "test_kinematic_error": 27.30156005526844
+        },
+        "Hard_Residual_PINN": {
+            "test_loss_data": 0.5415894138185602,
+            "test_kinematic_error": 2.3865192480642644e-05
+        }
+    },
+    "rollout_metrics": {
+        "Statistical_MLP": {
+            "mean_drift_pixels": 76.66358947753906,
+            "final_drift_pixels": 84.50724792480469,
+            "kinematic_violations": 119,
+            "velocity_violations": 0
+        },
+        "Statistical_LSTM": {
+            "mean_drift_pixels": 39.68246078491211,
+            "final_drift_pixels": 40.99666213989258,
+            "kinematic_violations": 120,
+            "velocity_violations": 0
+        },
+        "Soft_PINN": {
+            "mean_drift_pixels": 79.62690734863281,
+            "final_drift_pixels": 87.5185775756836,
+            "kinematic_violations": 120,
+            "velocity_violations": 0
+        },
+        "Hard_Residual_PINN": {
+            "mean_drift_pixels": 99.72026062011719,
+            "final_drift_pixels": 158.01675415039062,
+            "kinematic_violations": 0,
+            "velocity_violations": 0
+        }
+    }
+}

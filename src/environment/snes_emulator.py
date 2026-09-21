@@ -86,6 +86,8 @@ class SnesLibretroEmulator:
         self.core.retro_set_audio_sample_batch.argtypes = [AUDIO_SAMPLE_BATCH_CALLBACK]
         self.core.retro_set_input_poll.argtypes = [INPUT_POLL_CALLBACK]
         self.core.retro_set_input_state.argtypes = [INPUT_STATE_CALLBACK]
+        self.core.retro_set_controller_port_device.argtypes = [ctypes.c_uint, ctypes.c_uint]
+        self.core.retro_set_controller_port_device.restype = None
 
         self.core.retro_init.restype = None
         self.core.retro_deinit.restype = None
@@ -148,7 +150,7 @@ class SnesLibretroEmulator:
             pass
 
         def input_state(port, device, index, id_):
-            if port == 0 and device == RETRO_DEVICE_JOYPAD:
+            if port == 0 and ((device & 0xFF) == RETRO_DEVICE_JOYPAD):
                 return self.current_input.get(id_, 0)
             return 0
 
@@ -166,6 +168,10 @@ class SnesLibretroEmulator:
         self.core.retro_set_audio_sample_batch(self._c_audio_batch)
         self.core.retro_set_input_poll(self._c_poll)
         self.core.retro_set_input_state(self._c_input)
+
+        # Conectar controle Joypad nas portas 0 e 1
+        self.core.retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD)
+        self.core.retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD)
 
     def load_rom(self, rom_path: str):
         if not os.path.exists(rom_path):
