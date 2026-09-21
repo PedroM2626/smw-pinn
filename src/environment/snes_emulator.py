@@ -7,7 +7,7 @@ access to Super Mario World Working RAM (128 KB WRAM).
 
 import os
 import ctypes
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 # Libretro API Constants (libretro.h)
@@ -261,6 +261,87 @@ class SnesLibretroEmulator:
             "powerup": powerup,
         }
 
+    def get_active_sprites(self) -> List[Dict]:
+        """
+        Extracts active dynamic entities/sprites from WRAM sprite tables:
+        - $7E:14C8: Status table (>=8 indicates normal active execution)
+        - $7E:009E: Sprite ID table (0x05=Rex, 0x0F=Goomba, 0x00-0x08=Koopas, etc.)
+        - $7E:00E4 / $7E:14E0: X position registers (16-bit)
+        - $7E:00D8 / $7E:14D4: Y position registers (16-bit)
+        - $7E:00B6: X speed register (signed 8-bit)
+        - $7E:00AA: Y speed register (signed 8-bit)
+        """
+        sprites = []
+        for slot in range(12):
+            status = self.read_wram_u8(0x14C8 + slot)
+            if status >= 8:
+                sprite_id = self.read_wram_u8(0x009E + slot)
+                x_low = self.read_wram_u8(0x00E4 + slot)
+                x_high = self.read_wram_u8(0x14E0 + slot)
+                y_low = self.read_wram_u8(0x00D8 + slot)
+                y_high = self.read_wram_u8(0x14D4 + slot)
+                x_pos = float((x_high << 8) | x_low)
+                y_pos = float((y_high << 8) | y_low)
+                vx = float(self.read_wram_s8(0x00B6 + slot))
+                vy = float(self.read_wram_s8(0x00AA + slot))
+
+                sprites.append({
+                    "slot": slot,
+                    "id": sprite_id,
+                    "status": status,
+                    "x": x_pos,
+                    "y": y_pos,
+                    "vx": vx,
+                    "vy": vy,
+                })
+        return sprites
+
+    def get_nearest_hazard(self, mario_x: float, mario_y: float, horizon_px: float = 300.0) -> Dict[str, float]:
+        """
+        Computes spatial displacement vector (delta_x, delta_y, vx, is_active)
+        to the nearest active enemy/hazard ahead of Mario.
+        """
+        sprites = self.get_active_sprites()
+        nearest = None
+        min_dist = float("inf")
+
+        for s in sprites:
+            dx = s["x"] - mario_x
+            dy = s["y"] - mario_y
+            dist = np.sqrt(dx * dx + dy * dy)
+            # Prioritize hazards in the active forward/horizontal window
+            if -32.0 <= dx <= horizon_px and dist < min_dist:
+                min_dist = dist
+                nearest = (dx, dy, s["vx"], s["id"])
+
+        if nearest is not None:
+            return {
+                "delta_x_enemy": float(nearest[0]),
+                "delta_y_enemy": float(nearest[1]),
+                "vx_enemy": float(nearest[2]),
+                "hazard_active": 1.0,
+                "hazard_id": float(nearest[3]),
+            }
+        else:
+            return {
+                "delta_x_enemy": horizon_px,
+                "delta_y_enemy": 0.0,
+                "vx_enemy": 0.0,
+                "hazard_active": 0.0,
+                "hazard_id": 0.0,
+            }
+
+    def get_smw_extended_state(self) -> Dict[str, float]:
+        """
+        Extracts 12-dimensional state representation:
+        8-dimensional kinematics + 4-dimensional relative hazard perception.
+        """
+        base = self.get_smw_state()
+        hazard = self.get_nearest_hazard(base["x"], base["y"])
+        base.update(hazard)
+        return base
+
+
     def set_input(self, actions: Dict[str, bool]):
         """
         Maps semantic actions to SNES controller buttons.
@@ -293,6 +374,8 @@ class SnesLibretroEmulator:
         success = self.core.retro_unserialize(buf, len(state_bytes))
         if not success:
             raise RuntimeError("Failed to unserialize Libretro savestate.")
+        # Reset controller input latches to prevent input state contamination across episodes
+        self.current_input = {i: 0 for i in range(12)}
 
     def close(self):
         if self.is_loaded:

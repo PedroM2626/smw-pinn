@@ -1,0 +1,7 @@
+{
+    "num_models": 5,
+    "training_time_seconds": 17.3386070728302,
+    "in_distribution_uncertainty": 0.4609483778476715,
+    "out_of_distribution_uncertainty": 0.41892215609550476,
+    "ood_uncertainty_ratio": 0.9088265999835646
+}

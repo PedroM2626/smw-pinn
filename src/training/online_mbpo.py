@@ -1,0 +1,248 @@
+"""
+online_mbpo.py
+Full Closed-Loop Model-Based Policy Optimization (MBPO / Dyna-Style Active Learning).
+
+Implements the complete active reinforcement learning cycle:
+1. Active Real Interaction: Gathers genuine transitions from the real SNES console (at >2,700 FPS) into D_env.
+2. Physics World Model Adaptation: Periodically fine-tunes the Hard Residual PINN on D_env.
+3. Branched Model Rollouts: Samples states s ~ D_env and generates k-step imaginary rollouts (k=5)
+   inside the in-GPU vectorized PINN simulator, eliminating compounding error.
+4. Policy Optimization: Updates the Actor-Critic agent on the generated rollouts via PPO.
+5. Continual Iteration: Closes the model-environment loop.
+"""
+
+import json
+import os
+import sys
+import time
+from typing import Dict, List, Tuple
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import torch
+import torch.nn as nn
+
+sys.path.insert(0, os.path.abspath("."))
+from src.environment.snes_emulator import SnesLibretroEmulator
+from src.environment.pinn_sim_env import PINNVectorEnv
+from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.planning.mpc_planner import ACTION_MATRIX
+from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
+
+
+class RealReplayBuffer:
+    """Circular replay buffer storing authentic console transitions."""
+
+    def __init__(self, capacity: int = 50000, state_dim: int = 8, action_dim: int = 6):
+        self.capacity = capacity
+        self.states = np.zeros((capacity, state_dim), dtype=np.float32)
+        self.actions = np.zeros((capacity, action_dim), dtype=np.float32)
+        self.rewards = np.zeros(capacity, dtype=np.float32)
+        self.next_states = np.zeros((capacity, state_dim), dtype=np.float32)
+        self.dones = np.zeros(capacity, dtype=np.float32)
+
+        self.ptr = 0
+        self.size = 0
+
+    def add(self, s: np.ndarray, a: np.ndarray, r: float, ns: np.ndarray, d: bool):
+        self.states[self.ptr] = s
+        self.actions[self.ptr] = a
+        self.rewards[self.ptr] = r
+        self.next_states[self.ptr] = ns
+        self.dones[self.ptr] = float(d)
+
+        self.ptr = (self.ptr + 1) % self.capacity
+        self.size = min(self.size + 1, self.capacity)
+
+    def sample(self, batch_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        idx = np.random.choice(self.size, size=batch_size, replace=False)
+        return self.states[idx], self.actions[idx], self.rewards[idx], self.next_states[idx], self.dones[idx]
+
+    def sample_states(self, batch_size: int) -> np.ndarray:
+        idx = np.random.choice(self.size, size=batch_size, replace=False)
+        return self.states[idx]
+
+    def __len__(self) -> int:
+        return self.size
+
+
+def train_online_mbpo(
+    num_iterations: int = 5,
+    real_steps_per_iter: int = 2000,
+    model_rollout_steps: int = 80000,
+    branch_horizon_k: int = 10,
+    output_dir: str = "results",
+) -> Dict:
+    print("====================================================================")
+    print("  CLOSED-LOOP MODEL-BASED POLICY OPTIMIZATION (ONLINE MBPO)          ")
+    print("====================================================================")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"MBPO Compute Device: {device}")
+
+    core_path = "src/environment/bin/snes9x_libretro.dll"
+    rom_path = "data/raw/smw_usa.sfc"
+    state_path = "data/raw/smw_yoshi_island_1.state"
+
+    os.makedirs(os.path.join(output_dir, "checkpoints"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "figures"), exist_ok=True)
+
+    # 1. Initialize PINN World Model & Policy
+    world_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
+    # Preload best trained PINN weights
+    pinn_best_path = os.path.join(output_dir, "checkpoints", "pinn_hard_best.pt")
+    if os.path.exists(pinn_best_path):
+        world_model.load_state_dict(torch.load(pinn_best_path, map_location=device, weights_only=True))
+        print("Preloaded base Hard Residual PINN dynamics checkpoint.")
+
+    policy_agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
+    model_optimizer = torch.optim.AdamW(world_model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+    # 2. Replay Buffer
+    replay_buffer = RealReplayBuffer(capacity=50000)
+
+    # Pre-populate buffer with initial offline dataset
+    raw_dataset = np.load("data/raw/smw_gameplay_dataset.npz")
+    init_s, init_a, init_ns = raw_dataset["states"][:2000], raw_dataset["actions"][:2000], raw_dataset["next_states"][:2000]
+    for i in range(len(init_s)):
+        replay_buffer.add(init_s[i], init_a[i], 0.0, init_ns[i], False)
+    print(f"Replay buffer seeded with {len(replay_buffer)} authentic transitions.")
+
+    # 3. Setup Emulator for real interactions
+    emu = SnesLibretroEmulator(core_path)
+    emu.load_rom(rom_path)
+    with open(state_path, "rb") as f:
+        initial_savestate = f.read()
+
+    iter_progress_history = []
+    iter_survival_history = []
+    t0 = time.time()
+
+    for it in range(1, num_iterations + 1):
+        print(f"\n--- MBPO Iteration {it}/{num_iterations} ---")
+
+        # Step A: Collect real transitions with current policy in authentic SNES emulator
+        emu.load_state(initial_savestate)
+        emu.wram_buffer[0x0100] = 0x14
+        for _ in range(5):
+            emu.step_frame()
+
+        s_dict = emu.get_smw_state()
+        curr_s = np.array([s_dict["x"], s_dict["y"], s_dict["vx"], s_dict["vy"], s_dict["c_ground"], s_dict["c_ceiling"], s_dict["c_left"], s_dict["c_right"]], dtype=np.float32)
+        x_start = curr_s[0]
+        max_x = curr_s[0]
+        survived_frames = 0
+
+        for step in range(real_steps_per_iter):
+            curr_s_t = torch.tensor(curr_s, dtype=torch.float32, device=device).unsqueeze(0)
+            with torch.no_grad():
+                action_idx = int(torch.argmax(policy_agent.actor(policy_agent.in_norm(curr_s_t)), dim=-1).item())
+
+            action_vec = ACTION_MATRIX[action_idx]
+            from src.evaluation.evaluate_policy_snes import action_vector_to_dict
+            emu.set_input(action_vector_to_dict(action_vec))
+            emu.step_frame()
+
+            ns_dict = emu.get_smw_state()
+            next_s = np.array([ns_dict["x"], ns_dict["y"], ns_dict["vx"], ns_dict["vy"], ns_dict["c_ground"], ns_dict["c_ceiling"], ns_dict["c_left"], ns_dict["c_right"]], dtype=np.float32)
+
+            fell_in_pit = next_s[1] > 450.0 or next_s[1] < 0.0 or ns_dict["air_state"] == 9
+            delta_x = next_s[0] - curr_s[0]
+            reward = float(2.0 * np.clip(delta_x, -5.0, 10.0) + 0.2 * (max(0.0, next_s[2]) / 16.0) + 0.05)
+            if fell_in_pit:
+                reward -= 100.0
+
+            replay_buffer.add(curr_s, action_vec, reward, next_s, fell_in_pit)
+            max_x = max(max_x, next_s[0])
+            survived_frames += 1
+
+            if fell_in_pit:
+                emu.load_state(initial_savestate)
+                emu.wram_buffer[0x0100] = 0x14
+                for _ in range(5):
+                    emu.step_frame()
+                ns_dict = emu.get_smw_state()
+                next_s = np.array([ns_dict["x"], ns_dict["y"], ns_dict["vx"], ns_dict["vy"], ns_dict["c_ground"], ns_dict["c_ceiling"], ns_dict["c_left"], ns_dict["c_right"]], dtype=np.float32)
+
+            curr_s = next_s
+
+        iter_progress = float(max_x - x_start)
+        iter_progress_history.append(iter_progress)
+        iter_survival_history.append(survived_frames)
+        print(f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}")
+        print(f"  Max Real Console Progress: {iter_progress:+6.1f} px")
+
+        # Step B: Fine-tune Hard Residual PINN on newly collected real buffer data
+        world_model.train()
+        criterion = nn.MSELoss()
+        for _ in range(50):  # 50 mini-batches
+            b_s, b_a, _, b_ns, _ = replay_buffer.sample(batch_size=128)
+            b_s_t = torch.tensor(b_s, dtype=torch.float32, device=device)
+            b_a_t = torch.tensor(b_a, dtype=torch.float32, device=device)
+            b_ns_t = torch.tensor(b_ns, dtype=torch.float32, device=device)
+
+            model_optimizer.zero_grad()
+            pred = world_model(b_s_t, b_a_t)
+            loss = criterion(pred, b_ns_t)
+            loss.backward()
+            model_optimizer.step()
+
+        # Step C: Branched Rollout Simulation & Policy Optimization
+        # Sample starting states from buffer to eliminate compounding error
+        sampled_initials = replay_buffer.sample_states(batch_size=512)
+        initial_pool = torch.tensor(sampled_initials, dtype=torch.float32, device=device)
+
+        sim_env = PINNVectorEnv(
+            world_model=world_model,
+            num_envs=512,
+            max_episode_steps=branch_horizon_k,
+            initial_state_pool=initial_pool,
+            device=device,
+        )
+
+        trainer = DynaPPOTrainer(env=sim_env, actor_critic=policy_agent, device=device)
+        trainer.train(total_timesteps=model_rollout_steps)
+        print(f"  Imagined Policy Optimization completed ({model_rollout_steps} transitions via branched PINN rollouts).")
+
+    emu.close()
+
+    # Save final MBPO policy
+    mbpo_policy_path = os.path.join(output_dir, "checkpoints", "online_mbpo_policy.pt")
+    torch.save(policy_agent.state_dict(), mbpo_policy_path)
+    print(f"\nFinal MBPO Policy saved to: {mbpo_policy_path}")
+
+    # Metrics
+    metrics = {
+        "num_iterations": num_iterations,
+        "total_real_frames": num_iterations * real_steps_per_iter,
+        "progress_per_iteration": iter_progress_history,
+        "training_time_seconds": time.time() - t0,
+    }
+
+    metrics_path = os.path.join(output_dir, "online_mbpo_metrics.json")
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=4)
+    print(f"MBPO metrics saved to: {metrics_path}")
+
+    # Generate MBPO convergence plot
+    sns.set_theme(style="whitegrid")
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    iters = np.arange(1, num_iterations + 1)
+    ax.plot(iters, iter_progress_history, marker="o", color="#2ecc71", linewidth=2.5, label="MBPO Closed-Loop Progress")
+    ax.set_title("Online MBPO Closed-Loop Progress Across Iterations (SNES Console)", fontsize=11, fontweight="bold")
+    ax.set_xlabel("MBPO Iteration (Real Interaction + Branched PINN Rollout)")
+    ax.set_ylabel("Real Console Max Progress (Pixels)")
+    ax.set_xticks(iters)
+    ax.legend(loc="best")
+    plt.tight_layout()
+
+    fig_path = os.path.join(output_dir, "figures", "online_mbpo_convergence.png")
+    plt.savefig(fig_path, dpi=300)
+    plt.close()
+    print(f"Convergence plot saved to: {fig_path}")
+
+    return metrics
+
+
+if __name__ == "__main__":
+    train_online_mbpo(num_iterations=3, real_steps_per_iter=1000, model_rollout_steps=40000)

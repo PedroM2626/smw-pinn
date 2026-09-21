@@ -1,0 +1,12 @@
+{
+    "Blind_Agent_8D": {
+        "survived_frames": 173,
+        "total_progress_pixels": 115.0,
+        "mean_vx": 19.471264367816094
+    },
+    "Sprite_Aware_Agent_12D": {
+        "survived_frames": 500,
+        "total_progress_pixels": 328.875,
+        "mean_vx": 10.524
+    }
+}
