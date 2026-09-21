@@ -1,44 +1,44 @@
 {
     "single_step_results": {
         "Statistical_MLP": {
-            "test_loss_data": 2.8543937814078832,
-            "test_kinematic_error": 10.875754397950674
+            "test_loss_data": 17.47123791954734,
+            "test_kinematic_error": 18453.61552550576
         },
         "Statistical_LSTM": {
-            "test_loss_data": 4.288178426654715,
-            "test_kinematic_error": 62.87456077023556
+            "test_loss_data": 39.40589592673562,
+            "test_kinematic_error": 37942.19300426136
         },
         "Soft_PINN": {
-            "test_loss_data": 3.6089398892302262,
-            "test_kinematic_error": 27.30156005526844
+            "test_loss_data": 29.23436112837358,
+            "test_kinematic_error": 25884.795632102272
         },
         "Hard_Residual_PINN": {
-            "test_loss_data": 0.5415894138185602,
-            "test_kinematic_error": 2.3865192480642644e-05
+            "test_loss_data": 0.580266685648398,
+            "test_kinematic_error": 0.0012497845633664508
         }
     },
     "rollout_metrics": {
         "Statistical_MLP": {
-            "mean_drift_pixels": 76.66358947753906,
-            "final_drift_pixels": 84.50724792480469,
-            "kinematic_violations": 119,
+            "mean_drift_pixels": 189.09628295898438,
+            "final_drift_pixels": 104.88208770751953,
+            "kinematic_violations": 120,
             "velocity_violations": 0
         },
         "Statistical_LSTM": {
-            "mean_drift_pixels": 39.68246078491211,
-            "final_drift_pixels": 40.99666213989258,
+            "mean_drift_pixels": 167.3294219970703,
+            "final_drift_pixels": 126.18435668945312,
             "kinematic_violations": 120,
             "velocity_violations": 0
         },
         "Soft_PINN": {
-            "mean_drift_pixels": 79.62690734863281,
-            "final_drift_pixels": 87.5185775756836,
+            "mean_drift_pixels": 254.4679718017578,
+            "final_drift_pixels": 180.55389404296875,
             "kinematic_violations": 120,
             "velocity_violations": 0
         },
         "Hard_Residual_PINN": {
-            "mean_drift_pixels": 99.72026062011719,
-            "final_drift_pixels": 158.01675415039062,
+            "mean_drift_pixels": 118.26886749267578,
+            "final_drift_pixels": 304.77545166015625,
             "kinematic_violations": 0,
             "velocity_violations": 0
         }

@@ -22,7 +22,11 @@ data/raw/*.sfc
 data/raw/*.smc
 data/raw/*.zip
 data/raw/*.bk2
+data/raw/*.state
+*.state
 roms/
+src/environment/bin/*.dll
+src/environment/bin/*.zip
 
 # Jupyter & IDE
 .ipynb_checkpoints

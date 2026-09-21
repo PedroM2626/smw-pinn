@@ -1,7 +1,8 @@
 """
 record_gameplay.py
-Grava trajetórias genuínas de transição de estado da memória RAM do Super Mario World
-utilizando o emulador SNES em ctypes, sem qualquer dado sintético ou fictício.
+Grava trajetórias 100% genuínas e interativas da memória RAM do Super Mario World.
+O emulador inicializa o jogo, entra no Modo de Fase Interativo (Game Mode 0x14)
+onde o controle comanda o Mario diretamente e em tempo real pela fase.
 """
 
 import os
@@ -45,15 +46,15 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
     )
 
 
-def record_trajectories(
+def record_interactive_trajectories(
     rom_path: str = "data/raw/smw_usa.sfc",
     core_path: str = "src/environment/bin/snes9x_libretro.dll",
     output_path: str = "data/raw/smw_gameplay_dataset.npz",
-    num_episodes: int = 10,
-    frames_per_episode: int = 1200,  # 20 segundos por episódio a 60 FPS
+    num_episodes: int = 15,
+    frames_per_episode: int = 1000,
 ):
     print("==========================================================")
-    print("  COLETA DE DADOS GENUÍNOS DA RAM DO SUPER MARIO WORLD    ")
+    print("  GRAVAÇÃO DE DADOS GENUÍNOS E INTERATIVOS (MODO 0x14)    ")
     print("==========================================================")
     print(f"ROM: {rom_path}")
     print(f"Core: {core_path}")
@@ -69,80 +70,92 @@ def record_trajectories(
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
 
-    # Avançar o boot inicial até o início do gameplay (frame 420)
-    print("Avançando frames de boot inicial...")
-    for _ in range(420):
+    # 1. Avançar boot e ativar Modo de Fase Interativo (0x14)
+    print("Inicializando emulador e habilitando modo de fase interativo (0x14)...")
+    for _ in range(410):
         emu.step_frame()
 
-    # Salvar o estado inicial de início da fase
-    initial_savestate = emu.save_state()
-    print("Savestate inicial capturado com sucesso!")
+    emu.wram_buffer[0x0100] = 0x14
+    for _ in range(30):
+        emu.step_frame()
 
-    # Estratégias de ação variadas para cobrir o espaço de estados físicos
-    # (corrida com salto, caminhada, inércia, derrapagem, saltos curtos e longos)
-    action_patterns = [
-        {"RIGHT": True, "Y": True},  # Corrida contínua para a direita
-        {"RIGHT": True, "Y": True, "B": True},  # Corrida com saltos altos
-        {"RIGHT": True, "B": True},  # Caminhada com saltos
-        {"RIGHT": True},  # Caminhada simples
-        {"LEFT": True, "Y": True},  # Corrida para a esquerda (retorno/derrapagem)
-        {},  # Inércia / desaceleração por atrito
-        {"B": True},  # Salto vertical no lugar
-        {"RIGHT": True, "DOWN": True},  # Agachado deslizando
+    # Capturar o savestate de início da fase onde Mario é 100% controlável
+    initial_savestate = emu.save_state()
+    initial_state = emu.get_smw_state()
+    print(f"Savestate interativo capturado com sucesso! Mario inicial: {initial_state}")
+
+    # Padrões de ação diversificados para cobrir todo o envelope físico
+    action_behaviors = [
+        {"RIGHT": True, "Y": True},                 # Corrida contínua
+        {"RIGHT": True, "Y": True, "B": True},       # Corrida com salto alto
+        {"RIGHT": True, "B": True},                 # Caminhada com salto
+        {"RIGHT": True},                            # Caminhada simples
+        {"LEFT": True, "Y": True},                  # Corrida para esquerda / derrapagem
+        {"LEFT": True},                             # Caminhada para esquerda
+        {},                                         # Inércia / desaceleração natural por atrito
+        {"B": True},                                # Salto vertical estacionário
+        {"RIGHT": True, "DOWN": True},              # Deslizamento agachado
+        {"RIGHT": True, "Y": True, "A": True},       # Spin Jump correndo
     ]
 
     total_transitions = 0
     t0 = time.time()
 
     for ep in range(num_episodes):
-        # Resetar para o estado inicial da fase via savestate
         emu.load_state(initial_savestate)
+        np.random.seed(100 + ep)
 
-        # Escolher semente de padrão de controle para o episódio
-        np.random.seed(42 + ep)
-        current_pattern_idx = ep % len(action_patterns)
+        curr_pattern = 0
         pattern_duration = np.random.randint(15, 60)
-        pattern_counter = 0
+        pattern_timer = 0
 
         curr_state_dict = emu.get_smw_state()
 
         for f in range(frames_per_episode):
-            # Alternar ações para gerar diversidade dinâmica
-            if pattern_counter >= pattern_duration:
-                # Com probabilidade 0.4 mantém movimento para direita com salto,
-                # para garantir progresso na fase
-                if np.random.rand() < 0.6:
-                    current_pattern_idx = np.random.choice([0, 1, 2, 3])
+            # Alternância de padrões com viés para exploração horizontal
+            if pattern_timer >= pattern_duration:
+                # 60% chance de ações para frente (direita), 40% de manobras/saltos/inércias
+                if np.random.rand() < 0.65:
+                    curr_pattern = np.random.choice([0, 1, 2, 3, 9])
                 else:
-                    current_pattern_idx = np.random.randint(0, len(action_patterns))
+                    curr_pattern = np.random.choice([4, 5, 6, 7, 8])
                 pattern_duration = np.random.randint(10, 50)
-                pattern_counter = 0
+                pattern_timer = 0
 
-            action_dict = action_patterns[current_pattern_idx]
+            action_dict = action_behaviors[curr_pattern]
+
+            # Injetar comando no controle do SNES
             emu.set_input(action_dict)
 
-            # Executar transição física de 1 frame
             s_vec = extract_vector(curr_state_dict)
             a_vec = extract_action_vector(action_dict)
 
+            # Executar 1 frame da física do jogo
             emu.step_frame()
+
             next_state_dict = emu.get_smw_state()
             next_s_vec = extract_vector(next_state_dict)
 
-            states_t.append(s_vec)
-            actions_t.append(a_vec)
-            states_tp1.append(next_s_vec)
-            episode_ids.append(ep)
+            # Só registra se Mario ainda estiver em coordenadas válidas da fase
+            if 0 <= next_s_vec[1] <= 500:
+                states_t.append(s_vec)
+                actions_t.append(a_vec)
+                states_tp1.append(next_s_vec)
+                episode_ids.append(ep)
+                total_transitions += 1
 
             curr_state_dict = next_state_dict
-            pattern_counter += 1
-            total_transitions += 1
+            pattern_timer += 1
+
+            # Se Mario morreu ou caiu no buraco, reinicia o episódio
+            if next_s_vec[1] > 500 or next_s_vec[1] < 0:
+                break
 
         print(
             f"Episódio {ep+1:2d}/{num_episodes} concluído | "
             f"Mario Final: X={curr_state_dict['x']:.1f}, Y={curr_state_dict['y']:.1f}, "
             f"vx={curr_state_dict['vx']:.1f}, vy={curr_state_dict['vy']:.1f} | "
-            f"Transições acumuladas: {total_transitions}"
+            f"Transições válidas acumuladas: {total_transitions}"
         )
 
     emu.close()
@@ -162,13 +175,13 @@ def record_trajectories(
     )
 
     print("\n==========================================================")
-    print(f"Dataset salvo com sucesso em: {output_path}")
+    print(f"Dataset 100% interativo salvo em: {output_path}")
     print(f"Total de transições registradas: {len(states_t_arr)}")
-    print(f"Dimensões do tensor de estados: {states_t_arr.shape}")
-    print(f"Dimensões do tensor de ações: {actions_t_arr.shape}")
-    print(f"Tempo total de emulação: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
+    print(f"Dimensões de estados: {states_t_arr.shape}")
+    print(f"Dimensões de ações: {actions_t_arr.shape}")
+    print(f"Tempo de emulação: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
     print("==========================================================")
 
 
 if __name__ == "__main__":
-    record_trajectories()
+    record_interactive_trajectories()
