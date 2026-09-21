@@ -1,0 +1,17 @@
+{
+  "Statistical MLP": {
+    "zero_shot_test_mse": 540.295,
+    "kinematic_violation_pct": 100.0,
+    "drift_120_frames_px": 67.74
+  },
+  "Hard Residual PINN": {
+    "zero_shot_test_mse": 11.9642,
+    "kinematic_violation_pct": 0.0,
+    "drift_120_frames_px": 267.29
+  },
+  "Translation-Invariant PINN": {
+    "zero_shot_test_mse": 12.501,
+    "kinematic_violation_pct": 0.0,
+    "drift_120_frames_px": 498.87
+  }
+}

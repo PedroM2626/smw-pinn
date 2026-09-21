@@ -1,0 +1,10 @@
+{
+    "num_iterations": 2,
+    "total_real_frames": 1000,
+    "progress_per_iteration": [
+        0.0,
+        39.75
+    ],
+    "training_time_seconds": 3.205336809158325,
+    "is_safe_ensemble": true
+}

@@ -25,7 +25,7 @@ import torch.nn as nn
 sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.environment.pinn_sim_env import PINNVectorEnv
-from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.models import HardResidualPINNDynamics, DeepPINNEnsemble
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
 
@@ -67,18 +67,22 @@ class RealReplayBuffer:
 
 
 def train_online_mbpo(
-    num_iterations: int = 5,
-    real_steps_per_iter: int = 2000,
-    model_rollout_steps: int = 80000,
+    num_iterations: int = 3,
+    real_steps_per_iter: int = 1000,
+    model_rollout_steps: int = 40000,
     branch_horizon_k: int = 10,
     output_dir: str = "results",
+    use_safe_ensemble: bool = False,
 ) -> Dict:
     print("====================================================================")
-    print("  CLOSED-LOOP MODEL-BASED POLICY OPTIMIZATION (ONLINE MBPO)          ")
+    if use_safe_ensemble:
+        print("  SAFE CLOSED-LOOP MBPO (DEEP ENSEMBLE + EPISTEMIC TRUNCATION)      ")
+    else:
+        print("  CLOSED-LOOP MODEL-BASED POLICY OPTIMIZATION (ONLINE MBPO)          ")
     print("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"MBPO Compute Device: {device}")
+    print(f"MBPO Compute Device: {device} | Safe Mode: {use_safe_ensemble}")
 
     core_path = "src/environment/bin/snes9x_libretro.dll"
     rom_path = "data/raw/smw_usa.sfc"
@@ -88,15 +92,25 @@ def train_online_mbpo(
     os.makedirs(os.path.join(output_dir, "figures"), exist_ok=True)
 
     # 1. Initialize PINN World Model & Policy
-    world_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
-    # Preload best trained PINN weights
-    pinn_best_path = os.path.join(output_dir, "checkpoints", "pinn_hard_best.pt")
-    if os.path.exists(pinn_best_path):
-        world_model.load_state_dict(torch.load(pinn_best_path, map_location=device, weights_only=True))
-        print("Preloaded base Hard Residual PINN dynamics checkpoint.")
+    if use_safe_ensemble:
+        world_model = DeepPINNEnsemble(num_models=5, state_dim=8, action_dim=6).to(device)
+        ens_dir = os.path.join(output_dir, "checkpoints_ensemble")
+        if os.path.exists(ens_dir):
+            for i, member in enumerate(world_model.members):
+                m_path = os.path.join(ens_dir, f"ensemble_pinn_seed_{42 + i * 17}.pt")
+                if os.path.exists(m_path):
+                    member.load_state_dict(torch.load(m_path, map_location=device, weights_only=True))
+            print("Preloaded Deep Ensemble member weights.")
+        model_optimizers = [torch.optim.AdamW(m.parameters(), lr=1e-3, weight_decay=1e-4) for m in world_model.members]
+    else:
+        world_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
+        pinn_best_path = os.path.join(output_dir, "checkpoints", "pinn_hard_best.pt")
+        if os.path.exists(pinn_best_path):
+            world_model.load_state_dict(torch.load(pinn_best_path, map_location=device, weights_only=True))
+            print("Preloaded base Hard Residual PINN dynamics checkpoint.")
+        model_optimizers = [torch.optim.AdamW(world_model.parameters(), lr=1e-3, weight_decay=1e-4)]
 
     policy_agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
-    model_optimizer = torch.optim.AdamW(world_model.parameters(), lr=1e-3, weight_decay=1e-4)
 
     # 2. Replay Buffer
     replay_buffer = RealReplayBuffer(capacity=50000)
@@ -172,20 +186,28 @@ def train_online_mbpo(
         print(f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}")
         print(f"  Max Real Console Progress: {iter_progress:+6.1f} px")
 
-        # Step B: Fine-tune Hard Residual PINN on newly collected real buffer data
+        # Step B: Fine-tune World Model on newly collected real buffer data
         world_model.train()
         criterion = nn.MSELoss()
-        for _ in range(50):  # 50 mini-batches
+        for _ in range(30):  # mini-batches
             b_s, b_a, _, b_ns, _ = replay_buffer.sample(batch_size=128)
             b_s_t = torch.tensor(b_s, dtype=torch.float32, device=device)
             b_a_t = torch.tensor(b_a, dtype=torch.float32, device=device)
             b_ns_t = torch.tensor(b_ns, dtype=torch.float32, device=device)
 
-            model_optimizer.zero_grad()
-            pred = world_model(b_s_t, b_a_t)
-            loss = criterion(pred, b_ns_t)
-            loss.backward()
-            model_optimizer.step()
+            if use_safe_ensemble:
+                for member, opt in zip(world_model.members, model_optimizers):
+                    opt.zero_grad()
+                    pred = member(b_s_t, b_a_t)
+                    loss = criterion(pred, b_ns_t)
+                    loss.backward()
+                    opt.step()
+            else:
+                model_optimizers[0].zero_grad()
+                pred = world_model(b_s_t, b_a_t)
+                loss = criterion(pred, b_ns_t)
+                loss.backward()
+                model_optimizers[0].step()
 
         # Step C: Branched Rollout Simulation & Policy Optimization
         # Sample starting states from buffer to eliminate compounding error
@@ -198,6 +220,8 @@ def train_online_mbpo(
             max_episode_steps=branch_horizon_k,
             initial_state_pool=initial_pool,
             device=device,
+            pessimism_beta=0.5 if use_safe_ensemble else 0.0,
+            uncertainty_truncation_threshold=1.2 if use_safe_ensemble else 999.0,
         )
 
         trainer = DynaPPOTrainer(env=sim_env, actor_critic=policy_agent, device=device)
@@ -207,7 +231,8 @@ def train_online_mbpo(
     emu.close()
 
     # Save final MBPO policy
-    mbpo_policy_path = os.path.join(output_dir, "checkpoints", "online_mbpo_policy.pt")
+    suffix = "_safe" if use_safe_ensemble else ""
+    mbpo_policy_path = os.path.join(output_dir, "checkpoints", f"online_mbpo{suffix}_policy.pt")
     torch.save(policy_agent.state_dict(), mbpo_policy_path)
     print(f"\nFinal MBPO Policy saved to: {mbpo_policy_path}")
 
@@ -217,9 +242,11 @@ def train_online_mbpo(
         "total_real_frames": num_iterations * real_steps_per_iter,
         "progress_per_iteration": iter_progress_history,
         "training_time_seconds": time.time() - t0,
+        "is_safe_ensemble": use_safe_ensemble,
     }
 
-    metrics_path = os.path.join(output_dir, "online_mbpo_metrics.json")
+    metrics_filename = f"online_mbpo{suffix}_metrics.json"
+    metrics_path = os.path.join(output_dir, metrics_filename)
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=4)
     print(f"MBPO metrics saved to: {metrics_path}")
@@ -228,15 +255,18 @@ def train_online_mbpo(
     sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(8, 4.5))
     iters = np.arange(1, num_iterations + 1)
-    ax.plot(iters, iter_progress_history, marker="o", color="#2ecc71", linewidth=2.5, label="MBPO Closed-Loop Progress")
-    ax.set_title("Online MBPO Closed-Loop Progress Across Iterations (SNES Console)", fontsize=11, fontweight="bold")
+    plot_color = "#3B82F6" if use_safe_ensemble else "#2ecc71"
+    plot_label = "Safe MBPO (Deep Ensemble E=5)" if use_safe_ensemble else "Standard MBPO (Hard PINN)"
+    ax.plot(iters, iter_progress_history, marker="o", color=plot_color, linewidth=2.5, label=plot_label)
+    ax.set_title(f"Online MBPO Progress Across Iterations (SNES Console - {plot_label})", fontsize=11, fontweight="bold")
     ax.set_xlabel("MBPO Iteration (Real Interaction + Branched PINN Rollout)")
     ax.set_ylabel("Real Console Max Progress (Pixels)")
     ax.set_xticks(iters)
     ax.legend(loc="best")
     plt.tight_layout()
 
-    fig_path = os.path.join(output_dir, "figures", "online_mbpo_convergence.png")
+    fig_filename = f"online_mbpo{suffix}_convergence.png"
+    fig_path = os.path.join(output_dir, "figures", fig_filename)
     plt.savefig(fig_path, dpi=300)
     plt.close()
     print(f"Convergence plot saved to: {fig_path}")
@@ -245,4 +275,17 @@ def train_online_mbpo(
 
 
 if __name__ == "__main__":
-    train_online_mbpo(num_iterations=3, real_steps_per_iter=1000, model_rollout_steps=40000)
+    import argparse
+    parser = argparse.ArgumentParser(description="Online MBPO Training")
+    parser.add_argument("--safe", action="store_true", help="Enable Safe MBRL with Deep PINN Ensemble")
+    parser.add_argument("--iterations", type=int, default=3, help="Number of MBPO iterations")
+    parser.add_argument("--real_steps", type=int, default=1000, help="Real steps per iteration")
+    parser.add_argument("--rollout_steps", type=int, default=40000, help="Imagined rollout steps")
+    args = parser.parse_args()
+
+    train_online_mbpo(
+        num_iterations=args.iterations,
+        real_steps_per_iter=args.real_steps,
+        model_rollout_steps=args.rollout_steps,
+        use_safe_ensemble=args.safe,
+    )

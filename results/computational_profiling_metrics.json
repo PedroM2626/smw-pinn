@@ -1,0 +1,50 @@
+{
+  "Statistical MLP": {
+    "parameters": 36744,
+    "flops": 72704,
+    "cpu_single_thread_latency_us": 76.26,
+    "cuda_latency_us": 162.22,
+    "cuda_throughput_fps_b256": 1349125.8,
+    "vram_allocated_mb": 8.27
+  },
+  "Statistical LSTM": {
+    "parameters": 223368,
+    "flops": 325632,
+    "cpu_single_thread_latency_us": 213.93,
+    "cuda_latency_us": 188.15,
+    "cuda_throughput_fps_b256": 219827.3,
+    "vram_allocated_mb": 9.12
+  },
+  "Soft PINN": {
+    "parameters": 36744,
+    "flops": 72704,
+    "cpu_single_thread_latency_us": 78.11,
+    "cuda_latency_us": 179.53,
+    "cuda_throughput_fps_b256": 1325302.1,
+    "vram_allocated_mb": 9.26
+  },
+  "Hard Residual PINN": {
+    "parameters": 36486,
+    "flops": 72192,
+    "cpu_single_thread_latency_us": 138.42,
+    "cuda_latency_us": 325.39,
+    "cuda_throughput_fps_b256": 675682.8,
+    "vram_allocated_mb": 9.4
+  },
+  "Multi-Entity PINN (12D)": {
+    "parameters": 37192,
+    "flops": 73472,
+    "cpu_single_thread_latency_us": 274.38,
+    "cuda_latency_us": 712.88,
+    "cuda_throughput_fps_b256": 323660.2,
+    "vram_allocated_mb": 9.54
+  },
+  "Deep PINN Ensemble (E=5)": {
+    "parameters": 182430,
+    "flops": 360960,
+    "cpu_single_thread_latency_us": 686.93,
+    "cuda_latency_us": 1703.58,
+    "cuda_throughput_fps_b256": 141430.1,
+    "vram_allocated_mb": 10.24
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "blind_8d": {
+    "name": "Blind 8D Policy (No Hazard Perception)",
+    "progress": 0.0,
+    "survived_frames": 397,
+    "rex_evaded": false
+  },
+  "multi_entity_12d": {
+    "name": "End-to-End Multi-Entity 12D Policy",
+    "progress": -7.375,
+    "survived_frames": 413,
+    "rex_evaded": false
+  }
+}
