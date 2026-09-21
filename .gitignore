@@ -30,6 +30,7 @@ src/environment/bin/*.zip
 
 # Jupyter & IDE
 .ipynb_checkpoints
+.pytest_cache/
 .vscode/
 .idea/
 
