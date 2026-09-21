@@ -110,8 +110,15 @@ def run_comprehensive_benchmark(
     # 3. Treinamento comparativo
     print("\n[3/5] Treinando modelos com protocolo unificado...")
     for name, model in models.items():
-        print(f"\n--- Treinando {name} ---")
-        m_type = "lstm" if "lstm" in name.lower() else ("pinn_soft" if "soft" in name.lower() else "mlp")
+        if "lstm" in name.lower():
+            m_type = "lstm"
+        elif "soft" in name.lower():
+            m_type = "pinn_soft"
+        elif "hard" in name.lower():
+            m_type = "pinn_hard"
+        else:
+            m_type = "mlp"
+
         trainer = DynamicsTrainer(
             model=model,
             model_type=m_type,

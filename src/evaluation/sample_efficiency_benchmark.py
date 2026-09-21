@@ -101,7 +101,13 @@ def run_sample_efficiency_study(
 
         for name, factory in model_factories.items():
             model = factory()
-            m_type = "pinn_soft" if "soft" in name.lower() else "mlp"
+            if "soft" in name.lower():
+                m_type = f"pinn_soft_N{N}"
+            elif "hard" in name.lower():
+                m_type = f"pinn_hard_N{N}"
+            else:
+                m_type = f"mlp_N{N}"
+
             trainer = DynamicsTrainer(
                 model=model,
                 model_type=m_type,
