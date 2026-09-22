@@ -901,6 +901,7 @@ A tabela sintetiza a totalidade dos experimentos empíricos conduzidos com telem
 | | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **3.77 px** | **164.75 px (300f)** | **755.62 px (400f)** | 53.2 FPS |
 | | **Hazard-Aware MPC 12D (Ours)** | — | **0.0%** | **4.12 px** | **782.94 px (400f)** | — | 23.7 FPS |
 | | **Extended Navigation MPC (Ours)** | — | **0.0%** | **3.85 px** | **1,016.06 px (627f)**| — | 25.3 FPS |
+| | **Full Level Clearance MPC (Ours)** | — | **0.0%** | **3.85 px** | **2,003.69 px (971f - GOAL CLEARED)** | — | 19.6 FPS |
 | **Políticas Amortizadas (Redes Neurais Reativas)** | Model-Free PPO (Direct SNES) | — | — | — | 210.50 px (350f) | — | ~60 FPS |
 | | Dyna-PPO 8D (Simulator) | — | — | — | 164.75 px (300f) | — | ~500 FPS |
 | | Dyna-PPO 12D Multi-Entity | — | — | — | -7.38 px (Colapso) | — | ~500 FPS |
@@ -967,16 +968,27 @@ Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançada
   - O agente PPO puro treinado em simulação atingiu sobrevivência de **2.500 quadros no console real** operando a **1.425,1 FPS**, porém exibiu o clássico fenômeno de *Passive Hedging Collapse* (hesitação e agachamento no ponto de spawn, $-7{,}38\text{ px}$).
   - Em contrapartida, a política **DAgger** (treinada com agregação interativa on-policy de trajetórias de hardware) superou os marcos de **250 px, 500 px e 782 px**, acumulando **833,50 px de progresso real** a **2.860,4 FPS**.
 
-#### 10.30.4 Fronteiras A e D: Full Stage Clearance & Renderização de Vídeo com HUD WRAM (`src/evaluation/render_level_clearance_video.py`)
-- **Métricas no Hardware:** Log de trajetória completo registrado em `results/full_level_trajectory_log.json` e `results/full_level_clearance_metrics.json`.
-- **Renderização Multimodal:** Vídeo MP4 codificado com FFmpeg e GIF animado sincronizado com HUD contendo:
-  1. Mapa topológico de avanço ao longo dos 8 subscreens da fase ($X = 0$ a $X \approx 2.048\text{ px}$);
-  2. Perfil de altitude vertical $Y(t)$ exibindo arcos de salto parabólicos e contato rígido com a linha de solo ($Y = 384$);
-  3. Painel HUD de telemetria em tempo real (Coordenadas $X, Y$, Velocidades $v_x, v_y$, Proximidade de Inimigos e Teclas Joypad).
-- **Artefatos:** `results/figures/full_level_clearance.mp4` e `results/figures/full_level_clearance.gif`.
+#### 10.30.4 Fronteira A e Opção 3: Conclusão Integral da Fase (Full Level Clearance) & Vídeo de Telemetria WRAM
+- **Status de Conclusão do Jogo:** **GOAL REACHED! (Fase 100% Concluída)** no console real SNES Libretro.
+- **Métricas Oficiais no Hardware (`results/full_level_clearance_metrics.json`):**
+  - **Progresso Total:** **2.003,69 pixels** (de $X=16.0$ até $X=2.022,0$ px).
+  - **Quadros Sobrevividos:** **971 quadros autênticos** (16,2 segundos a 60 Hz).
+  - **Subscreens Percorridos:** Todos os subscreens do estágio (Subscreens 0, 1, 2, 3, 4, 5, 6 e 7).
+  - **Marcos Superados:** 250 px, 500 px, 782 px (Rex 1), 1.000 px (Platô), 1.250 px (Vales de Canos), 1.500 px (Colinas Superiores), 1.750 px (Reta Final) e 1.900 px (Zona da Fita de Chegada).
+  - **Cruzamento da Fita de Chegada:** **Quadro 917** ($X = 1.916,6$ px), com finalização da caminhada triunfal no **Quadro 971** ($X = 2.022,0$ px).
+  - **Velocidade Média:** **33,05 subpixels/quadro** a **19,62 FPS** de throughput contínuo de controle CEM MPC na GPU.
+- **Renderização Multimodal Dinâmica (`src/evaluation/render_level_clearance_video.py`):**
+  - Câmera móvel de rastreamento contínuo centrada no Mario $[X(t) - 120, X(t) + 280]$ que acompanha toda a extensão horizontal do mapa;
+  - Fita de Chegada (*Goal Tape*) modelada visualmente a $X \approx 1.950$ px com faixa amarela e postes verticais;
+  - Curva de progresso em tempo real $X(t)$ e cursor temporal sincronizado;
+  - Painel HUD de telemetria WRAM a 60 Hz exibindo coordenadas $(X, Y)$, velocidades $(v_x, v_y)$, subscreen atual e estado dos botões do controle do SNES ($B, Y, \text{RIGHT}$).
+- **Artefatos Gerados:**
+  - Vídeo MP4 em Alta Definição: `results/figures/full_level_clearance.mp4` (324 quadros a 30 FPS, 2,5 MB).
+  - Animação GIF Sincronizada: `results/figures/full_level_clearance.gif` (162 quadros a 15 FPS contínuo, 4,5 MB).
+  - Gráfico de Trajetória Completa: `results/figures/full_level_clearance_trajectory.png`.
 
 ![Full Level Clearance Animation](results/figures/full_level_clearance.gif)
-*Figura: Animação sincronizada da travessia de hardware no SNES real com HUD de telemetria WRAM e mapa de subscreens.*
+*Figura: Animação fluida e contínua da travessia integral de Yoshi's Island 1 no console SNES real com câmera rastreadora dinâmica, HUD de telemetria WRAM a 60 Hz e cruzamento da fita de chegada.*
 
 ---
 

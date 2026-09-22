@@ -27,8 +27,8 @@ def render_dynamic_telemetry_video(
     output_mp4: str = "results/figures/full_level_clearance.mp4",
     output_gif: str = "results/figures/full_level_clearance.gif",
     fps: int = 30,
-    stride: int = 2,
-    max_render_frame: int = 430,  # Focus on the continuous forward motion run
+    stride: int = 3,
+    max_render_frame: int = 3000,  # Full stage clearance
 ):
     print("====================================================================")
     print("  RENDERING DYNAMIC SIDE-SCROLLING TELEMETRY VIDEO & GIF ANIMATION  ")
@@ -99,29 +99,50 @@ def render_dynamic_telemetry_video(
         ax_cam.set_xlim(cam_x_min, cam_x_max)
         ax_cam.set_ylim(440, 240)  # Inverted Y (SNES coordinates)
 
-        # Draw level ground and terrain blocks
+        # Draw level ground and terrain blocks across the level
         ax_cam.axhline(y=384, color="#4a7c59", linewidth=8, label="Base Ground Level (Y=384)")
         ax_cam.fill_between([cam_x_min - 50, cam_x_max + 50], 384, 450, color="#2d5037", alpha=0.9)
 
-        # Draw elevated platform at X ~ 380 - 833
+        # Elevated platforms across Yoshi's Island 1:
+        # Platform 1: X ~ 380 - 850 (Y = 352)
         ax_cam.fill_between([380, 850], 352, 384, color="#8b5a2b", alpha=0.6)
-        ax_cam.axhline(y=352, xmin=0, xmax=1, color="#c68b59", linewidth=2, linestyle="--")
+        # Platform 2: X ~ 850 - 1024 (High Ridge Y = 272)
+        ax_cam.fill_between([850, 1024], 272, 384, color="#6b4423", alpha=0.6)
+        # Platform 3: X ~ 1250 - 1450 (Middle Ridge Y = 304)
+        ax_cam.fill_between([1250, 1450], 304, 384, color="#8b5a2b", alpha=0.6)
 
-        # Subscreen grid markers
-        for s in range(8):
+        # Subscreen grid markers (Subscreen 0 to 7)
+        for s in range(9):
             sx = s * 256
             if cam_x_min - 50 <= sx <= cam_x_max + 50:
                 ax_cam.axvline(x=sx, color="#445577", linestyle=":", linewidth=1.5, alpha=0.7)
                 ax_cam.text(sx + 5, 255, f"Subscreen {s}", color="#7799cc", fontsize=9, fontweight="bold")
 
-        # Milestone lines
-        for m, m_name in [(250, "250px"), (500, "500px"), (782, "782px Rex Evasion")]:
+        # Stage Milestones
+        stage_milestones = [
+            (250, "250px"),
+            (500, "500px"),
+            (782, "782px Rex Evasion"),
+            (1000, "1000px Plateau Drop"),
+            (1250, "1250px Pipe Valley"),
+            (1500, "1500px Upper Slopes"),
+            (1750, "1750px Final Stretch"),
+            (1950, "GOAL TAPE CLEAR"),
+        ]
+        for m, m_name in stage_milestones:
             if cam_x_min - 50 <= m <= cam_x_max + 50:
                 ax_cam.axvline(x=m, color="#f39c12", linestyle="-.", linewidth=1.5)
                 ax_cam.text(m + 4, 275, f"[{m_name}]", color="#f39c12", fontsize=8, fontweight="bold")
 
-        # Mario's historical jump trajectory in local camera window
-        trail_start = max(0, idx - 60)
+        # Goal Tape Structure at X ~ 1950 px
+        if cam_x_min - 50 <= 1950 <= cam_x_max + 50:
+            ax_cam.plot([1945, 1945], [260, 384], color="#ffffff", linewidth=4.0, zorder=4)
+            ax_cam.plot([1965, 1965], [260, 384], color="#ffffff", linewidth=4.0, zorder=4)
+            ax_cam.fill_between([1945, 1965], 275, 288, color="#ffdd00", alpha=0.9, zorder=5)
+            ax_cam.text(1955, 270, "GOAL", color="#ffdd00", fontsize=9, fontweight="bold", ha="center", zorder=6)
+
+        # Mario's historical jump trajectory ribbon
+        trail_start = max(0, idx - 80)
         ax_cam.plot(
             x_vals[trail_start:idx+1],
             y_vals[trail_start:idx+1],
@@ -135,17 +156,29 @@ def render_dynamic_telemetry_video(
         ax_cam.scatter([curr_x], [curr_y], color="#ff3344", s=180, edgecolors="white", linewidths=2.0, zorder=6)
         ax_cam.text(curr_x - 15, curr_y - 14, "MARIO", color="white", fontsize=8, fontweight="bold", zorder=7)
 
+        # Stage Clearance Victory Banner if Mario has crossed Goal Tape
+        if curr_x >= 1920.0:
+            ax_cam.text(
+                cam_x_min + 20, 260,
+                "★ STAGE CLEARED! LEVEL FINISHED ★",
+                color="#f1c40f",
+                fontsize=11,
+                fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.4", facecolor="#1a1c29", edgecolor="#f1c40f", linewidth=1.8),
+                zorder=10,
+            )
+
         # Draw Dynamic Hazard (Rex) if in camera range
-        if curr_hdx < 400.0:
+        if curr_hdx < 350.0:
             enemy_x = curr_x + curr_hdx
             if cam_x_min - 50 <= enemy_x <= cam_x_max + 50:
-                ax_cam.scatter([enemy_x], [352 if enemy_x > 380 else 384], color="#ff9900", s=150, marker="D", edgecolors="black", linewidths=1.5, zorder=5)
-                ax_cam.text(enemy_x - 12, 335, "REX", color="#ffcc00", fontsize=8, fontweight="bold")
+                ax_cam.scatter([enemy_x], [368], color="#ff9900", s=150, marker="D", edgecolors="black", linewidths=1.5, zorder=5)
+                ax_cam.text(enemy_x - 12, 350, "REX", color="#ffcc00", fontsize=8, fontweight="bold")
                 # Distance arrow
                 ax_cam.annotate(
                     f"{curr_hdx:.1f}px",
-                    xy=(enemy_x, 320),
-                    xytext=(curr_x, 320),
+                    xy=(enemy_x, 335),
+                    xytext=(curr_x, 335),
                     arrowprops=dict(arrowstyle="<->", color="#ffaa00", lw=1.2),
                     color="#ffcc00",
                     fontsize=8,
@@ -153,7 +186,7 @@ def render_dynamic_telemetry_video(
                 )
 
         ax_cam.set_title(
-            f"LIVE TRACKING VIEWPORT (Follows Mario) | Stage: Yoshi's Island 1 | Frame: {curr_frame:4d} (60Hz)",
+            f"LIVE TRACKING VIEWPORT (Follows Mario) | Yoshi's Island 1 | Frame: {curr_frame:4d} (60Hz)",
             fontsize=11, fontweight="bold", color="white", pad=8
         )
         ax_cam.set_ylabel("Altitude Y (px)", color="#cccccc", fontsize=9, fontweight="bold")
@@ -177,7 +210,7 @@ def render_dynamic_telemetry_video(
         ax_prog.scatter([curr_frame], [curr_x], color="#ff3344", s=90, zorder=5)
 
         # Milestone horizontal levels
-        for m in [250, 500, 782]:
+        for m, m_name in [(500, "500px"), (1000, "1000px"), (1500, "1500px"), (1950, "Goal Tape")]:
             ax_prog.axhline(y=m, color="#e67e22", linestyle=":", alpha=0.5)
             ax_prog.text(5, m + 8, f"{m} px Milestone", color="#e67e22", fontsize=7.5)
 
@@ -244,7 +277,7 @@ def render_dynamic_telemetry_video(
 
     # Write Animated GIF using Pillow save_all for guaranteed frame delay and animation
     from PIL import Image
-    gif_imgs = [Image.fromarray(f) for f in rendered_frames[::2]]
+    gif_imgs = [Image.fromarray(f).resize((780, 480), Image.Resampling.BILINEAR) for f in rendered_frames[::2]]
     gif_imgs[0].save(
         output_gif,
         save_all=True,

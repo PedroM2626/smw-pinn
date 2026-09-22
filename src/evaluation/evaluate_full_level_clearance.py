@@ -175,11 +175,15 @@ def run_full_level_clearance(
                 print(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> STAGE MILESTONE CLEARED: {m} px! <<<")
 
         # Goal tape check (subscreen 7 / X > 1900 px)
-        if curr_x >= 1900.0:
+        if curr_x >= 1900.0 and not goal_reached:
             goal_reached = True
+            goal_frame = frame
             print(f"\n=======================================================")
             print(f"  GOAL TAPE REACHED! STAGE COMPLETED AT FRAME {frame}! ")
             print(f"=======================================================")
+
+        if goal_reached and (curr_x >= 2020.0 or (frame >= goal_frame + 60)):
+            print(f"Level clearance run finalized at Frame {frame} (X={curr_x:.1f} px)")
             break
 
         # Action Selection
@@ -202,7 +206,7 @@ def run_full_level_clearance(
         # Reflexive collision / obstacle vaulting logic
         dx_enemy = curr_state["delta_x_enemy"]
         is_hazard_active = curr_state["hazard_active"] > 0.5
-        if is_hazard_active and 0.0 < dx_enemy < 45.0 and curr_state["c_ground"] > 0.5:
+        if is_hazard_active and 0.0 < dx_enemy < 75.0 and curr_state["c_ground"] > 0.5:
             action_dict["B"] = True
             action_dict["Y"] = True
             action_dict["RIGHT"] = True
@@ -314,7 +318,7 @@ def run_full_level_clearance(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--controller", type=str, default="ppo", choices=["ppo", "mpc", "dagger"])
+    parser.add_argument("--controller", type=str, default="mpc", choices=["ppo", "mpc", "dagger"])
     parser.add_argument("--max_frames", type=int, default=2500)
     args = parser.parse_args()
 
