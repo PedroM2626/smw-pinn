@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
+from src.utils.seed import set_global_seed
 
 
 # Mapping from 6D action vector [B, Y, UP, DOWN, LEFT, RIGHT] to emulator joypad dict
@@ -148,7 +149,7 @@ def run_random_control_baseline(
     seed: int = 42,
 ) -> Dict:
     """Stochastic random action baseline."""
-    np.random.seed(seed)
+    set_global_seed(seed)
     emu.load_state(initial_savestate)
     emu.wram_buffer[0x0100] = 0x14
     for _ in range(5):

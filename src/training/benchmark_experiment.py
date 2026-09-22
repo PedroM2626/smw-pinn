@@ -29,6 +29,8 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.training.trainer import DynamicsTrainer
+from src.utils.experiment import ExperimentLogger
+from src.utils.seed import get_seed_info, set_global_seed
 
 
 def run_comprehensive_benchmark(
@@ -37,13 +39,17 @@ def run_comprehensive_benchmark(
     batch_size: int = 128,
     seed: int = 42,
     output_dir: str = "results",
+    experiment_name: str = "benchmark_mlp_vs_pinn",
+    log_dir: str = "runs",
+    use_tensorboard: bool = True,
+    use_wandb: bool = False,
+    deterministic: bool = True,
 ):
     print("====================================================================")
     print("  ACADEMIC BENCHMARK: STATISTICAL ML VS. PINN ON SUPER MARIO WORLD  ")
     print("====================================================================")
 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    set_global_seed(seed, deterministic=deterministic)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Compute Device: {device}")
     if device.type == "cuda":
@@ -52,6 +58,22 @@ def run_comprehensive_benchmark(
     os.makedirs(output_dir, exist_ok=True)
     fig_dir = os.path.join(output_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
+
+    logger = ExperimentLogger(
+        experiment_name=experiment_name,
+        log_dir=log_dir,
+        hparams={
+            "dataset_path": dataset_path,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "seed": seed,
+            "deterministic": deterministic,
+            "device": str(device),
+            **get_seed_info(seed),
+        },
+        use_tensorboard=use_tensorboard,
+        use_wandb=use_wandb,
+    )
 
     # 1. Load genuine RAM telemetry dataset
     print("\n[1/5] Loading and partitioning genuine WRAM transitions...")
@@ -136,6 +158,7 @@ def run_comprehensive_benchmark(
             epochs=epochs,
             patience=8,
             verbose=True,
+            experiment=logger,
         )
         histories[name] = hist
 
@@ -257,9 +280,55 @@ def run_comprehensive_benchmark(
     with open(os.path.join(output_dir, "benchmark_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(all_summary, f, indent=4)
 
+    # Mirror final per-model metrics into the experiment log (step 0 = summary row)
+    try:
+        for name in single_step_results:
+            logger.log_metrics(
+                {
+                    f"{name}/final_test_mse": single_step_results[name]["test_loss_data"],
+                    f"{name}/final_test_kin": single_step_results[name]["test_kinematic_error"],
+                    f"{name}/final_mean_drift": rollout_metrics[name]["mean_drift_pixels"],
+                    f"{name}/final_drift": rollout_metrics[name]["final_drift_pixels"],
+                },
+                step=epochs,
+            )
+    finally:
+        logger.close()
+
+    print(f"\nExperiment logs: {logger.dir} (tensorboard --logdir {log_dir})")
     print("\nMain benchmark completed successfully!")
     return all_summary
 
 
 if __name__ == "__main__":
-    run_comprehensive_benchmark()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="MLP vs PINN benchmark on Super Mario World WRAM telemetry.")
+    parser.add_argument("--dataset-path", default="data/raw/smw_gameplay_dataset.npz")
+    parser.add_argument("--epochs", type=int, default=35)
+    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--experiment-name", default="benchmark_mlp_vs_pinn")
+    parser.add_argument("--log-dir", default="runs")
+    parser.add_argument("--no-tensorboard", action="store_true", help="Disable TensorBoard, keep JSONL logs.")
+    parser.add_argument("--wandb", action="store_true", help="Enable wandb mirroring (requires wandb install).")
+    parser.add_argument(
+        "--non-deterministic",
+        action="store_true",
+        help="Disable deterministic cuDNN (faster, not bit-reproducible).",
+    )
+    args = parser.parse_args()
+
+    run_comprehensive_benchmark(
+        dataset_path=args.dataset_path,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        seed=args.seed,
+        output_dir=args.output_dir,
+        experiment_name=args.experiment_name,
+        log_dir=args.log_dir,
+        use_tensorboard=not args.no_tensorboard,
+        use_wandb=args.wandb,
+        deterministic=not args.non_deterministic,
+    )

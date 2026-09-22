@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader, TensorDataset
 sys.path.insert(0, os.path.abspath("."))
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
+from src.utils.seed import set_global_seed
 
 
 def train_multi_entity_model(
@@ -49,7 +50,7 @@ def train_multi_entity_model(
     print(f"Active hazard transitions: {int(active_mask.sum())} / {n_samples} ({100.0*active_mask.mean():.1f}%)")
 
     # Train / Test split (80 / 20)
-    np.random.seed(42)
+    set_global_seed(42)
     indices = np.arange(n_samples)
     np.random.shuffle(indices)
     split = int(0.8 * n_samples)

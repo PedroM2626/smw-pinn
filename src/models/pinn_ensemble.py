@@ -23,6 +23,7 @@ import torch.nn as nn
 sys.path.insert(0, os.path.abspath("."))
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.environment.dataset_loader import load_and_preprocess_data, create_dataloaders
+from src.utils.seed import set_global_seed
 
 
 class DeepPINNEnsemble(nn.Module):
@@ -118,8 +119,7 @@ def train_pinn_ensemble(
 
     for m_idx, member in enumerate(ensemble.members):
         seed = 42 + m_idx * 17
-        torch.manual_seed(seed)
-        np.random.seed(seed)
+        set_global_seed(seed)
 
         data = load_and_preprocess_data(seed=seed)
         train_loader, val_loader, _ = create_dataloaders(data, batch_size=batch_size)

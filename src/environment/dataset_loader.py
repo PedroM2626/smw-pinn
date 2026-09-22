@@ -8,6 +8,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
+from src.utils.seed import set_global_seed
 
 
 class SMWTransitionDataset(Dataset):
@@ -108,7 +109,7 @@ def load_and_preprocess_data(
 
     # 2. Episodic splitting to preserve contiguous temporal trajectory dynamics
     unique_eps = np.unique(episodes)
-    np.random.seed(seed)
+    set_global_seed(seed)
     shuffled_eps = np.random.permutation(unique_eps)
 
     n_eps = len(shuffled_eps)

@@ -4,7 +4,7 @@ Unified training and optimization engine for all benchmark models:
 Statistical MLP, Temporal LSTM, Soft PINN, and Hard Residual PINN.
 """
 
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 import time
 import os
 import torch
@@ -154,6 +154,7 @@ class DynamicsTrainer:
         epochs: int = 50,
         patience: int = 10,
         verbose: bool = True,
+        experiment: Optional[Any] = None,
     ) -> Dict[str, List[float]]:
         history = {
             "train_loss": [],
@@ -178,6 +179,21 @@ class DynamicsTrainer:
             history["train_kin"].append(train_metrics["loss_kinematics"])
             history["val_loss"].append(val_metrics["val_loss_data"])
             history["val_kin"].append(val_metrics["val_loss_kinematics"])
+
+            if experiment is not None:
+                try:
+                    experiment.log_metrics(
+                        {
+                            f"{self.model_type}/train_loss": train_metrics["loss_total"],
+                            f"{self.model_type}/train_kin": train_metrics["loss_kinematics"],
+                            f"{self.model_type}/val_loss": val_metrics["val_loss_data"],
+                            f"{self.model_type}/val_kin": val_metrics["val_loss_kinematics"],
+                            f"{self.model_type}/lr": self.optimizer.param_groups[0]["lr"],
+                        },
+                        step=epoch,
+                    )
+                except Exception:
+                    pass
 
             if val_total < best_val_loss:
                 best_val_loss = val_total

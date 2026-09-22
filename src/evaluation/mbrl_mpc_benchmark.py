@@ -24,6 +24,7 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.planning.mpc_planner import ModelPredictiveController, TrajectoryObjective
+from src.utils.seed import set_global_seed
 
 
 def convert_action_vector_to_dict(action_vec: np.ndarray) -> Dict[str, bool]:
@@ -150,7 +151,7 @@ def run_random_baseline(
     seed: int = 42,
 ) -> Dict:
     """Executes a stochastic exploration baseline (Random Actions)."""
-    np.random.seed(seed)
+    set_global_seed(seed)
     emu.load_state(initial_savestate)
 
     trajectory_x = []

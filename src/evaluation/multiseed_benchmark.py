@@ -26,6 +26,7 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.training.trainer import DynamicsTrainer
+from src.utils.seed import set_global_seed
 
 
 def run_multiseed_benchmark(
@@ -71,8 +72,7 @@ def run_multiseed_benchmark(
 
     for seed_idx, seed in enumerate(seeds, 1):
         print(f"\n>>> [Seed {seed_idx}/{len(seeds)}: seed={seed}] Starting run...")
-        torch.manual_seed(seed)
-        np.random.seed(seed)
+        set_global_seed(seed)
 
         data_dict = load_and_preprocess_data(dataset_path=dataset_path, seed=seed)
         train_loader, val_loader, test_loader = create_dataloaders(data_dict, batch_size=batch_size)

@@ -18,6 +18,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.seed import set_global_seed
 
 
 def extract_12d_vector(state_dict: dict) -> np.ndarray:
@@ -110,7 +111,7 @@ def record_multi_entity_dataset(
         for _ in range(5):
             emu.step_frame()
 
-        np.random.seed(2000 + ep)
+        set_global_seed(2000 + ep)
 
         curr_pattern = 0
         pattern_duration = np.random.randint(10, 45)

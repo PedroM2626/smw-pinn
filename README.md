@@ -1100,15 +1100,35 @@ c:\Users\Acer\Downloads\mworld-experiment\
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt
+# CUDA 12.1 build (RTX 4070 reference hardware):
+pip install --upgrade pip
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
+# CPU-only fallback:
+# pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# Editable install (enables `from src...` imports without sys.path hacks):
+pip install -e ".[dev]"
+# Large binaries/datasets are versioned via Git-LFS:
+git lfs install
+git lfs pull
 ```
+
+> **Determinism:** all entry points seed Python/NumPy/PyTorch via `src/utils/seed.py:set_global_seed(seed, deterministic=True)` (cuDNN deterministic, `PYTHONHASHSEED` fixed). Pass `--non-deterministic` only when benchmarking raw throughput.
 
 ### 11.3 Running Automated Unit Tests
 ```bash
 python -m pytest tests/ -v
 ```
 
-### 11.4 Reproducing Benchmarks & MBRL Evaluations
+### 11.4 Experiment Tracking (TensorBoard / JSONL)
+Training scripts log per-epoch metrics to `runs/<experiment>_<timestamp>/` (`metrics.jsonl` + `hparams.json` + TensorBoard events) via `src/utils/experiment.py:ExperimentLogger`:
+```bash
+python src/training/benchmark_experiment.py --experiment-name benchmark_mlp_vs_pinn
+tensorboard --logdir runs
+# Disable TensorBoard (keep JSONL): --no-tensorboard
+# Mirror to wandb (requires pip install -e ".[wandb]"): --wandb
+```
+
+### 11.5 Reproducing Benchmarks & MBRL Evaluations
 ```bash
 # 1. Main comparative benchmark across all 4 architectures (single-seed):
 python src/training/benchmark_experiment.py

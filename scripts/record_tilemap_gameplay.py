@@ -15,6 +15,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.seed import set_global_seed
 
 
 def extract_vector(state_dict: dict) -> np.ndarray:
@@ -102,7 +103,7 @@ def record_tilemap_dataset(
         for _ in range(5):
             emu.step_frame()
 
-        np.random.seed(3000 + ep)
+        set_global_seed(3000 + ep)
         curr_pattern = 0
         pattern_duration = np.random.randint(15, 60)
         pattern_timer = 0

@@ -10,23 +10,25 @@ venv/
 ENV/
 
 # PyTorch & Machine Learning
-*.pt
-*.pth
-*.onnx
+# NOTA: checkpoints/resultados versionados via Git-LFS (.gitattributes)
+# nao sao ignorados aqui de proposito para preservar reprodutibilidade.
 runs/
 events.out.tfevents.*
 wandb/
+lightning_logs/
+logs/
+tensorboard_logs/
+mlruns/
 
-# Data & ROMs
-data/raw/*.sfc
-data/raw/*.smc
-data/raw/*.zip
-data/raw/*.bk2
-data/raw/*.state
-*.state
+# Data, ROMs & Emulator binaries
+# Datasets (.npz), savestates (.state/.bk2), checkpoints (.pt/.pth),
+# videos (.mp4/.gif) e o nucleo do emulador (.dll/.zip) sao versionados
+# via Git-LFS — ver .gitattributes. Nao ignora-los aqui.
+# ROM comercial: prover o proprio dump (SHA-1 no README); o arquivo
+# historico permanece rastreado via LFS, novos dumps locais ficam fora do git.
 roms/
-src/environment/bin/*.dll
-src/environment/bin/*.zip
+*.sfc
+*.smc
 
 # Jupyter & IDE
 .ipynb_checkpoints

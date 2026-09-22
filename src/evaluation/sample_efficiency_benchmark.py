@@ -29,6 +29,7 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.training.trainer import DynamicsTrainer
+from src.utils.seed import set_global_seed
 
 
 def run_sample_efficiency_study(
@@ -42,8 +43,7 @@ def run_sample_efficiency_study(
     print("  SAMPLE EFFICIENCY STUDY (DATA PARETO FRONTIER BENCHMARK)          ")
     print("====================================================================")
 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_dict = load_and_preprocess_data(dataset_path=dataset_path, seed=seed)

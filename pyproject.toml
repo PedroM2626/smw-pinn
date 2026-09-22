@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,61 @@ version = "0.1.0"
 description = "Physics-Informed Neural Networks vs Statistical Models in Super Mario World"
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Pedro Morato Lahoz" }]
+keywords = ["physics-informed-neural-networks", "model-based-rl", "world-models", "super-mario-world", "snes"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "torch>=2.5.1,<2.7",
+  "torchvision>=0.20.1,<0.22",
+  "numpy>=1.24.0,<2.1",
+  "scipy>=1.10.0",
+  "matplotlib>=3.7.0",
+  "seaborn>=0.12.0",
+  "pyyaml>=6.0",
+  "tqdm>=4.66.0",
+  "pillow>=10.0.0",
+  "imageio>=2.31.0",
+  "imageio-ffmpeg>=0.4.9",
+  "tensorboard>=2.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "ruff>=0.4.0",
+]
+wandb = [
+  "wandb>=0.17.0",
+]
+all = [
+  "pytest>=7.0.0",
+  "ruff>=0.4.0",
+  "wandb>=0.17.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/PedroM2626/smw-pinn"
+Repository = "https://github.com/PedroM2626/smw-pinn"
+Issues = "https://github.com/PedroM2626/smw-pinn/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]

@@ -1,10 +1,33 @@
 # Super Mario World PINN vs. Statistical ML Dependencies
 # Compatible with Python >= 3.10 and CUDA 12.1+
+# Hardware reference: NVIDIA GeForce RTX 4070 Laptop GPU (PyTorch 2.5.1 + CUDA 12.1)
+#
+# Instalacao reprodutivel (CUDA 12.1):
+#   pip install --upgrade pip
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
+#
+# Instalacao CPU-only (fallback):
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-torch>=2.0.0
-torchvision>=0.15.0
-numpy>=1.24.0
+# --- Deep learning (CUDA 12.1 build; ver README) ---
+torch>=2.5.1,<2.7
+torchvision>=0.20.1,<0.22
+
+# --- Scientific stack ---
+numpy>=1.24.0,<2.1
 scipy>=1.10.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
+pyyaml>=6.0
+tqdm>=4.66.0
+pillow>=10.0.0
+
+# --- Video / animation rendering (src/evaluation/render_level_clearance_video.py) ---
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+
+# --- Experiment tracking (TensorBoard; wandb e opcional, ver pyproject [project.optional-dependencies]) ---
+tensorboard>=2.15.0
+
+# --- Testing ---
 pytest>=7.0.0

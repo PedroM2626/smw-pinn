@@ -12,6 +12,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.seed import set_global_seed
 
 
 def extract_vector(state_dict: dict) -> np.ndarray:
@@ -103,7 +104,7 @@ def record_interactive_trajectories(
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        np.random.seed(100 + ep)
+        set_global_seed(100 + ep)
 
         curr_pattern = 0
         pattern_duration = np.random.randint(15, 60)
