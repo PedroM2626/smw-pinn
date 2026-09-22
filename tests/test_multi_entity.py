@@ -4,8 +4,8 @@ Unit tests verifying Multi-Entity 12D PINN dynamics, analytical relative kinemat
 consistency, and vectorized simulation collision handling.
 """
 
-import pytest
 import torch
+
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 

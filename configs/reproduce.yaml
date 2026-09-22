@@ -1,0 +1,17 @@
+# Fast CPU smoke test: `make reproduce`. Validates the pipeline end-to-end
+# without GPUs or long training.
+seed: 42
+deterministic: true
+dataset_path: "data/raw/smw_gameplay_dataset.npz"
+batch_size: 256
+epochs: 2
+patience: 2
+learning_rate: 0.001
+weight_decay: 0.0001
+output_dir: "results_smoke"
+experiment_name: "benchmark_smoke"
+log_dir: "runs"
+rollout_horizon: 30
+num_rollout_starts: 3
+matched_baseline: true
+per_variable_metrics: true

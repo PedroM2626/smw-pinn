@@ -5,6 +5,7 @@ for discrete dynamical systems modeled from Super Mario World.
 """
 
 from typing import Dict, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

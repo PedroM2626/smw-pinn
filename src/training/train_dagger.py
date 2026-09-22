@@ -10,15 +10,12 @@ the live CEM MPC oracle on the exact state distribution induced by the learned p
 
 import json
 import os
-import sys
-import time
-from typing import Dict, List, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics

@@ -4,13 +4,13 @@ Automated unit tests for neural architectures:
 MLP, LSTM, Soft PINN, and Hard-Residual PINN.
 """
 
-import pytest
 import torch
+
 from src.models import (
-    StatisticalMLPDynamics,
-    StatisticalLSTMDynamics,
-    SoftPINNDynamics,
     HardResidualPINNDynamics,
+    SoftPINNDynamics,
+    StatisticalLSTMDynamics,
+    StatisticalMLPDynamics,
 )
 
 

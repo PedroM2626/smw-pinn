@@ -1,0 +1,8 @@
+# Sample-efficiency Pareto study.
+dataset_path: "data/raw/smw_gameplay_dataset.npz"
+seed: 42
+sample_sizes: [200, 500, 1000, 2500, 5000]
+epochs_per_run: 25
+output_dir: "results"
+rollout_horizon: 60
+num_rollout_starts: 5

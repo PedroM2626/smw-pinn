@@ -11,15 +11,12 @@ Features:
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List
+
 import imageio
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
-
-sys.path.insert(0, os.path.abspath("."))
 
 
 def render_dynamic_telemetry_video(

@@ -8,9 +8,11 @@ with joint analytical kinematic consistency:
 Guarantees 0.0% kinematic violation for both player and relative hazard displacement.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
+
 import torch
 import torch.nn as nn
+
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 
 

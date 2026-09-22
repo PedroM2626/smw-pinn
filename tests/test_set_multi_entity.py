@@ -9,6 +9,7 @@ Unit tests for SetMultiEntityPINNDynamics architecture:
 
 import pytest
 import torch
+
 from src.models.pinn_set_multi_entity import SetMultiEntityPINNDynamics
 
 

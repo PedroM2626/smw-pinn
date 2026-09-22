@@ -11,10 +11,11 @@ Guarantees 0.0% kinematic violation across all dynamic entities simultaneously,
 independent of entity slot ordering or number of active sprites.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 
 

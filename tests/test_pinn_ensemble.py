@@ -3,8 +3,8 @@ test_pinn_ensemble.py
 Unit tests for DeepPINNEnsemble epistemic uncertainty quantification and shape verification.
 """
 
-import pytest
 import torch
+
 from src.models.pinn_ensemble import DeepPINNEnsemble
 
 

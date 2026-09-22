@@ -36,6 +36,12 @@ roms/
 .vscode/
 .idea/
 
+# Coverage & smoke-test artifacts (gerados por `make test-cov` / `make reproduce`)
+.coverage
+coverage.xml
+results_smoke*/
+runs_smoke*/
+
 # Distribution & Build
 dist/
 build/

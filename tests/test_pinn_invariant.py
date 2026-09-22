@@ -4,8 +4,8 @@ Unit tests verifying strict spatial translation equivariance and kinematic guara
 of TranslationInvariantPINNDynamics.
 """
 
-import pytest
 import torch
+
 from src.models.pinn_invariant import TranslationInvariantPINNDynamics
 
 

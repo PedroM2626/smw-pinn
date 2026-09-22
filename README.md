@@ -1220,6 +1220,26 @@ python src/evaluation/evaluate_full_level_clearance.py --controller ppo
 python src/evaluation/render_level_clearance_video.py
 ```
 
+### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
+
+```bash
+# Canonical install (imports `from src...`) + shortcuts:
+pip install -e ".[dev]"
+make test        # 77 unit tests
+make test-cov    # with coverage gate (baseline 30%)
+make lint        # ruff check src tests scripts
+make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
+make benchmark sample-efficiency multiseed
+```
+
+* **YAML configs (`configs/*.yaml`):** `benchmark.yaml`, `multiseed.yaml` (K=10 seeds), `sample_efficiency.yaml`, `reproduce.yaml`. Every benchmark accepts `--config`; explicit CLI flags override the file (`src/utils/config.py`).
+* **Deterministic loaders:** `create_dataloaders(..., seed=...)` uses an explicit seeded `torch.Generator` + `seed_worker`; episodic splits never duplicate validation episodes into test (`src/environment/dataset_loader.py`).
+* **Parameter parity:** `--matched-baseline` adds a compact ~10k-param MLP vs ~10k-param Hard PINN pair (`build_param_matched_mlp`, `MATCHED_HIDDEN_DIMS = [64, 64, 64]`).
+* **Per-variable metrics:** `benchmark_metrics.json` now also reports per-channel MSE/MAE/R² (`x, y, vx, vy`) and accuracy/F1 (`c_*`) plus `rollout_multistart` (mean ± std over N starts) — aggregate MSE is dominated by coordinate scale (e.g. 1-epoch smoke: Hard PINN `x`-MSE 0.14 vs MLP 106k).
+* **Stronger statistics:** multiseed defaults to K=10 seeds with paired t + Wilcoxon + Cohen's dz, evaluated on single-start *and* multi-start drift.
+* **Regression gate:** `tests/test_metrics_regression.py` fails CI if published numbers silently degrade (Hard MSE < 2.0, 0 kinematic violations, N=200 Hard beats N=5000 MLP).
+* **CI/Docker:** `.github/workflows/ci.yml` (ruff + pytest + coverage) and `Dockerfile` (CPU base, CUDA via build-arg).
+
 ---
 
 ## 12. Scientific Integrity Statement

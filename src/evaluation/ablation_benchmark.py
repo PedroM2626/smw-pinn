@@ -12,9 +12,9 @@ Generates:
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -22,7 +22,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.insert(0, os.path.abspath("."))
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.models.pinn_soft import SoftPINNDynamics
@@ -32,7 +31,9 @@ from src.planning.mpc_planner import (
     ModelPredictiveController,
     TrajectoryObjective,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 class UnclampedHardResidualPINNDynamics(HardResidualPINNDynamics):
     """Ablation model: exact kinematic position integration WITHOUT velocity saturation clamping."""
@@ -72,7 +73,7 @@ class UnclampedHardResidualPINNDynamics(HardResidualPINNDynamics):
 
 
 def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/smw_gameplay_dataset.npz") -> Dict:
-    print("\n--- ABLATION 1: PHYSICAL SATURATION CLAMPING ---")
+    logger.info("\n--- ABLATION 1: PHYSICAL SATURATION CLAMPING ---")
     data = np.load(dataset_path)
     states = data["states"]
     actions = data["actions"]
@@ -123,8 +124,8 @@ def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/sm
         clamped_mse = torch.mean((clamped_pred - test_targets) ** 2).item()
         clamped_max_vx = torch.max(torch.abs(clamped_pred[:, 2])).item()
 
-    print(f"Hard Residual PINN (Clamped):   MSE = {clamped_mse:.4f} | Max |vx| = {clamped_max_vx:.1f} subpx")
-    print(f"Hard Residual PINN (Unclamped): MSE = {unclamped_mse:.4f} | Max |vx| = {unclamped_max_vx:.1f} subpx")
+    logger.info(f"Hard Residual PINN (Clamped):   MSE = {clamped_mse:.4f} | Max |vx| = {clamped_max_vx:.1f} subpx")
+    logger.info(f"Hard Residual PINN (Unclamped): MSE = {unclamped_mse:.4f} | Max |vx| = {unclamped_max_vx:.1f} subpx")
 
     return {
         "clamped": {"test_mse": clamped_mse, "max_predicted_vx": clamped_max_vx},
@@ -133,7 +134,7 @@ def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/sm
 
 
 def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "data/raw/smw_gameplay_dataset.npz") -> Dict:
-    print("\n--- ABLATION 2: MULTI-STEP HORIZON DEGRADATION (H in 1..120) ---")
+    logger.info("\n--- ABLATION 2: MULTI-STEP HORIZON DEGRADATION (H in 1..120) ---")
     data = np.load(dataset_path)
     states = data["states"]
     actions = data["actions"]
@@ -218,7 +219,7 @@ def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "
             "drift_by_horizon": {h: float(np.mean(horizon_results[name][h])) for h in horizons},
             "mean_kinematic_violation_pct": float(kinematic_violations[name] / max(1, num_eval_rollouts)),
         }
-        print(f"{name:24s} | H=1: {final_horizon_metrics[name]['drift_by_horizon'][1]:6.2f} | "
+        logger.info(f"{name:24s} | H=1: {final_horizon_metrics[name]['drift_by_horizon'][1]:6.2f} | "
               f"H=30: {final_horizon_metrics[name]['drift_by_horizon'][30]:7.2f} | "
               f"H=120: {final_horizon_metrics[name]['drift_by_horizon'][120]:8.2f} | "
               f"Violations: {final_horizon_metrics[name]['mean_kinematic_violation_pct']:.1f}%")
@@ -227,7 +228,7 @@ def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "
 
 
 def run_mpc_sensitivity_ablation(device: torch.device) -> Dict:
-    print("\n--- ABLATION 3: CEM MPC CANDIDATE SENSITIVITY (N in 32..512) ---")
+    logger.info("\n--- ABLATION 3: CEM MPC CANDIDATE SENSITIVITY (N in 32..512) ---")
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
     if os.path.exists("results/checkpoints/pinn_multi_entity_best.pt"):
@@ -272,7 +273,7 @@ def run_mpc_sensitivity_ablation(device: torch.device) -> Dict:
             "throughput_fps": fps,
             "mean_planning_reward": mean_rew,
         }
-        print(f"Candidates N={N:3d} | Latency: {mean_ms:5.2f} ms | Throughput: {fps:5.1f} FPS | Reward: {mean_rew:6.1f}")
+        logger.info(f"Candidates N={N:3d} | Latency: {mean_ms:5.2f} ms | Throughput: {fps:5.1f} FPS | Reward: {mean_rew:6.1f}")
 
     return cem_results
 
@@ -328,18 +329,18 @@ def plot_ablation_results(horizon_data: Dict, cem_data: Dict, output_figure: str
     ax3.axhline(y=16.67, color="black", linestyle="--", alpha=0.6, label="Real-time 60 Hz Limit (16.7 ms)")
 
     lines = p1 + p2
-    labels = [l.get_label() for l in lines]
+    labels = [ln.get_label() for ln in lines]
     ax3.legend(lines, labels, loc="upper left")
 
     plt.tight_layout()
     plt.savefig(output_figure, dpi=300)
     plt.close()
-    print(f"\nAblation figure saved to: {output_figure}")
+    logger.info(f"\nAblation figure saved to: {output_figure}")
 
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    logger.info(f"Device: {device}")
 
     metrics = {}
     metrics["ablation_clamping"] = run_clamping_ablation(device)
@@ -353,7 +354,7 @@ def main():
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    print(f"Ablation metrics saved to: {metrics_path}")
+    logger.info(f"Ablation metrics saved to: {metrics_path}")
     plot_ablation_results(metrics["ablation_horizon_degradation"], metrics["ablation_cem_mpc"], figure_path)
 
 

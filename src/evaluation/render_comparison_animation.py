@@ -11,15 +11,13 @@ Outputs:
 - results/figures/model_comparison_trajectory_composite.png
 """
 
-import json
 import os
-import sys
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.dataset_loader import load_and_preprocess_data
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 

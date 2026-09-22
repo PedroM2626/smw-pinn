@@ -3,13 +3,13 @@ test_losses.py
 Rigorous unit tests for physical PINN loss functions.
 """
 
-import pytest
 import torch
+
 from src.losses.physics_losses import (
-    DiscreteKinematicsLoss,
-    VelocityBoundsLoss,
-    GroundContactConsistencyLoss,
     CompositePINNLoss,
+    DiscreteKinematicsLoss,
+    GroundContactConsistencyLoss,
+    VelocityBoundsLoss,
 )
 
 

@@ -4,14 +4,18 @@ Unified training and optimization engine for all benchmark models:
 Statistical MLP, Temporal LSTM, Soft PINN, and Hard Residual PINN.
 """
 
-from typing import Any, Callable, Dict, List, Optional
-import time
 import os
+import time
+from typing import Any, Dict, List, Optional
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from src.losses.physics_losses import CompositePINNLoss
 
+from src.losses.physics_losses import CompositePINNLoss
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 class DynamicsTrainer:
     """
@@ -203,7 +207,7 @@ class DynamicsTrainer:
                 patience_counter += 1
 
             if verbose and (epoch % 5 == 0 or epoch == 1 or epoch == epochs):
-                print(
+                logger.info(
                     f"Epoch {epoch:3d}/{epochs:3d} | "
                     f"Train Loss: {train_metrics['loss_total']:.4f} (Kin: {train_metrics['loss_kinematics']:.4f}) | "
                     f"Val Loss: {val_metrics['val_loss_data']:.4f} (Kin: {val_metrics['val_loss_kinematics']:.4f}) | "
@@ -212,7 +216,7 @@ class DynamicsTrainer:
 
             if patience_counter >= patience:
                 if verbose:
-                    print(f"Early stopping triggered at epoch {epoch}.")
+                    logger.info(f"Early stopping triggered at epoch {epoch}.")
                 break
 
         # Restore best model checkpoint
@@ -221,6 +225,6 @@ class DynamicsTrainer:
 
         elapsed = time.time() - t0
         if verbose:
-            print(f"Training completed in {elapsed:.2f}s. Best Val Loss: {best_val_loss:.4f}")
+            logger.info(f"Training completed in {elapsed:.2f}s. Best Val Loss: {best_val_loss:.4f}")
 
         return history

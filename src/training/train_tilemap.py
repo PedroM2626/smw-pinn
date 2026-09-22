@@ -7,16 +7,15 @@ against a terrain-blind baseline.
 
 import json
 import os
-import sys
 import time
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.insert(0, os.path.abspath("."))
-from src.models.tilemap_pinn import TilemapPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.models.tilemap_pinn import TilemapPINNDynamics
 
 
 def train_tilemap_model(

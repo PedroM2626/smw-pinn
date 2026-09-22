@@ -1,0 +1,12 @@
+# Multi-seed statistical significance study. Default K=10 seeds (up from the
+# original K=5) for adequate power of paired tests.
+dataset_path: "data/raw/smw_gameplay_dataset.npz"
+batch_size: 128
+epochs: 30
+patience: 8
+learning_rate: 0.001
+seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+output_dir: "results"
+rollout_horizon: 120
+num_rollout_starts: 10
+per_variable_metrics: true

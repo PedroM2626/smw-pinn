@@ -9,7 +9,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from src.utils.seed import get_seed_info, seed_worker, set_global_seed
+from src.utils.seed import get_seed_info, seed_worker, set_global_seed  # noqa: E402
 
 
 def test_set_global_seed_returns_seed():

@@ -4,7 +4,6 @@ Unit tests for zero-shot cross-level control benchmark utilities.
 """
 
 import numpy as np
-import pytest
 import torch
 
 from src.evaluation.evaluate_cross_level_control import (
@@ -13,12 +12,10 @@ from src.evaluation.evaluate_cross_level_control import (
 )
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.planning.mpc_planner import (
-    ACTION_MATRIX,
-    ACTION_PRIMITIVES,
     ModelPredictiveController,
     TrajectoryObjective,
 )
-from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
+from src.training.distill_mpc_policy import DistilledActorPolicy
 
 
 def test_action_vector_to_dict():

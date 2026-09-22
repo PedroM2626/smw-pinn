@@ -4,10 +4,10 @@ Rigorous unit tests for GPU-vectorized PINN simulation environment and Dyna-PPO 
 """
 
 import numpy as np
-import pytest
 import torch
+
 from src.environment.pinn_sim_env import PINNVectorEnv
-from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
+from src.models import HardResidualPINNDynamics
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
 
 

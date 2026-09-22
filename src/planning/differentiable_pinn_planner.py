@@ -9,13 +9,13 @@ this planner directly computes the analytical gradient:
 by backpropagating loss signals through the exact kinematic equations of the Hard PINN.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.planning.mpc_planner import TrajectoryObjective
 
 

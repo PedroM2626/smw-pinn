@@ -6,14 +6,13 @@ Validates on an independent test split with early stopping and learning rate sch
 """
 
 import os
-import sys
 import time
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.insert(0, os.path.abspath("."))
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.utils.seed import set_global_seed

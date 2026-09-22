@@ -7,30 +7,53 @@ long-horizon stability (rollout drift), and generates comparative analytical fig
 
 import json
 import os
-import sys
-import time
-from typing import Dict, List
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.dataset_loader import (
     SMWSequenceDataset,
     create_dataloaders,
     load_and_preprocess_data,
 )
+from src.evaluation.per_variable_metrics import compute_per_variable_metrics
 from src.evaluation.rollout_evaluator import RolloutEvaluator
 from src.models import (
+    MATCHED_HIDDEN_DIMS,
     HardResidualPINNDynamics,
     SoftPINNDynamics,
     StatisticalLSTMDynamics,
     StatisticalMLPDynamics,
+    build_param_matched_mlp,
 )
 from src.training.trainer import DynamicsTrainer
+from src.utils.config import parse_args_with_config
 from src.utils.experiment import ExperimentLogger
+from src.utils.logging import get_logger
 from src.utils.seed import get_seed_info, set_global_seed
+
+log = get_logger(__name__)
+
+
+@torch.no_grad()
+def _collect_test_predictions(trainer, loader, device):
+    """Gather (predicted, target) next-states over a test loader (MLP or LSTM)."""
+    trainer.model.eval()
+    preds, targets = [], []
+    for batch in loader:
+        if "lstm" in trainer.model_type:
+            state_seq, action_seq, target_next = [b.to(device) for b in batch]
+            pred_seq, _ = trainer.model(state_seq, action_seq)
+            preds.append(pred_seq[:, -1, :].cpu())
+            targets.append(target_next.cpu())
+        else:
+            curr_state, curr_action, target_next = [b.to(device) for b in batch]
+            preds.append(trainer.model(curr_state, curr_action).cpu())
+            targets.append(target_next.cpu())
+    return torch.cat(preds), torch.cat(targets)
 
 
 def run_comprehensive_benchmark(
@@ -44,22 +67,29 @@ def run_comprehensive_benchmark(
     use_tensorboard: bool = True,
     use_wandb: bool = False,
     deterministic: bool = True,
+    patience: int = 8,
+    learning_rate: float = 1e-3,
+    weight_decay: float = 1e-4,
+    rollout_horizon: int = 120,
+    num_rollout_starts: int = 10,
+    matched_baseline: bool = False,
+    per_variable_metrics: bool = True,
 ):
-    print("====================================================================")
-    print("  ACADEMIC BENCHMARK: STATISTICAL ML VS. PINN ON SUPER MARIO WORLD  ")
-    print("====================================================================")
+    log.info("====================================================================")
+    log.info("  ACADEMIC BENCHMARK: STATISTICAL ML VS. PINN ON SUPER MARIO WORLD  ")
+    log.info("====================================================================")
 
     set_global_seed(seed, deterministic=deterministic)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Compute Device: {device}")
+    log.info(f"Compute Device: {device}")
     if device.type == "cuda":
-        print(f"Detected GPU: {torch.cuda.get_device_name(0)}")
+        log.info(f"Detected GPU: {torch.cuda.get_device_name(0)}")
 
     os.makedirs(output_dir, exist_ok=True)
     fig_dir = os.path.join(output_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
 
-    logger = ExperimentLogger(
+    experiment_logger = ExperimentLogger(
         experiment_name=experiment_name,
         log_dir=log_dir,
         hparams={
@@ -68,6 +98,12 @@ def run_comprehensive_benchmark(
             "batch_size": batch_size,
             "seed": seed,
             "deterministic": deterministic,
+            "patience": patience,
+            "learning_rate": learning_rate,
+            "weight_decay": weight_decay,
+            "rollout_horizon": rollout_horizon,
+            "num_rollout_starts": num_rollout_starts,
+            "matched_baseline": matched_baseline,
             "device": str(device),
             **get_seed_info(seed),
         },
@@ -76,11 +112,11 @@ def run_comprehensive_benchmark(
     )
 
     # 1. Load genuine RAM telemetry dataset
-    print("\n[1/5] Loading and partitioning genuine WRAM transitions...")
+    log.info("\n[1/5] Loading and partitioning genuine WRAM transitions...")
     data_dict = load_and_preprocess_data(dataset_path=dataset_path, seed=seed)
-    train_loader, val_loader, test_loader = create_dataloaders(data_dict, batch_size=batch_size)
+    train_loader, val_loader, test_loader = create_dataloaders(data_dict, batch_size=batch_size, seed=seed)
 
-    print(
+    log.info(
         f"Transitions - Train: {len(data_dict['train_states'])}, "
         f"Validation: {len(data_dict['val_states'])}, "
         f"Test: {len(data_dict['test_states'])}"
@@ -90,13 +126,22 @@ def run_comprehensive_benchmark(
     action_dim = data_dict["train_actions"].shape[1]
 
     # 2. Instantiate comparative neural architectures
-    print("\n[2/5] Initializing comparative neural architectures...")
+    log.info("\n[2/5] Initializing comparative neural architectures...")
     models = {
         "Statistical_MLP": StatisticalMLPDynamics(state_dim=state_dim, action_dim=action_dim),
         "Statistical_LSTM": StatisticalLSTMDynamics(state_dim=state_dim, action_dim=action_dim),
         "Soft_PINN": SoftPINNDynamics(state_dim=state_dim, action_dim=action_dim),
         "Hard_Residual_PINN": HardResidualPINNDynamics(state_dim=state_dim, action_dim=action_dim),
     }
+    if matched_baseline:
+        # Parameter-parity ablation: compact ~10k-param pair (MLP vs Hard PINN).
+        models["Statistical_MLP_matched"] = build_param_matched_mlp(
+            state_dim=state_dim, action_dim=action_dim
+        )
+        models["Hard_Residual_PINN_compact"] = HardResidualPINNDynamics(
+            state_dim=state_dim, action_dim=action_dim, hidden_dims=list(MATCHED_HIDDEN_DIMS)
+        )
+        log.info("Parameter-matched compact baselines enabled (~10k params each).")
 
     trainers: Dict[str, DynamicsTrainer] = {}
     histories: Dict[str, dict] = {}
@@ -124,12 +169,16 @@ def run_comprehensive_benchmark(
         seq_len=10,
     )
 
-    train_seq_loader = torch.utils.data.DataLoader(train_seq_ds, batch_size=batch_size, shuffle=True)
+    seq_gen = torch.Generator()
+    seq_gen.manual_seed(seed)
+    train_seq_loader = torch.utils.data.DataLoader(
+        train_seq_ds, batch_size=batch_size, shuffle=True, generator=seq_gen
+    )
     val_seq_loader = torch.utils.data.DataLoader(val_seq_ds, batch_size=batch_size, shuffle=False)
     test_seq_loader = torch.utils.data.DataLoader(test_seq_ds, batch_size=batch_size, shuffle=False)
 
     # 3. Comparative Training Loop
-    print("\n[3/5] Training models under unified experimental protocol...")
+    log.info("\n[3/5] Training models under unified experimental protocol...")
     for name, model in models.items():
         if "lstm" in name.lower():
             m_type = "lstm"
@@ -144,7 +193,8 @@ def run_comprehensive_benchmark(
             model=model,
             model_type=m_type,
             device=device,
-            learning_rate=1e-3,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay,
             save_dir=os.path.join(output_dir, "checkpoints"),
         )
         trainers[name] = trainer
@@ -156,15 +206,16 @@ def run_comprehensive_benchmark(
             train_loader=cur_train_loader,
             val_loader=cur_val_loader,
             epochs=epochs,
-            patience=8,
+            patience=patience,
             verbose=True,
-            experiment=logger,
+            experiment=experiment_logger,
         )
         histories[name] = hist
 
     # 4. Single-Step Accuracy Evaluation on Independent Test Split
-    print("\n[4/5] Evaluating single-step accuracy on test split...")
+    log.info("\n[4/5] Evaluating single-step accuracy on test split...")
     single_step_results = {}
+    per_variable_results = {}
     for name, trainer in trainers.items():
         cur_test_loader = test_seq_loader if "lstm" in name.lower() else test_loader
         eval_metrics = trainer.evaluate(cur_test_loader)
@@ -172,26 +223,30 @@ def run_comprehensive_benchmark(
             "test_loss_data": eval_metrics["val_loss_data"],
             "test_kinematic_error": eval_metrics["val_loss_kinematics"],
         }
-        print(
+        if per_variable_metrics:
+            preds, targets = _collect_test_predictions(trainer, cur_test_loader, device)
+            per_variable_results[name] = compute_per_variable_metrics(preds, targets)
+        log.info(
             f"{name:20s} | Test MSE: {eval_metrics['val_loss_data']:.4f} | "
             f"Kinematic Residual: {eval_metrics['val_loss_kinematics']:.4f}"
         )
 
     # 5. Long-Horizon Multi-Step Autoregressive Rollout Evaluation
-    print("\n[5/5] Executing multi-step autoregressive rollouts (Drift Test)...")
+    log.info("\n[5/5] Executing multi-step autoregressive rollouts (Drift Test)...")
     evaluator = RolloutEvaluator(device=device)
 
-    # Select continuous 120-frame sequence (2 seconds at 60 FPS) from test split
+    # Select continuous rollout sequence (default 120 frames / 2s at 60 FPS) from test split
     test_states = data_dict["test_states"]
     test_actions = data_dict["test_actions"]
     test_next_states = data_dict["test_next_states"]
 
-    H = min(120, len(test_actions))
+    H = min(rollout_horizon, len(test_actions))
     init_state = test_states[0]
     action_seq = test_actions[:H]
     ground_truth = test_next_states[:H]
 
     rollout_metrics = {}
+    rollout_multistart = {}
     trajectories = {}
 
     for name, model in models.items():
@@ -209,8 +264,20 @@ def run_comprehensive_benchmark(
             "kinematic_violations": res["kinematic_violations"],
             "velocity_violations": res["velocity_violations"],
         }
+        multi = evaluator.evaluate_rollout_multistart(
+            model=model,
+            model_type=m_type,
+            states=test_states,
+            actions=test_actions,
+            next_states=test_next_states,
+            horizon=H,
+            num_starts=num_rollout_starts,
+        )
+        rollout_multistart[name] = {
+            k: v for k, v in multi.items() if k not in ("mean_drifts", "final_drifts")
+        }
         trajectories[name] = res["predicted_trajectory"]
-        print(
+        log.info(
             f"{name:20s} | Mean Drift: {res['mean_drift']:.2f} px | "
             f"Final Drift: {res['final_drift']:.2f} px | "
             f"Kinematic Violations: {res['kinematic_violations']:3d}/{H} | "
@@ -218,7 +285,7 @@ def run_comprehensive_benchmark(
         )
 
     # 6. Generate High-Resolution Figures
-    print("\nGenerating high-resolution comparative figures...")
+    log.info("\nGenerating high-resolution comparative figures...")
     sns.set_theme(style="whitegrid")
 
     # Figure 1: Validation Loss Convergence Curves
@@ -272,10 +339,24 @@ def run_comprehensive_benchmark(
     plt.savefig(os.path.join(fig_dir, "trajectory_2d_space.png"), dpi=300)
     plt.close()
 
-    # Save summary metrics to JSON
+    # Save summary metrics to JSON (legacy keys preserved for reproducibility)
     all_summary = {
         "single_step_results": single_step_results,
         "rollout_metrics": rollout_metrics,
+        "rollout_multistart": rollout_multistart,
+        "per_variable_metrics": per_variable_results,
+        "config": {
+            "dataset_path": dataset_path,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "seed": seed,
+            "patience": patience,
+            "learning_rate": learning_rate,
+            "weight_decay": weight_decay,
+            "rollout_horizon": H,
+            "num_rollout_starts": num_rollout_starts,
+            "matched_baseline": matched_baseline,
+        },
     }
     with open(os.path.join(output_dir, "benchmark_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(all_summary, f, indent=4)
@@ -283,7 +364,7 @@ def run_comprehensive_benchmark(
     # Mirror final per-model metrics into the experiment log (step 0 = summary row)
     try:
         for name in single_step_results:
-            logger.log_metrics(
+            experiment_logger.log_metrics(
                 {
                     f"{name}/final_test_mse": single_step_results[name]["test_loss_data"],
                     f"{name}/final_test_kin": single_step_results[name]["test_kinematic_error"],
@@ -293,10 +374,10 @@ def run_comprehensive_benchmark(
                 step=epochs,
             )
     finally:
-        logger.close()
+        experiment_logger.close()
 
-    print(f"\nExperiment logs: {logger.dir} (tensorboard --logdir {log_dir})")
-    print("\nMain benchmark completed successfully!")
+    log.info(f"\nExperiment logs: {experiment_logger.dir} (tensorboard --logdir {log_dir})")
+    log.info("\nMain benchmark completed successfully!")
     return all_summary
 
 
@@ -304,6 +385,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="MLP vs PINN benchmark on Super Mario World WRAM telemetry.")
+    parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
     parser.add_argument("--dataset-path", default="data/raw/smw_gameplay_dataset.npz")
     parser.add_argument("--epochs", type=int, default=35)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -311,6 +393,13 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default="results")
     parser.add_argument("--experiment-name", default="benchmark_mlp_vs_pinn")
     parser.add_argument("--log-dir", default="runs")
+    parser.add_argument("--patience", type=int, default=8)
+    parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--rollout-horizon", type=int, default=120)
+    parser.add_argument("--num-rollout-starts", type=int, default=10)
+    parser.add_argument("--matched-baseline", action="store_true")
+    parser.add_argument("--no-per-variable-metrics", action="store_true")
     parser.add_argument("--no-tensorboard", action="store_true", help="Disable TensorBoard, keep JSONL logs.")
     parser.add_argument("--wandb", action="store_true", help="Enable wandb mirroring (requires wandb install).")
     parser.add_argument(
@@ -318,7 +407,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Disable deterministic cuDNN (faster, not bit-reproducible).",
     )
-    args = parser.parse_args()
+    args = parse_args_with_config(parser)
 
     run_comprehensive_benchmark(
         dataset_path=args.dataset_path,
@@ -331,4 +420,11 @@ if __name__ == "__main__":
         use_tensorboard=not args.no_tensorboard,
         use_wandb=args.wandb,
         deterministic=not args.non_deterministic,
+        patience=args.patience,
+        learning_rate=args.learning_rate,
+        weight_decay=args.weight_decay,
+        rollout_horizon=args.rollout_horizon,
+        num_rollout_starts=args.num_rollout_starts,
+        matched_baseline=args.matched_baseline,
+        per_variable_metrics=not args.no_per_variable_metrics,
     )

@@ -5,8 +5,8 @@ and the Tilemap-Conditioned Physics-Informed Neural Network (TilemapPINNDynamics
 """
 
 import numpy as np
-import pytest
 import torch
+
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models.tilemap_pinn import TilemapEncoder, TilemapPINNDynamics
 

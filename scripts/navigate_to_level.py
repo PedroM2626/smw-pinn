@@ -6,9 +6,8 @@ entra na primeira fase (Yoshi's Island 1) e salva o estado de início da fase (s
 
 import os
 import sys
-import time
 
-sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
 
 

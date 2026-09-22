@@ -3,7 +3,6 @@ test_unified_multimodal.py
 Unit tests for the Unified Multimodal PINN architecture.
 """
 
-import pytest
 import torch
 
 from src.models.pinn_unified_multimodal import UnifiedMultimodalPINNDynamics

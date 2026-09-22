@@ -4,7 +4,6 @@ Unit tests for the Differentiable PINN Planner.
 """
 
 import numpy as np
-import pytest
 import torch
 
 from src.models.pinn_hard_residual import HardResidualPINNDynamics

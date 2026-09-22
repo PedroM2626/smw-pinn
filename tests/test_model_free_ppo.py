@@ -4,11 +4,13 @@ Unit tests for SnesSingleEnv environment wrapper and Model-Free PPO iteration.
 """
 
 import os
-import pytest
+
 import numpy as np
+import pytest
 import torch
-from src.training.model_free_ppo import SnesSingleEnv
+
 from src.training.dyna_ppo import ActorCritic
+from src.training.model_free_ppo import SnesSingleEnv
 
 
 def test_snes_single_env_step():

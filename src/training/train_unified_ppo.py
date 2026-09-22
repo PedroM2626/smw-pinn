@@ -7,9 +7,9 @@ hazard-aware real-time control (sub-millisecond latency) in place of online MPC.
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -17,11 +17,9 @@ import torch
 import torch.nn as nn
 from torch.distributions import Categorical
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
-from src.planning.mpc_planner import ACTION_MATRIX, ACTION_PRIMITIVES
 
 
 class UnifiedActorCritic(nn.Module):

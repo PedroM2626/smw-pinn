@@ -14,7 +14,8 @@ Maintains exact 0.0% analytical kinematic consistency:
 while grounding terrain contact flags (c_ground, c_left, etc.) in authentic level geometry.
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Tuple
+
 import torch
 import torch.nn as nn
 

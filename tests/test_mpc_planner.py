@@ -4,11 +4,10 @@ Unit tests for the GPU-vectorized Model Predictive Control (MPC) trajectory plan
 """
 
 import numpy as np
-import pytest
 import torch
-from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
+
+from src.models import HardResidualPINNDynamics
 from src.planning.mpc_planner import (
-    ACTION_MATRIX,
     ModelPredictiveController,
     TrajectoryObjective,
 )

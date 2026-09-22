@@ -16,7 +16,8 @@ Exact spatial equivariance is guaranteed by construction:
 ensuring zero-shot physics generalization across any level without spatial overfitting.
 """
 
-from typing import List, Optional
+from typing import List
+
 import torch
 import torch.nn as nn
 

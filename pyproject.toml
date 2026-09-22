@@ -35,15 +35,19 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=7.0.0",
+  "pytest-cov>=5.0.0",
   "ruff>=0.4.0",
+  "pyyaml>=6.0",
 ]
 wandb = [
   "wandb>=0.17.0",
 ]
 all = [
   "pytest>=7.0.0",
+  "pytest-cov>=5.0.0",
   "ruff>=0.4.0",
   "wandb>=0.17.0",
+  "pyyaml>=6.0",
 ]
 
 [project.urls]
@@ -52,12 +56,33 @@ Repository = "https://github.com/PedroM2626/smw-pinn"
 Issues = "https://github.com/PedroM2626/smw-pinn/issues"
 
 [tool.setuptools.packages.find]
+# src-layout: instala o pacote top-level `src` (imports `from src.xxx ...`).
+# Execucao canonica: `pip install -e .` + `python -m src.training.benchmark_experiment`.
+# Os scripts em scripts/ usam bootstrap de repo-root; src/ nao faz sys.path hack.
 where = ["."]
 include = ["src*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+# Coverage is opt-in: `make test-cov` / CI pass --cov explicitly so plain
+# `pytest` keeps working without the pytest-cov plugin installed.
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+# Baseline 2026-09: 30%. Hardware/emulator/MBRL-closed-loop modules need a ROM
+# + GPU and are exercised by `make reproduce`, not unit tests. Raise as
+# hardware-independent coverage grows.
+fail_under = 30
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]
 
 [tool.ruff]
 target-version = "py310"

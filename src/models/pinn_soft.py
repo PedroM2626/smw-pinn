@@ -6,8 +6,10 @@ optimized jointly via supervised empirical loss and physical residual losses.
 """
 
 from typing import List
+
 import torch
 import torch.nn as nn
+
 from src.models.statistical_mlp import StatisticalMLPDynamics
 
 

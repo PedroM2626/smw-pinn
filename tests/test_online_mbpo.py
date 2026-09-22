@@ -3,8 +3,8 @@ test_online_mbpo.py
 Unit tests for RealReplayBuffer and online MBPO components.
 """
 
-import pytest
 import numpy as np
+
 from src.training.online_mbpo import RealReplayBuffer
 
 

@@ -1,13 +1,14 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
 
 
 def main():
-    emu = SnesLibretroEmulator(r"src\environment\bin\snes9x_libretro.dll")
-    emu.load_rom(r"data\raw\smw_usa.sfc")
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    emu = SnesLibretroEmulator(os.path.join(repo_root, "src", "environment", "bin", "snes9x_libretro.dll"))
+    emu.load_rom(os.path.join(repo_root, "data", "raw", "smw_usa.sfc"))
 
     print("Avançando para frame 420 (Modo de jogo 0x07)...")
     for _ in range(420):

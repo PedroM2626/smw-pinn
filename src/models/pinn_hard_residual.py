@@ -8,6 +8,7 @@ The neural network only parameterizes non-linear accelerations, friction, and co
 """
 
 from typing import List
+
 import torch
 import torch.nn as nn
 

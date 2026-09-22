@@ -6,13 +6,12 @@ Measures survival, total progress in pixels, Rex evasion success, and inference 
 
 import json
 import os
-import sys
 import time
 from typing import Dict
+
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
 

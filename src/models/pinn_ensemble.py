@@ -12,17 +12,15 @@ Implements:
 4. Out-of-Distribution (OOD) dynamics detection to eliminate model exploitation.
 """
 
-from typing import Dict, List, Optional, Tuple
 import os
-import sys
 import time
-import numpy as np
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, os.path.abspath("."))
+from src.environment.dataset_loader import create_dataloaders, load_and_preprocess_data
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
-from src.environment.dataset_loader import load_and_preprocess_data, create_dataloaders
 from src.utils.seed import set_global_seed
 
 
@@ -122,7 +120,7 @@ def train_pinn_ensemble(
         set_global_seed(seed)
 
         data = load_and_preprocess_data(seed=seed)
-        train_loader, val_loader, _ = create_dataloaders(data, batch_size=batch_size)
+        train_loader, val_loader, _ = create_dataloaders(data, batch_size=batch_size, seed=seed)
 
         optimizer = torch.optim.AdamW(member.parameters(), lr=lr, weight_decay=1e-4)
 

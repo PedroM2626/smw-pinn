@@ -5,11 +5,11 @@ Evaluates action sequences using a learned World Model dynamics function f(s, a)
 Supports GPU-vectorized Random Shooting and Cross-Entropy Method (CEM).
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
-
 
 # Discrete action primitives for Super Mario World
 # Action vector format: [B (jump), Y (run), UP, DOWN, LEFT, RIGHT]

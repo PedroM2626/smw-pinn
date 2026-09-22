@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+runs/
+results/checkpoints*/
+results/figures/*.mp4
+results/figures/*.gif
+data/raw/*.sfc
+data/raw/*.state
+*.egg-info/

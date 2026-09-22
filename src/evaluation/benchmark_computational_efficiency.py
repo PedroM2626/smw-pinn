@@ -14,25 +14,24 @@ Rigorously profiles all evaluated World Model architectures across:
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
+
 import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, os.path.abspath("."))
 from src.models import (
-    StatisticalMLPDynamics,
-    StatisticalLSTMDynamics,
-    SoftPINNDynamics,
-    HardResidualPINNDynamics,
     DeepPINNEnsemble,
+    HardResidualPINNDynamics,
     MultiEntityPINNDynamics,
+    SoftPINNDynamics,
+    StatisticalLSTMDynamics,
+    StatisticalMLPDynamics,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -41,8 +40,6 @@ def count_parameters(model: nn.Module) -> int:
 def estimate_flops(model: nn.Module, state_dim: int = 8, action_dim: int = 6) -> int:
     """Estimates theoretical multiply-accumulate FLOPs for 1 forward pass (batch size 1)."""
     flops = 0
-    dummy_s = torch.zeros(1, state_dim)
-    dummy_a = torch.zeros(1, action_dim)
 
     # For standard feedforward linear modules: 2 * in_features * out_features
     for m in model.modules():
@@ -99,14 +96,14 @@ def benchmark_latency(
 
 
 def run_profiling_suite(output_dir: str = "results") -> Dict:
-    print("====================================================================")
-    print("  COMPUTATIONAL PROFILING & HARDWARE EFFICIENCY BENCHMARK           ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  COMPUTATIONAL PROFILING & HARDWARE EFFICIENCY BENCHMARK           ")
+    logger.info("====================================================================")
 
     os.makedirs(os.path.join(output_dir, "figures"), exist_ok=True)
     cuda_available = torch.cuda.is_available()
     gpu_name = torch.cuda.get_device_name(0) if cuda_available else "N/A"
-    print(f"Host System: Windows | CUDA Available: {cuda_available} ({gpu_name})")
+    logger.info(f"Host System: Windows | CUDA Available: {cuda_available} ({gpu_name})")
 
     models = {
         "Statistical MLP": (StatisticalMLPDynamics(state_dim=8, action_dim=6), 8),
@@ -119,9 +116,9 @@ def run_profiling_suite(output_dir: str = "results") -> Dict:
 
     metrics = {}
 
-    print("\n" + "=" * 95)
-    print(f"{'Model Architecture':<26} | {'Params':>8} | {'FLOPs':>10} | {'CPU-1 (us)':>11} | {'CUDA (us)':>10} | {'CUDA FPS (B=256)':>16}")
-    print("=" * 95)
+    logger.info("\n" + "=" * 95)
+    logger.info(f"{'Model Architecture':<26} | {'Params':>8} | {'FLOPs':>10} | {'CPU-1 (us)':>11} | {'CUDA (us)':>10} | {'CUDA FPS (B=256)':>16}")
+    logger.info("=" * 95)
 
     for name, (model, s_dim) in models.items():
         params = count_parameters(model)
@@ -157,11 +154,11 @@ def run_profiling_suite(output_dir: str = "results") -> Dict:
             "vram_allocated_mb": float(round(vram_mb, 2)),
         }
 
-        print(
+        logger.info(
             f"{name:<26} | {params:>8,d} | {flops:>10,d} | {cpu_lat_us:>11.1f} | {cuda_lat_us:>10.1f} | {int(cuda_fps_b256):>16,d}"
         )
 
-    print("=" * 95)
+    logger.info("=" * 95)
 
     # Save metrics
     metrics_path = os.path.join(output_dir, "computational_profiling_metrics.json")
@@ -202,8 +199,8 @@ def run_profiling_suite(output_dir: str = "results") -> Dict:
     plt.savefig(fig_path, dpi=300)
     plt.close()
 
-    print(f"Metrics saved to: {metrics_path}")
-    print(f"Figure saved to: {fig_path}")
+    logger.info(f"Metrics saved to: {metrics_path}")
+    logger.info(f"Figure saved to: {fig_path}")
     return metrics
 
 

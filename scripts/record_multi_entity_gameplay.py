@@ -14,9 +14,10 @@ Action Vector (6D):
 import os
 import sys
 import time
+
 import numpy as np
 
-sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.utils.seed import set_global_seed
 

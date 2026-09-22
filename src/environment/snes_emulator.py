@@ -5,9 +5,10 @@ Provides high-performance, headless emulation with direct frame-by-frame
 access to Super Mario World Working RAM (128 KB WRAM).
 """
 
-import os
 import ctypes
-from typing import Dict, List, Optional, Tuple
+import os
+from typing import Dict, List
+
 import numpy as np
 
 # Libretro API Constants (libretro.h)

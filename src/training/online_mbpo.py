@@ -13,19 +13,18 @@ Implements the complete active reinforcement learning cycle:
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, os.path.abspath("."))
-from src.environment.snes_emulator import SnesLibretroEmulator
 from src.environment.pinn_sim_env import PINNVectorEnv
-from src.models import HardResidualPINNDynamics, DeepPINNEnsemble
+from src.environment.snes_emulator import SnesLibretroEmulator
+from src.models import DeepPINNEnsemble, HardResidualPINNDynamics
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
 

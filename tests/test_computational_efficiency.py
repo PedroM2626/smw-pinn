@@ -3,13 +3,12 @@ test_computational_efficiency.py
 Unit tests for the hardware & computational efficiency profiling suite.
 """
 
-import pytest
 import torch
-import torch.nn as nn
+
 from src.evaluation.benchmark_computational_efficiency import (
+    benchmark_latency,
     count_parameters,
     estimate_flops,
-    benchmark_latency,
 )
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 

@@ -6,9 +6,10 @@ providing fast transitions for Dyna-style Model-Based Reinforcement Learning (Dy
 """
 
 from typing import Dict, Optional, Tuple
-import numpy as np
+
 import torch
 import torch.nn as nn
+
 from src.planning.mpc_planner import ACTION_MATRIX
 
 

@@ -5,6 +5,7 @@ to model inertia and latent accelerations purely from empirical observations.
 """
 
 from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
 

@@ -14,24 +14,22 @@ Verifies:
 
 import json
 import os
-import sys
-import time
-from typing import Dict, List, Tuple
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models import (
     HardResidualPINNDynamics,
-    TranslationInvariantPINNDynamics,
     StatisticalMLPDynamics,
+    TranslationInvariantPINNDynamics,
 )
-from src.planning.mpc_planner import ACTION_MATRIX
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def record_stage_b_transitions(
     emu: SnesLibretroEmulator,
@@ -104,12 +102,12 @@ def record_stage_b_transitions(
 
 
 def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
-    print("====================================================================")
-    print("  CROSS-STAGE ZERO-SHOT GENERALIZATION BENCHMARK (STAGE A -> STAGE B)")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  CROSS-STAGE ZERO-SHOT GENERALIZATION BENCHMARK (STAGE A -> STAGE B)")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Compute Device: {device}")
+    logger.info(f"Compute Device: {device}")
 
     core_path = "src/environment/bin/snes9x_libretro.dll"
     rom_path = "data/raw/smw_usa.sfc"
@@ -119,9 +117,9 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
     emu.load_rom(rom_path)
 
     # 1. Collect Authentic Stage B Telemetry
-    print("Collecting genuine interactive transitions from Stage B (Yoshi's House)...")
+    logger.info("Collecting genuine interactive transitions from Stage B (Yoshi's House)...")
     data_b = record_stage_b_transitions(emu, savestate_path=state_b_path, num_frames=800)
-    print(f"Collected {len(data_b['states'])} genuine Stage B transitions.")
+    logger.info(f"Collected {len(data_b['states'])} genuine Stage B transitions.")
     emu.close()
 
     s_b = torch.tensor(data_b["states"], dtype=torch.float32, device=device)
@@ -156,9 +154,9 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
     }
 
     results = {}
-    print("\n" + "=" * 80)
-    print(f"{'Model Architecture':<30} | {'Zero-Shot MSE':>14} | {'Kinematic Violation Rate':>26}")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info(f"{'Model Architecture':<30} | {'Zero-Shot MSE':>14} | {'Kinematic Violation Rate':>26}")
+    logger.info("=" * 80)
 
     # Single-step evaluation
     criterion = nn.MSELoss()
@@ -177,8 +175,8 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
                 "zero_shot_test_mse": round(mse, 4),
                 "kinematic_violation_pct": round(violations, 2),
             }
-            print(f"{name:<30} | {mse:>14.4f} | {violations:>25.1f}%")
-    print("=" * 80)
+            logger.info(f"{name:<30} | {mse:>14.4f} | {violations:>25.1f}%")
+    logger.info("=" * 80)
 
     # 3. Long-Horizon 120-Frame Rollout on Stage B
     horizon = 120
@@ -237,8 +235,8 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
     plt.savefig(fig_path, dpi=300)
     plt.close()
 
-    print(f"Cross-stage metrics saved to: {metrics_path}")
-    print(f"Cross-stage figure saved to: {fig_path}")
+    logger.info(f"Cross-stage metrics saved to: {metrics_path}")
+    logger.info(f"Cross-stage figure saved to: {fig_path}")
     return results
 
 

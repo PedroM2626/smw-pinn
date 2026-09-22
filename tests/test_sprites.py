@@ -5,8 +5,9 @@ and 12-dimensional extended state assembly.
 """
 
 import os
+
 import pytest
-import numpy as np
+
 from src.environment.snes_emulator import SnesLibretroEmulator
 
 

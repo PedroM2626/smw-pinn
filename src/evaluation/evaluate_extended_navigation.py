@@ -8,20 +8,18 @@ Targets surpassing 1,500+ pixels of continuous hardware progress.
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.planning.mpc_planner import (
-    ACTION_MATRIX,
     ModelPredictiveController,
     TrajectoryObjective,
 )

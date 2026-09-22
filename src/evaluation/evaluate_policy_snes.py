@@ -7,15 +7,14 @@ Executes directly in the headless Libretro Snes9x emulator core on stage Yoshi's
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic

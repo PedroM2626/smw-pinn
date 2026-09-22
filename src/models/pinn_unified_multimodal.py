@@ -13,12 +13,13 @@ Maintains exact analytical 0.0% kinematic consistency for all interacting entiti
     hat_Delta_X_{h, t+1} = Delta_X_{h, t} + (hat_vx_{h, t+1} - hat_vx_{m, t+1}) / 16.0
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
+
 import torch
 import torch.nn as nn
 
-from src.models.tilemap_pinn import TilemapEncoder
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.models.tilemap_pinn import TilemapEncoder
 
 
 class UnifiedMultimodalPINNDynamics(nn.Module):

@@ -7,15 +7,12 @@ directly on the real Libretro SNES console emulator with live Rex hazards.
 
 import json
 import os
-import sys
-import time
-from typing import Dict, List
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
@@ -53,8 +50,6 @@ def run_multi_entity_neural_policy(
     x_init = m_init["x"]
     survived = 0
 
-    prev_b = False
-
     for frame in range(max_frames):
         ext_s = emu.get_smw_extended_state()
         traj_x.append(ext_s["x"])
@@ -84,14 +79,11 @@ def run_multi_entity_neural_policy(
 
         action_vec = ACTION_MATRIX[action_idx].copy()
 
-        # Joypad trigger transition: if neural policy wants to jump (B=1) but B was held across landing,
-        # ensure trigger edge on WRAM latch
-        curr_b = bool(action_vec[0] > 0.5)
+        # Joypad trigger edge is handled emulator-side (WRAM latch $7E:0016).
         act_dict = action_vector_to_dict(action_vec)
 
         emu.set_input(act_dict)
         emu.step_frame()
-        prev_b = curr_b
 
     final_progress = float(traj_x[-1] - x_init) if traj_x else 0.0
     rex_evaded = final_progress > 200.0

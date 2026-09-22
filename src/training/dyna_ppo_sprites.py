@@ -8,17 +8,14 @@ Learns autonomous hazard evasion and leap timing end-to-end without hand-crafted
 
 import json
 import os
-import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
 import torch.nn as nn
-from torch.distributions import Categorical
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
@@ -198,7 +195,6 @@ def train_multi_entity_dyna_ppo(
                 ratio = logratio.exp()
 
                 with torch.no_grad():
-                    approx_kl = ((ratio - 1.0) - logratio).mean()
                     clipfracs += [((ratio - 1.0).abs() > 0.2).float().mean().item()]
 
                 mb_adv = b_adv[mb_inds]

@@ -5,6 +5,7 @@ Measures error accumulation (drift) against the ground-truth game trajectory acr
 """
 
 from typing import Dict, List
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -99,6 +100,79 @@ class RolloutEvaluator:
             "final_drift": float(euclidean_drift[-1]),
             "kinematic_violations": kin_violations,
             "velocity_violations": vel_violations,
+        }
+
+    @torch.no_grad()
+    def evaluate_rollout_multistart(
+        self,
+        model: nn.Module,
+        model_type: str,
+        states: np.ndarray,  # [N, state_dim] test states
+        actions: np.ndarray,  # [N, action_dim] test actions
+        next_states: np.ndarray,  # [N, state_dim] ground-truth next states
+        horizon: int = 120,
+        num_starts: int = 10,
+        stride: int | None = None,
+    ) -> Dict[str, object]:
+        """Multi-start open-loop rollout: average drift over spread start indices.
+
+        Single-start rollouts depend heavily on the chosen initial frame. This
+        samples ``num_starts`` evenly spaced starts and reports mean ± std of
+        mean/final drift plus violation rates, so comparisons carry uncertainty.
+
+        Returns:
+            dict with per-start lists (``mean_drifts``, ``final_drifts``,
+            ``kinematic_violation_rates``) and aggregates (``mean_drift_mean``,
+            ``mean_drift_std``, ``final_drift_mean``, ``final_drift_std``,
+            ``kinematic_violation_rate_mean``, ``velocity_violation_rate_mean``,
+            ``num_starts``, ``horizon``).
+        """
+        n = len(actions)
+        horizon = min(horizon, n - 1)
+        if horizon < 1:
+            raise ValueError(f"Need at least 2 transitions for rollout, got {n}")
+        num_starts = max(1, min(num_starts, n - horizon))
+        if stride is None:
+            stride = max(1, (n - horizon) // num_starts)
+        starts: List[int] = []
+        idx = 0
+        while len(starts) < num_starts and idx + horizon <= n:
+            starts.append(idx)
+            idx += stride
+        if len(starts) < num_starts:  # dataset shorter than the even grid
+            starts += [n - horizon] * (num_starts - len(starts))
+
+        mean_drifts: List[float] = []
+        final_drifts: List[float] = []
+        kin_rates: List[float] = []
+        vel_rates: List[float] = []
+        for s in starts:
+            res = self.evaluate_rollout(
+                model=model,
+                model_type=model_type,
+                initial_state=states[s],
+                action_sequence=actions[s : s + horizon],
+                ground_truth_states=next_states[s : s + horizon],
+            )
+            mean_drifts.append(res["mean_drift"])
+            final_drifts.append(res["final_drift"])
+            kin_rates.append(res["kinematic_violations"] / horizon)
+            vel_rates.append(res["velocity_violations"] / horizon)
+
+        return {
+            "starts": starts,
+            "horizon": horizon,
+            "num_starts": len(starts),
+            "mean_drifts": mean_drifts,
+            "final_drifts": final_drifts,
+            "kinematic_violation_rates": kin_rates,
+            "velocity_violation_rates": vel_rates,
+            "mean_drift_mean": float(np.mean(mean_drifts)),
+            "mean_drift_std": float(np.std(mean_drifts, ddof=1)) if len(mean_drifts) > 1 else 0.0,
+            "final_drift_mean": float(np.mean(final_drifts)),
+            "final_drift_std": float(np.std(final_drifts, ddof=1)) if len(final_drifts) > 1 else 0.0,
+            "kinematic_violation_rate_mean": float(np.mean(kin_rates)),
+            "velocity_violation_rate_mean": float(np.mean(vel_rates)),
         }
 
     def benchmark_all_models(

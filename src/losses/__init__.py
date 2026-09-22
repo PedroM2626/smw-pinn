@@ -1,8 +1,8 @@
 from src.losses.physics_losses import (
-    DiscreteKinematicsLoss,
-    VelocityBoundsLoss,
-    GroundContactConsistencyLoss,
     CompositePINNLoss,
+    DiscreteKinematicsLoss,
+    GroundContactConsistencyLoss,
+    VelocityBoundsLoss,
 )
 
 __all__ = [

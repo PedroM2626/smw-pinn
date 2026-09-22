@@ -5,16 +5,15 @@ Trains an Actor-Critic agent entirely within a learned World Model simulation en
 Achieves ultra-fast policy learning by leveraging in-GPU vectorized rollouts.
 """
 
-from typing import Dict, List, Optional, Tuple
 import os
-import sys
 import time
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions import Categorical
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 
@@ -321,9 +320,9 @@ def train_dyna_ppo_agents(
             print(f"Warning: World model checkpoint {ckpt_path} not found. Skipping.")
             continue
 
-        print(f"\n====================================================================")
+        print("\n====================================================================")
         print(f"  TRAINING DYNA-PPO POLICY IN WORLD MODEL: {model_name.upper()}")
-        print(f"====================================================================")
+        print("====================================================================")
 
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=True))
         model.eval()

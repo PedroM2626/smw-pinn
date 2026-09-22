@@ -13,26 +13,24 @@ Supports:
 import argparse
 import json
 import os
-import sys
 import time
-from typing import Dict, List
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
 
-sys.path.insert(0, os.path.abspath("."))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.planning.mpc_planner import (
     ACTION_MATRIX,
-    ACTION_PRIMITIVES,
     ModelPredictiveController,
     TrajectoryObjective,
 )
-from src.training.train_unified_ppo import UnifiedActorCritic
 from src.training.distill_mpc_policy import DistilledActorPolicy
+from src.training.train_unified_ppo import UnifiedActorCritic
 
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
@@ -178,9 +176,9 @@ def run_full_level_clearance(
         if curr_x >= 1900.0 and not goal_reached:
             goal_reached = True
             goal_frame = frame
-            print(f"\n=======================================================")
+            print("\n=======================================================")
             print(f"  GOAL TAPE REACHED! STAGE COMPLETED AT FRAME {frame}! ")
-            print(f"=======================================================")
+            print("=======================================================")
 
         if goal_reached and (curr_x >= 2020.0 or (frame >= goal_frame + 60)):
             print(f"Level clearance run finalized at Frame {frame} (X={curr_x:.1f} px)")
