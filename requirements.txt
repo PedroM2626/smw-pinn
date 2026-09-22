@@ -40,4 +40,8 @@ pytest-cov>=5.0.0
 # Pinned to the rev in .pre-commit-config.yaml: the formatter that writes a file
 # must be the same version that checks it, or every file looks dirty.
 ruff>=0.16.0,<0.17
-mypy>=1.0.0
+# mypy is pinned to the validated minor band, exactly like ruff: an unpinned
+# `>=1.0.0` let CI resolve a newer interpreter that crashes the typecheck gate
+# (run #14, exit code 2). Keep it locked to what makes `make typecheck` green;
+# widen deliberately only after re-validating on every supported Python version.
+mypy>=2.3.1,<2.4

@@ -36,6 +36,15 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 - mypy typed-core list extended to the new physics RL modules (`src/cli.py`).
 
+### Fixed
+
+- CI run #14 (`Typecheck (mypy via Makefile)`, exit code 2): the `dev`/`all` extras
+  declared `mypy>=1.0.0` with no upper bound, so CI resolved a newer interpreter that
+  crashed the typecheck gate while the locally validated version passed. Pinned mypy to
+  the validated band `>=2.3.1,<2.4` in `pyproject.toml` and `requirements.txt` (parity
+  preserved), mirroring the existing ruff pin so CI, pre-commit and local use a checker
+  version that makes `make typecheck` green.
+
 ## [0.1.0] - 2026-09-22
 
 Paper-reproduction release: the four-architecture MLP/LSTM/Soft-PINN/Hard-PINN benchmark,
