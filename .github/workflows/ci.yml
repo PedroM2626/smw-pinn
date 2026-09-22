@@ -9,10 +9,10 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           lfs: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.10"
           cache: pip
@@ -26,6 +26,8 @@ jobs:
           python -c "import torch, numpy; print('torch', torch.__version__, '| numpy', numpy.__version__)"
       - name: Lint (ruff via Makefile)
         run: make lint
+      - name: Format check (ruff format via Makefile)
+        run: make format-check
       - name: Typecheck (mypy via Makefile)
         run: make typecheck
       - name: Tests with coverage gate (via Makefile)
@@ -34,7 +36,7 @@ jobs:
           make test-cov 2>&1 | tee pytest.log
       - name: Upload pytest log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pytest-log
           path: pytest.log

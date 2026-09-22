@@ -1,27 +1,28 @@
 # Git-LFS tracking for large binaries and datasets.
-# Instalar: git lfs install
-# Migrar historico existente (reescreve historia — coordenar com o time):
+# Setup: git lfs install
+# Migrating an existing history (rewrites history - coordinate with the team):
 #   git lfs migrate import --include="*.pt,*.pth,*.onnx,*.mp4,*.gif,*.npz,*.state,*.dll,*.zip,*.png"
 #   git push --force
-# Novos arquivos nos padroes abaixo ja entram automaticamente em LFS apos `git lfs install`.
+# New files matching the patterns below go to LFS automatically after `git lfs install`.
 
 # PyTorch / ONNX checkpoints (results/checkpoints*, results/checkpoints_ensemble, etc.)
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pth filter=lfs diff=lfs merge=lfs -text
 *.onnx filter=lfs diff=lfs merge=lfs -text
-# Datasets e savestates do emulador (data/raw/*.npz, *.state)
+# Emulator datasets and savestates (data/raw/*.npz, *.state)
 *.npz filter=lfs diff=lfs merge=lfs -text
 *.state filter=lfs diff=lfs merge=lfs -text
 *.bk2 filter=lfs diff=lfs merge=lfs -text
-# Nucleo do emulador e pacotes (src/environment/bin/*)
+# Emulator core and archives (src/environment/bin/*)
 *.dll filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text
-# Midia de resultados (results/figures/*.mp4, *.gif, *.png)
+# Result media (results/figures/*.mp4, *.gif, *.png)
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
 results/figures/*.png filter=lfs diff=lfs merge=lfs -text
-# ROM comercial (rastreada via LFS apenas porque ja esta no historico;
-# novos clones devem prover o proprio dump e verificar o SHA-1 do README).
+# Commercial ROM patterns: kept here only so a locally supplied dump can never
+# be committed by accident. New clones must provide their own dump and verify
+# the SHA-1 published in the README.
 *.sfc filter=lfs diff=lfs merge=lfs -text
 *.smc filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text

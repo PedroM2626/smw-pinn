@@ -2,11 +2,16 @@
 # Compatible with Python >= 3.10 and CUDA 12.1+
 # Hardware reference: NVIDIA GeForce RTX 4070 Laptop GPU (PyTorch 2.5.1 + CUDA 12.1)
 #
-# Instalacao reprodutivel (CUDA 12.1):
+# NOTE: this file mirrors the runtime + dev dependencies declared in
+# `pyproject.toml` ( `[project.optional-dependencies].dev` ). `tests/test_dependency_parity.py`
+# fails CI if the two manifests drift apart, so update both together - or install
+# the canonical editable form instead: `pip install -e ".[dev]"`.
+#
+# Reproducible install (CUDA 12.1):
 #   pip install --upgrade pip
 #   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
 #
-# Instalacao CPU-only (fallback):
+# CPU-only fallback:
 #   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 # --- Deep learning (CUDA 12.1 build; ver README) ---
@@ -26,10 +31,13 @@ pillow>=10.0.0
 imageio>=2.31.0
 imageio-ffmpeg>=0.4.9
 
-# --- Experiment tracking (TensorBoard; wandb e opcional, ver pyproject [project.optional-dependencies]) ---
+# --- Experiment tracking (TensorBoard; wandb is optional, see [project.optional-dependencies]) ---
 tensorboard>=2.15.0
 
-# --- Testing & static analysis ---
+# --- Testing & static analysis (mirrors pyproject [dev]) ---
 pytest>=7.0.0
 pytest-cov>=5.0.0
+# Pinned to the rev in .pre-commit-config.yaml: the formatter that writes a file
+# must be the same version that checks it, or every file looks dirty.
+ruff>=0.16.0,<0.17
 mypy>=1.0.0

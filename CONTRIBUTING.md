@@ -1,6 +1,8 @@
 # Contributing to smw-pinn
 
-Short rules for keeping this repo reproducible. English or Portuguese, both fine.
+Short rules for keeping this repo reproducible. Code, comments, docstrings,
+commit messages and docs are **English only** - the audience is the paper review,
+and a mixed-language repository makes every search and quote ambiguous.
 
 ## Setup
 
@@ -27,13 +29,23 @@ full hardware re-validation (benchmarks + `make test-cov` on CUDA). CI uploads
 ## Canonical commands (use these, not ad-hoc scripts)
 
 ```bash
-make lint        # ruff check src tests scripts — must pass
-make typecheck   # mypy on typed core modules — must pass
-make test        # fast unit tests
-make test-cov    # tests + coverage gate (baseline 30%)
-make reproduce   # 2-epoch CPU smoke benchmark (configs/reproduce.yaml)
+make lint         # ruff check src tests scripts — must pass
+make format       # ruff format (the same version CI and pre-commit enforce)
+make format-check # ruff format --check — must pass
+make typecheck    # mypy on typed core modules — must pass
+make test         # fast unit tests
+make test-cov     # tests + coverage gate (baseline 30%)
+make check-all    # lint + format-check + typecheck + test-cov, i.e. the CI gate
+make reproduce    # 2-epoch CPU smoke benchmark (configs/reproduce.yaml)
+make smoke-all    # seconds-scale runs of the slow studies -> results_smoke/
 make benchmark sample-efficiency multiseed
 ```
+
+`make` is usually missing on Windows, where this project was developed: install
+the package (`pip install -e ".[dev]"`) and use the identical console script
+instead - `smw-pinn check-all`, `smw-pinn test-cov`, `smw-pinn smoke-all`, or
+`smw-pinn run <module> [args...]` for any documented entry point (`src/cli.py`).
+`smw-pinn list` prints the catalog.
 
 Run entry points as modules (`python -m src.training.benchmark_experiment`),
 never `cd src/` + relative imports. `src/` must not contain `sys.path` hacks;
@@ -48,7 +60,14 @@ only `scripts/` bootstraps the repo root.
   unseeded `shuffle=True` or bare `np.random` in training/eval code.
 - **Configs:** shared knobs live in `configs/*.yaml`; entry points accept
   `--config` with CLI-overrides-file semantics (`src/utils/config.py`).
-  Warn (don't silently ignore) on unknown keys.
+  Warn (don't silently ignore) on unknown keys. A config key the parser does not
+  know is silently ignored, so `tests/test_smoke_runs.py` checks each
+  `configs/smoke_*.yaml` against the real `--help` output of its entry point.
+- **Paths:** never hardcode `data/raw/...`, `src/environment/bin/...` or
+  `results/...`. Resolve them through `src/utils/paths.py` (`require_rom()`,
+  `results_file()`, `checkpoint_file()`, ...), which is repo-root anchored and
+  honors the `SMW_ROM` / `SMW_CORE` / `SMW_DATA_DIR` overrides. Emulator addresses
+  live in `src/environment/wram.py`, never as bare hex literals.
 - **Metrics:** aggregate MSE hides scale imbalance — report per-variable
   metrics (`src/evaluation/per_variable_metrics.py`) alongside it, and
   multi-start rollouts instead of a single trajectory.
@@ -57,17 +76,24 @@ only `scripts/` bootstraps the repo root.
   on Linux CI — tests must skip, never error).
 - **Types:** new/edited code in the typed core (`src/utils/`, dataset loader,
   trainer, rollout evaluator, per-variable metrics) must pass
-  `make typecheck`. Pre-commit (`pre-commit install`) runs ruff on every commit.
+  `make typecheck`. Pre-commit (`pre-commit install`) runs `ruff check --fix`
+  and `ruff format` with the same pinned version as CI.
+- **Result artifacts:** a new `results/*.json` must be written through
+  `src/utils.provenance.write_metrics` (so it carries `_meta`) and registered in
+  `results/MANIFEST.md` with its writer module, regenerating command and README
+  section. `tests/test_results_manifest.py` fails otherwise - it also refuses
+  artifacts whose checkpoints were regenerated after the artifact was recorded.
 - **Regression gate:** if you change training/eval code, check
   `tests/test_metrics_regression.py` still passes; regenerate `results/*.json`
-  on GPU and update the README tables that cite them (§8.1–§8.4).
+  on GPU and update the README tables that cite them (§8.1–§8.4 and §10.x).
 - **Pixel datasets are huge:** `scripts/record_pixel_gameplay.py` defaults to
   frame stride + downscale for a reason (full-res frames ≈ GBs). Keep frame
   `.npz` files in Git-LFS and never commit ROMs or smoke-test dirs.
 
 ## Pull requests
 
-- `make lint` + `make typecheck` + `make test-cov` green (CI runs all three on ubuntu-latest).
+- `make check-all` green (CI runs lint, format-check, typecheck and `make test-cov`
+  on ubuntu-latest).
 - Small, focused PRs with a description of what changed and which
   `results/*.json` / README tables were affected, if any.
 - Don't commit: `.venv/`, `runs/`, `*.mp4/*.gif` outside `results/figures/`,

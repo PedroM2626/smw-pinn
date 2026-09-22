@@ -36,7 +36,7 @@ dependencies = [
 dev = [
   "pytest>=7.0.0",
   "pytest-cov>=5.0.0",
-  "ruff>=0.4.0",
+  "ruff>=0.16.0,<0.17",
   "mypy>=1.0.0",
   "pyyaml>=6.0",
 ]
@@ -46,7 +46,7 @@ wandb = [
 all = [
   "pytest>=7.0.0",
   "pytest-cov>=5.0.0",
-  "ruff>=0.4.0",
+  "ruff>=0.16.0,<0.17",
   "mypy>=1.0.0",
   "wandb>=0.17.0",
   "pyyaml>=6.0",
@@ -57,10 +57,16 @@ Homepage = "https://github.com/PedroM2626/smw-pinn"
 Repository = "https://github.com/PedroM2626/smw-pinn"
 Issues = "https://github.com/PedroM2626/smw-pinn/issues"
 
+[project.scripts]
+# Cross-platform task runner (the Makefile stays canonical on Linux/macOS):
+# `smw-pinn list`, `smw-pinn test-cov`, `smw-pinn reproduce`, `smw-pinn run <module>`.
+smw-pinn = "src.cli:main"
+
 [tool.setuptools.packages.find]
-# src-layout: instala o pacote top-level `src` (imports `from src.xxx ...`).
-# Execucao canonica: `pip install -e .` + `python -m src.training.benchmark_experiment`.
-# Os scripts em scripts/ usam bootstrap de repo-root; src/ nao faz sys.path hack.
+# src-layout: installs the top-level `src` package (imports `from src.xxx ...`).
+# Canonical execution: `pip install -e .` + `python -m src.training.benchmark_experiment`
+# (or the `smw-pinn` console script). The tools in scripts/ bootstrap the repo root;
+# src/ never touches sys.path.
 where = ["."]
 include = ["src*"]
 

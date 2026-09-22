@@ -10,8 +10,9 @@ venv/
 ENV/
 
 # PyTorch & Machine Learning
-# NOTA: checkpoints/resultados versionados via Git-LFS (.gitattributes)
-# nao sao ignorados aqui de proposito para preservar reprodutibilidade.
+# NOTE: the versioned checkpoints/results are tracked through Git-LFS
+# (see .gitattributes) and are deliberately NOT ignored here, so published
+# numbers stay reproducible.
 runs/
 events.out.tfevents.*
 wandb/
@@ -22,10 +23,10 @@ mlruns/
 
 # Data, ROMs & Emulator binaries
 # Datasets (.npz), savestates (.state/.bk2), checkpoints (.pt/.pth),
-# videos (.mp4/.gif) e o nucleo do emulador (.dll/.zip) sao versionados
-# via Git-LFS — ver .gitattributes. Nao ignora-los aqui.
-# ROM comercial: prover o proprio dump (SHA-1 no README); o arquivo
-# historico permanece rastreado via LFS, novos dumps locais ficam fora do git.
+# videos (.mp4/.gif) and the emulator core (.dll/.zip) are versioned
+# through Git-LFS - see .gitattributes; they are not ignored here.
+# Commercial ROM: never committed. Each user supplies their own dump and
+# checks the SHA-1 published in the README; local dumps stay untracked.
 roms/
 *.sfc
 *.smc
@@ -36,7 +37,10 @@ roms/
 .vscode/
 .idea/
 
-# Coverage & smoke-test artifacts (gerados por `make test-cov` / `make reproduce`)
+# Ad-hoc run logs from manual hardware captures (not part of the published results)
+/*.log
+
+# Coverage & smoke-test artifacts (produced by `make test-cov` / `make reproduce`)
 .coverage
 coverage.xml
 results_smoke*/
