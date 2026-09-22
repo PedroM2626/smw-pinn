@@ -12,9 +12,8 @@ import os
 
 import pytest
 
-CORE_PATH = "src/environment/bin/snes9x_libretro.dll"
-ROM_PATH = "data/raw/smw_usa.sfc"
-STATE_PATH = "data/raw/smw_yoshi_island_1.state"
+from src.utils.paths import CORE_PATH, ROM_PATH
+from src.utils.paths import STATE_YOSHI_ISLAND_1 as STATE_PATH
 
 
 def emulator_available(
@@ -23,11 +22,7 @@ def emulator_available(
     state_path: str = STATE_PATH,
 ) -> bool:
     """True only if the native core exists *and* loads in this process."""
-    if not (
-        os.path.exists(core_path)
-        and os.path.exists(rom_path)
-        and os.path.exists(state_path)
-    ):
+    if not (os.path.exists(core_path) and os.path.exists(rom_path) and os.path.exists(state_path)):
         return False
     try:
         ctypes.CDLL(core_path)

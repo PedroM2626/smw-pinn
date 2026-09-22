@@ -78,7 +78,9 @@ def test_dyna_ppo_training_step():
     agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=32).to(device)
     trainer = DynaPPOTrainer(env=env, actor_critic=agent, device=device)
 
-    obs, actions, logprobs, returns, advs, vals = trainer.collect_rollouts(rollout_length=rollout_len)
+    obs, actions, logprobs, returns, advs, vals = trainer.collect_rollouts(
+        rollout_length=rollout_len
+    )
     assert obs.shape == (rollout_len, num_envs, 8)
     assert actions.shape == (rollout_len, num_envs)
     assert returns.shape == (rollout_len, num_envs)

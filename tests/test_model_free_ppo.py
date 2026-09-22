@@ -17,7 +17,9 @@ def test_snes_single_env_step():
     rom_path = ROM_PATH
     state_path = STATE_PATH
 
-    env = SnesSingleEnv(core_path=core_path, rom_path=rom_path, state_path=state_path, max_episode_steps=50)
+    env = SnesSingleEnv(
+        core_path=core_path, rom_path=rom_path, state_path=state_path, max_episode_steps=50
+    )
     obs = env.reset()
 
     assert obs.shape == (8,)

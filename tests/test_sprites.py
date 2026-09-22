@@ -4,7 +4,6 @@ Unit tests for WRAM sprite parsing, relative hazard distance calculation,
 and 12-dimensional extended state assembly.
 """
 
-
 from src.environment.snes_emulator import SnesLibretroEmulator
 from tests.conftest import CORE_PATH, ROM_PATH, STATE_PATH, requires_emulator
 
@@ -19,7 +18,7 @@ def test_wram_sprite_extraction():
     emu.load_rom(rom_path)
     with open(state_path, "rb") as f:
         emu.load_state(f.read())
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
 
     # Advance 60 frames into the level
     for _ in range(60):

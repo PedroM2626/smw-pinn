@@ -12,6 +12,7 @@ from src.environment.snes_emulator import (
 )
 from src.perception.pixel_encoder import PixelStateEstimator, StateNormalizer, preprocess_frame
 from src.perception.vision_dataset import FrameStateDataset, create_vision_loaders
+from src.utils.paths import CORE_PATH, ROM_PATH
 from tests.conftest import requires_emulator
 
 
@@ -61,10 +62,10 @@ def test_convert_respects_pitch_stride():
 def test_frame_capture_roundtrip():
     from src.environment.snes_emulator import SnesLibretroEmulator
 
-    emu = SnesLibretroEmulator("src/environment/bin/snes9x_libretro.dll")
+    emu = SnesLibretroEmulator(CORE_PATH)
     try:
         assert emu.get_frame() is None  # capture off by default
-        emu.load_rom("data/raw/smw_usa.sfc")
+        emu.load_rom(ROM_PATH)
         emu.enable_frame_capture(True)
         for _ in range(30):
             emu.step_frame()

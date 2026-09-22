@@ -15,8 +15,10 @@ from src.planning.terminal_value import (
 
 def _base_state(**over):
     s = {
-        "delta_x_enemy": 999.0, "hazard_active": 0.0,
-        "c_ground": 1.0, "c_right": 0.0,
+        "delta_x_enemy": 999.0,
+        "hazard_active": 0.0,
+        "c_ground": 1.0,
+        "c_right": 0.0,
     }
     s.update(over)
     return s
@@ -46,9 +48,15 @@ def test_terminal_objective_prefers_high_value_end():
     torch.manual_seed(0)
     net = TerminalValueNet(hidden_dim=16)
     # Isolate the terminal term: no progress/velocity/waypoint shaping.
-    obj = TerminalValueObjective(value_net=net, terminal_weight=5.0, gamma=1.0,
-                                 weight_progress=0.0, weight_velocity=0.0,
-                                 weight_target=0.0, arrival_bonus=0.0)
+    obj = TerminalValueObjective(
+        value_net=net,
+        terminal_weight=5.0,
+        gamma=1.0,
+        weight_progress=0.0,
+        weight_velocity=0.0,
+        weight_target=0.0,
+        arrival_bonus=0.0,
+    )
     init = torch.zeros(2, 8)
     # Small-scale inputs: y=300 would saturate the random Tanh net.
     candidates = torch.tensor([[5.0, 3.0, 3.0, 0.0], [0.0, 3.0, 0.0, 0.0]])

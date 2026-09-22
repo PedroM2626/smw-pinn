@@ -18,7 +18,7 @@ def test_wram_tilemap_extraction():
     emu.load_rom(ROM_PATH)
     with open(STATE_PATH, "rb") as f:
         emu.load_state(f.read())
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -53,8 +53,8 @@ def test_tilemap_pinn_exact_kinematics_and_gradients():
     dummy_kinematics = torch.randn(batch_size, 8)
     dummy_kinematics[:, 0] = 100.0  # X
     dummy_kinematics[:, 1] = 300.0  # Y
-    dummy_kinematics[:, 2] = 16.0   # vx
-    dummy_kinematics[:, 3] = 0.0    # vy
+    dummy_kinematics[:, 2] = 16.0  # vx
+    dummy_kinematics[:, 3] = 0.0  # vy
 
     dummy_patch = torch.randint(0, 4, (batch_size, 7, 7), dtype=torch.long)
     dummy_action = torch.zeros(batch_size, 6)

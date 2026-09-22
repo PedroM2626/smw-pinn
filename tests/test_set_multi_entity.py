@@ -51,7 +51,9 @@ def test_set_multi_entity_exact_kinematic_guarantee(set_model):
     assert mario_x_res < 1e-5, f"Mario kinematic residual: {mario_x_res}"
 
     # Entity analytical relative check for active entities
-    expected_entity_dx = entities[..., 0] + (next_entities[..., 2] - next_mario[:, 2].unsqueeze(1)) / 16.0
+    expected_entity_dx = (
+        entities[..., 0] + (next_entities[..., 2] - next_mario[:, 2].unsqueeze(1)) / 16.0
+    )
     entity_dx_res = torch.max(torch.abs(next_entities[..., 0] - expected_entity_dx)).item()
     assert entity_dx_res < 1e-5, f"Entity relative kinematic residual: {entity_dx_res}"
 
@@ -82,8 +84,12 @@ def test_set_multi_entity_permutation_invariance(set_model):
     assert mario_diff < 1e-5, f"Mario state changed under entity permutation: {mario_diff}"
 
     # Entity predictions should be swapped
-    diff_slot0_slot1 = torch.max(torch.abs(next_entities_orig[:, 0] - next_entities_perm[:, 1])).item()
-    diff_slot1_slot0 = torch.max(torch.abs(next_entities_orig[:, 1] - next_entities_perm[:, 0])).item()
+    diff_slot0_slot1 = torch.max(
+        torch.abs(next_entities_orig[:, 0] - next_entities_perm[:, 1])
+    ).item()
+    diff_slot1_slot0 = torch.max(
+        torch.abs(next_entities_orig[:, 1] - next_entities_perm[:, 0])
+    ).item()
     assert diff_slot0_slot1 < 1e-5
     assert diff_slot1_slot0 < 1e-5
 

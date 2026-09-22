@@ -15,6 +15,7 @@ matplotlib.use("Agg")
 import numpy as np
 import torch
 
+from src.environment import wram
 from src.evaluation import diagnose_obstacle_1000 as diag_mod
 from src.evaluation import evaluate_hierarchical_mpc as hier_mod
 from src.evaluation import evaluate_pixel_mpc as pixel_mod
@@ -31,18 +32,35 @@ from src.training import train_terminal_value as train_value_mod
 from src.training import train_unified_multimodal as train_unified_mod
 
 BASE_12D = {
-    "x": 100.0, "y": 300.0, "vx": 10.0, "vy": 0.0,
-    "c_ground": 1.0, "c_ceiling": 0.0, "c_left": 0.0, "c_right": 0.0,
-    "delta_x_enemy": 999.0, "delta_y_enemy": 0.0, "vx_enemy": 0.0,
-    "hazard_active": 0.0, "air_state": 0.0,
+    "x": 100.0,
+    "y": 300.0,
+    "vx": 10.0,
+    "vy": 0.0,
+    "c_ground": 1.0,
+    "c_ceiling": 0.0,
+    "c_left": 0.0,
+    "c_right": 0.0,
+    "delta_x_enemy": 999.0,
+    "delta_y_enemy": 0.0,
+    "vx_enemy": 0.0,
+    "hazard_active": 0.0,
+    "air_state": 0.0,
 }
 
 
 class FakeEmu:
     """Scriptable stand-in for SnesLibretroEmulator."""
 
-    def __init__(self, core_path="fake.dll", *, state_fn=None, sprites_fn=None,
-                 patch=None, frame=None, mem_fn=None):
+    def __init__(
+        self,
+        core_path="fake.dll",
+        *,
+        state_fn=None,
+        sprites_fn=None,
+        patch=None,
+        frame=None,
+        mem_fn=None,
+    ):
         self._t = 0
         self._state_fn = state_fn or (lambda t: dict(BASE_12D))
         self._sprites_fn = sprites_fn or (lambda t: [])
@@ -50,6 +68,7 @@ class FakeEmu:
         self._frame = frame
         self._mem_fn = mem_fn or (lambda addr: 0)
         self.wram_buffer = {}
+        self.game_mode = 0
         self.inputs = []
 
     def load_rom(self, path):
@@ -81,6 +100,22 @@ class FakeEmu:
     def read_wram_u8(self, addr):
         return self._mem_fn(addr)
 
+    def get_game_mode(self):
+        return self.game_mode
+
+    def enable_gameplay_mode(self, mode: int = wram.GAME_MODE_INTERACTIVE) -> None:
+        """Mirrors the real core: records the mode byte write."""
+        self.game_mode = mode
+        self.wram_buffer[wram.ADDR_GAME_MODE] = mode
+
+    def start_episode(self, savestate, gameplay_mode=True, warmup_frames=5):
+        self.load_state(savestate)
+        if gameplay_mode:
+            self.enable_gameplay_mode()
+        for _ in range(warmup_frames):
+            self.step_frame()
+        return self.get_smw_state()
+
     def enable_frame_capture(self, enabled=True):
         pass
 
@@ -97,7 +132,8 @@ class FakeController:
     def __init__(self, action=None):
         self.action = (
             np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0], dtype=np.float32)
-            if action is None else np.array(action, dtype=np.float32)
+            if action is None
+            else np.array(action, dtype=np.float32)
         )
         self.calls = 0
 
@@ -113,6 +149,7 @@ def _write(path, data: bytes = b"fake-state"):
 
 
 # ---------- mpc_reflex_ablation.run_condition ----------
+
 
 def test_run_condition_pit_termination():
     def state(t):
@@ -158,9 +195,13 @@ def test_run_ablation_end_to_end_with_stubs(tmp_path):
     state_file = _write(tmp_path / "s.state")
     out = tmp_path / "results"
     res = reflex_mod.run_ablation(
-        max_frames=6, output_dir=str(out), controller=FakeController(),
-        emulator_cls=FakeEmu, state_path=state_file,
-        core_path="fake.dll", rom_path="fake.sfc",
+        max_frames=6,
+        output_dir=str(out),
+        controller=FakeController(),
+        emulator_cls=FakeEmu,
+        state_path=state_file,
+        core_path="fake.dll",
+        rom_path="fake.sfc",
     )
     assert set(res) == {"pure", "reflex"}
     assert res["pure"]["termination"] == "timeout"
@@ -169,6 +210,7 @@ def test_run_ablation_end_to_end_with_stubs(tmp_path):
 
 
 # ---------- diagnose_obstacle_1000 ----------
+
 
 def test_run_diagnosis_with_stub_emu(tmp_path, monkeypatch):
     def state(t):
@@ -198,7 +240,9 @@ def test_run_diagnosis_with_stub_emu(tmp_path, monkeypatch):
     state_file = _write(tmp_path / "s.state")
     out = tmp_path / "results"
     payload = diag_mod.run_diagnosis(
-        core_path="fake.dll", rom_path="fake.sfc", state_path=state_file,
+        core_path="fake.dll",
+        rom_path="fake.sfc",
+        state_path=state_file,
         output_dir=str(out),
     )
     assert payload["num_samples"] > 0
@@ -209,6 +253,7 @@ def test_run_diagnosis_with_stub_emu(tmp_path, monkeypatch):
 
 
 # ---------- evaluate_tilemap_mpc ----------
+
 
 def test_run_tilemap_mpc_with_stubs(tmp_path, monkeypatch):
     ckpt = tmp_path / "tilemap.pt"
@@ -227,8 +272,12 @@ def test_run_tilemap_mpc_with_stubs(tmp_path, monkeypatch):
     state_file = _write(tmp_path / "s.state")
     out = tmp_path / "results"
     metrics = tile_mod.run_tilemap_mpc(
-        tilemap_ckpt=str(ckpt), core_path="fake.dll", rom_path="fake.sfc",
-        state_path=state_file, max_frames=2, output_dir=str(out),
+        tilemap_ckpt=str(ckpt),
+        core_path="fake.dll",
+        rom_path="fake.sfc",
+        state_path=state_file,
+        max_frames=2,
+        output_dir=str(out),
     )
     assert metrics["survived_frames"] == 2
     assert metrics["termination"] == "timeout"
@@ -236,6 +285,7 @@ def test_run_tilemap_mpc_with_stubs(tmp_path, monkeypatch):
 
 
 # ---------- evaluate_hierarchical_mpc ----------
+
 
 def _tile_mem(addr: int) -> int:
     if addr < 0xC800:
@@ -261,8 +311,12 @@ def test_run_hierarchical_with_stubs(tmp_path, monkeypatch):
     state_file = _write(tmp_path / "s.state")
     out = tmp_path / "results"
     metrics = hier_mod.run_hierarchical(
-        pinn_ckpt=str(ckpt), core_path="fake.dll", rom_path="fake.sfc",
-        state_path=state_file, max_frames=2, output_dir=str(out),
+        pinn_ckpt=str(ckpt),
+        core_path="fake.dll",
+        rom_path="fake.sfc",
+        state_path=state_file,
+        max_frames=2,
+        output_dir=str(out),
     )
     assert metrics["survived_frames"] == 2
     assert metrics["num_waypoints"] > 0
@@ -270,6 +324,7 @@ def test_run_hierarchical_with_stubs(tmp_path, monkeypatch):
 
 
 # ---------- evaluate_pixel_mpc ----------
+
 
 def test_run_pixel_mpc_with_stubs(tmp_path, monkeypatch):
     rng = np.random.default_rng(0)
@@ -288,7 +343,8 @@ def test_run_pixel_mpc_with_stubs(tmp_path, monkeypatch):
     class PixelEmu(FakeEmu):
         def __init__(self, core_path):
             super().__init__(
-                core_path, state_fn=state,
+                core_path,
+                state_fn=state,
                 frame=np.zeros((24, 32, 3), dtype=np.uint8),
             )
 
@@ -296,9 +352,13 @@ def test_run_pixel_mpc_with_stubs(tmp_path, monkeypatch):
     state_file = _write(tmp_path / "s.state")
     out = tmp_path / "results"
     metrics = pixel_mod.run_pixel_mpc(
-        estimator_ckpt=str(est_ckpt), pinn_ckpt=str(pinn_ckpt),
-        core_path="fake.dll", rom_path="fake.sfc", state_path=state_file,
-        max_frames=2, output_dir=str(out),
+        estimator_ckpt=str(est_ckpt),
+        pinn_ckpt=str(pinn_ckpt),
+        core_path="fake.dll",
+        rom_path="fake.sfc",
+        state_path=state_file,
+        max_frames=2,
+        output_dir=str(out),
     )
     assert metrics["survived_frames"] == 2
     assert np.isfinite(metrics["mean_estimator_mae_xyv"])
@@ -306,6 +366,7 @@ def test_run_pixel_mpc_with_stubs(tmp_path, monkeypatch):
 
 
 # ---------- training scripts on synthetic data ----------
+
 
 def test_train_pixel_estimator_smoke(tmp_path):
     rng = np.random.default_rng(2)
@@ -316,7 +377,9 @@ def test_train_pixel_estimator_smoke(tmp_path):
     )
     out = tmp_path / "results"
     metrics = train_pixel_mod.run_training(
-        dataset_path=str(tmp_path / "pix.npz"), epochs=2, batch_size=8,
+        dataset_path=str(tmp_path / "pix.npz"),
+        epochs=2,
+        batch_size=8,
         output_dir=str(out),
     )
     assert np.isfinite(metrics["best_val_loss"])
@@ -362,8 +425,11 @@ def test_train_unified_smoke(tmp_path):
     )
     out = tmp_path / "results"
     metrics = train_unified_mod.run_training(
-        tilemap_path=str(tmp_path / "tile.npz"), multi_path=str(tmp_path / "multi.npz"),
-        epochs=2, batch_size=8, output_dir=str(out),
+        tilemap_path=str(tmp_path / "tile.npz"),
+        multi_path=str(tmp_path / "multi.npz"),
+        epochs=2,
+        batch_size=8,
+        output_dir=str(out),
     )
     assert np.isfinite(metrics["best_val_loss"])
     assert (out / "checkpoints" / "unified_joint_best.pt").exists()
@@ -384,7 +450,9 @@ def test_train_set_multi_entity_smoke(tmp_path):
     )
     out = tmp_path / "results"
     metrics = train_set_mod.run_training(
-        dataset_path=str(tmp_path / "set.npz"), epochs=2, batch_size=8,
+        dataset_path=str(tmp_path / "set.npz"),
+        epochs=2,
+        batch_size=8,
         output_dir=str(out),
     )
     assert np.isfinite(metrics["best_val_loss"])
@@ -393,6 +461,7 @@ def test_train_set_multi_entity_smoke(tmp_path):
 
 
 # ---------- spatial holdout + learning curves ----------
+
 
 def test_run_spatial_holdout_synthetic(tmp_path):
     n = 200
@@ -423,8 +492,10 @@ def test_run_spatial_holdout_synthetic(tmp_path):
     torch.save(HardResidualPINNDynamics().state_dict(), ckdir / "pinn_hard_best.pt")
     out = tmp_path / "results"
     payload = holdout_mod.run_spatial_holdout(
-        dataset_path=str(tmp_path / "game.npz"), multi_path=str(tmp_path / "multi.npz"),
-        checkpoints_dir=str(ckdir), output_dir=str(out),
+        dataset_path=str(tmp_path / "game.npz"),
+        multi_path=str(tmp_path / "multi.npz"),
+        checkpoints_dir=str(ckdir),
+        output_dir=str(out),
     )
     assert payload["far_8d_transitions"] > 0
     assert payload["far_hazard_active_transitions"] > 0
@@ -435,7 +506,8 @@ def test_run_spatial_holdout_synthetic(tmp_path):
 
 def test_run_plot_learning_curves_synthetic(tmp_path):
     mf = {
-        "total_real_steps": 4000, "mean_final_return": 500.0,
+        "total_real_steps": 4000,
+        "mean_final_return": 500.0,
         "step_history": [1000, 2000, 3000, 4000],
         "return_history": [100.0, 200.0, 300.0, 500.0],
     }

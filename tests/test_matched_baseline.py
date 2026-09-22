@@ -26,6 +26,4 @@ def test_matched_mlp_forward_and_kinematic_gap():
     a = torch.randn(8, 6)
     assert mlp(s, a).shape == (8, 8)
     # The matched MLP has no structural guarantee (unlike the Hard PINN).
-    assert not torch.allclose(
-        mlp(s, a)[:, 0], s[:, 0] + mlp(s, a)[:, 2] / 16.0, atol=1e-6
-    )
+    assert not torch.allclose(mlp(s, a)[:, 0], s[:, 0] + mlp(s, a)[:, 2] / 16.0, atol=1e-6)

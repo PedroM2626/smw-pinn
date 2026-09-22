@@ -30,7 +30,13 @@ def test_flops_estimation():
 def test_latency_benchmark_cpu():
     model = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     lat_us, fps = benchmark_latency(
-        model, torch.device("cpu"), state_dim=8, action_dim=6, batch_size=4, num_iterations=10, warmup=2
+        model,
+        torch.device("cpu"),
+        state_dim=8,
+        action_dim=6,
+        batch_size=4,
+        num_iterations=10,
+        warmup=2,
     )
     assert lat_us > 0.0
     assert fps > 0.0

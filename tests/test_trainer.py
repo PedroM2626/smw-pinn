@@ -52,9 +52,7 @@ def test_early_stopping_triggers(tmp_path):
     data = _toy_data()
     train_loader, val_loader, _ = create_dataloaders(data, batch_size=32, seed=0)
     model = StatisticalMLPDynamics(hidden_dims=[32, 32])
-    trainer = DynamicsTrainer(
-        model=model, model_type="mlp", device=device, save_dir=str(tmp_path)
-    )
+    trainer = DynamicsTrainer(model=model, model_type="mlp", device=device, save_dir=str(tmp_path))
     # Frozen validation loss never improves -> must stop before max epochs.
     trainer.evaluate = lambda loader: {
         "val_loss_total": 1.0,

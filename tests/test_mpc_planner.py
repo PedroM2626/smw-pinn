@@ -4,13 +4,54 @@ Unit tests for the GPU-vectorized Model Predictive Control (MPC) trajectory plan
 """
 
 import numpy as np
+import pytest
 import torch
 
 from src.models import HardResidualPINNDynamics
 from src.planning.mpc_planner import (
+    ACTION_BUTTONS,
+    ACTION_PRIMITIVES,
     ModelPredictiveController,
     TrajectoryObjective,
+    action_vector_to_joypad,
 )
+
+
+def test_action_vector_to_joypad_matches_primitive_names():
+    # The channel order must agree with the primitive definitions above.
+    assert ACTION_BUTTONS == ("B", "Y", "UP", "DOWN", "LEFT", "RIGHT")
+    joypad = action_vector_to_joypad(ACTION_PRIMITIVES["RUN_JUMP_RIGHT"])
+    assert joypad == {
+        "B": True,
+        "Y": True,
+        "UP": False,
+        "DOWN": False,
+        "LEFT": False,
+        "RIGHT": True,
+    }
+    # Buttons accepted by the emulator's own mapping (no silent drops, no KeyError).
+    assert set(joypad) <= {
+        "B",
+        "Y",
+        "SELECT",
+        "START",
+        "UP",
+        "DOWN",
+        "LEFT",
+        "RIGHT",
+        "A",
+        "X",
+        "L",
+        "R",
+    }
+
+
+def test_action_vector_to_joypad_thresholds_and_validation():
+    assert action_vector_to_joypad([0.0, 1.0, 0.0, 0.0, 0.0, 0.0])["Y"] is True
+    assert action_vector_to_joypad([0.49] * 6) == dict.fromkeys(ACTION_BUTTONS, False)
+
+    with pytest.raises(ValueError, match="6-D action vector"):
+        action_vector_to_joypad([1.0, 0.0, 0.0])
 
 
 def test_trajectory_objective_rewards_progress():

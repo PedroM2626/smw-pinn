@@ -111,8 +111,12 @@ def test_hierarchical_controller_plans_and_advances():
     device = torch.device("cpu")
     model = HardResidualPINNDynamics(hidden_dims=[16])
     ctrl = HierarchicalMPCController(
-        world_model=model, device=device, horizon=5, num_candidates=8,
-        cem_iterations=1, capture_radius_px=24.0,
+        world_model=model,
+        device=device,
+        horizon=5,
+        num_candidates=8,
+        cem_iterations=1,
+        capture_radius_px=24.0,
     )
     ctrl.set_path([(100.0, 300.0), (200.0, 300.0), (300.0, 300.0)])
     s = np.array([16.0, 300.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0], dtype=np.float32)

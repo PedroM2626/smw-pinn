@@ -27,18 +27,24 @@ def test_unified_multimodal_forward_with_tilemap_and_hazard():
     model.eval()
 
     b = 2
-    mario_8d = torch.tensor([
-        [16.0, 336.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-        [50.0, 300.0, 16.0, -20.0, 0.0, 0.0, 0.0, 0.0],
-    ], dtype=torch.float32)
+    mario_8d = torch.tensor(
+        [
+            [16.0, 336.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+            [50.0, 300.0, 16.0, -20.0, 0.0, 0.0, 0.0, 0.0],
+        ],
+        dtype=torch.float32,
+    )
 
     action = torch.zeros(b, 6)
     action[:, 0] = 1.0  # B (Jump)
 
-    hazard_4d = torch.tensor([
-        [80.0, 0.0, -16.0, 1.0],
-        [999.0, 0.0, 0.0, 0.0],
-    ], dtype=torch.float32)
+    hazard_4d = torch.tensor(
+        [
+            [80.0, 0.0, -16.0, 1.0],
+            [999.0, 0.0, 0.0, 0.0],
+        ],
+        dtype=torch.float32,
+    )
 
     tile_patch = torch.randint(0, 4, (b, 7, 7), dtype=torch.long)
 
