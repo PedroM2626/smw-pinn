@@ -1,0 +1,108 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-22T18:15:27+00:00",
+    "git_sha": "7df6b8652c2eb204df89cbdd5d0ee07cff727661",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.mbrl_mpc_benchmark --reproduction-check"
+  },
+  "protocol": {
+    "repeats": 3,
+    "base_seed": 42,
+    "max_frames": 300,
+    "source": "mbrl_mpc_metrics.json"
+  },
+  "per_controller": {
+    "Hard_PINN_World_Model": {
+      "audit_mean_progress_px": 420.9,
+      "audit_std_progress_px": 266.17,
+      "audit_min_progress_px": 113.56,
+      "audit_max_progress_px": 577.38,
+      "published_progress_px": 571.75,
+      "delta_px": -150.85,
+      "delta_percent": -26.4
+    },
+    "Soft_PINN_World_Model": {
+      "audit_mean_progress_px": 52.81,
+      "audit_std_progress_px": 13.26,
+      "audit_min_progress_px": 38.69,
+      "audit_max_progress_px": 65.0,
+      "published_progress_px": 38.69,
+      "delta_px": 14.12,
+      "delta_percent": 36.5
+    },
+    "Statistical_MLP_World_Model": {
+      "audit_mean_progress_px": 49.42,
+      "audit_std_progress_px": 14.55,
+      "audit_min_progress_px": 39.5,
+      "audit_max_progress_px": 66.12,
+      "published_progress_px": 66.12,
+      "delta_px": -16.71,
+      "delta_percent": -25.3
+    },
+    "Random_Baseline": {
+      "audit_mean_progress_px": 241.5,
+      "audit_std_progress_px": 0.0,
+      "audit_min_progress_px": 241.5,
+      "audit_max_progress_px": 241.5,
+      "published_progress_px": 241.5,
+      "delta_px": 0.0,
+      "delta_percent": 0.0
+    }
+  },
+  "per_repeat": [
+    {
+      "seed": 42,
+      "progress_px": {
+        "Hard_PINN_World_Model": 571.75,
+        "Soft_PINN_World_Model": 38.6875,
+        "Statistical_MLP_World_Model": 66.125,
+        "Random_Baseline": 241.5
+      },
+      "alignment_err_px": {
+        "Hard_PINN_World_Model": 0.28161250279473404,
+        "Soft_PINN_World_Model": 219.25431705304408,
+        "Statistical_MLP_World_Model": 90.25852463758335,
+        "Random_Baseline": 0.0
+      }
+    },
+    {
+      "seed": 43,
+      "progress_px": {
+        "Hard_PINN_World_Model": 113.5625,
+        "Soft_PINN_World_Model": 65.0,
+        "Statistical_MLP_World_Model": 39.5,
+        "Random_Baseline": 241.5
+      },
+      "alignment_err_px": {
+        "Hard_PINN_World_Model": 1.5730879317682842,
+        "Soft_PINN_World_Model": 216.0352954853236,
+        "Statistical_MLP_World_Model": 92.90302859873603,
+        "Random_Baseline": 0.0
+      }
+    },
+    {
+      "seed": 44,
+      "progress_px": {
+        "Hard_PINN_World_Model": 577.375,
+        "Soft_PINN_World_Model": 54.75,
+        "Statistical_MLP_World_Model": 42.625,
+        "Random_Baseline": 241.5
+      },
+      "alignment_err_px": {
+        "Hard_PINN_World_Model": 0.2689849828089054,
+        "Soft_PINN_World_Model": 216.13363630631792,
+        "Statistical_MLP_World_Model": 94.62170875285047,
+        "Random_Baseline": 0.0
+      }
+    }
+  ],
+  "interpretation": "Spread across seeded repeats is the sampling uncertainty of the CEM; a row whose published value lies outside the audit range was recorded under a different protocol (see --preamble-probe) rather than by unlucky draws."
+}

@@ -1,0 +1,258 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-22T19:35:00+00:00",
+    "git_sha": "7df6b8652c2eb204df89cbdd5d0ee07cff727661",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.analytical_baselines"
+  },
+  "engine_rule_parameters_identified": {
+    "a_traction_walk": 0.5,
+    "a_traction_run": 0.5,
+    "a_friction": 0.5,
+    "a_skid": 4.0,
+    "jump_impulse": -64.0,
+    "jump_run_gain": 0.0
+  },
+  "engine_rule_parameters_prior_guess": {
+    "a_traction_walk": 1.0,
+    "a_traction_run": 2.0,
+    "a_friction": 1.0,
+    "a_skid": 5.0,
+    "jump_impulse": -72.0,
+    "jump_run_gain": 0.0
+  },
+  "identification_trace": [
+    {
+      "sweep": 0,
+      "parameter": "a_traction_walk",
+      "selected": 0.5,
+      "velocity_mse": 515.9981689453125,
+      "search_range": [
+        0.25,
+        4.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 0,
+      "parameter": "a_traction_run",
+      "selected": 0.5,
+      "velocity_mse": 515.4269409179688,
+      "search_range": [
+        0.5,
+        8.0,
+        0.5
+      ]
+    },
+    {
+      "sweep": 0,
+      "parameter": "a_friction",
+      "selected": 0.5,
+      "velocity_mse": 515.41455078125,
+      "search_range": [
+        0.25,
+        6.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 0,
+      "parameter": "a_skid",
+      "selected": 4.0,
+      "velocity_mse": 515.3516235351562,
+      "search_range": [
+        4.0,
+        6.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 0,
+      "parameter": "jump_impulse",
+      "selected": -64.0,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        -80.0,
+        -64.0,
+        1.0
+      ]
+    },
+    {
+      "sweep": 0,
+      "parameter": "jump_run_gain",
+      "selected": 0.0,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        0.0,
+        1.0,
+        0.05
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "a_traction_walk",
+      "selected": 0.5,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        0.25,
+        4.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "a_traction_run",
+      "selected": 0.5,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        0.5,
+        8.0,
+        0.5
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "a_friction",
+      "selected": 0.5,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        0.25,
+        6.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "a_skid",
+      "selected": 4.0,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        4.0,
+        6.0,
+        0.25
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "jump_impulse",
+      "selected": -64.0,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        -80.0,
+        -64.0,
+        1.0
+      ]
+    },
+    {
+      "sweep": 1,
+      "parameter": "jump_run_gain",
+      "selected": 0.0,
+      "velocity_mse": 461.4106750488281,
+      "search_range": [
+        0.0,
+        1.0,
+        0.05
+      ]
+    }
+  ],
+  "single_step": {
+    "test_mse_all_channels": 117.3844223022461,
+    "test_mse_velocity_only": 467.1167907714844,
+    "test_mse_position_only": 2.4072117805480957,
+    "kinematic_residual": 0.0,
+    "learned_parameters": 0
+  },
+  "per_variable_metrics": {
+    "x": {
+      "mse": 0.1396505981683731,
+      "mae": 0.13046184182167053,
+      "r2": 0.9999961443502752
+    },
+    "y": {
+      "mse": 4.674773216247559,
+      "mae": 1.214325189590454,
+      "r2": 0.9959836557030702
+    },
+    "vx": {
+      "mse": 3.207780122756958,
+      "mae": 1.0055309534072876,
+      "r2": 0.990010710397008
+    },
+    "vy": {
+      "mse": 931.0258178710938,
+      "mae": 15.965339660644531,
+      "r2": 0.4863998087939526
+    },
+    "c_ground": {
+      "accuracy": 0.9904129793510325,
+      "f1": 0.9938006676204101
+    },
+    "c_ceiling": {
+      "accuracy": 1.0,
+      "f1": null
+    },
+    "c_left": {
+      "accuracy": 1.0,
+      "f1": null
+    },
+    "c_right": {
+      "accuracy": 0.9823008849557522,
+      "f1": 0.0
+    }
+  },
+  "vertical_dynamics_diagnostics": {
+    "frames": 1356,
+    "impulse_frames": 171,
+    "impulse_frames_already_rising_share": 0.9473684210526315,
+    "impulse_frames_with_jump_held_share": 0.21052631578947367,
+    "observed_vy_next_min": -112.0,
+    "documented_takeoff_window": [
+      -80.0,
+      -64.0
+    ],
+    "held_ascent_mean_dvy": 3.0,
+    "held_ascent_dvy_std": 0.0,
+    "reading": "Held-ascent dvy is deterministic at +3 (g_held, section 4.2.3) and is reproduced exactly; the loss concentrates in the impulse frames, which are not identifiable from a single transition because the recorded velocity is already post-impulse."
+  },
+  "rollout_multistart": {
+    "starts": [
+      0,
+      123,
+      246,
+      369,
+      492,
+      615,
+      738,
+      861,
+      984,
+      1107
+    ],
+    "horizon": 120,
+    "num_starts": 10,
+    "mean_drift_mean": 137.4065363407135,
+    "mean_drift_std": 182.9475260214235,
+    "final_drift_mean": 222.9919023513794,
+    "final_drift_std": 265.1616438349481,
+    "kinematic_violation_rate_mean": 0.05,
+    "velocity_violation_rate_mean": 0.0
+  },
+  "notes": [
+    "Contact channels are propagated by persistence: they are not derivable from kinematics and are exactly what a learned residual head must explain.",
+    "The P-meter sprint tier is unobservable in the 8D state, so the run tier caps commanded acceleration while existing momentum is preserved.",
+    "`jump_run_gain` is the minimal linear reading of section 4.2.1's \"modulated by prior horizontal running momentum\"; observed takeoff magnitudes exceed the documented [-64, -80] window, which is reported rather than fitted away."
+  ],
+  "comparison_against_published": {
+    "Statistical_MLP": 16.471670410849832,
+    "Statistical_LSTM": 39.21941497109153,
+    "Soft_PINN": 53.81669547341087,
+    "Hard_Residual_PINN": 0.5783408392559398
+  }
+}

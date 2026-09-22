@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-22T19:36:16+00:00",
+    "git_sha": "7df6b8652c2eb204df89cbdd5d0ee07cff727661",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.analytical_baselines (oracle MPC)"
+  },
+  "configuration": {
+    "frames_budget": 300,
+    "horizon": 15,
+    "num_candidates": 256,
+    "cem_iterations": 3,
+    "objective_weights": {
+      "progress": 2.0,
+      "velocity": 0.5,
+      "pit_penalty": 1000.0
+    },
+    "protocol_source": "mbrl_mpc_benchmark.py (README 10.6)"
+  },
+  "per_controller": {
+    "MPC + Hard Residual PINN (learned)": {
+      "progress_px": 573.94,
+      "frames_survived": 300,
+      "control_fps": 13.24,
+      "termination": "timeout",
+      "action_sequence": "RRrwwrrrRwr.RrjrrRRrrrrrrrrrrrrrrrrrRrrrrrr.rwrrrrrrRRRRrrLrrrrrrrrrLLrrrrrrrjRRRrrrrrrrRrrrLr.wLrrrrwrrRRrrrrrrrrrrrrrrrjrrLrLLrw.wRrrrRRRRRrrrrrrrrrrRrrrrRrrLLrwrLrRrrrrRrrrrrrrrrrrrrrrRrRrr..rrLrrw.rrLRRrrrrrrrrrrrRrRrrRRRrRRRrRRRrrrrRRRRRrrRRRrrrrrrrrrrrrrrrjrrrrrrLrLrrrrrrrrrrrrrrrRrrrrrrRRrrrr"
+    },
+    "MPC + Analytical Engine Rules (oracle-like)": {
+      "progress_px": 605.0,
+      "frames_survived": 300,
+      "control_fps": 5.78,
+      "termination": "timeout",
+      "action_sequence": "LRjrwwwjwjrjrRrRrRRRrRrRrRrRrRrrrrrRrjrRRrRRRRrRrrRRrrrrRrrRrRrRrrRRRRRRrwRRRRRRRRRRrRrRRRRrRRRrRrrRrrRRRrrrrrrRrRRrRrRrRRrRwrRrRrrRRrRRrrrRRrRRRrRRrrrRRrRrRRRrRRRRrRRrRRrRrrrRrRRrrrRrrrrRrRRrRRRRrrrRRRrrRRrRRrRjRRwrRwRjrRrwRRrrRrrrrRRRRRRRRRRrRRrrRrrrrrRrRRRRrrrrrRrRrRrrRrrrRRRRRrrrRRRRrrrRRRRrrrrr"
+    }
+  },
+  "first_action_agreement": 0.0,
+  "full_sequence_agreement": 0.4333,
+  "interpretation": "The gap between the two rows is attributable to world-model error only: planner, objective, savestate and CEM sampling are identical."
+}
