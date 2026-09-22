@@ -1,0 +1,47 @@
+{
+  "Random_Baseline": {
+    "survived_frames": 400,
+    "max_frames": 400,
+    "total_progress_pixels": 143.4375,
+    "mean_vx": 5.785,
+    "mean_step_time_ms": 0.019950497953686863,
+    "throughput_fps": 50124.06218237773,
+    "evaluation_time_seconds": 0.1551201343536377
+  },
+  "MPC_MLP": {
+    "survived_frames": 400,
+    "max_frames": 400,
+    "total_progress_pixels": 576.8125,
+    "mean_vx": 23.155,
+    "mean_step_time_ms": 13.88752899656538,
+    "throughput_fps": 72.00705037212286,
+    "evaluation_time_seconds": 5.745885372161865
+  },
+  "MPC_Soft_PINN": {
+    "survived_frames": 400,
+    "max_frames": 400,
+    "total_progress_pixels": 394.0625,
+    "mean_vx": 15.7725,
+    "mean_step_time_ms": 13.569775751966517,
+    "throughput_fps": 73.69318537596916,
+    "evaluation_time_seconds": 5.618837118148804
+  },
+  "MPC_Hard_PINN": {
+    "survived_frames": 400,
+    "max_frames": 400,
+    "total_progress_pixels": 755.625,
+    "mean_vx": 30.2975,
+    "mean_step_time_ms": 18.80497849866515,
+    "throughput_fps": 53.17740725260514,
+    "evaluation_time_seconds": 7.6850199699401855
+  },
+  "DAgger_Policy": {
+    "survived_frames": 400,
+    "max_frames": 400,
+    "total_progress_pixels": 830.5,
+    "mean_vx": 34.66,
+    "mean_step_time_ms": 0.3262710029957816,
+    "throughput_fps": 3064.9367881856456,
+    "evaluation_time_seconds": 0.2832036018371582
+  }
+}

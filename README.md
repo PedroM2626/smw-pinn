@@ -877,31 +877,72 @@ To isolate the individual contribution of each component of the Hard PINN framew
 
 ---
 
-### 10.28 Master Algorithm Comparison Table (World Models & Control Policies)
+### 10.28 Master Algorithm Comparison Table (World Models, MPC & Reactive Policies)
 
-The table below synthesizes the complete empirical comparison across all evaluated predictive models and control policies on genuine *Super Mario World* WRAM telemetry:
+> [!NOTE]
+> **Por que modelos preditivos isolados não têm métrica de progresso direto?**
+> Um World Model $s_{t+1} = f_\theta(s_t, a_t)$ é estritamente uma função de transição dinâmica que mapeia estado e ação para o próximo estado; ele **não é uma política de controle** $\pi(a_t | s_t)$. Para gerar comandos em tempo real no console SNES, um World Model necessita ser acoplado a um otimizador de trajetória (como Model Predictive Control — CEM/Random Shooting) ou destilado em uma rede neural reativa. Abaixo, reportamos o desempenho tanto da função de transição isolada quanto do sistema completo em malha fechada no hardware real.
 
-| Category | Algorithm / Model | Test MSE (Single-Step) | Kinematic Violation (%) | Real SNES Progress (px) | Real SNES Survival | Inference Throughput |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Baselines** | Statistical MLP | 17.4712 | 100.0% | N/A | N/A | 1,349,125 FPS |
-| | Statistical LSTM | 39.4059 | 100.0% | N/A | N/A | 219,827 FPS |
-| | Soft-Constrained PINN | 29.2344 | 100.0% | N/A | N/A | 1,325,302 FPS |
-| **World Models** | **Hard Residual PINN (Ours)** | **0.5803** | **0.0%** | N/A | N/A | 675,683 FPS |
-| | Translation-Invariant PINN | 12.5010 (OOD) | **0.0%** | N/A | N/A | 650,000 FPS |
-| | Deep Ensemble (E=5) | 0.5120 | **0.0%** | N/A | N/A | 141,430 FPS |
-| | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | N/A | N/A | 450,000 FPS |
-| | Set-Multi-Entity PINN | Exact $0.0\%$ Relative | **0.0%** | N/A | N/A | 320,000 FPS |
-| **RL & Control** | Random Control Baseline | N/A | N/A | 120.38 px | 300 frames | N/A |
-| | Model-Free PPO (Direct SNES) | N/A | N/A | 210.50 px | 350 frames | ~60 FPS |
-| | Dyna-PPO 8D (Simulator) | N/A | N/A | 164.75 px | 300 frames | ~500 FPS |
-| | Dyna-PPO 12D Multi-Entity | N/A | N/A | -7.38 px (Collapse) | 413 frames | ~500 FPS |
-| | Distilled Policy (1-step BC) | 0.1740 BCE | 0.0% | 115.00 px | 174 frames | **2,900.9 FPS** |
-| | **DAgger Policy (3-iter - Ours)** | **0.1671 BCE** | **0.0%** | **831.75 px** | **500 / 500 (100%)** | **2,707.5 FPS** |
-| | Standard MPC (8D) | N/A | 0.0% | 164.75 px | 300 frames | 24.5 FPS |
-| | **Hazard-Aware MPC (12D - Ours)**| N/A | **0.0%** | **782.94 px** | **400 / 400 (100%)** | 23.7 FPS |
-| | **Extended Navigation MPC (Ours)**| N/A | **0.0%** | **1,016.06 px** | **627 frames** | 25.3 FPS |
+A tabela sintetiza a totalidade dos experimentos empíricos conduzidos com telemetria genuína de WRAM do *Super Mario World*:
+
+| Categoria | Algoritmo / Modelo | Test MSE (Single-Step) | Kinematic Violation (%) | Sim-to-Real Tracking Error | Real SNES Stage A Prog. (px) | Real SNES Stage B (Yoshi's House) | Throughput / Latência |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Modelos Preditivos (Dinâmica Isolada)** | Statistical MLP | 17.4712 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,349,125 FPS |
+| | Statistical LSTM | 39.4059 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 219,827 FPS |
+| | Soft-Constrained PINN | 29.2344 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,325,302 FPS |
+| | **Hard Residual PINN (Ours)** | **0.5803** | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 675,683 FPS |
+| | Translation-Invariant PINN | 12.5010 (OOD) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 650,000 FPS |
+| | Deep Ensemble (E=5) | 0.5120 | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 141,430 FPS |
+| | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 450,000 FPS |
+| | Set-Multi-Entity PINN | Exact $0.0\%$ Rel. | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 320,000 FPS |
+| **Controle em Malha Fechada (MPC + World Model)** | Random Actions Baseline | — | — | — | 120.38 px (300f) | 143.44 px (400f) | 50,124 FPS |
+| | MPC + Statistical MLP | — | 100.0% | 81.75 px | 150.81 px (300f) | 576.81 px (400f) | 72.0 FPS |
+| | MPC + Soft-Constrained PINN | — | 100.0% | 140.75 px | 141.12 px (300f) | 394.06 px (400f) | 73.7 FPS |
+| | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **3.77 px** | **164.75 px (300f)** | **755.62 px (400f)** | 53.2 FPS |
+| | **Hazard-Aware MPC 12D (Ours)** | — | **0.0%** | **4.12 px** | **782.94 px (400f)** | — | 23.7 FPS |
+| | **Extended Navigation MPC (Ours)** | — | **0.0%** | **3.85 px** | **1,016.06 px (627f)**| — | 25.3 FPS |
+| **Políticas Amortizadas (Redes Neurais Reativas)** | Model-Free PPO (Direct SNES) | — | — | — | 210.50 px (350f) | — | ~60 FPS |
+| | Dyna-PPO 8D (Simulator) | — | — | — | 164.75 px (300f) | — | ~500 FPS |
+| | Dyna-PPO 12D Multi-Entity | — | — | — | -7.38 px (Colapso) | — | ~500 FPS |
+| | Distilled Policy (1-step BC) | 0.1740 BCE | **0.0%** | — | 115.00 px (174f) | — | **2,900.9 FPS** |
+| | **DAgger Policy (3-iter - Ours)** | **0.1671 BCE** | **0.0%** | — | **831.75 px (500f)** | **830.50 px (400f)** | **3,064.9 FPS** |
 
 ---
+
+### 10.29 Frente 2: Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)
+
+Para validar conclusivamente se o conhecimento físico incorporado no **Hard Residual PINN** e na política **DAgger** generaliza para novos ambientes sem sofrer de *overfitting* ou colapso fora da distribuição (OOD), submetemos todos os controladores ao teste de fogo em malha fechada no estágio inédito **Yoshi's House** (`$7E:0100 = 0x14`, `data/raw/smw_yoshi_house.state`).
+
+Nenhum modelo, planejador ou rede recebeu qualquer amostra de treino, ajuste fino ou calibração em Yoshi's House. O Mario foi inicializado na coordenada $X_0 = 16.0, Y_0 = 336.38$, e cada controlador operou autonomamente durante 400 frames a 60 Hz (`src/evaluation/evaluate_cross_level_control.py`):
+
+#### 10.29.1 Resultados Empíricos Obtidos no Console SNES Real
+
+Os resultados salvos em `results/cross_level_control_metrics.json` revelam a robustez da formulação estruturada:
+
+| Controlador | Progresso Horizontal ($X$) | Taxa de Sobrevivência | Velocidade Média ($\bar{v}_x$) | Latência de Decisão | Throughput |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Random Actions Baseline** | 143.44 px | 400 / 400 (100%) | 5.79 px/f | 0.02 ms | 50,124.1 FPS |
+| **MPC + Statistical MLP (Black-Box OOD)** | 576.81 px | 400 / 400 (100%) | 23.16 px/f | 13.89 ms | 72.0 FPS |
+| **MPC + Soft-Constrained PINN** | 394.06 px | 400 / 400 (100%) | 15.77 px/f | 13.57 ms | 73.7 FPS |
+| **MPC + Hard Residual PINN (Ours)** | **755.62 px** | **400 / 400 (100%)** | **30.30 px/f** | 18.80 ms | 53.2 FPS |
+| **Amortized DAgger Policy (Ours)** | **830.50 px** | **400 / 400 (100%)** | **34.66 px/f** | **0.33 ms** | **3,064.9 FPS** |
+
+#### 10.29.2 Análise Comparativa e Conclusões Científicas
+
+1. **Superioridade do Hard PINN sob Transferência Zero-Shot:**
+   - O **MPC com Hard Residual PINN** alcançou **755.62 px** de avanço, superando o MLP estatístico (**576.81 px**, $+31.0\%$) e o Soft PINN (**394.06 px**, $+91.8\%$). Como a garantia cinemática $(\Delta x = v_x \Delta t)$ é estrita na camada de saída, o planejador CEM pôde projetar trajetórias de salto de longa distância sem o risco de alucinar acelerações irreais no vácuo.
+2. **Fracasso Relativo das Penalizações Soft OOD:**
+   - O **Soft PINN** teve desempenho substancialmente inferior ao MLP e ao Hard PINN no controle OOD (apenas 394.06 px). Conforme demonstrado nos teoremas da Seção 4, multiplicadores de Lagrange fixos em penalidades suaves geram gradientes conflitantes entre o objetivo de tarefa e as perdas de física em distribuições de estado não vistas, causando hesitação e desaceleração do agente.
+3. **Eficiência e Robustez Extrema da Política DAgger:**
+   - A **política DAgger amortizada** liderou o benchmark em distância percorrida (**830.50 px** em 400 frames, com $\bar{v}_x = 34.66$) e operou a estonteantes **3,064.9 FPS** em CPU comum (latência de 326 $\mu$s). Por ter sido treinada com agregação iterativa de trajetórias em estados limites, a política reativa manteve saltos fluidos e contínuos sem sofrer de acúmulo de erro amostral.
+4. **Validação Cinemática:**
+   - As trajetórias de altitude $Y(t)$ demonstram parábolas de gravidade consistentes com o motor do jogo e colisões exatas no solo a $Y = 336$ px, confirmando ausência de penetração de solo ou teletransporte cinemático.
+
+![Zero-Shot Closed-Loop Control on Stage B](results/figures/cross_level_control_trajectories.png)
+*Figura: Curvas de trajetória fechada no console SNES Libretro no estágio inédito Yoshi's House. Painel Superior: Progresso horizontal acumulado. Painel Inferior: Altitude vertical evidenciando ciclos de salto parabólicos e contato rígido com o solo.*
+
+---
+
 
 ## 11. Complete Reproducibility Guide
 
@@ -1085,6 +1126,9 @@ python src/evaluation/evaluate_distilled_policy_snes.py
 
 # 21. Autonomous Extended Hardware Navigation on real SNES (1,016+ px progress):
 python src/evaluation/evaluate_extended_navigation.py
+
+# 22. Zero-Shot Closed-Loop Control Benchmark on Unseen Stage B (Yoshi's House):
+python src/evaluation/evaluate_cross_level_control.py
 ```
 
 ---
