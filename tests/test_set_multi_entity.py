@@ -2,7 +2,7 @@
 test_set_multi_entity.py
 Unit tests for SetMultiEntityPINNDynamics architecture:
 - Output tensor shapes
-- Exact 0.0% analytical kinematic conservation for Mario and dynamic entities
+- Exact 0.0% analytical kinematic consistency for Mario and dynamic entities
 - Permutation invariance / equivariance under sprite slot reordering
 - Graceful handling of zero active entities
 """

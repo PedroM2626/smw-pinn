@@ -2,7 +2,7 @@
 pinn_multi_entity.py
 Multi-Entity Physics-Informed Neural Network (Multi-Entity PINN).
 Simulates both Mario kinematics (8D) and dynamic stage hazards/sprites (4D)
-with joint analytical kinematic conservation:
+with joint analytical kinematic consistency:
     hat_X_{mario, t+1} = X_{mario, t} + hat_vx_{mario, t+1} / 16.0
     hat_Delta_X_{hazard, t+1} = Delta_X_{hazard, t} + (hat_vx_{hazard, t+1} - hat_vx_{mario, t+1}) / 16.0
 Guarantees 0.0% kinematic violation for both player and relative hazard displacement.

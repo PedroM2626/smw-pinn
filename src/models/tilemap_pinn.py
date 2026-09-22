@@ -8,7 +8,7 @@ Combines:
 2. Local 7x7 spatial tilemap patch centered at Mario
 3. 6D Joypad action vector [B, Y, UP, DOWN, LEFT, RIGHT]
 
-Maintains exact 0.0% analytical kinematic conservation:
+Maintains exact 0.0% analytical kinematic consistency:
     hat_X_{t+1} = X_t + hat_vx_{t+1} / 16.0
     hat_Y_{t+1} = Y_t + hat_vy_{t+1} / 16.0
 while grounding terrain contact flags (c_ground, c_left, etc.) in authentic level geometry.
@@ -129,7 +129,7 @@ class TilemapPINNDynamics(nn.Module):
         next_vx = torch.clamp(b_vx + accel[:, 0], -self.max_vx, self.max_vx)
         next_vy = torch.clamp(b_vy + accel[:, 1], -self.max_vy, self.max_vy)
 
-        # 4. Exact Discrete Kinematic Conservation Layer:
+        # 4. Exact Discrete Kinematic Consistency Layer:
         # hat_X_{t+1} = X_t + hat_vx_{t+1} / 16.0
         # hat_Y_{t+1} = Y_t + hat_vy_{t+1} / 16.0
         next_x = b_x + (next_vx / self.subpixels_per_pixel)

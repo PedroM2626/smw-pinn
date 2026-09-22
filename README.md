@@ -9,25 +9,25 @@
 
 ---
 
-## 🏆 Direct Answer: Which Was the Best Model?
+## 🏆 Direct Answer: Which Model Performed Best in the Benchmark?
 
-The best model of the benchmark was, unequivocally and by a wide margin across all evaluated metrics, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)**.
+Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)** achieved the lowest reported prediction error and the strongest kinematic consistency across the evaluated metrics.
 
-### Why Was the Hard Residual PINN Superior?
-1. **Single-Step Accuracy (Test MSE):**
+### Key Factors in the Performance of the Hard Residual PINN
+1. **Single-Step Predictive Accuracy (Test MSE):**
    * **Hard Residual PINN:** **0.5803**
    * **Statistical MLP:** **17.4712** (**30.1x higher error**)
    * **Soft-Constrained PINN:** **29.2344** (**50.4x higher error**)
    * **Statistical LSTM:** **39.4059** (**67.9x higher error**)
-2. **Kinematic Consistency and Physical Violations:**
-   * The analytical kinematic residual ($\|\Delta X - v_x/16.0\|^2$) of the Hard PINN was **0.0012** (analytical zero within float32 precision limits), compared to **18,453.62** for MLP and **37,942.19** for LSTM.
-   * In continuous multi-step autoregressive rollouts (120 frames / 2 seconds), the Hard PINN incurred **zero kinematic violations** (**0 / 120, or 0.0%**). In stark contrast, **all other models violated the laws of motion across 100.0% of frames** (120 / 120).
-3. **Extreme Sample Efficiency (>25x):**
-   * Trained with only **$N = 200$ real transitions** (~3.3 seconds of gameplay), the Hard PINN achieved a Test MSE of **0.6743** and a trajectory drift of **38.35 px**.
+2. **Kinematic Consistency and Physical Constraint Adherence:**
+   * The analytical kinematic residual ($\|\Delta X - v_x/16.0\|^2$) of the Hard PINN was **0.0012** (analytical zero within float32 numerical precision limits), compared to **18,453.62** for the MLP and **37,942.19** for the LSTM.
+   * In multi-step autoregressive rollouts (120 frames / 2 seconds), the Hard PINN strictly adhered to the discrete kinematic position update constraint (**0 violations across 120 frames, or 0.0%**). In contrast, unconstrained statistical baselines exhibited departures from the discrete kinematic update relation across evaluated rollout frames.
+3. **High Sample Efficiency (>25x):**
+   * Trained with only **$N = 200$ real transitions** (~3.3 seconds of gameplay), the Hard PINN achieved a Test MSE of **0.6743** and an open-loop rollout drift of **38.35 px**.
    * The Statistical MLP required over **$N = 5,000$ transitions** (~83 seconds of gameplay) to reach a Test MSE of **11.3259** and a drift of **67.68 px**.
-   * Consequently, the Hard PINN with 200 samples was **16.8 times more accurate** than the MLP with 5,000 samples, demonstrating a sample efficiency multiplier greater than **25 times**.
-4. **Parameter and Computational Efficiency:**
-   * The Hard PINN requires only **9,992 parameters**, making it **72.5% lighter** than the MLP (36,360 parameters) and **95.2% lighter** than the LSTM (206,600 parameters), training and converging with absolute mathematical stability in under 5 epochs.
+   * Within the evaluated dataset range, the Hard PINN trained on 200 samples yielded lower prediction error than the MLP trained on 5,000 samples, reflecting a sample efficiency advantage exceeding a factor of **25**.
+4. **Parameter and Computational Compactness:**
+   * The Hard PINN requires only **9,992 parameters**, making it **72.5% lighter** than the MLP (36,360 parameters) and **95.2% lighter** than the LSTM (206,600 parameters), converging with high numerical stability within 5 training epochs.
 
 ---
 
@@ -71,6 +71,9 @@ The best model of the benchmark was, unequivocally and by a wide margin across a
    * [10.26 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)](#1026-multi-iteration-interactive-dagger-policy-831-px-progress--2707-fps)
    * [10.27 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)](#1027-comprehensive-ablation-study-clamping-horizon-drift--cem-sensitivity)
    * [10.28 Master Algorithm Comparison Table (World Models & Control Policies)](#1028-master-algorithm-comparison-table-world-models--control-policies)
+   * [10.29 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1029-frente-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
+   * [10.30 Frontier Consolidation: Differentiable Optimization, PPO & Multimodal Rendering](#1030-consolidao-das-fronteiras-a-b-c-e-d-otimizao-diferencivel-ppo-e-renderizao-multimodal)
+   * [10.31 Scope, Limitations & Threats to Validity](#1031-scope-limitations--threats-to-validity)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -78,7 +81,7 @@ The best model of the benchmark was, unequivocally and by a wide margin across a
 
 ## 1. Academic Abstract
 
-This research provides a rigorous empirical investigation into the impact of embedding known physical conservation laws (*Physics-Informed Machine Learning* — PIML / PINN) into predictive world modeling for discrete-time dynamic systems. Using *Super Mario World* (SNES, 1990) executed within a high-throughput headless emulation environment with direct Random Access Memory (RAM) telemetry (free of computer vision or pixel rendering pipelines), we benchmark four distinct neural network paradigms:
+This research provides an empirical investigation into the impact of embedding known discrete kinematic constraints and structural physical priors (*Physics-Informed Machine Learning* — PIML / PINN) into predictive world modeling for discrete-time dynamic systems. Using *Super Mario World* (SNES, 1990) executed within a high-throughput headless emulation environment with direct Random Access Memory (RAM) telemetry (free of computer vision or pixel rendering pipelines), we benchmark four distinct neural network paradigms:
 1. **Statistical Multilayer Perceptron (MLP)**: Pure supervised black-box baseline;
 2. **Statistical Recurrent Neural Network (LSTM)**: Sequential model with latent temporal memory;
 3. **Soft-Constrained PINN**: Dense network penalized via Lagrangian regularization of kinematic and boundary residuals in the objective loss;
@@ -145,7 +148,7 @@ Through reverse-engineering and symbol table disassembly of the *Super Mario Wor
 
 ## 4. Mathematical Formulation of Super Mario World Physics
 
-### 4.1 Fixed-Point Arithmetic and Discrete Kinematic Conservation
+### 4.1 Fixed-Point Arithmetic and Discrete Kinematic Consistency
 In the 65816 assembly engine, player position is maintained as a 24-bit fixed-point accumulator comprising 16 bits of integer pixels and 8 bits of fractional subpixels. Each pixel is partitioned into 16 subpixels (where each increment in the subpixel's high nibble corresponds to $1/16$ of a pixel).
 
 Consequently, the continuous real coordinate of the character at any frame $t$ is exactly:
@@ -158,12 +161,12 @@ At every simulation step ($\Delta t = 1$ frame), the engine's kinematic routine 
 $$X_{t+1} = X_t + \frac{v_{x, t}}{16.0}$$
 $$Y_{t+1} = Y_t + \frac{v_{y, t}}{16.0}$$
 
-#### Kinematic Conservation Theorem:
+#### Discrete Kinematic Consistency Identity:
 In the absence of instantaneous stage wraps or hard wall clammings, the displacement $\Delta X_t = X_{t+1} - X_t$ is strictly linear with respect to velocity $v_{x,t}$, governed by the invariant constant ratio:
 
 $$\frac{\Delta X_t}{v_{x,t}} = \frac{1}{16.0} = 0.0625\quad [\text{pixels} \cdot \text{subpixel}^{-1}]$$
 
-Any neural model predicting $\hat{X}_{t+1} \ne X_t + \frac{\hat{v}_{x, t+1}}{16.0}$ introduces a **structurally impossible kinematic violation** relative to the physical universe of the game.
+This equation represents an exact discrete numerical integration identity enforced by the game engine's computational routines (rather than a classical continuous conservation law in the Noetherian sense). Any forward model predicting $\hat{X}_{t+1} \ne X_t + \frac{\hat{v}_{x, t+1}}{16.0}$ introduces a structural kinematic violation relative to the engine's arithmetic.
 
 ### 4.2 Vertical Dynamics: Asymmetric Gravity and Jumping Mechanics
 Vertical acceleration in *Super Mario World* displays an intentional input-modulated physical asymmetry:
@@ -259,7 +262,7 @@ The combined input vector is $z_t = [s_t, a_t] \in \mathbb{R}^{14}$. The goal is
      $$\hat{Y}_{t+1} = Y_t + \frac{\hat{v}_{y,t+1}}{16.0}$$
   4. Contact indicators ($\hat{c}_{\text{ground}}, \hat{c}_{\text{ceiling}}, \hat{c}_{\text{left}}, \hat{c}_{\text{right}}$) are predicted by the auxiliary collision sub-head.
 - **Parameters:** Trainable weights: 9,992 parameters (in compact 64x64 configuration) up to 41,862 in 128x128.
-- **Theoretical Guarantee:** Kinematic conservation residual ($\hat{X}_{t+1} - X_t - \hat{v}_{x,t+1}/16.0$) is **identically zero by mathematical construction**.
+- **Structural Guarantee:** Discrete kinematic consistency residual ($\hat{X}_{t+1} - X_t - \hat{v}_{x,t+1}/16.0$) is **identically zero by computational graph construction**.
 
 ---
 
@@ -470,9 +473,9 @@ In open-loop rollout evaluations (120 frames / 2 seconds without ground-truth en
 ### 10.5 Implications for Model-Based Reinforcement Learning (MBRL)
 Recent deep RL benchmarks (e.g., Dreamer, MuZero, World Models) dedicate vast compute clusters to learning pixel renderers for retro games, often suffering from visual blur and hallucinations.
 
-This work proves that:
-1. **Semantic State Telemetry vs. Raw Pixels:** Directly accessing state registers via RAM bypasses perceptual latency, enabling world models that train in **under 5 seconds of GPU time** with near-zero error.
-2. **Inductive Biases as Ultimate Regularizers:** Embedding analytical physical laws produces lightweight models (<10,000 parameters) that obey conservation laws by construction and reach mastery on minute training datasets.
+This investigation indicates that:
+1. **Semantic State Telemetry vs. Raw Pixels:** Directly accessing state registers via RAM bypasses perceptual latency, enabling world models that train in **under 5 seconds of GPU time** with low coordinate error.
+2. **Inductive Biases as Structural Regularizers:** Embedding analytical kinematic update relations produces compact models (<10,000 parameters) that satisfy position-velocity consistency by construction and achieve low generalization error on small training sets.
 
 ---
 
@@ -492,9 +495,9 @@ The agent navigates stage *Yoshi's Island 1* directly inside the real headless S
 | **Random Exploration Baseline** | +120.4 px | N/A | -0.8 subpixels/frame | 300 / 300 (100%) |
 
 #### Key MBRL Takeaways:
-1. **Perceptual Alignment with Reality:** The Hard PINN World Model achieved a mean one-step spatial alignment error of only **3.77 pixels**, compared to **81.75 pixels** for the Statistical MLP and **140.75 pixels** for the Soft PINN. Because the Hard PINN embeds kinematic conservation by construction, its "imagined" futures mirror real console physics.
+1. **Perceptual Alignment with Reality:** The Hard PINN World Model achieved a mean one-step spatial alignment error of only **3.77 pixels**, compared to **81.75 pixels** for the Statistical MLP and **140.75 pixels** for the Soft PINN. Because the Hard PINN embeds discrete kinematic consistency by construction, its predicted trajectories adhere to the game engine's position integration rules.
 2. **Propulsion and Forward Progress:** Guided by the Hard PINN, the MPC agent traversed **+164.8 pixels** with an average horizontal velocity of **+15.4 subpixels/frame**, executing coordinated runs and jumps that translate directly into hardware advancement.
-3. **The Danger of Statistical World Models in MBRL:** When planning with the Statistical MLP, the agent suffers from **optimism under hallucinated dynamics** (imagining it can hover or accelerate without holding the run button). Consequently, the actual trajectory executed in the console departs from the planned trajectory, leading to suboptimal control actions.
+3. **The Risk of Unconstrained Dynamics in MBRL:** When planning with the Statistical MLP, the agent suffers from **optimism under hallucinated dynamics** (predicting it can accelerate without holding the run button). Consequently, the actual trajectory executed in the console departs from the planned trajectory, leading to suboptimal control actions.
 
 ![MBRL Closed-Loop Trajectories](results/figures/mbrl_mpc_trajectories.png)
 
@@ -634,13 +637,13 @@ Closing the loop between offline modeling and online reinforcement learning, we 
 
 To generalize world modeling beyond a single kinematic agent, we designed the **Multi-Entity PINN** (`src/models/pinn_multi_entity.py`). This architecture models Mario (8D) simultaneously with dynamic stage hazards (4D: $\Delta X_{\text{hazard}}, \Delta Y_{\text{hazard}}, v_{x,\text{hazard}}, \text{active}$), yielding a **12-Dimensional Joint State Representation**.
 
-#### Analytical Relative Kinematics Conservation:
+#### Analytical Relative Kinematic Consistency:
 Rather than delegating the relative motion of entities to black-box regression, the relative kinematic displacement is embedded directly into the PyTorch computational graph:
 
 $$\hat{X}_{\text{mario}, t+1} = X_{\text{mario}, t} + \frac{\hat{v}_{x, \text{mario}, t+1}}{16.0}$$
 $$\hat{\Delta X}_{\text{hazard}, t+1} = \Delta X_{\text{hazard}, t} + \frac{\hat{v}_{x, \text{hazard}, t+1} - \hat{v}_{x, \text{mario}, t+1}}{16.0}$$
 
-This guarantees exact spatial conservation of inter-entity distances with **0.0% analytical violation**.
+This guarantees exact spatial consistency of inter-entity relative displacements with **0.0% analytical violation**.
 
 #### End-to-End Autonomous Policy Optimization:
 Using `src/training/dyna_ppo_sprites.py`, an Actor-Critic policy was trained entirely inside the GPU-vectorized PINN simulation (`PINNVectorEnv` at >16,000 FPS). By incorporating hazard collision penalties (-80.0) and forward leap milestone rewards (+45.0), the policy autonomously discovers the coordinated jump timing required to leap over approaching Rex hazards without any manual trigger-edge heuristics.
@@ -708,7 +711,7 @@ The ultimate test of physical validity is whether a dynamics model transfers to 
 
 #### Scientific Implication:
 - **Catastrophic Out-of-Distribution Collapse of Statistical Baselines:** When faced with new stage coordinates, the statistical MLP hallucinates non-physical accelerations, yielding a massive Test MSE of 540.3 and violating physics across 100% of frames.
-- **Universal Physical Invariance:** Both the Hard Residual PINN and the Translation-Invariant PINN retain **0.0% kinematic violations** on the unseen stage, validating that embedding physical conservation laws ($F=ma$ and $\Delta X = v_x/16$) grants genuine domain generalization.
+- **Structural Kinematic Consistency:** Both the Hard Residual PINN and the Translation-Invariant PINN retain **0.0% kinematic violations** on the unseen stage, confirming that embedding discrete kinematic consistency ($\Delta X = v_x/16$) grants consistent generalization across coordinates without positional drift.
 
 ![Cross-Stage Generalization](results/figures/cross_stage_generalization_comparison.png)
 
@@ -780,7 +783,7 @@ To address the blindness of coordinate-only dynamics to static environmental geo
 To support scholarly peer review and academic publication, the complete theoretical and empirical body of this research is compiled as a publication-ready academic manuscript in the `paper/` directory:
 - **`paper/main.tex`:** Comprehensive 9-page two-column monograph formatted in standard academic style, comprising:
   1. *Abstract & Introduction:* Rigorous formulation of discrete hybrid dynamical systems vs. continuous ODE PINNs.
-  2. *SNES Architecture & Fixed-Point Kinematics:* Formal mathematical proof of the Discrete Kinematic Conservation Theorem.
+  2. *SNES Architecture & Fixed-Point Kinematics:* Formal mathematical statement of the Discrete Kinematic Consistency Identity.
   3. *Comparative Architecture Formalization:* Detailed descriptions of MLP, LSTM, Soft PINN, Hard Residual PINN, Translation-Invariant PINN, Deep Ensemble, Multi-Entity PINN, and Tilemap-PINN.
   4. *Complete Empirical Tables:* Full reporting of single-step MSE ($N_{\text{test}}=1,356$), multi-seed significance ($K=5$ seeds, $p < 0.005$), sample efficiency Pareto curves, OOD cross-stage transfer, and hardware latency/FPS.
   5. *Model-Based Control & Planning:* Closed-loop MPC, Dyna-PPO, and Safe MBPO formulations.
@@ -828,7 +831,7 @@ To solve the Sim-to-Real Objective Mismatch failure of Dyna-PPO (which scored $-
 ### 10.25 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)
 
 To test the multi-entity world model beyond localized obstacle evasion, we deployed an extended horizon benchmark (`src/evaluation/evaluate_extended_navigation.py`) spanning up to 1,500 frames on live SNES hardware:
-- **Milestones Shattered:**
+- **Milestones Cleared:**
   - Milestone 500 px cleared at frame 264.
   - Milestone 782 px cleared at frame 407.
   - **Milestone 1,000 px cleared at frame 512!**
@@ -989,6 +992,31 @@ Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançada
 
 ![Full Level Clearance Animation](results/figures/full_level_clearance.gif)
 *Figura: Animação fluida e contínua da travessia integral de Yoshi's Island 1 no console SNES real com câmera rastreadora dinâmica, HUD de telemetria WRAM a 60 Hz e cruzamento da fita de chegada.*
+
+---
+
+### 10.31 Scope, Limitations & Threats to Validity
+
+In adherence to rigorous scientific methodology, we explicitly delineate the boundary conditions, core assumptions, and threats to internal and external validity of the empirical findings presented in this study:
+
+1. **Deterministic vs. Stochastic Transitions:**
+   - *Super Mario World* is fundamentally a deterministic discrete-time dynamical system when conditioned on the exact WRAM microstate, hardware frame counter, and controller latch registers.
+   - The reported near-zero prediction error of the Hard Residual PINN ($\text{MSE} = 0.58$) directly leverages this underlying engine determinism. In systems exhibiting non-negligible transition stochasticity (such as physical robotics with sensor noise or stochastic actuation delays), single-point residual models would require probabilistic formulations (e.g., Gaussian or categorical distributions, as benchmarked via our epistemic Deep Ensemble in Section 10.10).
+
+2. **Privileged WRAM State Telemetry vs. Pixel-Level Vision:**
+   - Both the world models and closed-loop control policies in this repository operate on privileged internal state vectors extracted directly from the SNES RAM bus (`$7E:0094`, `$7E:00D1`, `$7E:C800`).
+   - This experimental design intentionally isolates the inductive physical biases from the confounding representations and optimization challenges of visual autoencoders or convolutional encoders. However, it means the current architecture is not an end-to-end pixel-to-action agent; it requires a state estimation front-end if deployed purely from visual observation streams.
+
+3. **Structural Kinematic Priors vs. Classical Continuous Conservation Laws:**
+   - The embedded physical constraints ($\Delta X = v_x / 16$ and saturation clamps $[v_{\min}, v_{\max}]$) are **discrete kinematic consistency identities** and **microprocessor arithmetic state invariants** arising from 16-bit fixed-point subpixel accumulator operations in the Ricoh 5A22 CPU.
+   - They do not represent continuous Noether-derived conservation laws (such as continuous energy or momentum conservation in Hamiltonian mechanics). We explicitly maintain this terminology to prevent conflation between continuous analytical physics and discrete fixed-point computer arithmetic.
+
+4. **Domain-Specific Inductive Bias:**
+   - The hard kinematic residual layer assumes prior knowledge of the discrete time-step ($\Delta t = 1$ frame) and the subpixel scaling constant ($1/16$ px per subpixel unit).
+   - While this structural formulation generalizes seamlessly across distinct game levels governed by the same engine routines (as demonstrated in Sections 10.16 and 10.29), porting to dynamical systems with unknown discretization schemes would necessitate either explicit system identification or meta-learning of the physical scaling factors.
+
+5. **Local Trajectory Optimization and Non-Convex Barriers:**
+   - In zero-shot cross-stage navigation with complex multi-height obstacles (e.g., pipe structures or vertical walls), pure local trajectory optimization (such as standard CEM MPC without global topological pathfinding) can suffer from local minima and horizon truncation. Addressing this requires pairing local predictive models with amortized global policies (e.g., DAgger or Dyna-PPO) or multi-scale planning hierarchies.
 
 ---
 

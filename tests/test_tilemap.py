@@ -63,7 +63,7 @@ def test_tilemap_pinn_exact_kinematics_and_gradients():
     assert next_kinematics.shape == (batch_size, 8)
     assert feat.shape == (batch_size, 32)
 
-    # Mathematical Kinematic Conservation Check:
+    # Mathematical Kinematic Consistency Check:
     # Delta X must strictly equal next_vx / 16.0
     delta_x = next_kinematics[:, 0] - dummy_kinematics[:, 0]
     expected_delta_x = next_kinematics[:, 2] / 16.0
@@ -73,8 +73,8 @@ def test_tilemap_pinn_exact_kinematics_and_gradients():
     expected_delta_y = next_kinematics[:, 3] / 16.0
     drift_y = (delta_y - expected_delta_y).abs().max().item()
 
-    assert drift_x < 1e-4, f"Kinematic conservation violated in X: drift={drift_x}"
-    assert drift_y < 1e-4, f"Kinematic conservation violated in Y: drift={drift_y}"
+    assert drift_x < 1e-4, f"Kinematic consistency constraint violated in X: drift={drift_x}"
+    assert drift_y < 1e-4, f"Kinematic consistency constraint violated in Y: drift={drift_y}"
 
     # Gradient flow test
     loss = next_kinematics.sum()

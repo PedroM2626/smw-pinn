@@ -45,12 +45,12 @@ Learning predictive world models capable of forward-simulating environmental dyn
 Model-Based Reinforcement Learning (MBRL) seeks to optimize control policies by simulating future states using an internal transition model $\hat{s}_{t+1} = f_\theta(s_t, a_t)$~\cite{sutton1990integrated, janner2019trust}. In high-frequency, contact-rich environments, two dominant paradigms have historically prevailed:
 \begin{enumerate}
     \item \textbf{Pixel-Level Visual World Models:} Convolutional and recurrent architectures (e.g., World Models~\cite{ha2018world}, Dreamer~\cite{hafner2020mastering}) that simulate raw RGB pixels. Although general, they suffer from high computational overhead, visual hallucination, and compounding blur over long horizons.
-    \item \textbf{Black-Box Statistical State Models:} Feedforward networks or LSTMs trained on raw coordinate state vectors. While computationally fast, they treat physical conservation laws as arbitrary statistical distributions, routinely violating fundamental kinematic constraints $\Delta x = v \cdot \Delta t$~\cite{raissi2019physics}.
+    \item \textbf{Black-Box Statistical State Models:} Feedforward networks or LSTMs trained on raw coordinate state vectors. While computationally fast, they treat discrete kinematic update relations as arbitrary statistical correlations, routinely violating fundamental kinematic constraints $\Delta x = v \cdot \Delta t$~\cite{raissi2019physics}.
 \end{enumerate}
 
 In vintage 16-bit microprocessor game engines, such as the Ricoh 5A22 (WDC 65C816 core) operating inside the Super Nintendo Entertainment System (SNES), character kinematics are governed by deterministic, discrete-time hybrid dynamical systems operating at 60 Hz with 24-bit fixed-point arithmetic.
 
-This paper addresses the central scientific question: \textit{Does embedding known discrete kinematic conservation laws improve world modeling in deterministic game engines, and under which formulation---soft penalty regularization in the objective function versus hard structural inductive bias in the computational graph---is this physics most effectively incorporated?}
+This paper addresses the central scientific question: \textit{Does embedding known discrete kinematic consistency constraints improve world modeling in deterministic game engines, and under which formulation---soft penalty regularization in the objective function versus hard structural inductive bias in the computational graph---is this physics most effectively incorporated?}
 
 \section{SNES Architecture \& Kinematic Physics}
 
@@ -62,7 +62,7 @@ The SNES CPU executes instructions synchronized with the display's Vertical Blan
     \item Contact flags $c_{\text{ground}}, c_{\text{ceiling}}, c_{\text{left}}, c_{\text{right}}$ ($\$7\text{E}:0077$).
 \end{itemize}
 
-\subsection{Discrete Kinematic Conservation Theorem}
+\subsection{Discrete Kinematic Consistency Formulation}
 In the 65816 assembly engine, each pixel is divided into 16 subpixels, with each subpixel further divided into 16 internal fractional units ($1/256$ of a pixel). The continuous real coordinate of entity $i$ at frame $t$ is:
 \begin{equation}
     X_t = X_{\text{pix}, t} + \frac{X_{\text{sub}, t}}{16.0 \times 16.0} \times 16.0 = X_{\text{pix}, t} + \frac{X_{\text{sub}, t}}{16.0}
@@ -73,8 +73,8 @@ On each simulation frame, the CPU accumulates instantaneous velocity into the co
     X_{t+1} = X_t + \frac{v_{x, t+1}}{16.0}, \quad Y_{t+1} = Y_t + \frac{v_{y, t+1}}{16.0}
 \end{equation}
 
-\begin{theorem}[Discrete Kinematic Conservation]
-Let $s_t = (X_t, Y_t, v_{x, t}, v_{y, t})$ be the true state and $a_t$ the Joypad input. Any forward transition model $f_\theta(s_t, a_t)$ that predicts $\hat{s}_{t+1}$ satisfies strict kinematic conservation if and only if the analytical kinematic residual:
+\begin{theorem}[Discrete Kinematic Consistency]
+Let $s_t = (X_t, Y_t, v_{x, t}, v_{y, t})$ be the true state and $a_t$ the Joypad input. Any forward transition model $f_\theta(s_t, a_t)$ that predicts $\hat{s}_{t+1}$ satisfies strict discrete kinematic consistency if and only if the analytical kinematic residual:
 \begin{equation}
     \mathcal{R}_{\text{kin}}(\hat{s}_{t+1}) = \left\| \hat{X}_{t+1} - \left( X_t + \frac{\hat{v}_{x, t+1}}{16.0} \right) \right\|^2 + \left\| \hat{Y}_{t+1} - \left( Y_t + \frac{\hat{v}_{y, t+1}}{16.0} \right) \right\|^2
 \end{equation}
@@ -164,10 +164,10 @@ Multi-Entity 12D Policy & 413 & -7.38 & False \\
 As shown in Table~\ref{tab:mpc_results}, the hazard-aware MPC controller successfully recognized the Rex hitbox, initiated an evasive running leap, and reached **782.94 pixels of progress** purely through trajectory optimization.
 
 \section{Academic Discussion: The Soft PINN Dilemma}
-A critical theoretical finding of this study is the failure of the Soft PINN ($\text{MSE} = 29.23$ vs $17.47$ for pure MLP). In discrete dynamical systems with non-smooth friction and contact boundaries, Lagrangian regularization introduces gradient conflicts between the supervised loss $\nabla_\theta \mathcal{L}_{\text{data}}$ and the physical penalty $\nabla_\theta \mathcal{R}_{\text{kin}}$. Attempting to learn exact conservation through loss penalties leads to Pareto suboptimality. In contrast, embedding conservation into the computational graph completely eliminates optimization tension.
+A critical theoretical finding of this study is the failure of the Soft PINN ($\text{MSE} = 29.23$ vs $17.47$ for pure MLP). In discrete dynamical systems with non-smooth friction and contact boundaries, Lagrangian regularization introduces gradient conflicts between the supervised loss $\nabla_\theta \mathcal{L}_{\text{data}}$ and the physical penalty $\nabla_\theta \mathcal{R}_{\text{kin}}$. Attempting to enforce exact kinematic integration identities purely through loss penalties leads to Pareto suboptimality. In contrast, embedding the Eulerian kinematic identity directly into the computational graph as a hard structural prior completely eliminates optimization tension.
 
 \section{Conclusion}
-This work demonstrates that embedding known physical conservation laws as hard structural inductive biases fundamentally outperforms statistical black boxes and soft penalty regularization in discrete world modeling. The resulting Hard Residual PINN achieves zero kinematic drift, extreme sample efficiency, and real-time planning capability on authentic console emulation.
+This work demonstrates that embedding discrete kinematic consistency constraints as hard structural physical priors fundamentally outperforms statistical black boxes and soft penalty regularization in discrete world modeling. The resulting Hard Residual PINN achieves zero kinematic drift, high sample efficiency, and robust closed-loop planning capability on authentic console emulation.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

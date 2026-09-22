@@ -15,7 +15,7 @@ import torch.nn as nn
 class HardResidualPINNDynamics(nn.Module):
     """
     Hybrid Grey-Box Architecture:
-    - Exact Analytical Kinematic Conservation (Hard Inductive Bias).
+    - Exact Discrete Kinematic Consistency Integration (Hard Structural Prior).
     - Dense Residual Network for Forces and Accelerations (Delta Velocity).
     """
 

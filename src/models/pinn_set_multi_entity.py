@@ -2,7 +2,7 @@
 pinn_set_multi_entity.py
 Permutation-Invariant Set-Based Multi-Entity Physics-Informed Neural Network (Set-Multi-Entity PINN).
 Models variable number of dynamic stage entities/sprites (K in [0, K_max])
-interacting with Mario using Cross-Attention and Deep Sets with exact kinematic conservation:
+interacting with Mario using Cross-Attention and Deep Sets with exact kinematic consistency:
 
     hat_X_{mario, t+1} = X_{mario, t} + hat_vx_{mario, t+1} / 16.0
     hat_Delta_X_{i, t+1} = Delta_X_{i, t} + (hat_vx_{i, t+1} - hat_vx_{mario, t+1}) / 16.0   (for all i in 1..K)

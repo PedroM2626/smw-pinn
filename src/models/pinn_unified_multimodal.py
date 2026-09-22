@@ -7,7 +7,7 @@ Unifies:
 3. Dynamic hazard relative states (4D: [delta_x, delta_y, vx_hazard, active])
 4. Action vector [B, Y, UP, DOWN, LEFT, RIGHT]
 
-Maintains exact analytical 0.0% kinematic conservation for all interacting entities:
+Maintains exact analytical 0.0% kinematic consistency for all interacting entities:
     hat_X_{m, t+1} = X_{m, t} + hat_vx_{m, t+1} / 16.0
     hat_Y_{m, t+1} = Y_{m, t} + hat_vy_{m, t+1} / 16.0
     hat_Delta_X_{h, t+1} = Delta_X_{h, t} + (hat_vx_{h, t+1} - hat_vx_{m, t+1}) / 16.0

@@ -1,7 +1,7 @@
 """
 test_multi_entity.py
 Unit tests verifying Multi-Entity 12D PINN dynamics, analytical relative kinematic
-conservation, and vectorized simulation collision handling.
+consistency, and vectorized simulation collision handling.
 """
 
 import pytest
@@ -21,7 +21,7 @@ def test_multi_entity_forward_shapes():
 def test_multi_entity_exact_relative_kinematics():
     """
     Verifies that MultiEntityPINNDynamics maintains exact analytical kinematic
-    conservation for both Mario and the relative hazard position:
+    consistency for both Mario and the relative hazard position:
     Delta X_h(t+1) - Delta X_h(t) == (vx_h - vx_m) / 16.0
     """
     model = MultiEntityPINNDynamics(state_dim=12, action_dim=6)

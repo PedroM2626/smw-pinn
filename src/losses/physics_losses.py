@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 class DiscreteKinematicsLoss(nn.Module):
     """
-    Penalizes violations of discrete-time Eulerian kinematic conservation:
+    Penalizes violations of discrete-time Eulerian kinematic consistency:
         R_x = (X_{t+1} - X_t) - (v_{x,t} / 16.0)
         R_y = (Y_{t+1} - Y_t) - (v_{y,t} / 16.0)
     In Super Mario World, 16 subpixels correspond to exactly 1 pixel displacement per frame.

@@ -7,7 +7,7 @@ zero-shot on Stage B (Yoshi's House) without any parameter retraining or fine-tu
 Verifies:
 1. Single-Step Generalization MSE on unseen stage transitions.
 2. Long-Horizon 120-Frame Autoregressive Drift in Stage B.
-3. Conservation of the Spatial Equivariance Law:
+3. Adherence to Spatial Equivariance:
        hat_f(s + [C, 0, ...], a) = hat_f(s, a) + [C, 0, ...]
    guaranteeing 0.0% kinematic violations on any unseen stage.
 """
