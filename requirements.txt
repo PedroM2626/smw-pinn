@@ -11,7 +11,7 @@
 
 # --- Deep learning (CUDA 12.1 build; ver README) ---
 torch>=2.5.1,<2.7
-torchvision>=0.20.1,<0.22
+torchvision>=0.20.1,<0.30
 
 # --- Scientific stack ---
 numpy>=1.24.0,<2.1
