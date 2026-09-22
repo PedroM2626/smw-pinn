@@ -88,6 +88,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
-      - name: Unit + regression tests (emulator tests skip without a ROM)
+      # Same substantive gates as the Linux job, via the console script (make is absent
+      # on Windows). Lint / typecheck / tests-with-coverage are all line-ending agnostic;
+      # `ruff format --check` is intentionally NOT run here because the Windows runner
+      # checks text files out with CRLF (autocrlf=true) and that gate would be noisy -
+      # formatting is the Linux job's single source of truth. Emulator tests skip without
+      # a committed ROM, exactly as on Linux.
+      - name: Lint (ruff via console script)
+        run: python -m src.cli lint
+      - name: Typecheck (mypy typed core via console script)
+        run: python -m src.cli typecheck
+      - name: Tests with coverage gate (console script; emulator tests skip without a ROM)
         shell: bash
-        run: python -m pytest tests/ -q -p no:cacheprovider
+        run: python -m src.cli test-cov

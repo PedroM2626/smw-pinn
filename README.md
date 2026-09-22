@@ -908,10 +908,10 @@ The table summarizes the totality of the empirical experiments conducted with ge
 | | Deep Ensemble (E=5) | 0.5120 | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 141,430 FPS |
 | | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 450,000 FPS |
 | | Set-Multi-Entity PINN | Exact $0.0\%$ Rel. | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 320,000 FPS |
-| **Closed-Loop Control (MPC + World Model)** | Random Actions Baseline | — | — | — | 241.50 px (300f) | 143.44 px (400f) | 50,124 FPS |
-| | MPC + Statistical MLP | — | 100.0% | 90.26 px | 66.13 px (300f) | 576.81 px (400f) | 72.0 FPS |
-| | MPC + Soft-Constrained PINN | — | 100.0% | 219.25 px | 38.69 px (300f) | 394.06 px (400f) | 73.7 FPS |
-| | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **0.28 px** | **571.75 px (300f)** | **755.62 px (400f)** | 53.2 FPS |
+| **Closed-Loop Control (MPC + World Model)** | Random Actions Baseline | — | — | — | 241.50 px (300f) | 183.40 $\pm$ 35.71 px (5 seeds) | 50,124 FPS |
+| | MPC + Statistical MLP | — | 100.0% | 90.26 px | 66.13 px (300f) | 44.38 $\pm$ 22.01 px (5 seeds) | 72.0 FPS |
+| | MPC + Soft-Constrained PINN | — | 100.0% | 219.25 px | 38.69 px (300f) | 88.05 $\pm$ 23.63 px (5 seeds) | 73.7 FPS |
+| | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **0.28 px** | **571.75 px (300f)** | **522.88 $\pm$ 335.33 px (5 seeds)** | 53.2 FPS |
 | | **Hazard-Aware MPC 12D (Ours)** | — | **0.0%** | **4.12 px** | **782.94 px (400f)** | — | 23.7 FPS |
 | | **Extended Navigation MPC (Ours)** | — | **0.0%** | **3.85 px** | **1,016.06 px (627f)**| — | 25.3 FPS |
 | | **Full Level Clearance MPC (Ours)** | — | **0.0%** | **3.85 px** | **2,003.69 px (971f - GOAL CLEARED)** | — | 19.6 FPS |
@@ -919,7 +919,7 @@ The table summarizes the totality of the empirical experiments conducted with ge
 | | Dyna-PPO 8D (Simulator) | — | — | — | 115.00 px (173f) | — | ~500 FPS |
 | | Dyna-PPO 12D Multi-Entity | — | — | — | -7.38 px (Collapse) | — | ~500 FPS |
 | | Distilled Policy (1-step BC) | 0.1740 BCE | **0.0%** | — | 115.00 px (174f) | — | **2,900.9 FPS** |
-| | **DAgger Policy (3-iter - Ours)** | **0.1671 BCE** | **0.0%** | — | **831.75 px (500f)** | **830.50 px (400f)** | **3,064.9 FPS** |
+| | **DAgger Policy (3-iter - Ours)** | **0.1671 BCE** | **0.0%** | — | **831.75 px (500f)** | 830.50 $\pm$ 0.00 px (5 seeds) | **3,064.9 FPS** |
 
 ---
 
@@ -927,30 +927,29 @@ The table summarizes the totality of the empirical experiments conducted with ge
 
 To validate conclusively whether the physical knowledge embedded in the **Hard Residual PINN** and in the **DAgger** policy generalizes to new environments without suffering from *overfitting* or out-of-distribution (OOD) collapse, we submitted every controller to the closed-loop fire test on the unseen stage **Yoshi's House** (`$7E:0100 = 0x14`, `data/raw/smw_yoshi_house.state`).
 
-No model, planner or network received any training sample, fine-tuning or calibration on Yoshi's House. Mario was initialized at coordinate $X_0 = 16.0, Y_0 = 336.38$, and each controller operated autonomously for 400 frames at 60 Hz (`src/evaluation/evaluate_cross_level_control.py`):
+No model, planner or network received any training sample, fine-tuning or calibration on Yoshi's House. Mario was initialized at coordinate $X_0 = 16.0, Y_0 = 336.38$, and each controller was re-seeded and run autonomously for 400 frames at 60 Hz over 5 seeds (42-46); every metric below is a mean $\pm$ standard deviation across those seeds (`src/evaluation/evaluate_cross_level_control.py`):
 
 #### 10.28.1 Empirical Results Obtained on the Real SNES Console
 
 The results stored in `results/cross_level_control_metrics.json` reveal the robustness of the structured formulation:
 
-| Controller | Horizontal Progress ($X$) | Survival Rate | Mean Velocity ($\bar{v}_x$) | Decision Latency | Throughput |
+| Controller | Horizontal Progress ($X$) | Survival (frames) | Mean Velocity ($\bar{v}_x$) | Decision Latency (ms) | Throughput (FPS) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Random Actions Baseline** | 143.44 px | 400 / 400 (100%) | 5.79 px/f | 0.02 ms | 50,124.1 FPS |
-| **MPC + Statistical MLP (Black-Box OOD)** | 576.81 px | 400 / 400 (100%) | 23.16 px/f | 13.89 ms | 72.0 FPS |
-| **MPC + Soft-Constrained PINN** | 394.06 px | 400 / 400 (100%) | 15.77 px/f | 13.57 ms | 73.7 FPS |
-| **MPC + Hard Residual PINN (Ours)** | **755.62 px** | **400 / 400 (100%)** | **30.30 px/f** | 18.80 ms | 53.2 FPS |
-| **Amortized DAgger Policy (Ours)** | **830.50 px** | **400 / 400 (100%)** | **34.66 px/f** | **0.33 ms** | **3,064.9 FPS** |
+| **Random Actions Baseline** | 183.40 $\pm$ 35.71 | 400 $\pm$ 0 | 7.35 $\pm$ 1.43 | 0.023 | 43,813 $\pm$ 2,519 |
+| **MPC + Statistical MLP (Black-Box OOD)** | 44.38 $\pm$ 22.01 | 342 $\pm$ 33 | 2.61 $\pm$ 0.62 | 20.61 $\pm$ 5.37 | 51.1 $\pm$ 9.9 |
+| **MPC + Soft-Constrained PINN** | 88.05 $\pm$ 23.63 | 400 $\pm$ 0 | 3.52 $\pm$ 0.94 | 21.95 $\pm$ 7.21 | 49.1 $\pm$ 11.0 |
+| **MPC + Hard Residual PINN (Ours)** | **522.88 $\pm$ 335.33** | 309 $\pm$ 111 | **26.56 $\pm$ 6.68** | 24.03 $\pm$ 1.70 | 41.8 $\pm$ 3.1 |
+| **Amortized DAgger Policy (Ours)** | **830.50 $\pm$ 0.00** | **400 $\pm$ 0** | **34.66 $\pm$ 0.00** | **0.379 $\pm$ 0.028** | **2,654 $\pm$ 200** |
+
+*All figures are means over 5 seeds (42-46) from the re-recorded multi-seed protocol; latency and throughput are wall-clock and therefore machine dependent. The DAgger row is $\pm 0$ because that reactive policy is fully deterministic.*
 
 #### 10.28.2 Comparative Analysis and Scientific Conclusions
 
-1. **Superiority of the Hard PINN under Zero-Shot Transfer:**
-   - **MPC with the Hard Residual PINN** achieved **755.62 px** of forward progress, surpassing the statistical MLP (**576.81 px**, $+31.0\%$) and the Soft PINN (**394.06 px**, $+91.8\%$). Because the kinematic guarantee $(\Delta x = v_x \Delta t)$ is strict in the output layer, the CEM planner was able to project long-range jump trajectories without the risk of hallucinating unrealistic accelerations in a vacuum.
-2. **Relative Failure of Soft Penalties under OOD:**
-   - The **Soft PINN** performed substantially below both the MLP and the Hard PINN in OOD control (only 394.06 px). As demonstrated by the theorems in Section 4, fixed Lagrange multipliers in soft penalties generate conflicting gradients between the task objective and the physics losses on unseen state distributions, causing agent hesitation and deceleration.
-3. **Efficiency and Extreme Robustness of the DAgger Policy:**
-   - The **amortized DAgger policy** led the benchmark in distance covered (**830.50 px** in 400 frames, with $\bar{v}_x = 34.66$) and ran at a staggering **3,064.9 FPS** on a common CPU (326 $\mu$s latency). Because it was trained with iterative aggregation of trajectories on boundary states, the reactive policy maintained fluid, continuous jumps without suffering from sample-error accumulation.
-4. **Kinematic Validation:**
-   - The altitude trajectories $Y(t)$ show gravity parabolas consistent with the game engine and exact ground contacts at $Y = 336$ px, confirming the absence of ground penetration or kinematic teleportation.
+1. **Monotonic benefit of the hard kinematic constraint under zero-shot transfer:** With 5 seeds the MPC ordering is clean and monotonic in physical fidelity - Statistical MLP (**44.38 px**) < Soft-Constrained PINN (**88.05 px**) < Hard Residual PINN (**522.88 px**). The hard model reaches $5.9\times$ the soft model and $11.8\times$ the black-box MLP, because enforcing $(\Delta x = v_x \Delta t)$ in the output layer stops the CEM planner from exploiting model error on a stage it never saw.
+2. **The Hard PINN clears the unseen obstacle, seed-dependently:** Its per-seed progress is bimodal - 785, 784 and 820 px on three seeds (it surmounts the Yoshi's House geometry and runs like the DAgger policy) versus 111 and 114 px on two seeds (it stalls and dies at $\approx$173 frames, hence the 309-frame mean survival). Read as an *ordering* (Section 10.38.2) the result is unambiguous: only the hard-constrained planner ever clears the stage, and even its weakest seed matches the soft model's best seed, while no MLP or soft run clears it.
+3. **A mis-specified OOD model is worse than acting at random:** The MLP and Soft MPC runs (44 and 88 px) fall *below* the Random baseline (183 px) and the MLP even loses lives (342-frame survival). This is the closed-loop signature of the gradient conflict predicted in Section 4: planning on an unconstrained black-box or a softly penalised model hallucinates infeasible accelerations on unseen terrain, so committing to its plan hurts relative to unmodelled exploration - the hard constraint is what removes the failure mode.
+4. **Efficiency and reproducibility of the amortised policy:** The **DAgger** policy leads in distance (**830.50 px**) and is the only controller that reproduces *exactly* across all seeds ($\pm 0$), running at **$\approx$2,654 FPS** with 0.38 ms decision latency because it replaces online CEM with a single forward pass.
+5. **Kinematic validation:** The representative altitude trajectory $Y(t)$ (first seed, figure below) shows gravity parabolas with ground contact at $Y \approx 336$ px and no penetration or teleportation.
 
 ![Zero-Shot Closed-Loop Control on Stage B](results/figures/cross_level_control_trajectories.png)
 *Figure: Closed-loop trajectory curves on the Libretro SNES console in the unseen Yoshi's House stage. Top panel: accumulated horizontal progress. Bottom panel: vertical altitude highlighting parabolic jump cycles and rigid ground contact.*
@@ -1366,34 +1365,46 @@ integration tests in `tests/test_piml_mfrl.py`, which run in CI against a mock c
 
 #### 10.39.1 Measured Study on Real Hardware
 
-`src/evaluation/piml_mfrl_study.py` (`smw-pinn piml-mfrl-study`) trained two PPO agents
-directly on Yoshi's Island 1 across 3 seeds (42/43/44) at a matched 8,000-console-frame
-budget each - once with every physics mechanism off (the canonical model-free baseline),
-once with Approaches A+B+C on (`results/piml_mfrl_metrics.json`, RTX 4070 Laptop GPU):
+`src/evaluation/piml_mfrl_study.py` (`smw-pinn piml-mfrl-study`) is a **per-mechanism
+ablation**: it runs the same model-free PPO loop on Yoshi's Island 1 over 3 seeds
+(42/43/44) at a matched 10,000-console-frame budget for every coupling in isolation and
+in combination, so no mechanism is left out and any effect is attributed to a specific
+coupling rather than a black-box on/off toggle (`results/piml_mfrl_metrics.json`, RTX 4070
+Laptop GPU):
 
-| Agent | Mean final return (± std, n=3) | Executed-action physics violation | Mean training time |
-| :--- | :---: | :---: | :---: |
-| **Model-free PPO (baseline)** | **1223.1 ± 301.1** | 0.0000 | 18.3 s |
-| PIML-MFRL (A+B+C) | 1193.8 ± 336.1 | 0.0001 | 26.7 s |
+| Condition (switches) | Mean final return (± std, n=3) | Δ vs baseline | Executed-action violation | Mean training time |
+| :--- | :---: | :---: | :---: | :---: |
+| **Model-free PPO (baseline, A/B/C off)** | **1330.0 ± 267.4** | — | 0.0000 | 21.9 s |
+| A only (physics-informed critic) | 1317.1 ± 284.1 | −1.0% | 0.0000 | 25.7 s |
+| B only (CBF-QP actor filter) | 1342.7 ± 287.0 | +1.0% | 0.0000 | 29.2 s |
+| C only (surrogate action penalty) | 1330.0 ± 267.4 | 0.0% (identical) | 0.0004 | 24.3 s |
+| A+B+C (full PIML-MFRL) | 1300.8 ± 292.3 | −2.2% | 0.0001 | 33.4 s |
 
-**Honest reading - a null result, reported as such.** At this budget on this stage the
-two agents are statistically indistinguishable (the -2.4% return difference sits far inside
-the ± 300 seed standard deviation), and the physics-violation rate of the executed actions
-is ~0 for *both*: a well-trained model-free policy almost never commands the non-
-penetration / over-saturation forces the CBF filter and the surrogate penalty guard
-against, so on open ground those mechanisms are correctly *inert* rather than useful. The
-only clean effect is cost: PIML-MFRL raises wall-clock training time ~1.5x (the critic
-Lyapunov term adds an extra critic forward pass and a second-order gradient per mini-batch).
+**Honest reading - a null result, localised by the ablation.** Every return delta sits
+far inside the ± ~270-290 seed standard deviation (largest, the full stack, is −2.2%), so
+no coupling is distinguishable from the canonical model-free baseline at this budget on
+this stage. The per-mechanism view sharpens *why*: the executed-action physics violation is
+~0 for **every** condition (0.0000-0.0004), so the CBF filter (B) and the surrogate penalty
+(C) have nothing to correct on open ground and are correctly *inert*. Approach C is the
+cleanest demonstration of this - it reproduces the baseline return **exactly on all three
+seeds** (1368.25 / 985.05 / 1636.65), because its only gradient contribution is
+$\lambda_C \cdot \text{violation}$ and that term is ~0, leaving the policy update bit-for-bit
+unchanged. Approach B is the sole condition to move the needle at all, and only inside
+noise (best single seed 1688.3, the study maximum, at $\Delta = +1.0\%$). The one unambiguous
+axis is **cost**: training time rises monotonically with the number of active couplings
+(21.9 s baseline to 33.4 s full, $\approx$1.5$\times$), the critic Lyapunov term adding a second
+critic pass and a second-order gradient per mini-batch.
 
-The finding therefore *localises* where physics-coupled model-free RL should pay off -
+The ablation therefore *localises* where physics-coupled model-free RL should pay off -
 environments or curricula where infeasible actions are common (hazard stages, narrow pipe
 geometry, dense sprite threats) - instead of over-claiming a gain this stage cannot
-exhibit. This is consistent with Section 10.30: the benefit of a structural prior scales
-with how often the unconstrained learner is tempted to violate it.
+exhibit, and shows the null is a property of the task's geometry, not of a broken coupling.
+This is consistent with Section 10.30: the benefit of a structural prior scales with how
+often the unconstrained learner is tempted to violate it.
 
-![PIML-MFRL vs Model-Free PPO](results/figures/piml_mfrl_learning_curves.png)
+![PIML-MFRL per-mechanism ablation](results/figures/piml_mfrl_comparison.png)
 
-Regenerate: `python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000`.
+Regenerate: `python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000`.
 
 ---
 
@@ -1690,7 +1701,7 @@ python -m src.evaluation.evaluate_distilled_policy_snes
 # 21. Autonomous Extended Hardware Navigation on real SNES (1,016+ px progress):
 python -m src.evaluation.evaluate_extended_navigation
 
-# 22. Zero-Shot Closed-Loop Control Benchmark on Unseen Stage B (Yoshi's House):
+# 22. Zero-Shot Closed-Loop Control Benchmark on Unseen Stage B (Yoshi's House, 5-seed mean +/- std):
 python -m src.evaluation.evaluate_cross_level_control
 
 # 23. Train Unified Dyna-PPO inside PINN GPU Simulator (>14,000 FPS):
@@ -1765,9 +1776,9 @@ python -m scripts.navigate_to_level --level 2
 #     action-violation penalty (C) enabled (10.39). Needs core + ROM.
 python -m src.training.piml_mfrl --config configs/piml_mfrl.yaml
 
-# 42. PIML-MFRL multi-seed comparison study (model-free PPO vs A+B+C), which writes
-#     results/piml_mfrl_metrics.json + the learning-curve figure (10.39.1). Needs core + ROM.
-python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000
+# 42. PIML-MFRL per-mechanism ablation study (model-free baseline + A / B / C / A+B+C,
+#     3 seeds), which writes results/piml_mfrl_metrics.json + the comparison figure (10.39.1). Needs core + ROM.
+python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1811,4 +1822,4 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 1. **No Data Fabrication:** All reported metrics and figures derive from verified empirical executions saved under `results/` and indexed by `results/MANIFEST.md`; the §8 tables come from `results/benchmark_metrics.json`, `results/sample_efficiency_metrics.json` and `results/multiseed_benchmark_metrics.json`, the §10 study tables from the artifact named in their section.
 2. **Authentic Emulation Data:** All 8,077 samples were extracted directly from 65816 CPU WRAM during real-time interactive gameplay in Game Mode `$14`.
 3. **Open Reproducibility:** The full codebase, pretrained weights, and reproduction scripts are maintained in the repository for peer audit.
-4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35).
+4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35). §10.28 was likewise re-recorded from a single unseeded closed-loop draw into a 5-seed mean $\pm$ std protocol under `set_global_seed`, which corrected its MPC rows (Statistical MLP 576.8 -> 44.4 px, Soft 394.1 -> 88.1 px, Hard 755.6 -> 522.9 px, Random 143.4 -> 183.4 px) and showed the earlier "MLP beats Soft" ordering was single-draw noise - the re-measured ordering is monotonic in physical fidelity.

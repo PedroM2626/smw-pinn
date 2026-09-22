@@ -27,7 +27,7 @@ help:
 	@echo "sample-efficiency  Pareto study (configs/sample_efficiency.yaml)"
 	@echo "multiseed          K-seed significance study (configs/multiseed.yaml)"
 	@echo "piml-mfrl          Physics-Informed Model-Free RL on real SNES (configs/piml_mfrl.yaml)"
-	@echo "piml-mfrl-study    Multi-seed PIML-MFRL vs model-free PPO comparison (real SNES)"
+	@echo "piml-mfrl-study    PIML-MFRL per-mechanism ablation (baseline/A/B/C/full, real SNES)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -81,9 +81,9 @@ multiseed:
 piml-mfrl:
 	$(PY) -m src.training.piml_mfrl --config $(CONFIG_DIR)/piml_mfrl.yaml
 
-# Multi-seed hardware comparison behind README 10.39.1 (model-free PPO vs PIML-MFRL).
+# Per-mechanism ablation behind README 10.39.1 (baseline + A / B / C / A+B+C, 3 seeds).
 piml-mfrl-study:
-	$(PY) -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000
+	$(PY) -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000
 
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in

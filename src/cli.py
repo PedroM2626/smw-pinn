@@ -101,25 +101,23 @@ CHECK_COMMANDS: dict[str, list[str]] = {
     "format-check": ["ruff", "format", "--check", "src", "tests", "scripts"],
     "typecheck": [
         "mypy",
-        "src/utils/config.py",
-        "src/utils/logging.py",
-        "src/utils/paths.py",
-        "src/utils/seed.py",
+        # Typed core = the reusable science/util library. Passed as directories so every
+        # module is covered: the model / loss / planning / perception / util layers. The
+        # ctypes emulator wrapper (src/environment/snes_emulator.py) and the thin CLI
+        # benchmark/evaluation scripts stay deliberately outside the strict set - the
+        # former is untyped FFI, the latter are result-producing orchestration wrappers.
+        "src/models",
+        "src/losses",
+        "src/planning",
+        "src/perception",
+        "src/utils",
         "src/environment/wram.py",
+        "src/environment/dataset_loader.py",
+        "src/environment/pinn_sim_env.py",
+        "src/environment/sprite_sets.py",
+        "src/training/trainer.py",
         "src/evaluation/per_variable_metrics.py",
         "src/evaluation/rollout_evaluator.py",
-        "src/environment/dataset_loader.py",
-        "src/training/trainer.py",
-        "src/models/statistical_mlp.py",
-        "src/planning/terminal_value.py",
-        "src/planning/global_planner.py",
-        "src/planning/tilemap_mpc.py",
-        "src/perception/pixel_encoder.py",
-        "src/perception/vision_dataset.py",
-        "src/environment/sprite_sets.py",
-        "src/models/pinn_gravity.py",
-        "src/losses/physics_rl_losses.py",
-        "src/models/cbf_projection.py",
     ],
     "test": ["pytest", "tests/", "-q", "-p", "no:cacheprovider"],
     "test-cov": [

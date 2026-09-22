@@ -17,12 +17,17 @@ numbers* - those are reported here and in README Section 12, never applied silen
   categorical filter (Approach B), and a physics-violation penalty on the PPO surrogate
   (Approach C). New modules: `src/losses/physics_rl_losses.py`,
   `src/models/cbf_projection.py`, `src/training/piml_mfrl.py`; config
-  `configs/piml_mfrl.yaml`; a multi-seed hardware comparison
-  (`src/evaluation/piml_mfrl_study.py`, README 10.39.1) and emulator-free coverage in
-  `tests/test_piml_mfrl.py`. The study reports an honest null result on Yoshi's Island 1
-  (PIML-MFRL statistically indistinguishable from model-free PPO within the +/-300 seed
-  standard deviation, with an executed-action violation rate ~0 for both) recorded in
-  `results/piml_mfrl_metrics.json`.
+  `configs/piml_mfrl.yaml`; a **per-mechanism ablation study**
+  (`src/evaluation/piml_mfrl_study.py`, README 10.39.1) that runs the model-free baseline
+  plus each coupling in isolation (A / B / C) and combined (A+B+C) over 3 seeds at a
+  10,000-frame budget, and emulator-free coverage in `tests/test_piml_mfrl.py`. The
+  ablation reports an honest, localised null on Yoshi's Island 1: every condition sits
+  within +/-2.2% of the baseline (far inside the ~+/-280 seed std) and the executed-action
+  violation is ~0 everywhere, so B/C are correctly inert on open ground - Approach C
+  reproduces the baseline return exactly on all three seeds because its only gradient term
+  is lambda * violation; the one clear effect is the monotonic ~1.5x training-time cost of
+  the couplings. Recorded in `results/piml_mfrl_metrics.json` with figure
+  `results/figures/piml_mfrl_comparison.png`.
 - CI: a native `windows-latest` job (path/CWD/subprocess parity) and a Linux
   Python `3.10 / 3.11 / 3.12` test matrix (`.github/workflows/ci.yml`).
 - A `print()`-in-`src/` convention guard (`tests/test_no_print_in_src.py`) with a
@@ -34,10 +39,26 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Changed
 
-- mypy typed-core list extended to the new physics RL modules (`src/cli.py`).
+- mypy typed core expanded from 19 to 40 modules: the whole reusable library is now
+  checked (`src/models`, `src/losses`, `src/planning`, `src/perception`, `src/utils`, plus
+  the environment data/vectorised-sim layer, the trainer and the per-variable/rollout
+  evaluators). Passed as directories in `src/cli.py`; the ctypes emulator wrapper and the
+  result-producing benchmark/evaluation CLI scripts remain outside the strict set by design.
+- CI: the `windows-latest` job now runs the same substantive gates as Linux
+  (`lint`, `typecheck`, `test-cov` with the coverage floor), via the console script since
+  `make` is absent on Windows; only `format-check` stays Linux-only because the Windows
+  runner checks text files out with CRLF (`.github/workflows/ci.yml`).
+- Zero-shot cross-level control benchmark re-recorded as a clean **5-seed** protocol
+  (`src/evaluation/evaluate_cross_level_control.py`): every controller is now mean +/- std
+  with `_meta` provenance, replacing the single unseeded draw that the `STALE` marker had
+  flagged (README 10.28). This cleared the last `STALE` row in `results/MANIFEST.md`.
 
 ### Fixed
 
+- The zero-shot cross-level control artifact (`cross_level_control_metrics.json`) was a
+  single irreproducible draw: the CEM planners and the random baseline drew from an
+  unseeded RNG. It is now reseeded per seed and aggregated over 5 seeds; the deterministic
+  DAgger policy reproduces exactly (+/-0.00), and the MPC rows report their seed variance.
 - CI run #14 (`Typecheck (mypy via Makefile)`, exit code 2): the `dev`/`all` extras
   declared `mypy>=1.0.0` with no upper bound, so CI resolved a newer interpreter that
   crashed the typecheck gate while the locally validated version passed. Pinned mypy to

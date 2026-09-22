@@ -92,7 +92,7 @@ class ExperimentLogger:
 
     def log_metrics(self, metrics: Dict[str, Any], step: int) -> None:
         """Append one row of scalar metrics (JSONL) + TensorBoard/wandb mirrors."""
-        row = {"step": int(step)}
+        row: Dict[str, Any] = {"step": int(step)}
         for key, value in metrics.items():
             try:
                 row[key] = float(value)

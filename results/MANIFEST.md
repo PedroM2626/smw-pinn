@@ -111,23 +111,22 @@ judging every dependency pair a tie.
       pixel_mpc_metrics.json        <- pinn_hard_best.pt
       analytical_baseline_metrics.json <- pinn_hard_best.pt
       dyna_ppo_metrics.json           <- pinn_hard_best.pt
-STALE cross_level_control_metrics.json <- pinn_hard_best.pt mlp_best.pt pinn_soft_best.pt dagger_policy_best.pt
+      cross_level_control_metrics.json <- pinn_hard_best.pt mlp_best.pt pinn_soft_best.pt dagger_policy_best.pt
 ```
 
-`STALE` rows are the honest backlog: `mbrl_mpc_metrics.json`,
-`oracle_mpc_metrics.json` and the §10.31-§10.32 rows were re-recorded on 2026-09-22
-with the corrected `start_episode()` preamble (README 10.38.1). On the same date
-`dyna_ppo_metrics.json` was re-run against the regenerated policy checkpoints: the
-Hard-PINN headline row reproduced exactly (+115.0 px / 173 frames, Section 10.7.2), the
-MLP and random rows were refreshed and the README table updated, so its `STALE` marker
-was dropped. `cross_level_control_metrics.json` is deliberately left `STALE`: a
-re-record confirmed its DAgger row reproduces (830.50 px / 34.66) but the MPC and random
-rows are single-seed CEM draws and its latency/throughput columns are wall-clock, so
-overwriting the published table from one loaded-machine draw would reduce fidelity
-(cf. README 10.38.2). `evaluate_cross_level_control.py` now pins `set_global_seed` so a
-clean, unloaded, multi-seed re-record is reproducible; until that re-record replaces the
-table, the marker stays. The rule is unchanged: resolve a marker by re-running, never by
-editing it alone.
+`STALE` rows are the honest backlog; there are none left. The `mbrl_mpc_metrics.json`,
+`oracle_mpc_metrics.json` and the 10.31-10.32 rows were re-recorded on 2026-09-22
+with the corrected `start_episode()` preamble (README 10.38.1), and
+`dyna_ppo_metrics.json` was re-run against the regenerated policy checkpoints the same
+day (the Hard-PINN headline reproduced exactly at +115.0 px / 173 frames, Section 10.7.2).
+`cross_level_control_metrics.json` has now been re-recorded as a clean **multi-seed**
+protocol: `evaluate_cross_level_control.py` runs 5 seeds (42-46) under `set_global_seed`, so
+the CEM and random draws are reproducible and every controller is reported as mean +/- std
+(README 10.28.1). This replaces the single irreproducible draw the row had been left `STALE`
+to flag: the deterministic DAgger policy reproduces identically on all seeds (830.50 px,
++/-0.00), exactly the fidelity the earlier note demanded before overwriting the table, while
+the MPC rows now carry their seed variance instead of hiding it. The rule is unchanged: a
+marker is resolved by re-running, never by editing it alone.
 
 ## Provenance policy
 
@@ -141,9 +140,8 @@ the list may only shrink, never grow:
 ablation_benchmark_metrics.json        multiseed_benchmark_metrics.json
 benchmark_metrics.json                 multi_entity_hardware_metrics.json
 computational_profiling_metrics.json   multi_entity_mpc_metrics.json
-cross_level_control_metrics.json       obstacle_1000_diagnosis.json
-cross_level_generalization_metrics.json online_mbpo_metrics.json
-dagger_policy_metrics.json             online_mbpo_safe_metrics.json
+cross_level_generalization_metrics.json  obstacle_1000_diagnosis.json
+online_mbpo_metrics.json               dagger_policy_metrics.json
 dagger_training_metrics.json           pinn_ensemble_metrics.json
 distilled_policy_metrics.json          sample_efficiency_metrics.json
 dyna_ppo_metrics.json                  set_multi_entity_metrics.json
@@ -154,6 +152,7 @@ full_level_trajectory_log.json         tilemap_benchmark_metrics.json
 learning_curve_metrics.json            tilemap_mpc_metrics.json
 model_free_ppo_metrics.json            unified_joint_metrics.json
 mpc_reflex_ablation.json               unified_ppo_metrics.json
+online_mbpo_safe_metrics.json
 ```
 
 `mbrl_mpc_metrics.json` used to appear above; it was regenerated under the

@@ -16,7 +16,6 @@ Generates:
 - results/figures/cross_level_control_trajectories.png
 """
 
-import json
 import os
 import time
 from typing import Dict, List, Tuple
@@ -46,6 +45,7 @@ from src.utils.paths import (
     figure_file,
     results_file,
 )
+from src.utils.provenance import write_metrics
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -245,6 +245,12 @@ def evaluate_single_controller(
     return metrics, traj_x, traj_y
 
 
+def _stat(values: List[float]) -> Dict[str, float]:
+    """Population mean / std / count over a list of per-seed samples."""
+    arr = np.asarray(values, dtype=float)
+    return {"mean": float(arr.mean()), "std": float(arr.std()), "n": int(arr.size)}
+
+
 def run_cross_level_control_benchmark(
     rom_path: str = ROM_PATH,
     core_path: str = CORE_PATH,
@@ -253,17 +259,12 @@ def run_cross_level_control_benchmark(
     output_figure: str = figure_file("cross_level_control_trajectories.png"),
     max_frames: int = 400,
     seed: int = 42,
+    repeats: int = 3,
 ):
     logger.info("====================================================================")
     logger.info("  ZERO-SHOT CLOSED-LOOP CONTROL BENCHMARK ON UNSEEN STAGE B         ")
-    logger.info("  Target Stage: Yoshi's House ($7E:0100 = 0x14)                     ")
+    logger.info("  Target Stage: Yoshi's House ($7E:0100 = 0x14) | %d seeds            ", repeats)
     logger.info("====================================================================")
-
-    # Seed before any controller runs: the CEM planners draw random action candidates
-    # and the random baseline draws np.random, so without a pinned seed the MPC and
-    # Random rows are a single irreproducible draw (CONTRIBUTING.md: no unseeded RNG
-    # in evaluation code).
-    set_global_seed(seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Device: {device}")
@@ -276,29 +277,71 @@ def run_cross_level_control_benchmark(
         "DAgger_Policy",
     ]
 
-    all_metrics = {}
-    trajectories_x = {}
-    trajectories_y = {}
+    runs: Dict[str, List[Dict[str, float]]] = {c: [] for c in controllers}
+    rep_x: Dict[str, List[float]] = {}
+    rep_y: Dict[str, List[float]] = {}
+    seeds = [seed + r for r in range(repeats)]
 
+    for r, s in enumerate(seeds):
+        # Reseed per repeat: the CEM planners draw random action candidates and the
+        # random baseline draws np.random, so a single unseeded run is one
+        # irreproducible draw (CONTRIBUTING.md: no unseeded RNG in evaluation code).
+        # Running K seeds and reporting mean +/- std is what makes the MPC rows
+        # trustworthy (cf. README 10.38.2: read a single closed-loop row as ordering).
+        set_global_seed(s)
+        logger.info("--- seed %d (repeat %d/%d) ---", s, r + 1, repeats)
+        for c in controllers:
+            m, tx, ty = evaluate_single_controller(
+                controller_type=c,
+                core_path=core_path,
+                rom_path=rom_path,
+                state_path=state_path,
+                device=device,
+                max_frames=max_frames,
+            )
+            runs[c].append(m)
+            if r == 0:  # keep the first seed's trajectory for the figure
+                rep_x[c] = tx
+                rep_y[c] = ty
+
+    summary: Dict[str, Dict[str, object]] = {}
     for c in controllers:
-        m, tx, ty = evaluate_single_controller(
-            controller_type=c,
-            core_path=core_path,
-            rom_path=rom_path,
-            state_path=state_path,
-            device=device,
-            max_frames=max_frames,
+        rs = runs[c]
+        summary[c] = {
+            "total_progress_pixels": _stat([x["total_progress_pixels"] for x in rs]),
+            "survived_frames": _stat([float(x["survived_frames"]) for x in rs]),
+            "mean_vx": _stat([float(x["mean_vx"]) for x in rs]),
+            "mean_step_time_ms": _stat([float(x["mean_step_time_ms"]) for x in rs]),
+            "throughput_fps": _stat([float(x["throughput_fps"]) for x in rs]),
+            "per_seed_progress_pixels": [float(x["total_progress_pixels"]) for x in rs],
+        }
+        p = summary[c]["total_progress_pixels"]
+        logger.info(
+            f"[{c:16s}] progress {p['mean']:7.2f} +/- {p['std']:6.2f} px "  # type: ignore[index]
+            f"over {repeats} seeds"
         )
-        all_metrics[c] = m
-        trajectories_x[c] = tx
-        trajectories_y[c] = ty
 
-    os.makedirs(os.path.dirname(output_metrics), exist_ok=True)
-    with open(output_metrics, "w") as f:
-        json.dump(all_metrics, f, indent=2)
-    logger.info(f"\nZero-shot control metrics saved to: {output_metrics}")
+    payload = {
+        "protocol": {
+            "controllers": controllers,
+            "repeats": repeats,
+            "seeds": seeds,
+            "max_frames": max_frames,
+            "stage": "Yoshi's House (Stage B, zero-shot)",
+        },
+        "summary": summary,
+        "per_run": {c: runs[c] for c in controllers},
+    }
+    write_metrics(
+        output_metrics,
+        payload,
+        seed=seed,
+        command="python -m src.evaluation.evaluate_cross_level_control",
+        extra_meta={"repeats": repeats, "seeds": seeds},
+    )
+    logger.info("\nZero-shot control metrics saved to: %s", output_metrics)
 
-    # Plot trajectories
+    # Plot the representative (first-seed) trajectories
     os.makedirs(os.path.dirname(output_figure), exist_ok=True)
     sns.set_theme(style="whitegrid")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
@@ -316,12 +359,12 @@ def run_cross_level_control_benchmark(
         "MPC_MLP": "MPC + Statistical MLP (Black-Box OOD)",
         "MPC_Soft_PINN": "MPC + Soft-Constrained PINN",
         "MPC_Hard_PINN": "MPC + Hard Residual PINN (Ours)",
-        "DAgger_Policy": "Amortized DAgger Policy (Ours @ >2,500 FPS)",
+        "DAgger_Policy": "Amortized DAgger Policy (Ours)",
     }
 
     for c in controllers:
-        tx = trajectories_x[c]
-        ty = trajectories_y[c]
+        tx = rep_x[c]
+        ty = rep_y[c]
         frames = list(range(len(tx)))
         lw = 2.4 if "Ours" in labels[c] else 1.5
         style = "-" if "Ours" in labels[c] else "--"

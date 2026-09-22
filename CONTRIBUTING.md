@@ -84,9 +84,13 @@ only `scripts/` bootstraps the repo root.
 - **Tests:** every new module gets a test file. Emulator-dependent tests must
   use `@requires_emulator` from `tests/conftest.py` (Windows DLL doesn't load
   on Linux CI — tests must skip, never error).
-- **Types:** new/edited code in the typed core (`src/utils/`, dataset loader,
-  trainer, rollout evaluator, per-variable metrics) must pass
-  `make typecheck`. Pre-commit (`pre-commit install`) runs `ruff check --fix`
+- **Types:** the typed core is the whole reusable library - every module under
+  `src/models/`, `src/losses/`, `src/planning/`, `src/perception/` and `src/utils/`, plus
+  the environment data/vectorised-sim layer (`dataset_loader`, `pinn_sim_env`, `wram`,
+  `sprite_sets`), the trainer, and the per-variable / rollout evaluators (40+ files).
+  New/edited code there must pass `make typecheck`. The ctypes emulator wrapper and the
+  result-producing benchmark/evaluation CLI scripts are kept outside the strict set by
+  design. Pre-commit (`pre-commit install`) runs `ruff check --fix`
   and `ruff format` with the same pinned version as CI.
 - **Result artifacts:** a new `results/*.json` must be written through
   `src/utils.provenance.write_metrics` (so it carries `_meta`) and registered in

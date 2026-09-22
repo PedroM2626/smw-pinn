@@ -355,13 +355,16 @@ def test_study_aggregate_groups_by_condition() -> None:
 
 
 def test_study_comparison_reports_delta_and_reduction() -> None:
-    from src.evaluation.piml_mfrl_study import _comparison, aggregate_runs
+    from src.evaluation.piml_mfrl_study import aggregate_runs, compare_vs_baseline
 
-    comparison = _comparison(aggregate_runs(_synthetic_runs()))
-    assert comparison["return_delta"] == pytest.approx(15.0)  # 30 - 15
-    assert comparison["return_change_pct"] == pytest.approx(100.0)
-    # baseline violation 0.5 -> piml 0.1 => 80% reduction
-    assert comparison["violation_reduction_pct"] == pytest.approx(80.0)
+    comparison = compare_vs_baseline(aggregate_runs(_synthetic_runs()))
+    piml = comparison["piml_mfrl_full"]
+    assert piml["return_delta"] == pytest.approx(15.0)  # 30 - 15
+    assert piml["return_change_pct"] == pytest.approx(100.0)
+    # baseline violation 0.5 -> piml 0.1 => -80% (a reduction)
+    assert piml["violation_change_pct"] == pytest.approx(-80.0)
+    # The baseline itself is not compared against itself.
+    assert "model_free_ppo" not in comparison
 
 
 def test_study_aggregate_handles_empty() -> None:
@@ -369,3 +372,28 @@ def test_study_aggregate_handles_empty() -> None:
 
     summary = aggregate_runs([])
     assert summary == {"conditions": []}
+
+
+def test_study_defines_every_mechanism_condition() -> None:
+    """The ablation must leave no coupling out: baseline + each of A/B/C + full."""
+    from src.evaluation.piml_mfrl_study import BASELINE, CONDITIONS
+
+    assert BASELINE == "model_free_ppo"
+    assert set(CONDITIONS) == {
+        "model_free_ppo",
+        "piml_A_critic",
+        "piml_B_cbf",
+        "piml_C_action",
+        "piml_full_A_B_C",
+    }
+    # Baseline is pure model-free PPO (all three switches off).
+    assert not any(CONDITIONS["model_free_ppo"].values())
+    # Each isolated condition turns on exactly one coupling; full turns on all three.
+    assert CONDITIONS["piml_A_critic"] == {
+        "use_physics_critic": True,
+        "use_cbf_filter": False,
+        "use_action_penalty": False,
+    }
+    assert CONDITIONS["piml_B_cbf"]["use_cbf_filter"] is True
+    assert CONDITIONS["piml_C_action"]["use_action_penalty"] is True
+    assert all(CONDITIONS["piml_full_A_B_C"].values())

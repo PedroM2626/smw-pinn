@@ -1,47 +1,452 @@
 {
-  "Random_Baseline": {
-    "survived_frames": 400,
-    "max_frames": 400,
-    "total_progress_pixels": 143.4375,
-    "mean_vx": 5.785,
-    "mean_step_time_ms": 0.019950497953686863,
-    "throughput_fps": 50124.06218237773,
-    "evaluation_time_seconds": 0.1551201343536377
+  "_meta": {
+    "generated_utc": "2026-09-22T23:18:32+00:00",
+    "git_sha": "d01b140725cbb29c5f77716e87c25b72e49e1af7",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.evaluate_cross_level_control",
+    "repeats": 5,
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ]
   },
-  "MPC_MLP": {
-    "survived_frames": 400,
+  "protocol": {
+    "controllers": [
+      "Random_Baseline",
+      "MPC_MLP",
+      "MPC_Soft_PINN",
+      "MPC_Hard_PINN",
+      "DAgger_Policy"
+    ],
+    "repeats": 5,
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
     "max_frames": 400,
-    "total_progress_pixels": 576.8125,
-    "mean_vx": 23.155,
-    "mean_step_time_ms": 13.88752899656538,
-    "throughput_fps": 72.00705037212286,
-    "evaluation_time_seconds": 5.745885372161865
+    "stage": "Yoshi's House (Stage B, zero-shot)"
   },
-  "MPC_Soft_PINN": {
-    "survived_frames": 400,
-    "max_frames": 400,
-    "total_progress_pixels": 394.0625,
-    "mean_vx": 15.7725,
-    "mean_step_time_ms": 13.569775751966517,
-    "throughput_fps": 73.69318537596916,
-    "evaluation_time_seconds": 5.618837118148804
+  "summary": {
+    "Random_Baseline": {
+      "total_progress_pixels": {
+        "mean": 183.4,
+        "std": 35.70759285502175,
+        "n": 5
+      },
+      "survived_frames": {
+        "mean": 400.0,
+        "std": 0.0,
+        "n": 5
+      },
+      "mean_vx": {
+        "mean": 7.351999999999999,
+        "std": 1.434040968731368,
+        "n": 5
+      },
+      "mean_step_time_ms": {
+        "mean": 0.022898350725881755,
+        "std": 0.001290886580151084,
+        "n": 5
+      },
+      "throughput_fps": {
+        "mean": 43813.030713870685,
+        "std": 2519.0786396444432,
+        "n": 5
+      },
+      "per_seed_progress_pixels": [
+        144.0,
+        238.4375,
+        201.75,
+        187.375,
+        145.4375
+      ]
+    },
+    "MPC_MLP": {
+      "total_progress_pixels": {
+        "mean": 44.375,
+        "std": 22.011786615356783,
+        "n": 5
+      },
+      "survived_frames": {
+        "mean": 342.0,
+        "std": 32.71696807468565,
+        "n": 5
+      },
+      "mean_vx": {
+        "mean": 2.6059584931246365,
+        "std": 0.617743454863154,
+        "n": 5
+      },
+      "mean_step_time_ms": {
+        "mean": 20.610933736150777,
+        "std": 5.37470374063174,
+        "n": 5
+      },
+      "throughput_fps": {
+        "mean": 51.0817247707666,
+        "std": 9.905995906517761,
+        "n": 5
+      },
+      "per_seed_progress_pixels": [
+        37.625,
+        42.625,
+        86.125,
+        21.5,
+        34.0
+      ]
+    },
+    "MPC_Soft_PINN": {
+      "total_progress_pixels": {
+        "mean": 88.05,
+        "std": 23.626666607881866,
+        "n": 5
+      },
+      "survived_frames": {
+        "mean": 400.0,
+        "std": 0.0,
+        "n": 5
+      },
+      "mean_vx": {
+        "mean": 3.5224999999999995,
+        "std": 0.9385014651027456,
+        "n": 5
+      },
+      "mean_step_time_ms": {
+        "mean": 21.952753849094734,
+        "std": 7.2067992386016035,
+        "n": 5
+      },
+      "throughput_fps": {
+        "mean": 49.13699373399176,
+        "std": 10.955670747959322,
+        "n": 5
+      },
+      "per_seed_progress_pixels": [
+        130.6875,
+        73.6875,
+        85.3125,
+        90.0,
+        60.5625
+      ]
+    },
+    "MPC_Hard_PINN": {
+      "total_progress_pixels": {
+        "mean": 522.875,
+        "std": 335.3268857585088,
+        "n": 5
+      },
+      "survived_frames": {
+        "mean": 309.2,
+        "std": 111.20683432235629,
+        "n": 5
+      },
+      "mean_vx": {
+        "mean": 26.563349710982656,
+        "std": 6.684540065864273,
+        "n": 5
+      },
+      "mean_step_time_ms": {
+        "mean": 24.026499864870058,
+        "std": 1.6960153074005206,
+        "n": 5
+      },
+      "throughput_fps": {
+        "mean": 41.83655845113376,
+        "std": 3.0610097249480703,
+        "n": 5
+      },
+      "per_seed_progress_pixels": [
+        785.375,
+        111.4375,
+        783.625,
+        113.5625,
+        820.375
+      ]
+    },
+    "DAgger_Policy": {
+      "total_progress_pixels": {
+        "mean": 830.5,
+        "std": 0.0,
+        "n": 5
+      },
+      "survived_frames": {
+        "mean": 400.0,
+        "std": 0.0,
+        "n": 5
+      },
+      "mean_vx": {
+        "mean": 34.66,
+        "std": 0.0,
+        "n": 5
+      },
+      "mean_step_time_ms": {
+        "mean": 0.37891069933539256,
+        "std": 0.027984380345086105,
+        "n": 5
+      },
+      "throughput_fps": {
+        "mean": 2653.901985085905,
+        "std": 200.12561152047167,
+        "n": 5
+      },
+      "per_seed_progress_pixels": [
+        830.5,
+        830.5,
+        830.5,
+        830.5,
+        830.5
+      ]
+    }
   },
-  "MPC_Hard_PINN": {
-    "survived_frames": 400,
-    "max_frames": 400,
-    "total_progress_pixels": 755.625,
-    "mean_vx": 30.2975,
-    "mean_step_time_ms": 18.80497849866515,
-    "throughput_fps": 53.17740725260514,
-    "evaluation_time_seconds": 7.6850199699401855
-  },
-  "DAgger_Policy": {
-    "survived_frames": 400,
-    "max_frames": 400,
-    "total_progress_pixels": 830.5,
-    "mean_vx": 34.66,
-    "mean_step_time_ms": 0.3262710029957816,
-    "throughput_fps": 3064.9367881856456,
-    "evaluation_time_seconds": 0.2832036018371582
+  "per_run": {
+    "Random_Baseline": [
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 144.0,
+        "mean_vx": 5.755,
+        "mean_step_time_ms": 0.022342748707160354,
+        "throughput_fps": 44757.25046665911,
+        "evaluation_time_seconds": 0.1780543327331543
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 238.4375,
+        "mean_vx": 9.555,
+        "mean_step_time_ms": 0.024742502137087286,
+        "throughput_fps": 40416.28427308771,
+        "evaluation_time_seconds": 0.183335542678833
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 201.75,
+        "mean_vx": 8.085,
+        "mean_step_time_ms": 0.020822501101065427,
+        "throughput_fps": 48024.9704464577,
+        "evaluation_time_seconds": 0.18032240867614746
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 187.375,
+        "mean_vx": 7.5325,
+        "mean_step_time_ms": 0.02333249954972416,
+        "throughput_fps": 42858.67435115078,
+        "evaluation_time_seconds": 0.1716926097869873
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 145.4375,
+        "mean_vx": 5.8325,
+        "mean_step_time_ms": 0.02325150213437155,
+        "throughput_fps": 43007.9740319981,
+        "evaluation_time_seconds": 0.17489838600158691
+      }
+    ],
+    "MPC_MLP": [
+      {
+        "survived_frames": 321,
+        "max_frames": 400,
+        "total_progress_pixels": 37.625,
+        "mean_vx": 2.545171339563863,
+        "mean_step_time_ms": 31.23551184011223,
+        "throughput_fps": 32.01484275714071,
+        "evaluation_time_seconds": 10.242034196853638
+      },
+      {
+        "survived_frames": 309,
+        "max_frames": 400,
+        "total_progress_pixels": 42.625,
+        "mean_vx": 2.870550161812298,
+        "mean_step_time_ms": 18.66875404437769,
+        "throughput_fps": 53.565438680208096,
+        "evaluation_time_seconds": 5.9353554248809814
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 86.125,
+        "mean_vx": 3.4825,
+        "mean_step_time_ms": 16.38671274558874,
+        "throughput_fps": 61.025052158139374,
+        "evaluation_time_seconds": 6.743957042694092
+      },
+      {
+        "survived_frames": 355,
+        "max_frames": 400,
+        "total_progress_pixels": 21.5,
+        "mean_vx": 1.5746478873239436,
+        "mean_step_time_ms": 18.411541128085112,
+        "throughput_fps": 54.31375858453218,
+        "evaluation_time_seconds": 6.7255635261535645
+      },
+      {
+        "survived_frames": 325,
+        "max_frames": 400,
+        "total_progress_pixels": 34.0,
+        "mean_vx": 2.556923076923077,
+        "mean_step_time_ms": 18.35214892259011,
+        "throughput_fps": 54.48953167381262,
+        "evaluation_time_seconds": 6.155161380767822
+      }
+    ],
+    "MPC_Soft_PINN": [
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 130.6875,
+        "mean_vx": 5.215,
+        "mean_step_time_ms": 36.310412001330405,
+        "throughput_fps": 27.54030992441948,
+        "evaluation_time_seconds": 14.855058431625366
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 73.6875,
+        "mean_vx": 2.9425,
+        "mean_step_time_ms": 17.524596749281045,
+        "throughput_fps": 57.062653954706576,
+        "evaluation_time_seconds": 7.2564778327941895
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 85.3125,
+        "mean_vx": 3.41,
+        "mean_step_time_ms": 18.070193245075643,
+        "throughput_fps": 55.33975129305896,
+        "evaluation_time_seconds": 7.437493801116943
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 90.0,
+        "mean_vx": 3.61,
+        "mean_step_time_ms": 18.389917249733116,
+        "throughput_fps": 54.377623695642924,
+        "evaluation_time_seconds": 7.572782278060913
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 60.5625,
+        "mean_vx": 2.435,
+        "mean_step_time_ms": 19.468650000053458,
+        "throughput_fps": 51.36462980213082,
+        "evaluation_time_seconds": 8.017709732055664
+      }
+    ],
+    "MPC_Hard_PINN": [
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 785.375,
+        "mean_vx": 31.5825,
+        "mean_step_time_ms": 25.15482349845115,
+        "throughput_fps": 39.75380706056525,
+        "evaluation_time_seconds": 10.28417181968689
+      },
+      {
+        "survived_frames": 173,
+        "max_frames": 400,
+        "total_progress_pixels": 111.4375,
+        "mean_vx": 18.01156069364162,
+        "mean_step_time_ms": 21.39592369832637,
+        "throughput_fps": 46.73787465778923,
+        "evaluation_time_seconds": 3.773791551589966
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 783.625,
+        "mean_vx": 31.52,
+        "mean_step_time_ms": 25.958093251101673,
+        "throughput_fps": 38.52363077390361,
+        "evaluation_time_seconds": 10.599203824996948
+      },
+      {
+        "survived_frames": 173,
+        "max_frames": 400,
+        "total_progress_pixels": 113.5625,
+        "mean_vx": 18.797687861271676,
+        "mean_step_time_ms": 24.899504626589703,
+        "throughput_fps": 40.161441562661416,
+        "evaluation_time_seconds": 4.395747900009155
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 820.375,
+        "mean_vx": 32.905,
+        "mean_step_time_ms": 22.724154249881394,
+        "throughput_fps": 44.006038200749295,
+        "evaluation_time_seconds": 9.28516411781311
+      }
+    ],
+    "DAgger_Policy": [
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 830.5,
+        "mean_vx": 34.66,
+        "mean_step_time_ms": 0.41318600036902353,
+        "throughput_fps": 2420.217526989982,
+        "evaluation_time_seconds": 0.34160852432250977
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 830.5,
+        "mean_vx": 34.66,
+        "mean_step_time_ms": 0.3374939993955195,
+        "throughput_fps": 2963.015644103555,
+        "evaluation_time_seconds": 0.29683947563171387
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 830.5,
+        "mean_vx": 34.66,
+        "mean_step_time_ms": 0.40362275118241087,
+        "throughput_fps": 2477.561032103629,
+        "evaluation_time_seconds": 0.3355288505554199
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 830.5,
+        "mean_vx": 34.66,
+        "mean_step_time_ms": 0.3815367486095056,
+        "throughput_fps": 2620.9795089056493,
+        "evaluation_time_seconds": 0.32289576530456543
+      },
+      {
+        "survived_frames": 400,
+        "max_frames": 400,
+        "total_progress_pixels": 830.5,
+        "mean_vx": 34.66,
+        "mean_step_time_ms": 0.35871399712050334,
+        "throughput_fps": 2787.7362133267093,
+        "evaluation_time_seconds": 0.31662440299987793
+      }
+    ]
   }
 }
