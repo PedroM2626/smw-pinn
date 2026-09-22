@@ -44,7 +44,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [8.1 Single-Step Accuracy](#81-single-step-accuracy-on-independent-test-set-n_texttest--1356)
    * [8.2 Long-Horizon Multi-Step Stability](#82-long-horizon-stability-120-frame-open-loop-autoregressive-rollout-2-seconds)
    * [8.3 Systematic Sample Efficiency Study](#83-systematic-sample-efficiency-study-data-pareto-curve)
-   * [8.4 Multi-Seed Statistical Significance Benchmark](#84-multi-seed-statistical-significance-benchmark-k--5-seeds)
+   * [8.4 Multi-Seed Statistical Significance Benchmark](#84-multi-seed-statistical-significance-benchmark-k--10-seeds)
 9. [Visual Analysis of Trajectories and Convergence](#9-visual-analysis-of-trajectories-and-convergence)
 10. [In-Depth Academic Discussion & Critical Analysis](#10-in-depth-academic-discussion--critical-analysis)
    * [10.5 Implications for Model-Based Reinforcement Learning (MBRL)](#105-implications-for-model-based-reinforcement-learning-mbrl)
@@ -69,16 +69,18 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.24 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)](#1024-autonomous-extended-level-navigation-on-real-snes-hardware-1016-px-progress)
    * [10.25 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)](#1025-multi-iteration-interactive-dagger-policy-831-px-progress--2707-fps)
    * [10.26 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)](#1026-comprehensive-ablation-study-clamping-horizon-drift--cem-sensitivity)
-   * [10.27 Master Algorithm Comparison Table (World Models & Control Policies)](#1027-master-algorithm-comparison-table-world-models--control-policies)
-   * [10.28 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1028-frente-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
-   * [10.29 Frontier Consolidation: Differentiable Optimization, PPO & Multimodal Rendering](#1029-consolidao-das-fronteiras-a-b-c-e-d-otimizao-diferencivel-ppo-e-renderizao-multimodal)
-    * [10.30 Scope, Limitations & Threats to Validity](#1030-scope-limitations--threats-to-validity)
-    * [10.31 End-to-End Pixel Perception (Pixel-to-Action Front-End)](#1031-end-to-end-pixel-perception-pixel-to-action-front-end)
-    * [10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)](#1032-hierarchical-global--local-planning-a--cem-mpc)
-    * [10.33 MPC Reflex Ablation (Pure vs Reflexive) & TD-MPC Terminal Value](#1033-mpc-reflex-ablation-pure-vs-reflexive--td-mpc-terminal-value)
-    * [10.34 Connected Orphans: Tilemap Closed-Loop, Unified Joint Training, Set-12](#1034-connected-orphans-tilemap-closed-loop-unified-joint-training-set-12)
-    * [10.35 Formal Learning Curves & Spatial-Holdout OOD with Danger](#1035-formal-learning-curves--spatial-holdout-ood-with-danger)
-    * [10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics](#1036-yoshis-island-2-capture-blocked-with-full-diagnostics)
+   * [10.27 Master Algorithm Comparison Table (World Models, MPC & Reactive Policies)](#1027-master-algorithm-comparison-table-world-models-mpc--reactive-policies)
+   * [10.28 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1028-frontier-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
+   * [10.29 Consolidation of Frontiers A, B, C and D](#1029-consolidation-of-frontiers-a-b-c-and-d-differentiable-optimization-ppo-and-multimodal-rendering)
+   * [10.30 Scope, Limitations & Threats to Validity](#1030-scope-limitations--threats-to-validity)
+   * [10.31 End-to-End Pixel Perception (Pixel-to-Action Front-End)](#1031-end-to-end-pixel-perception-pixel-to-action-front-end)
+   * [10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)](#1032-hierarchical-global--local-planning-a--cem-mpc)
+   * [10.33 MPC Reflex Ablation (Pure vs Reflexive) & TD-MPC Terminal Value](#1033-mpc-reflex-ablation-pure-vs-reflexive--td-mpc-terminal-value)
+   * [10.34 Connected Orphans: Tilemap Closed-Loop, Unified Joint Training, Set-12](#1034-connected-orphans-tilemap-closed-loop-unified-joint-training-set-12)
+   * [10.35 Formal Learning Curves & Spatial-Holdout OOD with Danger](#1035-formal-learning-curves--spatial-holdout-ood-with-danger)
+   * [10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics](#1036-yoshis-island-2-capture-blocked-with-full-diagnostics)
+   * [10.37 Analytical and Oracle-Model Baselines](#1037-analytical-and-oracle-model-baselines)
+   * [10.38 Closed-Loop Reproduction Audit and Preamble Probe](#1038-closed-loop-reproduction-audit-and-preamble-probe)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -494,17 +496,29 @@ The agent navigates stage *Yoshi's Island 1* directly inside the real headless S
 
 #### Closed-Loop Hardware Execution Results (Real SNES Console):
 
+> [!IMPORTANT]
+> **Refreshed 2026-09-22.** This table was originally recorded by a harness that
+> restored the savestate without entering interactive gameplay mode. The committed
+> Yoshi's Island 1 savestate comes up in engine mode `$7E:0100 = 0x08` (file
+> selector), so those rows planned against a non-interactive engine. Every episode
+> now starts through `SnesLibretroEmulator.start_episode()` (restore → force mode
+> `0x14` → warm-up frames) and the MPC trials are seeded. Section 10.38 quantifies
+> the effect of that preamble: 3.4x more progress and a 13x smaller alignment error
+> for the same checkpoint. The previous row values are preserved in git history and
+> in `results/mpc_preamble_probe_metrics.json`.
+
 | World Model Controller | Total Progress ($\Delta X$) | Planning Alignment Error ($\|\hat{s}_{\text{pred}} - s_{\text{real}}\|$) | Mean Forward Velocity ($v_x$) | Survival (Frames) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Hard PINN World Model** | **+164.8 px** | **3.77 px** | **+15.4 subpixels/frame** | **300 / 300 (100%)** |
-| **Statistical MLP World Model** | +150.8 px | 81.75 px (**21.7x higher**) | +9.2 subpixels/frame | 300 / 300 (100%) |
-| **Soft-PINN World Model** | +141.1 px | 140.75 px (**37.3x higher**) | +9.5 subpixels/frame | 300 / 300 (100%) |
-| **Random Exploration Baseline** | +120.4 px | N/A | -0.8 subpixels/frame | 300 / 300 (100%) |
+| **Hard PINN World Model** | **+571.8 px** | **0.28 px** | **+30.8 subpixels/frame** | **300 / 300 (100%)** |
+| **Statistical MLP World Model** | +66.1 px | 90.26 px (**320x higher**) | +3.6 subpixels/frame | 300 / 300 (100%) |
+| **Soft-PINN World Model** | +38.7 px | 219.25 px (**779x higher**) | +2.1 subpixels/frame | 300 / 300 (100%) |
+| **Random Exploration Baseline** | +241.5 px | N/A | +12.9 subpixels/frame | 300 / 300 (100%) |
 
 #### Key MBRL Takeaways:
-1. **Perceptual Alignment with Reality:** The Hard PINN World Model achieved a mean one-step spatial alignment error of only **3.77 pixels**, compared to **81.75 pixels** for the Statistical MLP and **140.75 pixels** for the Soft PINN. Because the Hard PINN embeds discrete kinematic consistency by construction, its predicted trajectories adhere to the game engine's position integration rules.
-2. **Propulsion and Forward Progress:** Guided by the Hard PINN, the MPC agent traversed **+164.8 pixels** with an average horizontal velocity of **+15.4 subpixels/frame**, executing coordinated runs and jumps that translate directly into hardware advancement.
-3. **The Risk of Unconstrained Dynamics in MBRL:** When planning with the Statistical MLP, the agent suffers from **optimism under hallucinated dynamics** (predicting it can accelerate without holding the run button). Consequently, the actual trajectory executed in the console departs from the planned trajectory, leading to suboptimal control actions.
+1. **Perceptual Alignment with Reality:** The Hard PINN World Model achieved a mean one-step spatial alignment error of only **0.28 pixels**, compared to **90.26 pixels** for the Statistical MLP and **219.25 pixels** for the Soft PINN. Because the Hard PINN embeds discrete kinematic consistency by construction, its predicted trajectories adhere to the game engine's position integration rules.
+2. **Propulsion and Forward Progress:** Guided by the Hard PINN, the MPC agent traversed **+571.8 pixels** with an average horizontal velocity of **+30.8 subpixels/frame** (i.e. sustained running, close to the 48 subpixel run tier), executing coordinated runs and jumps that translate directly into hardware advancement.
+3. **Black-Box Models Are Worse Than Doing Nothing:** Under the corrected protocol the ranking is unambiguous: Hard PINN **571.8 px** > random actions **241.5 px** > MLP **66.1 px** > Soft PINN **38.7 px**. Both unconstrained planners spend their horizon on transitions the console never executes (90-219 px of one-step imagination error), which produces *hesitation* - the agent stands still while a random walk moves forward. This is optimism under hallucinated dynamics, now measurable instead of inferred.
+4. **Uncertainty of a Single Closed-Loop Row:** `results/mpc_reproduction_metrics.json` re-runs this exact protocol with three seeds: the Hard PINN row is 420.9 ± 266.2 px (one seed dies in a pit at frame 177 while two clear 300 frames), the MLP/Soft rows are ± 14 px, and the random baseline reproduces exactly (it is seeded internally). Closed-loop magnitudes should therefore be read as *ordering* evidence, not as precise point estimates.
 
 ![MBRL Closed-Loop Trajectories](results/figures/mbrl_mpc_trajectories.png)
 
@@ -876,47 +890,47 @@ To isolate the individual contribution of each component of the Hard PINN framew
 ### 10.27 Master Algorithm Comparison Table (World Models, MPC & Reactive Policies)
 
 > [!NOTE]
-> **Por que modelos preditivos isolados não têm métrica de progresso direto?**
-> Um World Model $s_{t+1} = f_\theta(s_t, a_t)$ é estritamente uma função de transição dinâmica que mapeia estado e ação para o próximo estado; ele **não é uma política de controle** $\pi(a_t | s_t)$. Para gerar comandos em tempo real no console SNES, um World Model necessita ser acoplado a um otimizador de trajetória (como Model Predictive Control — CEM/Random Shooting) ou destilado em uma rede neural reativa. Abaixo, reportamos o desempenho tanto da função de transição isolada quanto do sistema completo em malha fechada no hardware real.
+> **Why do isolated predictive models have no direct progress metric?**
+> A world model $s_{t+1} = f_\theta(s_t, a_t)$ is strictly a dynamic transition function that maps state and action to the next state; it **is not a control policy** $\pi(a_t | s_t)$. To generate commands in real time on the SNES console, a world model must be coupled to a trajectory optimizer (such as Model Predictive Control — CEM/Random Shooting) or distilled into a reactive neural network. Below we report the performance of both the isolated transition function and the complete closed-loop system on real hardware.
 
-A tabela sintetiza a totalidade dos experimentos empíricos conduzidos com telemetria genuína de WRAM do *Super Mario World*:
+The table summarizes the totality of the empirical experiments conducted with genuine WRAM telemetry from *Super Mario World*:
 
-| Categoria | Algoritmo / Modelo | Test MSE (Single-Step) | Kinematic Violation (%) | Sim-to-Real Tracking Error | Real SNES Stage A Prog. (px) | Real SNES Stage B (Yoshi's House) | Throughput / Latência |
+| Category | Algorithm / Model | Test MSE (Single-Step) | Kinematic Violation (%) | Sim-to-Real Tracking Error | Real SNES Stage A Prog. (px) | Real SNES Stage B (Yoshi's House) | Throughput / Latency |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Modelos Preditivos (Dinâmica Isolada)** | Statistical MLP | 16.4717 | 98.3% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,349,125 FPS |
-| | Statistical LSTM | 39.2194 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 219,827 FPS |
-| | Soft-Constrained PINN | 53.8167 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,325,302 FPS |
-| | **Hard Residual PINN (Ours)** | **0.5783** | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 675,683 FPS |
-| | Translation-Invariant PINN | 12.5010 (OOD) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 650,000 FPS |
-| | Deep Ensemble (E=5) | 0.5120 | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 141,430 FPS |
-| | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 450,000 FPS |
-| | Set-Multi-Entity PINN | Exact $0.0\%$ Rel. | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 320,000 FPS |
-| **Controle em Malha Fechada (MPC + World Model)** | Random Actions Baseline | — | — | — | 120.38 px (300f) | 143.44 px (400f) | 50,124 FPS |
-| | MPC + Statistical MLP | — | 100.0% | 81.75 px | 150.81 px (300f) | 576.81 px (400f) | 72.0 FPS |
-| | MPC + Soft-Constrained PINN | — | 100.0% | 140.75 px | 141.12 px (300f) | 394.06 px (400f) | 73.7 FPS |
-| | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **3.77 px** | **164.75 px (300f)** | **755.62 px (400f)** | 53.2 FPS |
+| **Predictive Models (Isolated Dynamics)** | Statistical MLP | 16.4717 | 98.3% | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 1,349,125 FPS |
+| | Statistical LSTM | 39.2194 | 100.0% | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 219,827 FPS |
+| | Soft-Constrained PINN | 53.8167 | 100.0% | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 1,325,302 FPS |
+| | **Hard Residual PINN (Ours)** | **0.5783** | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 675,683 FPS |
+| | Translation-Invariant PINN | 12.5010 (OOD) | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 650,000 FPS |
+| | Deep Ensemble (E=5) | 0.5120 | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 141,430 FPS |
+| | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 450,000 FPS |
+| | Set-Multi-Entity PINN | Exact $0.0\%$ Rel. | **0.0%** | — | *(Requires MPC/Actor)* | *(Requires MPC/Actor)* | 320,000 FPS |
+| **Closed-Loop Control (MPC + World Model)** | Random Actions Baseline | — | — | — | 241.50 px (300f) | 143.44 px (400f) | 50,124 FPS |
+| | MPC + Statistical MLP | — | 100.0% | 90.26 px | 66.13 px (300f) | 576.81 px (400f) | 72.0 FPS |
+| | MPC + Soft-Constrained PINN | — | 100.0% | 219.25 px | 38.69 px (300f) | 394.06 px (400f) | 73.7 FPS |
+| | **MPC + Hard Residual PINN (Ours)** | — | **0.0%** | **0.28 px** | **571.75 px (300f)** | **755.62 px (400f)** | 53.2 FPS |
 | | **Hazard-Aware MPC 12D (Ours)** | — | **0.0%** | **4.12 px** | **782.94 px (400f)** | — | 23.7 FPS |
 | | **Extended Navigation MPC (Ours)** | — | **0.0%** | **3.85 px** | **1,016.06 px (627f)**| — | 25.3 FPS |
 | | **Full Level Clearance MPC (Ours)** | — | **0.0%** | **3.85 px** | **2,003.69 px (971f - GOAL CLEARED)** | — | 19.6 FPS |
-| **Políticas Amortizadas (Redes Neurais Reativas)** | Model-Free PPO (Direct SNES) | — | — | — | 210.50 px (350f) | — | ~60 FPS |
-| | Dyna-PPO 8D (Simulator) | — | — | — | 164.75 px (300f) | — | ~500 FPS |
-| | Dyna-PPO 12D Multi-Entity | — | — | — | -7.38 px (Colapso) | — | ~500 FPS |
+| **Amortized Policies (Reactive Neural Networks)** | Model-Free PPO (Direct SNES) | — | — | — | 210.50 px (350f) | — | ~60 FPS |
+| | Dyna-PPO 8D (Simulator) | — | — | — | 115.00 px (173f) | — | ~500 FPS |
+| | Dyna-PPO 12D Multi-Entity | — | — | — | -7.38 px (Collapse) | — | ~500 FPS |
 | | Distilled Policy (1-step BC) | 0.1740 BCE | **0.0%** | — | 115.00 px (174f) | — | **2,900.9 FPS** |
 | | **DAgger Policy (3-iter - Ours)** | **0.1671 BCE** | **0.0%** | — | **831.75 px (500f)** | **830.50 px (400f)** | **3,064.9 FPS** |
 
 ---
 
-### 10.28 Frente 2: Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)
+### 10.28 Frontier 2: Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)
 
-Para validar conclusivamente se o conhecimento físico incorporado no **Hard Residual PINN** e na política **DAgger** generaliza para novos ambientes sem sofrer de *overfitting* ou colapso fora da distribuição (OOD), submetemos todos os controladores ao teste de fogo em malha fechada no estágio inédito **Yoshi's House** (`$7E:0100 = 0x14`, `data/raw/smw_yoshi_house.state`).
+To validate conclusively whether the physical knowledge embedded in the **Hard Residual PINN** and in the **DAgger** policy generalizes to new environments without suffering from *overfitting* or out-of-distribution (OOD) collapse, we submitted every controller to the closed-loop fire test on the unseen stage **Yoshi's House** (`$7E:0100 = 0x14`, `data/raw/smw_yoshi_house.state`).
 
-Nenhum modelo, planejador ou rede recebeu qualquer amostra de treino, ajuste fino ou calibração em Yoshi's House. O Mario foi inicializado na coordenada $X_0 = 16.0, Y_0 = 336.38$, e cada controlador operou autonomamente durante 400 frames a 60 Hz (`src/evaluation/evaluate_cross_level_control.py`):
+No model, planner or network received any training sample, fine-tuning or calibration on Yoshi's House. Mario was initialized at coordinate $X_0 = 16.0, Y_0 = 336.38$, and each controller operated autonomously for 400 frames at 60 Hz (`src/evaluation/evaluate_cross_level_control.py`):
 
-#### 10.28.1 Resultados Empíricos Obtidos no Console SNES Real
+#### 10.28.1 Empirical Results Obtained on the Real SNES Console
 
-Os resultados salvos em `results/cross_level_control_metrics.json` revelam a robustez da formulação estruturada:
+The results stored in `results/cross_level_control_metrics.json` reveal the robustness of the structured formulation:
 
-| Controlador | Progresso Horizontal ($X$) | Taxa de Sobrevivência | Velocidade Média ($\bar{v}_x$) | Latência de Decisão | Throughput |
+| Controller | Horizontal Progress ($X$) | Survival Rate | Mean Velocity ($\bar{v}_x$) | Decision Latency | Throughput |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Random Actions Baseline** | 143.44 px | 400 / 400 (100%) | 5.79 px/f | 0.02 ms | 50,124.1 FPS |
 | **MPC + Statistical MLP (Black-Box OOD)** | 576.81 px | 400 / 400 (100%) | 23.16 px/f | 13.89 ms | 72.0 FPS |
@@ -924,67 +938,67 @@ Os resultados salvos em `results/cross_level_control_metrics.json` revelam a rob
 | **MPC + Hard Residual PINN (Ours)** | **755.62 px** | **400 / 400 (100%)** | **30.30 px/f** | 18.80 ms | 53.2 FPS |
 | **Amortized DAgger Policy (Ours)** | **830.50 px** | **400 / 400 (100%)** | **34.66 px/f** | **0.33 ms** | **3,064.9 FPS** |
 
-#### 10.28.2 Análise Comparativa e Conclusões Científicas
+#### 10.28.2 Comparative Analysis and Scientific Conclusions
 
-1. **Superioridade do Hard PINN sob Transferência Zero-Shot:**
-   - O **MPC com Hard Residual PINN** alcançou **755.62 px** de avanço, superando o MLP estatístico (**576.81 px**, $+31.0\%$) e o Soft PINN (**394.06 px**, $+91.8\%$). Como a garantia cinemática $(\Delta x = v_x \Delta t)$ é estrita na camada de saída, o planejador CEM pôde projetar trajetórias de salto de longa distância sem o risco de alucinar acelerações irreais no vácuo.
-2. **Fracasso Relativo das Penalizações Soft OOD:**
-   - O **Soft PINN** teve desempenho substancialmente inferior ao MLP e ao Hard PINN no controle OOD (apenas 394.06 px). Conforme demonstrado nos teoremas da Seção 4, multiplicadores de Lagrange fixos em penalidades suaves geram gradientes conflitantes entre o objetivo de tarefa e as perdas de física em distribuições de estado não vistas, causando hesitação e desaceleração do agente.
-3. **Eficiência e Robustez Extrema da Política DAgger:**
-   - A **política DAgger amortizada** liderou o benchmark em distância percorrida (**830.50 px** em 400 frames, com $\bar{v}_x = 34.66$) e operou a estonteantes **3,064.9 FPS** em CPU comum (latência de 326 $\mu$s). Por ter sido treinada com agregação iterativa de trajetórias em estados limites, a política reativa manteve saltos fluidos e contínuos sem sofrer de acúmulo de erro amostral.
-4. **Validação Cinemática:**
-   - As trajetórias de altitude $Y(t)$ demonstram parábolas de gravidade consistentes com o motor do jogo e colisões exatas no solo a $Y = 336$ px, confirmando ausência de penetração de solo ou teletransporte cinemático.
+1. **Superiority of the Hard PINN under Zero-Shot Transfer:**
+   - **MPC with the Hard Residual PINN** achieved **755.62 px** of forward progress, surpassing the statistical MLP (**576.81 px**, $+31.0\%$) and the Soft PINN (**394.06 px**, $+91.8\%$). Because the kinematic guarantee $(\Delta x = v_x \Delta t)$ is strict in the output layer, the CEM planner was able to project long-range jump trajectories without the risk of hallucinating unrealistic accelerations in a vacuum.
+2. **Relative Failure of Soft Penalties under OOD:**
+   - The **Soft PINN** performed substantially below both the MLP and the Hard PINN in OOD control (only 394.06 px). As demonstrated by the theorems in Section 4, fixed Lagrange multipliers in soft penalties generate conflicting gradients between the task objective and the physics losses on unseen state distributions, causing agent hesitation and deceleration.
+3. **Efficiency and Extreme Robustness of the DAgger Policy:**
+   - The **amortized DAgger policy** led the benchmark in distance covered (**830.50 px** in 400 frames, with $\bar{v}_x = 34.66$) and ran at a staggering **3,064.9 FPS** on a common CPU (326 $\mu$s latency). Because it was trained with iterative aggregation of trajectories on boundary states, the reactive policy maintained fluid, continuous jumps without suffering from sample-error accumulation.
+4. **Kinematic Validation:**
+   - The altitude trajectories $Y(t)$ show gravity parabolas consistent with the game engine and exact ground contacts at $Y = 336$ px, confirming the absence of ground penetration or kinematic teleportation.
 
 ![Zero-Shot Closed-Loop Control on Stage B](results/figures/cross_level_control_trajectories.png)
-*Figura: Curvas de trajetória fechada no console SNES Libretro no estágio inédito Yoshi's House. Painel Superior: Progresso horizontal acumulado. Painel Inferior: Altitude vertical evidenciando ciclos de salto parabólicos e contato rígido com o solo.*
+*Figure: Closed-loop trajectory curves on the Libretro SNES console in the unseen Yoshi's House stage. Top panel: accumulated horizontal progress. Bottom panel: vertical altitude highlighting parabolic jump cycles and rigid ground contact.*
 
 ---
 
-### 10.29 Consolidação das Fronteiras A, B, C e D: Otimização Diferenciável, PPO e Renderização Multimodal
+### 10.29 Consolidation of Frontiers A, B, C and D: Differentiable Optimization, PPO and Multimodal Rendering
 
-Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançadas do aprendizado por reforço baseado em modelos (*Model-Based RL*) e física computacional, foram implementadas e validadas 4 novas frentes científicas:
+To expand the scope of the project towards the most advanced frontiers of model-based reinforcement learning (*Model-Based RL*) and computational physics, four new scientific fronts were implemented and validated:
 
-#### 10.29.1 Fronteira C: Modelo Multimodal Unificado (`src/models/pinn_unified_multimodal.py`)
-- **Arquitetura:** Unifica em um único grafo computacional:
-  1. Estado cinemático 8D contínuo do Mario $[X, Y, v_x, v_y, c_g, c_c, c_l, c_r]$;
-  2. Encoder convolucional 2D de terreno espacial da WRAM (`$7E:C800`) processando blocos locais $7 \times 7$;
-  3. Módulo de dinâmica relativa de perigo (sprites dinâmicos como Rex) $[ \Delta X_h, \Delta Y_h, v_{xh}, \text{active} ]$.
-- **Garantia Física:** Conservação analítica exata de $0{,}0\%$ de violação cinemática tanto para o jogador quanto para o vetor de deslocamento relativo aos inimigos.
-- **Testes:** 100% de cobertura e passagem em [`tests/test_unified_multimodal.py`](tests/test_unified_multimodal.py).
+#### 10.29.1 Frontier C: Unified Multimodal Model (`src/models/pinn_unified_multimodal.py`)
+- **Architecture:** Unifies in a single computational graph:
+  1. Mario's continuous 8D kinematic state $[X, Y, v_x, v_y, c_g, c_c, c_l, c_r]$;
+  2. A 2D convolutional encoder of spatial terrain from WRAM (`$7E:C800`) processing local $7 \times 7$ blocks;
+  3. A relative hazard dynamics module (dynamic sprites such as Rex) $[ \Delta X_h, \Delta Y_h, v_{xh}, \text{active} ]$.
+- **Physical Guarantee:** Exact analytical conservation of $0.0\%$ kinematic violation for both the player and the enemy-relative displacement vector.
+- **Tests:** 100% coverage and passing in [`tests/test_unified_multimodal.py`](tests/test_unified_multimodal.py).
 
-#### 10.29.2 Fronteira B: Controlador por Gradiente Diferenciável através do Hard PINN (`src/planning/differentiable_pinn_planner.py`)
-- **Formula de Controle de Primeira Ordem:** Ao invés de busca estocástica por amostragem (CEM MPC de ordem zero), parametrizamos a sequência de ações como logits contínuos $\mathbf{U} \in \mathbb{R}^{H \times 6}$ com relaxação via Sigmoid e calculamos o gradiente analítico da recompensa diretamente através dos pesos e equações do Hard PINN:
+#### 10.29.2 Frontier B: Differentiable Gradient Controller through the Hard PINN (`src/planning/differentiable_pinn_planner.py`)
+- **First-Order Control Formula:** Instead of stochastic sampling search (zero-order CEM MPC), we parameterize the action sequence as continuous logits $\mathbf{U} \in \mathbb{R}^{H \times 6}$ with a Sigmoid relaxation and compute the analytical gradient of the reward directly through the weights and equations of the Hard PINN:
   $$\nabla_{\mathbf{u}_{0:H-1}} J = \nabla_{\mathbf{u}_{0:H-1}} \sum_{\tau=0}^{H-1} R(s_\tau, \sigma(\mathbf{u}_\tau))$$
-- **Convergência:** Otimização via Adam ($lr = 0{,}25$, 15 passos de gradiente) ajusta os controles com base no campo gradiente exato da física do jogo.
-- **Testes:** Validado em [`tests/test_differentiable_planner.py`](tests/test_differentiable_planner.py).
+- **Convergence:** Optimization via Adam ($lr = 0.25$, 15 gradient steps) adjusts the controls based on the exact gradient field of the game physics.
+- **Tests:** Validated in [`tests/test_differentiable_planner.py`](tests/test_differentiable_planner.py).
 
-#### 10.29.3 PPO Amortizado no Simulador PINN (Unified Dyna-PPO — `src/training/train_unified_ppo.py`)
-- **Treinamento Vetorial em GPU:** 128 ambientes paralelos simulados diretamente em tensores PyTorch na GPU, atingindo taxa de transferência de **14.395 transições por segundo** (200.000 timesteps concluídos em apenas 13,7 segundos).
-- **Diagnóstico Sim-to-Real no Hardware Real:**
-  - O agente PPO puro treinado em simulação atingiu sobrevivência de **2.500 quadros no console real** operando a **1.425,1 FPS**, porém exibiu o clássico fenômeno de *Passive Hedging Collapse* (hesitação e agachamento no ponto de spawn, $-7{,}38\text{ px}$).
-  - Em contrapartida, a política **DAgger** (treinada com agregação interativa on-policy de trajetórias de hardware) superou os marcos de **250 px, 500 px e 782 px**, acumulando **833,50 px de progresso real** a **2.860,4 FPS**.
+#### 10.29.3 Amortized PPO inside the PINN Simulator (Unified Dyna-PPO — `src/training/train_unified_ppo.py`)
+- **Vectorized GPU Training:** 128 parallel environments simulated directly in PyTorch tensors on the GPU, reaching a throughput of **14,395 transitions per second** (200,000 timesteps completed in only 13.7 seconds).
+- **Sim-to-Real Diagnostics on Real Hardware:**
+  - The pure PPO agent trained in simulation reached a survival of **2,500 frames on the real console** operating at **1,425.1 FPS**, but exhibited the classic *Passive Hedging Collapse* phenomenon (hesitation and crouching at the spawn point, $-7.38\text{ px}$).
+  - Conversely, the **DAgger** policy (trained with interactive on-policy aggregation of hardware trajectories) surpassed the **250 px, 500 px and 782 px** milestones, accumulating **833.50 px of real progress** at **2,860.4 FPS**.
 
-#### 10.29.4 Fronteira A e Opção 3: Conclusão Integral da Fase (Full Level Clearance) & Vídeo de Telemetria WRAM
-- **Status de Conclusão do Jogo:** **GOAL REACHED! (Fase 100% Concluída)** no console real SNES Libretro.
-- **Métricas Oficiais no Hardware (`results/full_level_clearance_metrics.json`):**
-  - **Progresso Total:** **2.003,69 pixels** (de $X=16.0$ até $X=2.022,0$ px).
-  - **Quadros Sobrevividos:** **971 quadros autênticos** (16,2 segundos a 60 Hz).
-  - **Subscreens Percorridos:** Todos os subscreens do estágio (Subscreens 0, 1, 2, 3, 4, 5, 6 e 7).
-  - **Marcos Superados:** 250 px, 500 px, 782 px (Rex 1), 1.000 px (Platô), 1.250 px (Vales de Canos), 1.500 px (Colinas Superiores), 1.750 px (Reta Final) e 1.900 px (Zona da Fita de Chegada).
-  - **Cruzamento da Fita de Chegada:** **Quadro 917** ($X = 1.916,6$ px), com finalização da caminhada triunfal no **Quadro 971** ($X = 2.022,0$ px).
-  - **Velocidade Média:** **33,05 subpixels/quadro** a **19,62 FPS** de throughput contínuo de controle CEM MPC na GPU.
-- **Renderização Multimodal Dinâmica (`src/evaluation/render_level_clearance_video.py`):**
-  - Câmera móvel de rastreamento contínuo centrada no Mario $[X(t) - 120, X(t) + 280]$ que acompanha toda a extensão horizontal do mapa;
-  - Fita de Chegada (*Goal Tape*) modelada visualmente a $X \approx 1.950$ px com faixa amarela e postes verticais;
-  - Curva de progresso em tempo real $X(t)$ e cursor temporal sincronizado;
-  - Painel HUD de telemetria WRAM a 60 Hz exibindo coordenadas $(X, Y)$, velocidades $(v_x, v_y)$, subscreen atual e estado dos botões do controle do SNES ($B, Y, \text{RIGHT}$).
-- **Artefatos Gerados:**
-  - Vídeo MP4 em Alta Definição: `results/figures/full_level_clearance.mp4` (324 quadros a 30 FPS, 2,5 MB).
-  - Animação GIF Sincronizada: `results/figures/full_level_clearance.gif` (162 quadros a 15 FPS contínuo, 4,5 MB).
-  - Gráfico de Trajetória Completa: `results/figures/full_level_clearance_trajectory.png`.
+#### 10.29.4 Frontier A and Option 3: End-to-End Level Clearance (Full Level Clearance) & WRAM Telemetry Video
+- **Game Completion Status:** **GOAL REACHED! (Level 100% Cleared)** on the real Libretro SNES console.
+- **Official Metrics on Hardware (`results/full_level_clearance_metrics.json`):**
+  - **Total Progress:** **2,003.69 pixels** (from $X=16.0$ to $X=2{,}022.0$ px).
+  - **Frames Survived:** **971 authentic frames** (16.2 seconds at 60 Hz).
+  - **Subscreens Traversed:** Every subscreen of the stage (Subscreens 0, 1, 2, 3, 4, 5, 6 and 7).
+  - **Milestones Passed:** 250 px, 500 px, 782 px (Rex 1), 1,000 px (Plateau), 1,250 px (Pipe Valleys), 1,500 px (Upper Hills), 1,750 px (Final Straight) and 1,900 px (Goal Tape Zone).
+  - **Goal Tape Crossing:** **Frame 917** ($X = 1{,}916.6$ px), with the triumphant walk completed on **Frame 971** ($X = 2{,}022.0$ px).
+  - **Mean Velocity:** **33.05 subpixels/frame** at **19.62 FPS** of continuous CEM MPC control throughput on the GPU.
+- **Dynamic Multimodal Rendering (`src/evaluation/render_level_clearance_video.py`):**
+  - A continuously tracking mobile camera centered on Mario $[X(t) - 120, X(t) + 280]$ that follows the entire horizontal extent of the map;
+  - The Goal Tape modeled visually at $X \approx 1{,}950$ px with a yellow band and vertical posts;
+  - A real-time progress curve $X(t)$ with a synchronized time cursor;
+  - A WRAM telemetry HUD panel at 60 Hz showing coordinates $(X, Y)$, velocities $(v_x, v_y)$, the current subscreen and the state of the SNES controller buttons ($B, Y, \text{RIGHT}$).
+- **Generated Artifacts:**
+  - High-resolution MP4 video: `results/figures/full_level_clearance.mp4` (324 frames at 30 FPS, 2.5 MB).
+  - Synchronized animated GIF: `results/figures/full_level_clearance.gif` (162 frames at a continuous 15 FPS, 4.5 MB).
+  - Complete trajectory chart: `results/figures/full_level_clearance_trajectory.png`.
 
 ![Full Level Clearance Animation](results/figures/full_level_clearance.gif)
-*Figura: Animação fluida e contínua da travessia integral de Yoshi's Island 1 no console SNES real com câmera rastreadora dinâmica, HUD de telemetria WRAM a 60 Hz e cruzamento da fita de chegada.*
+*Figure: Fluid, continuous animation of the full traversal of Yoshi's Island 1 on the real SNES console with a dynamic tracking camera, 60 Hz WRAM telemetry HUD and the goal-tape crossing.*
 
 ---
 
@@ -1024,6 +1038,30 @@ pixels → estimate → Hard-PINN MPC (WRAM read in parallel only to *measure*
 estimator error, never for control). Scope is deliberately a supervised
 state-estimation front-end, not a pixel-space world model.
 
+#### 10.31.1 Measured Results on Real Hardware
+
+`scripts/record_pixel_gameplay.py` captured **2,720** paired (frame, WRAM)
+transitions in **2.8 s** of wall-clock (`data/raw/smw_pixel_dataset.npz`).
+The trained estimator (`results/pixel_estimator_metrics.json`, best validation
+SmoothL1 **0.1566** on normalized states) reproduces position but not motion:
+
+| Channel | Metric | Value | Reading |
+| :--- | :--- | :---: | :--- |
+| $X$ | $R^2$ / MAE | **0.948** / 22.78 px | scroll position is visible in the background |
+| $Y$ | $R^2$ / MAE | 0.435 / 14.59 px | altitude partly recoverable from the tile horizon |
+| $v_x$ | $R^2$ / MAE | 0.116 / 16.46 subpx/f | speed barely identifiable from one frame |
+| $v_y$ | $R^2$ / MAE | **-0.005** / 23.53 subpx/f | **no better than predicting the mean** |
+| `c_ground` | accuracy / F1 | 0.877 / 0.904 | contact is inferable from pose |
+| `c_left` / `c_right` / `c_ceiling` | accuracy | 0.993 / 1.000 / 1.000 | degenerate classes (rarely set), F1 undefined or 0 |
+
+The negative result is the point: **velocity is not a function of a single RGB
+frame**, so a pixel-to-WRAM regressor cannot feed a dynamics model that consumes
+$(v_x, v_y)$ - it needs multi-frame input or an explicit observer. Closed loop
+(`results/pixel_mpc_metrics.json`) confirms the cost: pixels → estimator → Hard-PINN
+MPC advances **108.94 px in 202 frames** before falling in a pit, against **571.75 px
+in 300 frames** for the same planner driven by WRAM truth (§10.6), with a mean
+estimation error of 84.27 units over $(x, y, v_x, v_y)$.
+
 ### 10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)
 
 To close limitation §10.30-5 (local MPC minima at vertical obstacles),
@@ -1034,6 +1072,16 @@ by a local 15-frame Hard-PINN CEM-MPC via `WaypointObjective`
 (`HierarchicalMPCController`, `--value-ckpt` flag for TD-MPC mode in
 `src/evaluation/evaluate_hierarchical_mpc.py`). Division of labor is explicit:
 A* gives topological guidance, the local MPC owns jump-arc feasibility.
+
+#### 10.32.1 Measured Result on Real Hardware
+
+`results/hierarchical_mpc_metrics.json`: A* routed **511** tiles into **8** pixel
+waypoints; the local MPC reached **2 of 8** waypoints and **107.88 px** before
+terminating at frame **201**. The route is not the bottleneck - the local planner
+still fails to produce a feasible jump arc at the second waypoint, so global
+guidance alone does not close the gap that §10.33 quantifies with hand-coded
+reflexes (1,065 px with reflexes vs 114 px without). This row is a negative result
+and is reported as such.
 
 ### 10.33 MPC Reflex Ablation (Pure vs Reflexive) & TD-MPC Terminal Value
 
@@ -1086,23 +1134,172 @@ residuals transfer only partially — the next modeling frontier.
 
 ### 10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics
 
-`scripts/navigate_to_level.py --level 2` reaches *a* level entry (mode 0x14)
+`python -m scripts.navigate_to_level --level 2` reaches *a* level entry (mode 0x14)
 but the post-entry story message box never reaches a playable handoff despite
-an instrumented campaign (frame-capture debugging via the new pixel API):
+an instrumented campaign (frame-capture debugging via the pixel API):
 B/A/X holds and pulses, START hold, Y hold, single Y edge (fires a 0x14→0xC
 transition that returns to the map, 0xE), 1500-frame idle waits. Findings
 locked into the script, which **raises instead of saving garbage**:
-message dismissal needs a Y *edge* (consistent with the $7E:0016 latch);
-`set_input` was fixed to map START/SELECT/L/R (previously silently dropped)
-and to raise `KeyError` on unknown buttons. The capture recipe, verification
-gates (60 stable plausible frames + movement dx > 10 px), and the open
-question (entry-point ambiguity House-vs-YI2, $7E:0072 = 36 semantics) are
-documented here so the next attempt starts from evidence, not guesses.
+message dismissal needs a Y *edge* (consistent with the `$7E:0016` latch);
+`set_input` maps START/SELECT/L/R (previously silently dropped) and raises
+`KeyError` on unknown buttons; and a savestate is now refused whenever the engine
+never reaches interactive mode, instead of writing a file-select frame as if it
+were a level start.
+
+#### 10.36.1 Reproduced Attempt (2026-09-22, machine-readable evidence)
+
+The attempt is no longer only prose: `results/yi2_capture_attempt.json` records it
+with full `_meta` provenance.
+
+| Stage | Observed | Expected for a playable state |
+| :--- | :--- | :--- |
+| World-map traversal | YI2 node entered on map round **4** (past the Yoshi's House node) | - |
+| Level-entry transition | `$7E:0100 = 0x14` reached on **frame 0** of the wait | mode 0x14 |
+| Coordinates at entry | $X = 136$, $Y = 313$ | near a level spawn |
+| Animation state at entry | `$7E:0072 = 11` (`0x0B`, level-entry slide) | $\in \{0, 1, 2\}$ |
+| After 12 Y-pulse dismissal attempts | $X = 13.0$, $Y = 65{,}502$ (i.e. $\texttt{0xFFFE}$ read unsigned) | stable, plausible |
+| Stability gate | **0** of 60 consecutive plausible frames (1200 frames sampled) | 60 |
+| Outcome | `blocked: WRAM never stabilised after the message box` → **no savestate written** | - |
+
+Interpretation kept honest: the $0x0B$ animation state at entry plus the wrapped
+$Y$ reading mean the engine is mid-transition, and the byte-level evidence is
+consistent with the earlier suspicion of **entry-point ambiguity** - the $X = 13$
+reached after dismissal is a House-like spawn, not the $X = 16$ of Yoshi's Island 1
+or a YI2 start. The open question, the recipe and the gates (60 stable plausible
+frames + movement $\Delta X > 10$ px) are documented here and in the script so the
+next attempt starts from evidence, not guesses.
 
 ---
 
+### 10.37 Analytical and Oracle-Model Baselines
+
+Every result above compares learned models against each other. Two reference
+points were missing: how much of the Hard PINN's advantage is the physics prior
+itself, and what a near-exact model would achieve in closed loop.
+`src/evaluation/analytical_baselines.py` supplies both.
+
+#### 10.37.1 Baseline A - Engine Rules with Zero Hidden Units
+
+`AnalyticalKinematicsDynamics` (`src/models/analytical_kinematics.py`) contains no
+neural network at all: exact fixed-point integration $X_{t+1} = X_t + v_x/16$, the
+documented saturation tiers (walk 20 / run 48 / sprint 72, $v_y \in [-80, 64]$),
+asymmetric gravity ($+3$ held / $+6$ falling) and six interpretable scalars
+(walk/run traction, friction, skid deceleration, jump impulse and its momentum
+gain) identified by deterministic coordinate-wise grid search on the same train
+split, same seed and same loss as the neural baselines.
+
+| Channel (1,356 test transitions) | Engine rules (0 learned parameters) | Hard PINN (9,992 parameters) |
+| :--- | :---: | :---: |
+| $X$ MSE / $R^2$ | **0.1397** / 1.0000 | - |
+| $Y$ MSE / $R^2$ | 4.6748 / 0.9960 | - |
+| $v_x$ MSE / $R^2$ | **3.2078** / 0.9900 | - |
+| $v_y$ MSE / $R^2$ | 931.03 / 0.4864 | - |
+| `c_ground` accuracy / F1 | 0.9904 / 0.9938 | - |
+| All-channel test MSE | 117.38 | **0.5783** |
+| Kinematic residual $\|\Delta X - v_x/16\|^2$ | **exactly 0.0** | 0.0019 |
+
+**The horizontal channel is fully explained by the published rules** - position MSE
+0.14 px and velocity MSE 3.21 (subpixels/frame)$^2$ with no hidden units, no
+gradients and 6 interpretable scalars. That is the ceiling any dynamics model should
+be measured against, and it localises where learning is actually needed: the jump
+impulse and the contact flags.
+
+Two honest caveats are reported instead of being fitted away:
+
+1. **The scalars are only weakly identifiable.** Grid search pinned walk traction,
+   run traction and friction all at the bottom of their ranges (0.50) and the
+   impulse at the boundary $-64.0$, while the velocity MSE improved only from
+   515.99 to 461.41 across all six parameters - the landscape is nearly flat in the
+   horizontal scalars once the vertical error dominates.
+2. **The jump impulse is not recoverable from single transitions.**
+   `vertical_dynamics_diagnostics` shows that 94.7% of frames flagged as take-off
+   are *already rising*, only 21.1% have the jump button held, and observed
+   post-impulse velocity reaches $-112$ subpixels/frame - outside the documented
+   $[-64, -80]$ window of §4.2.1. Held-ascent $\Delta v_y$ is reproduced exactly
+   (mean $+3.00$, std $0.00$). Conclusion: WRAM stores velocity *after* the engine's
+   impulse, so a transition dataset observes the integral, not the jump. Recovering
+   it needs the input-latch edge at `$7E:0016` or a multi-frame window.
+
+#### 10.37.2 Baseline B - Oracle-Model MPC Upper Bound
+
+Same savestate, same objective (weights copied verbatim from the §10.6 protocol),
+same CEM budget ($H = 15$, 256 candidates, 3 iterations), same seed - only the
+dynamics the planner rolls out differ
+(`results/oracle_mpc_metrics.json`):
+
+| Controller | Progress (300 frames) | Survived | Control throughput |
+| :--- | :---: | :---: | :---: |
+| MPC + Hard Residual PINN (learned, 9,992 parameters) | 573.94 px | 300 / 300 | 40.3 FPS |
+| MPC + Analytical Engine Rules (0 learned parameters) | **605.00 px** | 300 / 300 | 17.0 FPS |
+
+Action agreement between the two planners: 0.0% on the first commanded action, 43.3%
+over the full 300-frame sequence.
+
+Reading and limits of the claim: in closed loop the parameter-free rules are **not**
+beaten by the learned model (+5.4% progress) even though their all-channel
+single-step MSE is 200x worse - MPC only needs an approximately correct
+short-horizon gradient, and a model that cannot violate the kinematics never has to
+learn not to. This bounds what §10.6-§10.7 can attribute to *learning*: the gap from
+a near-exact model to the best learned one is small for this objective, whereas the
+gap from an unstructured one is large (66 px for the MLP, §10.6). Throughput halves
+(17.0 vs 40.3 FPS) because the analytical forward pass is branch-heavy tensor code
+rather than one dense matmul - interpretability is not free.
+
 ---
 
+### 10.38 Closed-Loop Reproduction Audit and Preamble Probe
+
+Refreshing §10.6 exposed a methodological hole that no unit test could see: two
+harnesses in this repository reported 164.8 px and 573.9 px for *the same
+checkpoint, planner and objective*. `src/evaluation/mbrl_mpc_benchmark.py` now ships
+two diagnostics that turn that into measurable statements.
+
+#### 10.38.1 Preamble Probe (`--preamble-probe`)
+
+Only the episode start varies; model, objective, CEM budget and seed are fixed
+(`results/mpc_preamble_probe_metrics.json`):
+
+| Episode preamble | Mode at first planned frame | Progress | Survived | Alignment error |
+| :--- | :---: | :---: | :---: | :---: |
+| restore only *(the original §10.6 harness)* | `0x08` | 168.81 px | 300 | 3.70 px |
+| restore + warm-up frames | `0x08` | 165.31 px | 300 | 3.94 px |
+| restore + force gameplay mode | `0x14` | 117.19 px | 174 | 1.54 px |
+| **restore + mode + warm-up (`start_episode`)** | `0x14` | **571.75 px** | **300** | **0.28 px** |
+
+**The committed Yoshi's Island 1 savestate restores into engine mode `$7E:0100 =
+0x08` (file selector), not interactive gameplay `0x14`.** Any script that loads it
+and immediately plans controls a non-interactive engine: WRAM still moves, so naive
+sanity checks pass, but input handling differs. The preamble alone is worth
+454.6 px of progress (3.4x) and a 13x change in sim-to-real alignment error. This
+is why §10.6's numbers were refreshed, why the gameplay-mode poke that used to be
+copy-pasted in ~15 scripts now lives in one helper
+(`SnesLibretroEmulator.start_episode`), and why `src/environment/wram.py` documents
+the mode byte.
+
+#### 10.38.2 Reproduction Audit (`--reproduction-check`)
+
+Re-executes the protocol `--repeats` times on separate seeds *without* overwriting
+the published artifact, and reports each row against the committed value
+(`results/mpc_reproduction_metrics.json`). On the corrected protocol: Hard PINN
+420.9 ± 266.2 px (one seed falls in a pit at frame 177), Soft PINN 52.8 ± 13.3 px,
+MLP 49.4 ± 14.6 px, random baseline 241.5 ± 0.0 px. Two statements follow: the
+ordering of §10.6 is stable, and a single closed-loop row carries an uncertainty far
+larger than the difference between the two black-box baselines - so §10.6 is read
+as ranking evidence, and the multi-seed §8.4 machinery is what supports magnitude
+claims.
+
+#### 10.38.3 Manifest and Freshness Gates
+
+`results/MANIFEST.md` indexes artifact → writer module → regenerating command →
+README section, declares which checkpoints each closed-loop artifact loads, and is
+enforced by `tests/test_results_manifest.py` (ownerless artifacts, fictional
+writers, dangling claims, growing `_meta` exemptions, stale checkpoint inputs and
+headline-number drift all fail CI). The freshness gate is what flagged §10.6;
+the copy of the master table in §10.27 also carried a Dyna-PPO row that had been
+pasted from the MPC row (164.75 px instead of the 115.00 px / 173 frames recorded in
+`results/dyna_ppo_metrics.json`) and is now corrected.
+
+---
 
 ## 11. Complete Reproducibility Guide
 
@@ -1114,7 +1311,8 @@ smw-pinn/
 │   ├── base.yaml / benchmark.yaml      # Full 4-model benchmark defaults
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
-│   └── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
+│   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
+│   └── smoke_*.yaml                    # 5 fast real-hardware-study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -1125,8 +1323,11 @@ smw-pinn/
 │       ├── smw_yoshi_house.state          # Interactive savestate for Stage B (Yoshi's House)
 │       ├── smw_gameplay_dataset.npz       # 8,077 genuine interactive transitions (8D)
 │       ├── smw_multi_entity_dataset.npz   # 19,702 genuine interactive transitions (12D)
+│       ├── smw_pixel_dataset.npz          # 2,720 paired RGB frames + 8D states
+│       ├── smw_set_multi_entity_dataset.npz # 3,580 transitions with 12-slot sprite sets
 │       └── smw_tilemap_dataset.npz        # 10,357 genuine transitions with 7x7 tilemaps
 ├── results/
+│   ├── MANIFEST.md                        # Artifact index: writer, command, README section
 │   ├── benchmark_metrics.json             # Raw empirical benchmark metrics (single-seed)
 │   ├── multiseed_benchmark_metrics.json   # Multi-seed statistical metrics & hypothesis tests
 │   ├── mbrl_mpc_metrics.json              # Closed-loop Model-Based RL evaluation logs (300 frames)
@@ -1153,7 +1354,9 @@ smw-pinn/
 │   ├── record_pixel_gameplay.py           # Paired RGB frame + WRAM recorder
 │   └── record_tilemap_gameplay.py         # 8D + 7x7 tilemap WRAM telemetry recorder
 ├── src/
+│   ├── cli.py                             # Cross-platform entry point (`smw-pinn`, `python -m src.cli`)
 │   ├── environment/
+│   │   ├── wram.py                        # WRAM address map + game-mode constants
 │   │   ├── bin/snes9x_libretro.dll        # Snes9x Libretro 64-bit core
 │   │   ├── snes_emulator.py               # ctypes wrapper: WRAM, sprites, tilemap, RGB capture
 │   │   ├── sprite_sets.py                 # 12-slot sprite → entity-row conversion
@@ -1163,6 +1366,7 @@ smw-pinn/
 │   │   ├── pixel_encoder.py               # CNN pixel→8D estimator + StateNormalizer
 │   │   └── vision_dataset.py              # Paired frame/state dataset + seeded loaders
 │   ├── models/
+│   │   ├── analytical_kinematics.py       # No-NN closed-form forward model (Baseline A)
 │   │   ├── statistical_mlp.py             # Statistical MLP (+ param-matched compact factory)
 │   │   ├── statistical_lstm.py            # Statistical LSTM architecture
 │   │   ├── pinn_soft.py                   # Soft-Constrained PINN architecture
@@ -1180,6 +1384,8 @@ smw-pinn/
 │   │   ├── seed.py                        # Central deterministic seeding
 │   │   ├── experiment.py                  # TensorBoard + JSONL experiment logger
 │   │   ├── logging.py                     # Central stdlib logging helper
+│   │   ├── paths.py                       # Repo-root paths + checkpoint/figure helpers (CWD-safe)
+│   │   ├── provenance.py                  # `_meta` provenance stamps + strict JSON writer
 │   │   └── config.py                      # YAML config + CLI-override loader
 │   ├── training/
 │   │   ├── trainer.py                     # Training loop with Early Stopping & LR scheduler
@@ -1204,6 +1410,9 @@ smw-pinn/
 │   │   ├── tilemap_mpc.py                 # TilemapPINN→MPC adapter (static-map approx)
 │   │   └── differentiable_pinn_planner.py # First-order gradient control through Hard PINN
 │   └── evaluation/
+│       ├── analytical_baselines.py        # No-NN baseline + oracle-MPC upper bound (§10.37)
+│       ├── ablation_benchmark.py          # PINN constraint ablation (soft vs hard vs MLP)
+│       ├── evaluate_dagger_snes.py        # DAgger policy hardware evaluation
 │       ├── rollout_evaluator.py           # Rollout evaluator (+ multi-start statistics)
 │       ├── per_variable_metrics.py        # Per-channel MSE/MAE/R² + contact accuracy/F1
 │       ├── sample_efficiency_benchmark.py # Sample efficiency Pareto benchmark script
@@ -1228,7 +1437,7 @@ smw-pinn/
 │       ├── spatial_holdout_benchmark.py     # OOD-with-danger holdout (X>700, CI-safe)
 │       ├── render_level_clearance_video.py # Telemetry HUD video/GIF renderer
 │       └── render_comparison_animation.py # Synchronized trajectory animation generator
-├── tests/ (100+ tests: unit + regression + emulator-guarded integration)
+├── tests/ (340+ tests: unit + regression + smoke + emulator-guarded integration)
 │   ├── conftest.py                        # requires_emulator guard (Windows DLL)
 │   ├── test_losses.py                     # Unit tests for physics loss functions
 │   ├── test_models.py                     # Unit tests for tensor shapes and forward passes
@@ -1258,7 +1467,14 @@ smw-pinn/
 │   ├── test_pixel_perception.py           # Frame conversion, CNN estimator, vision data
 │   ├── test_global_planner.py             # A*, waypoints, hierarchical control
 │   ├── test_tdmpc_reflex.py               # Terminal value, reflex rules, diagnose math
-│   └── test_orphans_gravity.py            # Tilemap wrapper, sprite rows, gravity ID
+│   ├── test_orphans_gravity.py            # Tilemap wrapper, sprite rows, gravity ID
+│   ├── test_paths.py                      # Repo-root paths work from any CWD
+│   ├── test_dependency_parity.py          # requirements.txt / pyproject / lockstep pins
+│   ├── test_analytical_baselines.py       # Closed-form kinematics + oracle MPC
+│   ├── test_results_manifest.py           # Artifact catalog, freshness, README headlines
+│   ├── test_hardware_loops.py             # Emulator-guarded end-to-end hardware entry points
+│   ├── test_smoke_runs.py                 # Every configs/smoke_*.yaml is accepted + runs
+│   └── test_english_only.py               # Repo text stays English-only
 ├── pyproject.toml                         # Python package and pytest configuration
 ├── README.md                              # Complete experimental documentation and benchmark report
 ├── CONTRIBUTING.md                        # Setup, canonical commands, conventions
@@ -1293,123 +1509,160 @@ python -m pytest tests/ -v
 ### 11.4 Experiment Tracking (TensorBoard / JSONL)
 Training scripts log per-epoch metrics to `runs/<experiment>_<timestamp>/` (`metrics.jsonl` + `hparams.json` + TensorBoard events) via `src/utils/experiment.py:ExperimentLogger`:
 ```bash
-python src/training/benchmark_experiment.py --experiment-name benchmark_mlp_vs_pinn
+python -m src.training.benchmark_experiment --experiment-name benchmark_mlp_vs_pinn
 tensorboard --logdir runs
 # Disable TensorBoard (keep JSONL): --no-tensorboard
 # Mirror to wandb (requires pip install -e ".[wandb]"): --wandb
 ```
 
 ### 11.5 Reproducing Benchmarks & MBRL Evaluations
+
+> **Run entry points as modules** (`python -m src.evaluation.foo`), never as file
+> paths (`python src/evaluation/foo.py`): the package uses absolute `from src...`
+> imports, so the file-path form fails with `ModuleNotFoundError: No module named 'src'`.
+> On Windows, where `make` is usually absent, `pip install -e ".[dev]"` also provides the
+> equivalent console script: `smw-pinn benchmark`, `smw-pinn multiseed`,
+> `smw-pinn baselines`, or generically `smw-pinn run src.evaluation.<module> [flags]`.
+> Emulator-in-the-loop commands additionally need the Libretro core and your own ROM dump;
+> their locations are resolved by `src/utils/paths.py` and can be overridden with the
+> `SMW_ROM` / `SMW_CORE` / `SMW_DATA_DIR` environment variables (see section 11.2).
+
 ```bash
 # 1. Main comparative benchmark across all 4 architectures (single-seed):
-python src/training/benchmark_experiment.py
+python -m src.training.benchmark_experiment
 
 # 2. Sample efficiency Pareto curve benchmark (N = 200 to 5,000):
-python src/evaluation/sample_efficiency_benchmark.py
+python -m src.evaluation.sample_efficiency_benchmark
 
 # 3. Multi-seed statistical significance benchmark (K = 10 seeds, t-test + Wilcoxon + Cohen's dz):
-python src/evaluation/multiseed_benchmark.py
+python -m src.evaluation.multiseed_benchmark
 
 # 4. Closed-loop Model-Based RL (MPC) benchmark in real SNES console emulator:
-python src/evaluation/mbrl_mpc_benchmark.py
+python -m src.evaluation.mbrl_mpc_benchmark
 
 # 5. Amortized Policy Optimization (Dyna-PPO) and Zero-Shot Model-to-Real Transfer:
-python src/training/dyna_ppo.py
-python src/evaluation/evaluate_policy_snes.py
+python -m src.training.dyna_ppo
+python -m src.evaluation.evaluate_policy_snes
 
 # 6. Dynamic WRAM sprite perception and Rex evasion benchmark:
-python src/evaluation/evaluate_sprites_snes.py
+python -m src.evaluation.evaluate_sprites_snes
 
 # 7. Canonical Model-Free PPO baseline on real SNES console emulator:
-python src/training/model_free_ppo.py
+python -m src.training.model_free_ppo
 
 # 8. Deep PINN Ensemble (E=5) training & epistemic uncertainty quantification:
-python src/models/pinn_ensemble.py
+python -m src.models.pinn_ensemble
 
 # 9. Full closed-loop Online MBPO (Model-Based Policy Optimization):
-python src/training/online_mbpo.py
+python -m src.training.online_mbpo
 
 # 10. Multi-Entity 12D PINN training & autonomous hazard evasion:
-python src/training/dyna_ppo_sprites.py
-python src/evaluation/evaluate_multi_entity_snes.py
+python -m src.training.dyna_ppo_sprites
+python -m src.evaluation.evaluate_multi_entity_snes
 
 # 11. Safe Closed-Loop MBPO with Deep Ensemble & Epistemic Truncation:
-python src/training/online_mbpo.py --safe
+python -m src.training.online_mbpo --safe
 
 # 12. Hardware & computational efficiency profiling suite:
-python src/evaluation/benchmark_computational_efficiency.py
+python -m src.evaluation.benchmark_computational_efficiency
 
 # 13. Cross-stage zero-shot generalization benchmark (Yoshi's House):
-python src/evaluation/cross_level_benchmark.py
+python -m src.evaluation.cross_level_benchmark
 
 # 14. Synchronized multi-model visualization and animation generation:
-python src/evaluation/render_comparison_animation.py
+python -m src.evaluation.render_comparison_animation
 
 # 15. Record genuine 12D Multi-Entity dataset from SNES WRAM:
-python scripts/record_multi_entity_gameplay.py
+python -m scripts.record_multi_entity_gameplay
 
 # 16. Supervised training of hazard dynamics in MultiEntityPINNDynamics:
-python src/training/train_multi_entity.py
+python -m src.training.train_multi_entity
 
 # 17. Autonomous Multi-Entity MPC Planning on live SNES hardware (782 px Rex evasion):
-python src/evaluation/evaluate_multi_entity_mpc.py
+python -m src.evaluation.evaluate_multi_entity_mpc
 
 # 18. Record genuine 8D + 7x7 tilemap dataset from SNES WRAM ($7E:C800):
-python scripts/record_tilemap_gameplay.py
+python -m scripts.record_tilemap_gameplay
 
 # 19. Supervised training of TilemapPINNDynamics on genuine stage geometry:
-python src/training/train_tilemap.py
+python -m src.training.train_tilemap
 
 # 20. Distill MPC expert trajectories into an ultra-fast amortized policy (2,900 FPS):
-python src/training/distill_mpc_policy.py
-python src/evaluation/evaluate_distilled_policy_snes.py
+python -m src.training.distill_mpc_policy
+python -m src.evaluation.evaluate_distilled_policy_snes
 
 # 21. Autonomous Extended Hardware Navigation on real SNES (1,016+ px progress):
-python src/evaluation/evaluate_extended_navigation.py
+python -m src.evaluation.evaluate_extended_navigation
 
 # 22. Zero-Shot Closed-Loop Control Benchmark on Unseen Stage B (Yoshi's House):
-python src/evaluation/evaluate_cross_level_control.py
+python -m src.evaluation.evaluate_cross_level_control
 
 # 23. Train Unified Dyna-PPO inside PINN GPU Simulator (>14,000 FPS):
-python src/training/train_unified_ppo.py
+python -m src.training.train_unified_ppo
 
 # 24. Full Stage Clearance Benchmark on Live SNES Hardware (PPO vs. DAgger vs. MPC):
-python src/evaluation/evaluate_full_level_clearance.py --controller dagger
-python src/evaluation/evaluate_full_level_clearance.py --controller ppo
+python -m src.evaluation.evaluate_full_level_clearance --controller dagger
+python -m src.evaluation.evaluate_full_level_clearance --controller ppo
 
 # 25. Render High-Resolution Video (MP4) and Animated GIF with Telemetry HUD:
-python src/evaluation/render_level_clearance_video.py
+python -m src.evaluation.render_level_clearance_video
 
 # 26. Diagnose the X~1000 bottleneck (tile gaps + sprite census, real hardware):
-python src/evaluation/diagnose_obstacle_1000.py
+python -m src.evaluation.diagnose_obstacle_1000
 
 # 27. Honesty ablation: pure vs reflexive MPC (600 frames each, same savestate):
-python src/evaluation/mpc_reflex_ablation.py
+python -m src.evaluation.mpc_reflex_ablation
 
 # 28. Terrain-anticipating Tilemap-MPC closed loop (no reflexes):
-python src/evaluation/evaluate_tilemap_mpc.py
+python -m src.evaluation.evaluate_tilemap_mpc
 
 # 29. Joint training of Unified Multimodal PINN (tilemap + hazard datasets):
-python src/training/train_unified_multimodal.py
+python -m src.training.train_unified_multimodal
 
 # 30. Full 12-slot sprite-set recording + Set-Multi-Entity training:
-python scripts/record_set_multi_entity_gameplay.py
-python src/training/train_set_multi_entity.py
+python -m scripts.record_set_multi_entity_gameplay
+python -m src.training.train_set_multi_entity
 
 # 31. Pixel perception: record frames, train estimator, close pixel→MPC loop:
-python scripts/record_pixel_gameplay.py
-python src/training/train_pixel_estimator.py
-python src/evaluation/evaluate_pixel_mpc.py
+python -m scripts.record_pixel_gameplay
+python -m src.training.train_pixel_estimator
+python -m src.evaluation.evaluate_pixel_mpc
 
 # 32. Hierarchical A* + MPC (optional TD-MPC terminal value):
-python src/evaluation/evaluate_hierarchical_mpc.py
+python -m src.evaluation.evaluate_hierarchical_mpc
 
 # 33. TD-MPC terminal value fitting + spatial-holdout OOD (CI-safe, no emulator):
-python src/training/train_terminal_value.py
-python src/evaluation/spatial_holdout_benchmark.py
+python -m src.training.train_terminal_value
+python -m src.evaluation.spatial_holdout_benchmark
 
 # 34. Model-Free vs Dyna learning-curve figure (from committed artifacts):
-python src/evaluation/plot_learning_curves.py
+python -m src.evaluation.plot_learning_curves
+
+# 35. Reference baselines: zero-parameter engine rules (no emulator) + oracle-model
+#     MPC upper bound (needs the emulator; use --no-hardware to skip it):
+python -m src.evaluation.analytical_baselines
+
+# 36. Report where the ROM, core and datasets actually resolve to (diagnostics):
+python -m src.cli install-info
+
+# 37. Closed-loop reproduction audit: re-run the 10.6 protocol on several seeds
+#     without touching mbrl_mpc_metrics.json (see 10.38.2):
+python -m src.evaluation.mbrl_mpc_benchmark --reproduction-check --repeats 3
+
+# 38. Preamble probe: quantify how much progress the episode start alone is worth
+#     (see 10.38.1 - the committed savestate restores into mode 0x08):
+python -m src.evaluation.mbrl_mpc_benchmark --preamble-probe
+
+# 39. Pixel front-end: record paired (frame, WRAM) data, train the estimator and
+#     close the loop blind to WRAM (10.31), then the hierarchical A*+MPC run (10.32):
+python -m scripts.record_pixel_gameplay
+python -m src.training.train_pixel_estimator
+python -m src.evaluation.evaluate_pixel_mpc
+python -m src.evaluation.evaluate_hierarchical_mpc
+
+# 40. Yoshi's Island 2 capture attempt with the documented recipe and evidence
+#     gate - it raises and writes results/yi2_capture_attempt.json (10.36):
+python -m scripts.navigate_to_level --level 2
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1417,12 +1670,17 @@ python src/evaluation/plot_learning_curves.py
 ```bash
 # Canonical install (imports `from src...`) + shortcuts:
 pip install -e ".[dev]"
-make test        # 100+ unit tests (emulator tests skip off-Windows)
+make test        # 340+ unit/smoke/guard tests (emulator tests skip off-Windows)
 make test-cov    # with coverage gate (baseline 30%)
 make lint        # ruff check src tests scripts
+make format      # ruff format src tests scripts
+make format-check # ruff format --check (what CI runs)
 make typecheck   # mypy on typed core modules
+make check-all   # lint + format-check + typecheck + test-cov (the full gate)
 make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
+make smoke-all   # seconds-scale runs of five slow studies -> results_smoke/ (ignored)
 make benchmark sample-efficiency multiseed
+smw-pinn check-all # the same gate on Windows, where `make` is usually unavailable
 ```
 
 * **YAML configs (`configs/*.yaml`):** `benchmark.yaml`, `multiseed.yaml` (K=10 seeds), `sample_efficiency.yaml`, `reproduce.yaml`. Every benchmark accepts `--config`; explicit CLI flags override the file (`src/utils/config.py`).
@@ -1433,12 +1691,19 @@ make benchmark sample-efficiency multiseed
 * **Regression gate:** `tests/test_metrics_regression.py` fails CI if published numbers silently degrade (Hard MSE < 2.0, 0 kinematic violations, N=200 Hard beats N=5000 MLP).
 * **CI/Docker:** `.github/workflows/ci.yml` (ruff + mypy + pytest + coverage; uploads `pytest.log` on failure) and `Dockerfile` (CPU base, CUDA via build-arg). Dependabot stays inside the validated torch envelope (`torch<2.7`, `torchvision<0.22`, `numpy<2.1`); widen caps only with hardware re-validation.
 * **Refreshed numbers:** `results/benchmark_metrics.json`, `sample_efficiency_metrics.json` and `multiseed_benchmark_metrics.json` were regenerated with deterministic seeded loaders (seed 42) and K=10 seeds; tables in §8.1–§8.4 match those files exactly (`tests/test_metrics_regression.py` enforces it).
-* **New frontiers (§10.31–§10.36):** pixel perception (`src/perception/`), hierarchical A\*+MPC (`src/planning/global_planner.py`), reflex ablation + TD-MPC value, connected orphans, spatial-holdout OOD. Emulator-dependent tests skip off-Windows via `@requires_emulator`; Yoshi's Island 2 capture is documented as blocked in §10.36.
+* **New frontiers (§10.31–§10.36):** pixel perception (`src/perception/`), hierarchical A\*+MPC (`src/planning/global_planner.py`), reflex ablation + TD-MPC value, connected orphans, spatial-holdout OOD. Emulator-dependent tests skip off-Windows via `@requires_emulator`; Yoshi's Island 2 capture is documented as blocked in §10.36 (with `results/yi2_capture_attempt.json` as the evidence artifact).
+* **Reference baselines and audit tooling (§10.37–§10.38):** the zero-parameter engine-rule model (`src/models/analytical_kinematics.py`), the oracle-MPC comparison (`src/evaluation/analytical_baselines.py --hardware`), the closed-loop reproduction audit and the episode-preamble probe (`src/evaluation/mbrl_mpc_benchmark.py --reproduction-check / --preamble-probe`).
+* **Asset paths in one place (`src/utils/paths.py`):** the Libretro core, ROM, savestates, datasets and every `results/` output resolve through repo-root-anchored, `SMW_*`-overridable helpers (`require_rom`, `require_core`, `results_file`, `checkpoint_file`), so entry points behave identically from any working directory and a missing ROM produces an acquisition message instead of a traceback. The WRAM register map lives in `src/environment/wram.py`.
+* **Cross-platform runner (`src/cli.py`):** `pip install -e .` exposes `smw-pinn`, whose subcommands mirror the Makefile (`smw-pinn baselines`, `smw-pinn multiseed`, `smw-pinn check-all`) plus a generic `smw-pinn run <module> [args...]` for the ~40 documented entry points. The mypy typed-core list lives here, so `make`, CI and `smw-pinn` cannot drift apart.
+* **Provenance and artifact index:** every artifact written by these tools embeds a `_meta` block (git SHA and dirty flag, library/CUDA versions, seed, command, UTC timestamp) via `src/utils/provenance.py:write_metrics`, and `results/MANIFEST.md` maps artifact → writer → command → README section. `tests/test_results_manifest.py` fails CI on an ownerless artifact, a fictional writer, a dangling claim, a growing `_meta` exemption list, a checkpoint newer than the result that used it, or a §10 headline that no longer matches its artifact.
+* **Fast smoke tests for the §10 studies:** five emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings) are covered by `tests/test_hardware_loops.py` instead.
+* **Standardized episode preamble:** closed-loop episodes start with `SnesLibretroEmulator.start_episode()` (restore savestate → force gameplay mode `0x14` → warm-up frames → read state). Before it existed, ~15 scripts copy-pasted three different versions of that preamble and the difference was worth 3.4x progress (§10.38.1).
 
 ---
 
 ## 12. Scientific Integrity Statement
 
-1. **No Data Fabrication:** All reported metrics and figures derive from verified empirical executions saved in `results/benchmark_metrics.json`, `results/multiseed_benchmark_metrics.json`, and `results/mbrl_mpc_metrics.json`.
+1. **No Data Fabrication:** All reported metrics and figures derive from verified empirical executions saved under `results/` and indexed by `results/MANIFEST.md`; the §8 tables come from `results/benchmark_metrics.json`, `results/sample_efficiency_metrics.json` and `results/multiseed_benchmark_metrics.json`, the §10 study tables from the artifact named in their section.
 2. **Authentic Emulation Data:** All 8,077 samples were extracted directly from 65816 CPU WRAM during real-time interactive gameplay in Game Mode `$14`.
 3. **Open Reproducibility:** The full codebase, pretrained weights, and reproduction scripts are maintained in the repository for peer audit.
+4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35).
