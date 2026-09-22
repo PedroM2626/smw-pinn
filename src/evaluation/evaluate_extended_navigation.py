@@ -23,7 +23,9 @@ from src.planning.mpc_planner import (
     ModelPredictiveController,
     TrajectoryObjective,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -67,12 +69,12 @@ def run_extended_navigation(
     horizon: int = 16,
     num_candidates: int = 256,
 ) -> Dict:
-    print("====================================================================")
-    print("  EXTENDED HARDWARE LEVEL NAVIGATION BENCHMARK (SNES REAL CONSOLE)  ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  EXTENDED HARDWARE LEVEL NAVIGATION BENCHMARK (SNES REAL CONSOLE)  ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | Horizon: {horizon} | Max Frames: {max_frames}")
+    logger.info(f"Device: {device} | Horizon: {horizon} | Max Frames: {max_frames}")
 
     # 1. Instantiate World Model
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
@@ -80,7 +82,7 @@ def run_extended_navigation(
 
     if os.path.exists(model_checkpoint):
         world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
-        print(f"Loaded trained multi-entity weights from: {model_checkpoint}")
+        logger.info(f"Loaded trained multi-entity weights from: {model_checkpoint}")
     world_model.eval()
 
     # 2. Objective Function optimized for extended progress & obstacle clearance
@@ -145,7 +147,7 @@ def run_extended_navigation(
         for m in [500, 782, 1000, 1200, 1500, 1800, 2000]:
             if prog >= m and m not in milestones_hit:
                 milestones_hit.append(m)
-                print(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> MILESTONE CLEARED: {m} pixels! <<<")
+                logger.info(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> MILESTONE CLEARED: {m} pixels! <<<")
 
         # Stagnation detection (e.g. wall/pipe contact)
         if abs(curr_x - prev_x) < 0.2:
@@ -186,7 +188,7 @@ def run_extended_navigation(
         survived_frames += 1
 
         if frame % 100 == 0 or frame == max_frames - 1:
-            print(
+            logger.info(
                 f"Frame {frame:4d}/{max_frames} | "
                 f"Progress: {curr_x - start_x:6.1f} px | "
                 f"Y: {curr_y:5.1f} | vx: {curr_state['vx']:4.1f} | "
@@ -194,7 +196,7 @@ def run_extended_navigation(
             )
 
         if curr_y > 450.0:
-            print(f"Termination: Mario fell into pit at frame {frame} (Progress: {curr_x - start_x:.1f} px)")
+            logger.info(f"Termination: Mario fell into pit at frame {frame} (Progress: {curr_x - start_x:.1f} px)")
             break
 
     elapsed = time.time() - t0
@@ -245,8 +247,8 @@ def run_extended_navigation(
     plt.tight_layout()
     plt.savefig(output_figure, dpi=300)
     plt.close()
-    print(f"\nExtended trajectory plot saved to: {output_figure}")
-    print(f"Extended metrics saved to: {output_metrics}")
+    logger.info(f"\nExtended trajectory plot saved to: {output_figure}")
+    logger.info(f"Extended metrics saved to: {output_metrics}")
 
     return metrics
 

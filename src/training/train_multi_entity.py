@@ -15,8 +15,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
+from src.utils.logging import get_logger
 from src.utils.seed import set_global_seed
 
+logger = get_logger(__name__)
 
 def train_multi_entity_model(
     data_path: str = "data/raw/smw_multi_entity_dataset.npz",
@@ -28,12 +30,12 @@ def train_multi_entity_model(
     weight_decay: float = 1e-5,
     patience: int = 10,
 ):
-    print("==========================================================")
-    print("  TRAINING MULTI-ENTITY PINN ON GENUINE WRAM TELEMETRY    ")
-    print("==========================================================")
+    logger.info("==========================================================")
+    logger.info("  TRAINING MULTI-ENTITY PINN ON GENUINE WRAM TELEMETRY    ")
+    logger.info("==========================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    logger.info(f"Device: {device}")
 
     # 1. Load genuine dataset
     raw = np.load(data_path)
@@ -42,11 +44,11 @@ def train_multi_entity_model(
     next_states = raw["next_states"]
 
     n_samples = len(states)
-    print(f"Loaded {n_samples} genuine 12D transitions from: {data_path}")
+    logger.info(f"Loaded {n_samples} genuine 12D transitions from: {data_path}")
 
     # Filter to give high importance to frames where hazard is active
     active_mask = states[:, 11] > 0.5
-    print(f"Active hazard transitions: {int(active_mask.sum())} / {n_samples} ({100.0*active_mask.mean():.1f}%)")
+    logger.info(f"Active hazard transitions: {int(active_mask.sum())} / {n_samples} ({100.0*active_mask.mean():.1f}%)")
 
     # Train / Test split (80 / 20)
     set_global_seed(42)
@@ -73,7 +75,7 @@ def train_multi_entity_model(
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
     if os.path.exists(base_checkpoint):
         base_pinn.load_state_dict(torch.load(base_checkpoint, map_location=device, weights_only=True))
-        print(f"Preloaded base Hard PINN from {base_checkpoint}")
+        logger.info(f"Preloaded base Hard PINN from {base_checkpoint}")
 
     model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
 
@@ -132,22 +134,22 @@ def train_multi_entity_model(
             marker = " "
 
         if epoch % 5 == 0 or marker == "*":
-            print(
+            logger.info(
                 f"Epoch {epoch:2d}/{epochs:2d} | "
                 f"Train Loss (Hazard): {mean_train:.6f} | "
                 f"Test Loss (Hazard): {mean_test:.6f} {marker}"
             )
 
         if epochs_no_improve >= patience:
-            print(f"Early stopping triggered at epoch {epoch}.")
+            logger.info(f"Early stopping triggered at epoch {epoch}.")
             break
 
     elapsed = time.time() - t0
-    print("==========================================================")
-    print(f"Multi-Entity PINN successfully trained in {elapsed:.2f}s!")
-    print(f"Best Test Loss (Hazard MSE): {best_test_loss:.6f}")
-    print(f"Model saved to: {output_checkpoint}")
-    print("==========================================================")
+    logger.info("==========================================================")
+    logger.info(f"Multi-Entity PINN successfully trained in {elapsed:.2f}s!")
+    logger.info(f"Best Test Loss (Hazard MSE): {best_test_loss:.6f}")
+    logger.info(f"Model saved to: {output_checkpoint}")
+    logger.info("==========================================================")
 
     return {
         "best_test_loss": best_test_loss,

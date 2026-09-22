@@ -3,23 +3,19 @@ test_model_free_ppo.py
 Unit tests for SnesSingleEnv environment wrapper and Model-Free PPO iteration.
 """
 
-import os
-
 import numpy as np
-import pytest
 import torch
 
 from src.training.dyna_ppo import ActorCritic
 from src.training.model_free_ppo import SnesSingleEnv
+from tests.conftest import CORE_PATH, ROM_PATH, STATE_PATH, requires_emulator
 
 
+@requires_emulator
 def test_snes_single_env_step():
-    core_path = "src/environment/bin/snes9x_libretro.dll"
-    rom_path = "data/raw/smw_usa.sfc"
-    state_path = "data/raw/smw_yoshi_island_1.state"
-
-    if not os.path.exists(core_path) or not os.path.exists(rom_path) or not os.path.exists(state_path):
-        pytest.skip("Emulator binary, ROM, or savestate not found.")
+    core_path = CORE_PATH
+    rom_path = ROM_PATH
+    state_path = STATE_PATH
 
     env = SnesSingleEnv(core_path=core_path, rom_path=rom_path, state_path=state_path, max_episode_steps=50)
     obs = env.reset()

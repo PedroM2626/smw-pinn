@@ -18,6 +18,9 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 def render_dynamic_telemetry_video(
     trajectory_data_path: str = "results/full_level_trajectory_log.json",
@@ -27,12 +30,12 @@ def render_dynamic_telemetry_video(
     stride: int = 3,
     max_render_frame: int = 3000,  # Full stage clearance
 ):
-    print("====================================================================")
-    print("  RENDERING DYNAMIC SIDE-SCROLLING TELEMETRY VIDEO & GIF ANIMATION  ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  RENDERING DYNAMIC SIDE-SCROLLING TELEMETRY VIDEO & GIF ANIMATION  ")
+    logger.info("====================================================================")
 
     if not os.path.exists(trajectory_data_path):
-        print(f"Error: Trajectory log not found: {trajectory_data_path}")
+        logger.info(f"Error: Trajectory log not found: {trajectory_data_path}")
         return
 
     with open(trajectory_data_path, "r") as f:
@@ -57,7 +60,7 @@ def render_dynamic_telemetry_video(
     actions = all_actions[:end_idx]
 
     indices = list(range(0, len(frames), stride))
-    print(f"Rendering {len(indices)} frames at {fps} FPS (active run: 0 -> {x_vals[-1]:.1f} px)...")
+    logger.info(f"Rendering {len(indices)} frames at {fps} FPS (active run: 0 -> {x_vals[-1]:.1f} px)...")
 
     os.makedirs(os.path.dirname(output_mp4), exist_ok=True)
     rendered_frames = []
@@ -263,14 +266,14 @@ def render_dynamic_telemetry_video(
         rendered_frames.append(rgb)
 
     plt.close(fig)
-    print(f"Rendered {len(rendered_frames)} dynamic frames in {time.time() - t_start:.1f}s. Encoding video...")
+    logger.info(f"Rendered {len(rendered_frames)} dynamic frames in {time.time() - t_start:.1f}s. Encoding video...")
 
     # Write MP4 Video
     try:
         imageio.mimwrite(output_mp4, rendered_frames, fps=fps, quality=8)
-        print(f"MP4 Video saved to: {output_mp4}")
+        logger.info(f"MP4 Video saved to: {output_mp4}")
     except Exception as e:
-        print(f"MP4 encoding notice: {e}")
+        logger.info(f"MP4 encoding notice: {e}")
 
     # Write Animated GIF using Pillow save_all for guaranteed frame delay and animation
     from PIL import Image
@@ -282,7 +285,7 @@ def render_dynamic_telemetry_video(
         duration=66,  # 15 FPS playback (66 ms per frame)
         loop=0,
     )
-    print(f"Animated GIF saved to: {output_gif} ({len(gif_imgs)} frames, looping)")
+    logger.info(f"Animated GIF saved to: {output_gif} ({len(gif_imgs)} frames, looping)")
 
 
 if __name__ == "__main__":

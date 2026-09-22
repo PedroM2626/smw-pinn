@@ -4,20 +4,16 @@ Unit tests for WRAM sprite parsing, relative hazard distance calculation,
 and 12-dimensional extended state assembly.
 """
 
-import os
-
-import pytest
 
 from src.environment.snes_emulator import SnesLibretroEmulator
+from tests.conftest import CORE_PATH, ROM_PATH, STATE_PATH, requires_emulator
 
 
+@requires_emulator
 def test_wram_sprite_extraction():
-    core_path = "src/environment/bin/snes9x_libretro.dll"
-    rom_path = "data/raw/smw_usa.sfc"
-    state_path = "data/raw/smw_yoshi_island_1.state"
-
-    if not os.path.exists(core_path) or not os.path.exists(rom_path) or not os.path.exists(state_path):
-        pytest.skip("Emulator binary, ROM, or savestate not available for integration test.")
+    core_path = CORE_PATH
+    rom_path = ROM_PATH
+    state_path = STATE_PATH
 
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)

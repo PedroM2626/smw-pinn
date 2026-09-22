@@ -31,7 +31,9 @@ from src.planning.mpc_planner import (
 )
 from src.training.distill_mpc_policy import DistilledActorPolicy
 from src.training.train_unified_ppo import UnifiedActorCritic
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -74,13 +76,13 @@ def run_full_level_clearance(
     output_figure: str = "results/figures/full_level_clearance_trajectory.png",
     max_frames: int = 2500,
 ) -> Dict:
-    print("====================================================================")
-    print(f"  FULL LEVEL CLEARANCE BENCHMARK ON LIVE SNES CONSOLE: [{controller_type.upper()}]")
-    print("  Target Stage: Yoshi's Island 1 ($7E:0100 = 0x14)                  ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info(f"  FULL LEVEL CLEARANCE BENCHMARK ON LIVE SNES CONSOLE: [{controller_type.upper()}]")
+    logger.info("  Target Stage: Yoshi's Island 1 ($7E:0100 = 0x14)                  ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | Max Frames: {max_frames} | Controller: {controller_type}")
+    logger.info(f"Device: {device} | Max Frames: {max_frames} | Controller: {controller_type}")
 
     # Controller Setup
     ppo_agent = None
@@ -92,7 +94,7 @@ def run_full_level_clearance(
         ckpt = "results/checkpoints/unified_ppo_policy_best.pt"
         if os.path.exists(ckpt):
             ppo_agent.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
-            print(f"Loaded trained PPO policy from: {ckpt}")
+            logger.info(f"Loaded trained PPO policy from: {ckpt}")
         ppo_agent.eval()
 
     elif controller_type == "dagger":
@@ -100,7 +102,7 @@ def run_full_level_clearance(
         ckpt = "results/checkpoints/dagger_policy_best.pt"
         if os.path.exists(ckpt):
             dagger_policy.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
-            print(f"Loaded trained DAgger policy from: {ckpt}")
+            logger.info(f"Loaded trained DAgger policy from: {ckpt}")
         dagger_policy.eval()
 
     elif controller_type == "mpc":
@@ -109,7 +111,7 @@ def run_full_level_clearance(
         ckpt = "results/checkpoints/pinn_multi_entity_best.pt"
         if os.path.exists(ckpt):
             world_model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
-            print(f"Loaded trained multi-entity weights from: {ckpt}")
+            logger.info(f"Loaded trained multi-entity weights from: {ckpt}")
         world_model.eval()
 
         objective = TrajectoryObjective(
@@ -170,18 +172,18 @@ def run_full_level_clearance(
         for m in [250, 500, 782, 1000, 1250, 1500, 1750, 1900]:
             if prog >= m and m not in milestones_cleared:
                 milestones_cleared.append(m)
-                print(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> STAGE MILESTONE CLEARED: {m} px! <<<")
+                logger.info(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> STAGE MILESTONE CLEARED: {m} px! <<<")
 
         # Goal tape check (subscreen 7 / X > 1900 px)
         if curr_x >= 1900.0 and not goal_reached:
             goal_reached = True
             goal_frame = frame
-            print("\n=======================================================")
-            print(f"  GOAL TAPE REACHED! STAGE COMPLETED AT FRAME {frame}! ")
-            print("=======================================================")
+            logger.info("\n=======================================================")
+            logger.info(f"  GOAL TAPE REACHED! STAGE COMPLETED AT FRAME {frame}! ")
+            logger.info("=======================================================")
 
         if goal_reached and (curr_x >= 2020.0 or (frame >= goal_frame + 60)):
-            print(f"Level clearance run finalized at Frame {frame} (X={curr_x:.1f} px)")
+            logger.info(f"Level clearance run finalized at Frame {frame} (X={curr_x:.1f} px)")
             break
 
         # Action Selection
@@ -237,14 +239,14 @@ def run_full_level_clearance(
         survived_frames += 1
 
         if frame % 100 == 0:
-            print(
+            logger.info(
                 f"Frame {frame:4d}/{max_frames} | "
                 f"Progress: {prog:6.1f} px | Y: {curr_y:5.1f} | "
                 f"vx: {curr_state['vx']:4.1f} | Subscreen: {int(curr_x)//256}"
             )
 
         if curr_y > 450.0:
-            print(f"Mario terminated at frame {frame} (Progress: {prog:.1f} px)")
+            logger.info(f"Mario terminated at frame {frame} (Progress: {prog:.1f} px)")
             break
 
     elapsed = time.time() - t0
@@ -283,7 +285,7 @@ def run_full_level_clearance(
     with open(output_trajectory_log, "w") as f:
         json.dump(traj_log_data, f)
 
-    print(f"\n[{controller_type.upper()}] Final Progress: {final_progress:6.2f} px | Survived: {survived_frames:4d} frames | "
+    logger.info(f"\n[{controller_type.upper()}] Final Progress: {final_progress:6.2f} px | Survived: {survived_frames:4d} frames | "
           f"Throughput: {metrics['decision_throughput_fps']:6.1f} FPS | Goal Reached: {goal_reached}")
 
     # Generate Publication Figure
@@ -308,8 +310,8 @@ def run_full_level_clearance(
     plt.tight_layout()
     plt.savefig(output_figure, dpi=300)
     plt.close()
-    print(f"Full level clearance plot saved to: {output_figure}")
-    print(f"Full level clearance metrics saved to: {output_metrics}")
+    logger.info(f"Full level clearance plot saved to: {output_figure}")
+    logger.info(f"Full level clearance metrics saved to: {output_metrics}")
 
     return metrics
 

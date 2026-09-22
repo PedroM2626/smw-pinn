@@ -29,6 +29,7 @@ imageio-ffmpeg>=0.4.9
 # --- Experiment tracking (TensorBoard; wandb e opcional, ver pyproject [project.optional-dependencies]) ---
 tensorboard>=2.15.0
 
-# --- Testing ---
+# --- Testing & static analysis ---
 pytest>=7.0.0
 pytest-cov>=5.0.0
+mypy>=1.0.0

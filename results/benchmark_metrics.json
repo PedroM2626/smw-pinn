@@ -1,46 +1,398 @@
 {
     "single_step_results": {
         "Statistical_MLP": {
-            "test_loss_data": 17.47123791954734,
-            "test_kinematic_error": 18453.61552550576
+            "test_loss_data": 16.471670410849832,
+            "test_kinematic_error": 17561.24245817011
         },
         "Statistical_LSTM": {
-            "test_loss_data": 39.40589592673562,
-            "test_kinematic_error": 37942.19300426136
+            "test_loss_data": 39.21941497109153,
+            "test_kinematic_error": 37361.15713778409
         },
         "Soft_PINN": {
-            "test_loss_data": 29.23436112837358,
-            "test_kinematic_error": 25884.795632102272
+            "test_loss_data": 53.81669547341087,
+            "test_kinematic_error": 108520.98899147728
         },
         "Hard_Residual_PINN": {
-            "test_loss_data": 0.580266685648398,
-            "test_kinematic_error": 0.0012497845633664508
+            "test_loss_data": 0.5783408392559398,
+            "test_kinematic_error": 0.0018963774465109136
         }
     },
     "rollout_metrics": {
         "Statistical_MLP": {
-            "mean_drift_pixels": 189.09628295898438,
-            "final_drift_pixels": 104.88208770751953,
-            "kinematic_violations": 120,
-            "velocity_violations": 0
+            "mean_drift_pixels": 152.71719360351562,
+            "final_drift_pixels": 69.74825286865234,
+            "kinematic_violations": 118,
+            "velocity_violations": 40
         },
         "Statistical_LSTM": {
-            "mean_drift_pixels": 167.3294219970703,
-            "final_drift_pixels": 126.18435668945312,
+            "mean_drift_pixels": 169.99270629882812,
+            "final_drift_pixels": 126.15921020507812,
             "kinematic_violations": 120,
             "velocity_violations": 0
         },
         "Soft_PINN": {
-            "mean_drift_pixels": 254.4679718017578,
-            "final_drift_pixels": 180.55389404296875,
+            "mean_drift_pixels": 220.05397033691406,
+            "final_drift_pixels": 231.17874145507812,
             "kinematic_violations": 120,
             "velocity_violations": 0
         },
         "Hard_Residual_PINN": {
-            "mean_drift_pixels": 118.26886749267578,
-            "final_drift_pixels": 304.77545166015625,
+            "mean_drift_pixels": 50.87055587768555,
+            "final_drift_pixels": 78.12864685058594,
             "kinematic_violations": 0,
             "velocity_violations": 0
         }
+    },
+    "rollout_multistart": {
+        "Statistical_MLP": {
+            "starts": [
+                0,
+                123,
+                246,
+                369,
+                492,
+                615,
+                738,
+                861,
+                984,
+                1107
+            ],
+            "horizon": 120,
+            "num_starts": 10,
+            "kinematic_violation_rates": [
+                0.9833333333333333,
+                0.9916666666666667,
+                0.9833333333333333,
+                1.0,
+                0.9833333333333333,
+                0.925,
+                0.9666666666666667,
+                0.9916666666666667,
+                1.0,
+                0.9666666666666667
+            ],
+            "velocity_violation_rates": [
+                0.3333333333333333,
+                0.0,
+                0.0,
+                1.0,
+                0.375,
+                0.7333333333333333,
+                0.825,
+                0.275,
+                0.575,
+                0.24166666666666667
+            ],
+            "mean_drift_mean": 179.87445755004882,
+            "mean_drift_std": 81.47472691283046,
+            "final_drift_mean": 199.4224411010742,
+            "final_drift_std": 145.195374295306,
+            "kinematic_violation_rate_mean": 0.9791666666666666,
+            "velocity_violation_rate_mean": 0.43583333333333335
+        },
+        "Statistical_LSTM": {
+            "starts": [
+                0,
+                123,
+                246,
+                369,
+                492,
+                615,
+                738,
+                861,
+                984,
+                1107
+            ],
+            "horizon": 120,
+            "num_starts": 10,
+            "kinematic_violation_rates": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            ],
+            "velocity_violation_rates": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "mean_drift_mean": 211.99145889282227,
+            "mean_drift_std": 94.59803191371839,
+            "final_drift_mean": 216.34849853515624,
+            "final_drift_std": 120.2724248237754,
+            "kinematic_violation_rate_mean": 1.0,
+            "velocity_violation_rate_mean": 0.0
+        },
+        "Soft_PINN": {
+            "starts": [
+                0,
+                123,
+                246,
+                369,
+                492,
+                615,
+                738,
+                861,
+                984,
+                1107
+            ],
+            "horizon": 120,
+            "num_starts": 10,
+            "kinematic_violation_rates": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            ],
+            "velocity_violation_rates": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "mean_drift_mean": 317.5876174926758,
+            "mean_drift_std": 114.41870954643059,
+            "final_drift_mean": 326.8895202636719,
+            "final_drift_std": 142.59818129082242,
+            "kinematic_violation_rate_mean": 1.0,
+            "velocity_violation_rate_mean": 0.0
+        },
+        "Hard_Residual_PINN": {
+            "starts": [
+                0,
+                123,
+                246,
+                369,
+                492,
+                615,
+                738,
+                861,
+                984,
+                1107
+            ],
+            "horizon": 120,
+            "num_starts": 10,
+            "kinematic_violation_rates": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "velocity_violation_rates": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "mean_drift_mean": 159.51310939788817,
+            "mean_drift_std": 139.53429297083778,
+            "final_drift_mean": 288.7303369522095,
+            "final_drift_std": 201.9787696333146,
+            "kinematic_violation_rate_mean": 0.0,
+            "velocity_violation_rate_mean": 0.0
+        }
+    },
+    "per_variable_metrics": {
+        "Statistical_MLP": {
+            "x": {
+                "mse": 18225.279296875,
+                "mae": 81.87395477294922,
+                "r2": 0.4968135330006811
+            },
+            "y": {
+                "mse": 3622.216064453125,
+                "mae": 46.9957389831543,
+                "r2": -2.112037072823337
+            },
+            "vx": {
+                "mse": 9.039783477783203,
+                "mae": 1.8116239309310913,
+                "r2": 0.9718493763045313
+            },
+            "vy": {
+                "mse": 104.213623046875,
+                "mae": 3.8913745880126953,
+                "r2": 0.9425105773558136
+            },
+            "c_ground": {
+                "accuracy": 0.9188790560471977,
+                "f1": 0.9491211840888066
+            },
+            "c_ceiling": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_left": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_right": {
+                "accuracy": 0.9911504424778761,
+                "f1": 0.0
+            }
+        },
+        "Statistical_LSTM": {
+            "x": {
+                "mse": 39128.46875,
+                "mae": 163.44117736816406,
+                "r2": -0.09894207103975594
+            },
+            "y": {
+                "mse": 12739.9970703125,
+                "mae": 107.67271423339844,
+                "r2": -10.114627327501738
+            },
+            "vx": {
+                "mse": 453.2185974121094,
+                "mae": 16.968090057373047,
+                "r2": -0.3854594197617476
+            },
+            "vy": {
+                "mse": 1867.712158203125,
+                "mae": 24.86004066467285,
+                "r2": -0.012866100615632536
+            },
+            "c_ground": {
+                "accuracy": 0.23152337858220212,
+                "f1": 0.0
+            },
+            "c_ceiling": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_left": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_right": {
+                "accuracy": 0.9909502262443439,
+                "f1": 0.0
+            }
+        },
+        "Soft_PINN": {
+            "x": {
+                "mse": 59492.5234375,
+                "mae": 169.83946228027344,
+                "r2": -0.6425446160354096
+            },
+            "y": {
+                "mse": 50717.6171875,
+                "mae": 222.6065216064453,
+                "r2": -42.57418207830075
+            },
+            "vx": {
+                "mse": 418.4778747558594,
+                "mae": 16.359464645385742,
+                "r2": -0.3031742792011898
+            },
+            "vy": {
+                "mse": 1813.519775390625,
+                "mae": 27.489917755126953,
+                "r2": -0.0004277726783847857
+            },
+            "c_ground": {
+                "accuracy": 0.7728613569321534,
+                "f1": 0.8718801996672213
+            },
+            "c_ceiling": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_left": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_right": {
+                "accuracy": 0.9911504424778761,
+                "f1": 0.0
+            }
+        },
+        "Hard_Residual_PINN": {
+            "x": {
+                "mse": 0.13406476378440857,
+                "mae": 0.12492730468511581,
+                "r2": 0.9999962985709329
+            },
+            "y": {
+                "mse": 1.779358148574829,
+                "mae": 0.6400244832038879,
+                "r2": 0.9984712595203364
+            },
+            "vx": {
+                "mse": 3.418680191040039,
+                "mae": 1.0073089599609375,
+                "r2": 0.9893539504169764
+            },
+            "vy": {
+                "mse": 138.30433654785156,
+                "mae": 3.7466330528259277,
+                "r2": 0.923704439184018
+            },
+            "c_ground": {
+                "accuracy": 0.974188790560472,
+                "f1": 0.9834671705243269
+            },
+            "c_ceiling": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_left": {
+                "accuracy": 1.0,
+                "f1": NaN
+            },
+            "c_right": {
+                "accuracy": 0.9911504424778761,
+                "f1": 0.0
+            }
+        }
+    },
+    "config": {
+        "dataset_path": "data/raw/smw_gameplay_dataset.npz",
+        "epochs": 35,
+        "batch_size": 128,
+        "seed": 42,
+        "patience": 8,
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "rollout_horizon": 120,
+        "num_rollout_starts": 10,
+        "matched_baseline": false
     }
 }

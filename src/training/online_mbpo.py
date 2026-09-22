@@ -27,7 +27,9 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models import DeepPINNEnsemble, HardResidualPINNDynamics
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 class RealReplayBuffer:
     """Circular replay buffer storing authentic console transitions."""
@@ -73,15 +75,15 @@ def train_online_mbpo(
     output_dir: str = "results",
     use_safe_ensemble: bool = False,
 ) -> Dict:
-    print("====================================================================")
+    logger.info("====================================================================")
     if use_safe_ensemble:
-        print("  SAFE CLOSED-LOOP MBPO (DEEP ENSEMBLE + EPISTEMIC TRUNCATION)      ")
+        logger.info("  SAFE CLOSED-LOOP MBPO (DEEP ENSEMBLE + EPISTEMIC TRUNCATION)      ")
     else:
-        print("  CLOSED-LOOP MODEL-BASED POLICY OPTIMIZATION (ONLINE MBPO)          ")
-    print("====================================================================")
+        logger.info("  CLOSED-LOOP MODEL-BASED POLICY OPTIMIZATION (ONLINE MBPO)          ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"MBPO Compute Device: {device} | Safe Mode: {use_safe_ensemble}")
+    logger.info(f"MBPO Compute Device: {device} | Safe Mode: {use_safe_ensemble}")
 
     core_path = "src/environment/bin/snes9x_libretro.dll"
     rom_path = "data/raw/smw_usa.sfc"
@@ -99,14 +101,14 @@ def train_online_mbpo(
                 m_path = os.path.join(ens_dir, f"ensemble_pinn_seed_{42 + i * 17}.pt")
                 if os.path.exists(m_path):
                     member.load_state_dict(torch.load(m_path, map_location=device, weights_only=True))
-            print("Preloaded Deep Ensemble member weights.")
+            logger.info("Preloaded Deep Ensemble member weights.")
         model_optimizers = [torch.optim.AdamW(m.parameters(), lr=1e-3, weight_decay=1e-4) for m in world_model.members]
     else:
         world_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
         pinn_best_path = os.path.join(output_dir, "checkpoints", "pinn_hard_best.pt")
         if os.path.exists(pinn_best_path):
             world_model.load_state_dict(torch.load(pinn_best_path, map_location=device, weights_only=True))
-            print("Preloaded base Hard Residual PINN dynamics checkpoint.")
+            logger.info("Preloaded base Hard Residual PINN dynamics checkpoint.")
         model_optimizers = [torch.optim.AdamW(world_model.parameters(), lr=1e-3, weight_decay=1e-4)]
 
     policy_agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
@@ -119,7 +121,7 @@ def train_online_mbpo(
     init_s, init_a, init_ns = raw_dataset["states"][:2000], raw_dataset["actions"][:2000], raw_dataset["next_states"][:2000]
     for i in range(len(init_s)):
         replay_buffer.add(init_s[i], init_a[i], 0.0, init_ns[i], False)
-    print(f"Replay buffer seeded with {len(replay_buffer)} authentic transitions.")
+    logger.info(f"Replay buffer seeded with {len(replay_buffer)} authentic transitions.")
 
     # 3. Setup Emulator for real interactions
     emu = SnesLibretroEmulator(core_path)
@@ -132,7 +134,7 @@ def train_online_mbpo(
     t0 = time.time()
 
     for it in range(1, num_iterations + 1):
-        print(f"\n--- MBPO Iteration {it}/{num_iterations} ---")
+        logger.info(f"\n--- MBPO Iteration {it}/{num_iterations} ---")
 
         # Step A: Collect real transitions with current policy in authentic SNES emulator
         emu.load_state(initial_savestate)
@@ -182,8 +184,8 @@ def train_online_mbpo(
         iter_progress = float(max_x - x_start)
         iter_progress_history.append(iter_progress)
         iter_survival_history.append(survived_frames)
-        print(f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}")
-        print(f"  Max Real Console Progress: {iter_progress:+6.1f} px")
+        logger.info(f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}")
+        logger.info(f"  Max Real Console Progress: {iter_progress:+6.1f} px")
 
         # Step B: Fine-tune World Model on newly collected real buffer data
         world_model.train()
@@ -225,7 +227,7 @@ def train_online_mbpo(
 
         trainer = DynaPPOTrainer(env=sim_env, actor_critic=policy_agent, device=device)
         trainer.train(total_timesteps=model_rollout_steps)
-        print(f"  Imagined Policy Optimization completed ({model_rollout_steps} transitions via branched PINN rollouts).")
+        logger.info(f"  Imagined Policy Optimization completed ({model_rollout_steps} transitions via branched PINN rollouts).")
 
     emu.close()
 
@@ -233,7 +235,7 @@ def train_online_mbpo(
     suffix = "_safe" if use_safe_ensemble else ""
     mbpo_policy_path = os.path.join(output_dir, "checkpoints", f"online_mbpo{suffix}_policy.pt")
     torch.save(policy_agent.state_dict(), mbpo_policy_path)
-    print(f"\nFinal MBPO Policy saved to: {mbpo_policy_path}")
+    logger.info(f"\nFinal MBPO Policy saved to: {mbpo_policy_path}")
 
     # Metrics
     metrics = {
@@ -248,7 +250,7 @@ def train_online_mbpo(
     metrics_path = os.path.join(output_dir, metrics_filename)
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=4)
-    print(f"MBPO metrics saved to: {metrics_path}")
+    logger.info(f"MBPO metrics saved to: {metrics_path}")
 
     # Generate MBPO convergence plot
     sns.set_theme(style="whitegrid")
@@ -268,7 +270,7 @@ def train_online_mbpo(
     fig_path = os.path.join(output_dir, "figures", fig_filename)
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Convergence plot saved to: {fig_path}")
+    logger.info(f"Convergence plot saved to: {fig_path}")
 
     return metrics
 

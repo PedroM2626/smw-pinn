@@ -22,7 +22,9 @@ from src.planning.mpc_planner import (
     ModelPredictiveController,
     TrajectoryObjective,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 class DistilledActorPolicy(nn.Module):
     """
@@ -97,7 +99,7 @@ def collect_mpc_expert_demonstrations(
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Collects expert (state, action) pairs by executing the CEM MPC on the live SNES emulator."""
-    print("\n--- PHASE 1: COLLECTING MPC EXPERT DEMONSTRATIONS ON LIVE SNES ---")
+    logger.info("\n--- PHASE 1: COLLECTING MPC EXPERT DEMONSTRATIONS ON LIVE SNES ---")
 
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
@@ -182,7 +184,7 @@ def collect_mpc_expert_demonstrations(
             if s_dict["y"] > 450.0:
                 break
 
-        print(f"Episode {ep+1}/{num_episodes} recorded | Progress: {s_dict['x'] - 27.0:.1f} px")
+        logger.info(f"Episode {ep+1}/{num_episodes} recorded | Progress: {s_dict['x'] - 27.0:.1f} px")
 
     emu.close()
 
@@ -197,7 +199,7 @@ def train_distilled_policy(
     lr: float = 2e-3,
     batch_size: int = 64,
 ):
-    print("\n--- PHASE 2: SUPERVISED POLICY DISTILLATION ---")
+    logger.info("\n--- PHASE 2: SUPERVISED POLICY DISTILLATION ---")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataset = TensorDataset(
@@ -228,17 +230,17 @@ def train_distilled_policy(
             batches += 1
 
         if ep % 10 == 0 or ep == epochs:
-            print(f"Distillation Epoch {ep:2d}/{epochs} | BCE Loss: {total_loss/batches:.4f}")
+            logger.info(f"Distillation Epoch {ep:2d}/{epochs} | BCE Loss: {total_loss/batches:.4f}")
 
     os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
     torch.save(policy.cpu().state_dict(), checkpoint_path)
-    print(f"Distilled policy weights saved to: {checkpoint_path}")
+    logger.info(f"Distilled policy weights saved to: {checkpoint_path}")
 
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     states, actions = collect_mpc_expert_demonstrations(device=device, num_episodes=4, max_frames=400)
-    print(f"Total expert demonstration samples: {len(states)}")
+    logger.info(f"Total expert demonstration samples: {len(states)}")
     train_distilled_policy(states, actions)
 
 

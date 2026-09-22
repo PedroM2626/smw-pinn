@@ -16,7 +16,9 @@ import torch
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -152,9 +154,9 @@ def run_blind_8d_policy(
 
 
 def benchmark_multi_entity_hardware():
-    print("====================================================================")
-    print("  ZERO-SHOT HARDWARE BENCHMARK: END-TO-END MULTI-ENTITY POLICY       ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  ZERO-SHOT HARDWARE BENCHMARK: END-TO-END MULTI-ENTITY POLICY       ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     core_path = "src/environment/bin/snes9x_libretro.dll"
@@ -177,19 +179,19 @@ def benchmark_multi_entity_hardware():
     if os.path.exists(ckpt_12d):
         policy_12d.load_state_dict(torch.load(ckpt_12d, map_location=device, weights_only=True))
     else:
-        print(f"Warning: {ckpt_12d} not found, using initialized weights.")
+        logger.info(f"Warning: {ckpt_12d} not found, using initialized weights.")
 
     policy_8d.eval()
     policy_12d.eval()
 
     # Execute console trials
-    print("Executing Trial 1: Blind 8D Policy...")
+    logger.info("Executing Trial 1: Blind 8D Policy...")
     res_8d = run_blind_8d_policy(emu, initial_savestate, policy_8d, device)
-    print(f"Blind 8D Policy: Progress = {res_8d['total_progress']:.1f} px | Survived = {res_8d['survived_frames']} frames")
+    logger.info(f"Blind 8D Policy: Progress = {res_8d['total_progress']:.1f} px | Survived = {res_8d['survived_frames']} frames")
 
-    print("Executing Trial 2: End-to-End Multi-Entity 12D Policy...")
+    logger.info("Executing Trial 2: End-to-End Multi-Entity 12D Policy...")
     res_12d = run_multi_entity_neural_policy(emu, initial_savestate, policy_12d, device)
-    print(f"Multi-Entity 12D Policy: Progress = {res_12d['total_progress']:.1f} px | Survived = {res_12d['survived_frames']} frames | Rex Evaded: {res_12d['rex_evaded']}")
+    logger.info(f"Multi-Entity 12D Policy: Progress = {res_12d['total_progress']:.1f} px | Survived = {res_12d['survived_frames']} frames | Rex Evaded: {res_12d['rex_evaded']}")
 
     emu.close()
 
@@ -226,7 +228,7 @@ def benchmark_multi_entity_hardware():
     plt.savefig("results/figures/multi_entity_snes_trajectories.png", dpi=300)
     plt.close()
 
-    print("Multi-Entity hardware evaluation completed successfully.")
+    logger.info("Multi-Entity hardware evaluation completed successfully.")
     return results
 
 

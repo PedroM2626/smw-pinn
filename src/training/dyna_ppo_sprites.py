@@ -20,7 +20,9 @@ from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def generate_multi_entity_initial_pool(
     device: torch.device,
@@ -69,12 +71,12 @@ def train_multi_entity_dyna_ppo(
     checkpoint_dir: str = "results/checkpoints",
     figures_dir: str = "results/figures",
 ) -> Dict:
-    print("====================================================================")
-    print("  TRAINING END-TO-END MULTI-ENTITY DYNA-PPO (12D WORLD MODEL)       ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  TRAINING END-TO-END MULTI-ENTITY DYNA-PPO (12D WORLD MODEL)       ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Compute Device: {device} | Parallel Envs: {num_envs}")
+    logger.info(f"Compute Device: {device} | Parallel Envs: {num_envs}")
 
     os.makedirs(checkpoint_dir, exist_ok=True)
     os.makedirs(figures_dir, exist_ok=True)
@@ -84,7 +86,7 @@ def train_multi_entity_dyna_ppo(
     base_ckpt = os.path.join(checkpoint_dir, "pinn_hard_best.pt")
     if os.path.exists(base_ckpt):
         base_pinn.load_state_dict(torch.load(base_ckpt, map_location=device, weights_only=True))
-        print(f"Preloaded base Hard PINN weights from {base_ckpt}.")
+        logger.info(f"Preloaded base Hard PINN weights from {base_ckpt}.")
 
     multi_world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
     multi_world_model.eval()
@@ -115,7 +117,7 @@ def train_multi_entity_dyna_ppo(
     # 4. Training Loop
     num_updates = total_timesteps // (num_envs * num_steps)
     batch_size = num_envs * num_steps
-    print(f"Total Updates: {num_updates} | Transitions per update: {batch_size}")
+    logger.info(f"Total Updates: {num_updates} | Transitions per update: {batch_size}")
 
     obs = sim_env.reset()
     history_returns = []
@@ -231,7 +233,7 @@ def train_multi_entity_dyna_ppo(
             torch.save(agent.state_dict(), best_ckpt)
 
         if update % 5 == 0 or update == num_updates:
-            print(
+            logger.info(
                 f"Update {update:02d}/{num_updates} | "
                 f"Mean Return: {mean_ret:+.2f} | "
                 f"Hazard Hits: {hazard_hits_total:3d} | "
@@ -273,7 +275,7 @@ def train_multi_entity_dyna_ppo(
     plt.savefig(os.path.join(figures_dir, "dyna_ppo_multi_entity_curve.png"), dpi=300)
     plt.close()
 
-    print("Multi-Entity Dyna-PPO training completed successfully.")
+    logger.info("Multi-Entity Dyna-PPO training completed successfully.")
     return metrics
 
 

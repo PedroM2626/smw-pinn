@@ -20,7 +20,9 @@ from torch.distributions import Categorical
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 class UnifiedActorCritic(nn.Module):
     """Actor-Critic architecture for 12D state and discrete action primitives."""
@@ -94,12 +96,12 @@ def train_unified_ppo(
     output_metrics: str = "results/unified_ppo_metrics.json",
     output_figure: str = "results/figures/unified_ppo_learning_curve.png",
 ) -> Dict:
-    print("====================================================================")
-    print("  TRAINING UNIFIED DYNA-PPO AMORTIZED CONTROLLER (12D PINN)          ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  TRAINING UNIFIED DYNA-PPO AMORTIZED CONTROLLER (12D PINN)          ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | Parallel Envs: {num_envs} | Steps/Env: {num_steps}")
+    logger.info(f"Device: {device} | Parallel Envs: {num_envs} | Steps/Env: {num_steps}")
 
     # Load World Model for Simulation
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
@@ -245,7 +247,7 @@ def train_unified_ppo(
             torch.save(agent.state_dict(), checkpoint_path)
 
         if update % 5 == 0 or update == num_updates:
-            print(
+            logger.info(
                 f"Update {update:2d}/{num_updates} | "
                 f"Episode Return: {mean_ret:6.1f} | "
                 f"Mean Progress: {mean_prog:5.1f} px | "
@@ -254,7 +256,7 @@ def train_unified_ppo(
             )
 
     elapsed = time.time() - t_start
-    print(f"\nPPO Training Complete in {elapsed:.1f} seconds. Checkpoint saved to: {checkpoint_path}")
+    logger.info(f"\nPPO Training Complete in {elapsed:.1f} seconds. Checkpoint saved to: {checkpoint_path}")
 
     metrics = {
         "total_timesteps": total_timesteps,
@@ -287,7 +289,7 @@ def train_unified_ppo(
     plt.tight_layout()
     plt.savefig(output_figure, dpi=300)
     plt.close()
-    print(f"PPO Learning curve saved to: {output_figure}")
+    logger.info(f"PPO Learning curve saved to: {output_figure}")
 
     return metrics
 

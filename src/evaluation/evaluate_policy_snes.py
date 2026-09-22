@@ -18,10 +18,14 @@ import torch
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
+from src.utils.logging import get_logger
 from src.utils.seed import set_global_seed
 
-
 # Mapping from 6D action vector [B, Y, UP, DOWN, LEFT, RIGHT] to emulator joypad dict
+
+
+logger = get_logger(__name__)
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
         "B": bool(vec[0] > 0.5),      # Jump
@@ -121,7 +125,7 @@ def run_policy_evaluation_trial(
     max_progress = float(max_x - x_init)
     mean_vx = float(np.mean(trajectory_vx)) if trajectory_vx else 0.0
 
-    print(
+    logger.info(
         f"[{policy_name:25s}] Survived: {survived_frames:4d}/{max_frames} frames | "
         f"Progress: {total_progress:+7.1f} px (Max: {max_progress:+7.1f} px) | "
         f"Mean vx: {mean_vx:+5.1f} | "
@@ -184,7 +188,7 @@ def run_random_control_baseline(
     total_progress = float(final_x - x_init)
     max_progress = float(max_x - x_init)
 
-    print(
+    logger.info(
         f"[{'Random_Baseline':25s}] Survived: {survived_frames:4d}/{max_frames} frames | "
         f"Progress: {total_progress:+7.1f} px (Max: {max_progress:+7.1f} px) | "
         f"Mean vx: {np.mean(trajectory_vx):+5.1f}"
@@ -211,12 +215,12 @@ def run_zero_shot_model_to_real_benchmark(
     output_dir: str = "results",
     max_frames: int = 600,
 ):
-    print("====================================================================")
-    print("  ZERO-SHOT MODEL-TO-REAL TRANSFER BENCHMARK ON SUPER MARIO WORLD   ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  ZERO-SHOT MODEL-TO-REAL TRANSFER BENCHMARK ON SUPER MARIO WORLD   ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Policy Evaluation Device: {device}")
+    logger.info(f"Policy Evaluation Device: {device}")
 
     os.makedirs(output_dir, exist_ok=True)
     fig_dir = os.path.join(output_dir, "figures")
@@ -237,7 +241,7 @@ def run_zero_shot_model_to_real_benchmark(
     for display_name, ckpt_name in policies_to_evaluate:
         ckpt_path = os.path.join(checkpoints_dir, ckpt_name)
         if not os.path.exists(ckpt_path):
-            print(f"Warning: Policy checkpoint {ckpt_path} not found. Skipping.")
+            logger.info(f"Warning: Policy checkpoint {ckpt_path} not found. Skipping.")
             continue
 
         agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
@@ -279,7 +283,7 @@ def run_zero_shot_model_to_real_benchmark(
     out_json = os.path.join(output_dir, "dyna_ppo_metrics.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(summary_metrics, f, indent=4)
-    print(f"\nBenchmark metrics saved to: {out_json}")
+    logger.info(f"\nBenchmark metrics saved to: {out_json}")
 
     # Generate comparative trajectory figure
     sns.set_theme(style="whitegrid")
@@ -316,18 +320,18 @@ def run_zero_shot_model_to_real_benchmark(
     fig_path = os.path.join(fig_dir, "dyna_ppo_snes_trajectories.png")
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Trajectory comparison figure saved to: {fig_path}")
+    logger.info(f"Trajectory comparison figure saved to: {fig_path}")
 
     # Summary table
-    print("\n====================================================================")
-    print("  DYNA-PPO MODEL-TO-REAL TRANSFER BENCHMARK SUMMARY")
-    print("====================================================================")
-    print(f"{'Policy Controller':32s} | {'Progress (px)':16s} | {'Mean vx':12s} | {'Frames Alive':12s}")
-    print("-" * 80)
+    logger.info("\n====================================================================")
+    logger.info("  DYNA-PPO MODEL-TO-REAL TRANSFER BENCHMARK SUMMARY")
+    logger.info("====================================================================")
+    logger.info(f"{'Policy Controller':32s} | {'Progress (px)':16s} | {'Mean vx':12s} | {'Frames Alive':12s}")
+    logger.info("-" * 80)
     for name, s in summary_metrics.items():
         prog_str = f"{s['total_progress_pixels']:+7.1f} px"
-        print(f"{name:32s} | {prog_str:16s} | {s['mean_vx']:+5.1f} subpix | {s['survived_frames']:4d}/{max_frames}")
-    print("====================================================================")
+        logger.info(f"{name:32s} | {prog_str:16s} | {s['mean_vx']:+5.1f} subpix | {s['survived_frames']:4d}/{max_frames}")
+    logger.info("====================================================================")
 
     return summary_metrics
 

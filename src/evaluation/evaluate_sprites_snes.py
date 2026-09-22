@@ -18,7 +18,9 @@ import torch
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -165,9 +167,9 @@ def evaluate_sprite_perception(
     policy_path: str = "results/checkpoints/dyna_ppo_pinn_hard_policy.pt",
     output_dir: str = "results",
 ):
-    print("====================================================================")
-    print("  ZERO-SHOT HARDWARE EVALUATION: DYNAMIC SPRITE PERCEPTION IN SNES   ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  ZERO-SHOT HARDWARE EVALUATION: DYNAMIC SPRITE PERCEPTION IN SNES   ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     emu = SnesLibretroEmulator(core_path)
@@ -180,13 +182,13 @@ def evaluate_sprite_perception(
     agent.load_state_dict(torch.load(policy_path, map_location=device, weights_only=True))
     agent.eval()
 
-    print("\n1. Executing Blind Agent (8D State - No Sprites)...")
+    logger.info("\n1. Executing Blind Agent (8D State - No Sprites)...")
     blind_res = run_blind_policy(emu, initial_savestate, agent, device)
-    print(f"   Survived: {blind_res['survived_frames']} frames | Progress: {blind_res['total_progress']:+.1f} px")
+    logger.info(f"   Survived: {blind_res['survived_frames']} frames | Progress: {blind_res['total_progress']:+.1f} px")
 
-    print("\n2. Executing Sprite-Aware Agent (12D WRAM Sprite Telemetry)...")
+    logger.info("\n2. Executing Sprite-Aware Agent (12D WRAM Sprite Telemetry)...")
     sprite_res = run_sprite_aware_controller(emu, initial_savestate, agent, device)
-    print(f"   Survived: {sprite_res['survived_frames']} frames | Progress: {sprite_res['total_progress']:+.1f} px")
+    logger.info(f"   Survived: {sprite_res['survived_frames']} frames | Progress: {sprite_res['total_progress']:+.1f} px")
 
     emu.close()
 
@@ -206,7 +208,7 @@ def evaluate_sprite_perception(
     out_json = os.path.join(output_dir, "sprite_perception_metrics.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=4)
-    print(f"\nMetrics written to: {out_json}")
+    logger.info(f"\nMetrics written to: {out_json}")
 
     # Generate comparative trajectory figure
     sns.set_theme(style="whitegrid")
@@ -225,7 +227,7 @@ def evaluate_sprite_perception(
     os.makedirs(os.path.dirname(fig_path), exist_ok=True)
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Trajectory figure saved to: {fig_path}")
+    logger.info(f"Trajectory figure saved to: {fig_path}")
 
     return metrics
 

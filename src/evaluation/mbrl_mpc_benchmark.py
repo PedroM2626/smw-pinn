@@ -23,8 +23,10 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.planning.mpc_planner import ModelPredictiveController, TrajectoryObjective
+from src.utils.logging import get_logger
 from src.utils.seed import set_global_seed
 
+logger = get_logger(__name__)
 
 def convert_action_vector_to_dict(action_vec: np.ndarray) -> Dict[str, bool]:
     """
@@ -122,7 +124,7 @@ def run_mbrl_closed_loop_trial(
     mean_vx = float(np.mean(trajectory_vx)) if trajectory_vx else 0.0
     mean_alignment_error = float(np.mean(alignment_errors)) if alignment_errors else 0.0
 
-    print(
+    logger.info(
         f"[{policy_name:20s}] Survived: {survived_frames:3d}/{max_frames} frames | "
         f"Progress: {total_progress:+6.1f} px (Max: {max_progress:+6.1f} px) | "
         f"Mean vx: {mean_vx:+5.1f} | Alignment Error: {mean_alignment_error:5.2f} px | "
@@ -191,7 +193,7 @@ def run_random_baseline(
     total_progress = float(final_x - x_init)
     max_progress = float(max_x - x_init)
 
-    print(
+    logger.info(
         f"[{'Random_Baseline':20s}] Survived: {survived_frames:3d}/{max_frames} frames | "
         f"Progress: {total_progress:+6.1f} px (Max: {max_progress:+6.1f} px) | "
         f"Mean vx: {np.mean(trajectory_vx):+5.1f} | Alignment Error: N/A"
@@ -219,14 +221,14 @@ def run_mbrl_mpc_benchmark(
     output_dir: str = "results",
     max_frames: int = 300,
 ):
-    print("====================================================================")
-    print("  MODEL-BASED REINFORCEMENT LEARNING (MBRL): MPC WORLD MODEL BENCHMARK")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  MODEL-BASED REINFORCEMENT LEARNING (MBRL): MPC WORLD MODEL BENCHMARK")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Planning Compute Device: {device}")
+    logger.info(f"Planning Compute Device: {device}")
     if device.type == "cuda":
-        print(f"Planning GPU: {torch.cuda.get_device_name(0)}")
+        logger.info(f"Planning GPU: {torch.cuda.get_device_name(0)}")
 
     os.makedirs(output_dir, exist_ok=True)
     fig_dir = os.path.join(output_dir, "figures")
@@ -258,7 +260,7 @@ def run_mbrl_mpc_benchmark(
 
     for name, (model, ckpt_path) in models.items():
         if not os.path.exists(ckpt_path):
-            print(f"Warning: Checkpoint not found for {name} at {ckpt_path}, skipping.")
+            logger.info(f"Warning: Checkpoint not found for {name} at {ckpt_path}, skipping.")
             continue
 
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=True))
@@ -314,7 +316,7 @@ def run_mbrl_mpc_benchmark(
     out_json = os.path.join(output_dir, "mbrl_mpc_metrics.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(summary_metrics, f, indent=4)
-    print(f"\nMBRL metrics saved to: {out_json}")
+    logger.info(f"\nMBRL metrics saved to: {out_json}")
 
     # Generate comparative trajectory figure
     sns.set_theme(style="whitegrid")
@@ -352,19 +354,19 @@ def run_mbrl_mpc_benchmark(
     fig_path = os.path.join(fig_dir, "mbrl_mpc_trajectories.png")
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Trajectory figure saved to: {fig_path}")
+    logger.info(f"Trajectory figure saved to: {fig_path}")
 
     # Summary table
-    print("\n====================================================================")
-    print("  MBRL MPC BENCHMARK SUMMARY")
-    print("====================================================================")
-    print(f"{'World Model Controller':30s} | {'Progress (px)':15s} | {'Alignment Err':15s} | {'Frames Alive':12s}")
-    print("-" * 80)
+    logger.info("\n====================================================================")
+    logger.info("  MBRL MPC BENCHMARK SUMMARY")
+    logger.info("====================================================================")
+    logger.info(f"{'World Model Controller':30s} | {'Progress (px)':15s} | {'Alignment Err':15s} | {'Frames Alive':12s}")
+    logger.info("-" * 80)
     for name, s in summary_metrics.items():
         prog_str = f"{s['total_progress_pixels']:+6.1f} px"
         err_str = f"{s['mean_alignment_error_pixels']:5.2f} px" if s['mean_alignment_error_pixels'] > 0 else "N/A"
-        print(f"{name:30s} | {prog_str:15s} | {err_str:15s} | {s['survived_frames']:4d}/{max_frames}")
-    print("====================================================================")
+        logger.info(f"{name:30s} | {prog_str:15s} | {err_str:15s} | {s['survived_frames']:4d}/{max_frames}")
+    logger.info("====================================================================")
 
     return summary_metrics
 

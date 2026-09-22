@@ -20,7 +20,9 @@ import torch
 
 from src.environment.dataset_loader import load_and_preprocess_data
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def generate_comparison_animation(
     data_path: str = "data/raw/smw_gameplay_dataset.npz",
@@ -29,9 +31,9 @@ def generate_comparison_animation(
     horizon: int = 120,
     fps: int = 30,
 ):
-    print("====================================================================")
-    print("  GENERATING SYNCHRONIZED MULTI-MODEL COMPARISON ANIMATION          ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  GENERATING SYNCHRONIZED MULTI-MODEL COMPARISON ANIMATION          ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(output_dir, exist_ok=True)
@@ -120,7 +122,7 @@ def generate_comparison_animation(
     comp_png_path = os.path.join(output_dir, "model_comparison_trajectory_composite.png")
     plt.savefig(comp_png_path, dpi=300)
     plt.close()
-    print(f"Composite trajectory figure saved to: {comp_png_path}")
+    logger.info(f"Composite trajectory figure saved to: {comp_png_path}")
 
     # 5. Generate Animated GIF
     fig, (ax_anim, ax_hud) = plt.subplots(1, 2, figsize=(13, 5), gridspec_kw={"width_ratios": [2.5, 1.0]})
@@ -201,7 +203,7 @@ def generate_comparison_animation(
     anim.save(gif_path, writer=writer)
     plt.close()
 
-    print(f"Comparison animation successfully rendered to: {gif_path}")
+    logger.info(f"Comparison animation successfully rendered to: {gif_path}")
     return {"composite_png": comp_png_path, "animated_gif": gif_path}
 
 

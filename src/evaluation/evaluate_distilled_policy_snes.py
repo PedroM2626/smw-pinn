@@ -14,7 +14,9 @@ import torch
 
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def evaluate_distilled_policy(
     rom_path: str = "data/raw/smw_usa.sfc",
@@ -24,9 +26,9 @@ def evaluate_distilled_policy(
     output_metrics: str = "results/distilled_policy_metrics.json",
     max_frames: int = 400,
 ) -> Dict:
-    print("====================================================================")
-    print("  EVALUATING DISTILLED MPC POLICY ON AUTHENTIC SNES HARDWARE        ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  EVALUATING DISTILLED MPC POLICY ON AUTHENTIC SNES HARDWARE        ")
+    logger.info("====================================================================")
 
     # Load policy onto CPU to profile pure lightweight inference
     policy = DistilledActorPolicy(state_dim=12, action_dim=6)
@@ -80,7 +82,7 @@ def evaluate_distilled_policy(
         survived_frames += 1
 
         if s_dict["y"] > 450.0:
-            print(f"Mario fell into pit at frame {frame}")
+            logger.info(f"Mario fell into pit at frame {frame}")
             break
 
     total_time = time.time() - t_start
@@ -106,13 +108,13 @@ def evaluate_distilled_policy(
     with open(output_metrics, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    print("\n--- DISTILLED POLICY EVALUATION RESULTS ---")
-    print(f"Survived Frames:            {survived_frames} / {max_frames}")
-    print(f"Total Progress:             {total_progress:.2f} pixels")
-    print(f"Rex Evaded:                 {rex_evaded}")
-    print(f"Inference Latency:          {mean_infer_us:.2f} us / step")
-    print(f"Policy Inference Throughput: {infer_fps:.1f} FPS (vs 23.7 FPS for CEM MPC)")
-    print(f"Metrics saved to: {output_metrics}")
+    logger.info("\n--- DISTILLED POLICY EVALUATION RESULTS ---")
+    logger.info(f"Survived Frames:            {survived_frames} / {max_frames}")
+    logger.info(f"Total Progress:             {total_progress:.2f} pixels")
+    logger.info(f"Rex Evaded:                 {rex_evaded}")
+    logger.info(f"Inference Latency:          {mean_infer_us:.2f} us / step")
+    logger.info(f"Policy Inference Throughput: {infer_fps:.1f} FPS (vs 23.7 FPS for CEM MPC)")
+    logger.info(f"Metrics saved to: {output_metrics}")
 
     return metrics
 

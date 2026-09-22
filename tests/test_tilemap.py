@@ -9,12 +9,14 @@ import torch
 
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models.tilemap_pinn import TilemapEncoder, TilemapPINNDynamics
+from tests.conftest import CORE_PATH, ROM_PATH, STATE_PATH, requires_emulator
 
 
+@requires_emulator
 def test_wram_tilemap_extraction():
-    emu = SnesLibretroEmulator("src/environment/bin/snes9x_libretro.dll")
-    emu.load_rom("data/raw/smw_usa.sfc")
-    with open("data/raw/smw_yoshi_island_1.state", "rb") as f:
+    emu = SnesLibretroEmulator(CORE_PATH)
+    emu.load_rom(ROM_PATH)
+    with open(STATE_PATH, "rb") as f:
         emu.load_state(f.read())
     emu.wram_buffer[0x0100] = 0x14
     for _ in range(5):

@@ -22,7 +22,9 @@ import torch.nn as nn
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -125,12 +127,12 @@ def train_model_free_ppo(
     vf_coef: float = 0.5,
     output_dir: str = "results",
 ) -> Dict:
-    print("====================================================================")
-    print("  TRAINING CANONICAL MODEL-FREE PPO DIRECTLY ON SNES CONSOLE CORE    ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  TRAINING CANONICAL MODEL-FREE PPO DIRECTLY ON SNES CONSOLE CORE    ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"PPO Training Device: {device}")
+    logger.info(f"PPO Training Device: {device}")
 
     env = SnesSingleEnv()
     agent = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
@@ -255,7 +257,7 @@ def train_model_free_ppo(
             elapsed = time.time() - t0
             fps = global_step / elapsed
             mean_ep_ret = np.mean(episode_returns[-20:]) if episode_returns else 0.0
-            print(
+            logger.info(
                 f"Iter {iteration:3d}/{num_iterations} | Real Steps: {global_step:6d} | "
                 f"Mean Ret (last 20): {mean_ep_ret:+6.1f} | FPS: {fps:5.0f} ({elapsed:4.1f}s)"
             )
@@ -265,7 +267,7 @@ def train_model_free_ppo(
     # Save policy checkpoint
     ckpt_path = os.path.join(output_dir, "checkpoints", "model_free_ppo_policy.pt")
     torch.save(agent.state_dict(), ckpt_path)
-    print(f"\nModel-Free PPO policy saved to: {ckpt_path}")
+    logger.info(f"\nModel-Free PPO policy saved to: {ckpt_path}")
 
     # Metrics dictionary
     metrics = {
@@ -280,7 +282,7 @@ def train_model_free_ppo(
     metrics_path = os.path.join(output_dir, "model_free_ppo_metrics.json")
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=4)
-    print(f"Metrics saved to: {metrics_path}")
+    logger.info(f"Metrics saved to: {metrics_path}")
 
     # Plot Model-Free learning curve
     sns.set_theme(style="whitegrid")
@@ -301,7 +303,7 @@ def train_model_free_ppo(
     fig_path = os.path.join(output_dir, "figures", "model_free_ppo_learning_curve.png")
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Figure saved to: {fig_path}")
+    logger.info(f"Figure saved to: {fig_path}")
 
     return metrics
 

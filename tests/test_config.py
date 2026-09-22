@@ -35,8 +35,9 @@ def test_cli_overrides_config(tmp_path):
     assert args.seed == 7
 
 
-def test_unknown_config_keys_ignored(tmp_path):
+def test_unknown_config_keys_warn_not_silent(tmp_path):
     cfg_path = tmp_path / "c.yaml"
     cfg_path.write_text("nonexistent_flag: 123\n", encoding="utf-8")
-    args = parse_args_with_config(_parser(), ["--config", str(cfg_path)])
+    with pytest.warns(UserWarning, match="nonexistent_flag"):
+        args = parse_args_with_config(_parser(), ["--config", str(cfg_path)])
     assert args.epochs == 35

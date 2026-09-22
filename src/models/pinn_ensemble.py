@@ -21,8 +21,10 @@ import torch.nn as nn
 
 from src.environment.dataset_loader import create_dataloaders, load_and_preprocess_data
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.utils.logging import get_logger
 from src.utils.seed import set_global_seed
 
+logger = get_logger(__name__)
 
 class DeepPINNEnsemble(nn.Module):
     """
@@ -101,12 +103,12 @@ def train_pinn_ensemble(
     """
     Trains all E ensemble members using bootstrap partitions and distinct random seeds.
     """
-    print("====================================================================")
-    print(f"  TRAINING DEEP PINN ENSEMBLE (E = {num_models} MEMBERS)              ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info(f"  TRAINING DEEP PINN ENSEMBLE (E = {num_models} MEMBERS)              ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Ensemble Compute Device: {device}")
+    logger.info(f"Ensemble Compute Device: {device}")
 
     ensemble = DeepPINNEnsemble(num_models=num_models).to(device)
     ckpt_dir = os.path.join(output_dir, "checkpoints_ensemble")
@@ -151,13 +153,13 @@ def train_pinn_ensemble(
 
         member_path = os.path.join(ckpt_dir, f"pinn_member_{m_idx}.pt")
         torch.save(member.state_dict(), member_path)
-        print(f"  Member {m_idx + 1}/{num_models} trained (Seed {seed}) | Val MSE: {mean_val:.4f} | Saved: {member_path}")
+        logger.info(f"  Member {m_idx + 1}/{num_models} trained (Seed {seed}) | Val MSE: {mean_val:.4f} | Saved: {member_path}")
 
     elapsed = time.time() - t0
-    print(f"\nAll {num_models} ensemble members trained successfully in {elapsed:.1f}s!")
+    logger.info(f"\nAll {num_models} ensemble members trained successfully in {elapsed:.1f}s!")
 
     # Epistemic Uncertainty & OOD Detection Benchmark
-    print("\nEvaluating Epistemic Uncertainty Quantification (In-Distribution vs. OOD)...")
+    logger.info("\nEvaluating Epistemic Uncertainty Quantification (In-Distribution vs. OOD)...")
     test_data = load_and_preprocess_data(seed=42)
     test_s = torch.tensor(test_data["test_states"][:500], dtype=torch.float32, device=device)
     test_a = torch.tensor(test_data["test_actions"][:500], dtype=torch.float32, device=device)
@@ -177,8 +179,8 @@ def train_pinn_ensemble(
     mean_unc_ood = float(unc_ood.mean().item())
     ood_ratio = mean_unc_ood / (mean_unc_id + 1e-8)
 
-    print(f"  In-Distribution Mean Epistemic Uncertainty (sigma):  {mean_unc_id:.4f}")
-    print(f"  Out-of-Distribution Mean Epistemic Uncertainty (sigma): {mean_unc_ood:.4f} ({ood_ratio:.1f}x higher)")
+    logger.info(f"  In-Distribution Mean Epistemic Uncertainty (sigma):  {mean_unc_id:.4f}")
+    logger.info(f"  Out-of-Distribution Mean Epistemic Uncertainty (sigma): {mean_unc_ood:.4f} ({ood_ratio:.1f}x higher)")
 
     metrics = {
         "num_models": num_models,
@@ -192,7 +194,7 @@ def train_pinn_ensemble(
     metrics_path = os.path.join(output_dir, "pinn_ensemble_metrics.json")
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=4)
-    print(f"Ensemble metrics saved to: {metrics_path}")
+    logger.info(f"Ensemble metrics saved to: {metrics_path}")
 
     # Plot Epistemic Uncertainty Distribution
     import matplotlib.pyplot as plt
@@ -210,7 +212,7 @@ def train_pinn_ensemble(
     fig_path = os.path.join(output_dir, "figures", "pinn_ensemble_uncertainty.png")
     plt.savefig(fig_path, dpi=300)
     plt.close()
-    print(f"Uncertainty plot saved to: {fig_path}")
+    logger.info(f"Uncertainty plot saved to: {fig_path}")
 
     return ensemble
 

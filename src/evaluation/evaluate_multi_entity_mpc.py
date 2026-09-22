@@ -21,7 +21,9 @@ from src.planning.mpc_planner import (
     ModelPredictiveController,
     TrajectoryObjective,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -64,12 +66,12 @@ def run_multi_entity_mpc(
     horizon: int = 16,
     num_candidates: int = 256,
 ) -> Dict:
-    print("====================================================================")
-    print("  AUTONOMOUS MULTI-ENTITY MPC EVALUATION ON AUTHENTIC SNES CONSOLE   ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  AUTONOMOUS MULTI-ENTITY MPC EVALUATION ON AUTHENTIC SNES CONSOLE   ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | Horizon: {horizon} | Candidates: {num_candidates}")
+    logger.info(f"Device: {device} | Horizon: {horizon} | Candidates: {num_candidates}")
 
     # 1. Instantiate trained Multi-Entity PINN World Model
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
@@ -77,9 +79,9 @@ def run_multi_entity_mpc(
 
     if os.path.exists(model_checkpoint):
         world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
-        print(f"Loaded trained multi-entity weights from: {model_checkpoint}")
+        logger.info(f"Loaded trained multi-entity weights from: {model_checkpoint}")
     else:
-        print(f"Warning: Checkpoint {model_checkpoint} not found, using base model.")
+        logger.info(f"Warning: Checkpoint {model_checkpoint} not found, using base model.")
 
     world_model.eval()
 
@@ -137,7 +139,7 @@ def run_multi_entity_mpc(
 
         # Check death
         if ext_s["y"] > 450.0 or ext_s["y"] < 0.0 or ext_s["air_state"] == 9:
-            print(f"Mario terminated at frame {frame} (Y={ext_s['y']:.1f}, air_state={ext_s['air_state']})")
+            logger.info(f"Mario terminated at frame {frame} (Y={ext_s['y']:.1f}, air_state={ext_s['air_state']})")
             break
 
         survived += 1
@@ -159,7 +161,7 @@ def run_multi_entity_mpc(
         prev_b = curr_b
 
         if frame % 50 == 0:
-            print(
+            logger.info(
                 f"Frame {frame:3d} | X={ext_s['x']:.1f} (dx_rex={ext_s['delta_x_enemy']:.1f}) | "
                 f"vx={ext_s['vx']:.1f} | Best MPC Reward: {plan_info['best_reward']:.1f}"
             )
@@ -186,15 +188,15 @@ def run_multi_entity_mpc(
     with open(output_metrics, "w") as f:
         json.dump(results, f, indent=4)
 
-    print("\n====================================================================")
-    print("  MULTI-ENTITY MPC BENCHMARK RESULTS")
-    print("====================================================================")
-    print(f"Survived frames: {survived} / {max_frames}")
-    print(f"Total progress: {final_progress:.2f} pixels")
-    print(f"Rex evaded successfully: {rex_evaded}")
-    print(f"Planning speed: {results['fps']:.1f} FPS")
-    print(f"Metrics saved to: {output_metrics}")
-    print("====================================================================")
+    logger.info("\n====================================================================")
+    logger.info("  MULTI-ENTITY MPC BENCHMARK RESULTS")
+    logger.info("====================================================================")
+    logger.info(f"Survived frames: {survived} / {max_frames}")
+    logger.info(f"Total progress: {final_progress:.2f} pixels")
+    logger.info(f"Rex evaded successfully: {rex_evaded}")
+    logger.info(f"Planning speed: {results['fps']:.1f} FPS")
+    logger.info(f"Metrics saved to: {output_metrics}")
+    logger.info("====================================================================")
 
     # Plot trajectories
     plt.figure(figsize=(10, 5))
@@ -208,7 +210,7 @@ def run_multi_entity_mpc(
     fig_path = "results/figures/multi_entity_mpc_trajectory.png"
     plt.savefig(fig_path, dpi=300, bbox_inches="tight")
     plt.close()
-    print(f"Trajectory plot saved to: {fig_path}")
+    logger.info(f"Trajectory plot saved to: {fig_path}")
 
     return results
 

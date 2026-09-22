@@ -17,6 +17,9 @@ import json
 import os
 from typing import Any, Dict, Optional
 
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 class ExperimentLogger:
     """Unified logger for dynamics training and MBRL benchmarks.
@@ -64,7 +67,7 @@ class ExperimentLogger:
                 tb_dir = os.path.join(self.run_dir, "tensorboard")
                 self._writer = SummaryWriter(log_dir=tb_dir)
             except Exception as exc:  # tensorboard missing/broken -> file logging only
-                print(f"[ExperimentLogger] TensorBoard disabled ({exc}); using JSONL only.")
+                logger.info(f"[ExperimentLogger] TensorBoard disabled ({exc}); using JSONL only.")
 
         self._wandb_run = None
         if use_wandb:
@@ -77,10 +80,10 @@ class ExperimentLogger:
                     config=self.hparams,
                 )
             except Exception as exc:
-                print(f"[ExperimentLogger] wandb disabled ({exc}); using local logs only.")
+                logger.info(f"[ExperimentLogger] wandb disabled ({exc}); using local logs only.")
                 self._wandb_run = None
 
-        print(f"[ExperimentLogger] Logging to {self.run_dir}")
+        logger.info(f"[ExperimentLogger] Logging to {self.run_dir}")
 
     @property
     def dir(self) -> str:

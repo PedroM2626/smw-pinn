@@ -16,7 +16,9 @@ from torch.distributions import Categorical
 
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 class ActorCritic(nn.Module):
     """
@@ -247,7 +249,7 @@ class DynaPPOTrainer:
         t0 = time.time()
 
         if verbose:
-            print(f"Starting Dyna-PPO Training: {num_iterations} iterations ({batch_size} samples/iter)...")
+            logger.info(f"Starting Dyna-PPO Training: {num_iterations} iterations ({batch_size} samples/iter)...")
 
         for iteration in range(1, num_iterations + 1):
             t_iter = time.time()
@@ -264,7 +266,7 @@ class DynaPPOTrainer:
             history.append(metrics)
 
             if verbose and (iteration % 5 == 0 or iteration == 1 or iteration == num_iterations):
-                print(
+                logger.info(
                     f"Iter {iteration:3d}/{num_iterations:3d} | "
                     f"Return: {mean_return:+6.2f} | "
                     f"PolLoss: {metrics['policy_loss']:+.4f} | "
@@ -275,7 +277,7 @@ class DynaPPOTrainer:
 
         total_time = time.time() - t0
         if verbose:
-            print(f"Dyna-PPO finished in {total_time:.2f}s ({int(total_timesteps / total_time)} overall FPS).")
+            logger.info(f"Dyna-PPO finished in {total_time:.2f}s ({int(total_timesteps / total_time)} overall FPS).")
 
         return history
 
@@ -292,7 +294,7 @@ def train_dyna_ppo_agents(
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Dyna-PPO Optimization Device: {device}")
+    logger.info(f"Dyna-PPO Optimization Device: {device}")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -317,12 +319,12 @@ def train_dyna_ppo_agents(
     for model_name, model, ckpt_name in world_model_configs:
         ckpt_path = os.path.join(checkpoints_dir, ckpt_name)
         if not os.path.exists(ckpt_path):
-            print(f"Warning: World model checkpoint {ckpt_path} not found. Skipping.")
+            logger.info(f"Warning: World model checkpoint {ckpt_path} not found. Skipping.")
             continue
 
-        print("\n====================================================================")
-        print(f"  TRAINING DYNA-PPO POLICY IN WORLD MODEL: {model_name.upper()}")
-        print("====================================================================")
+        logger.info("\n====================================================================")
+        logger.info(f"  TRAINING DYNA-PPO POLICY IN WORLD MODEL: {model_name.upper()}")
+        logger.info("====================================================================")
 
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=True))
         model.eval()
@@ -342,7 +344,7 @@ def train_dyna_ppo_agents(
 
         policy_path = os.path.join(output_dir, f"dyna_ppo_{model_name}_policy.pt")
         torch.save(agent.state_dict(), policy_path)
-        print(f"Trained policy saved to: {policy_path}")
+        logger.info(f"Trained policy saved to: {policy_path}")
         trained_policies[model_name] = agent
 
     return trained_policies

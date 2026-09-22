@@ -15,7 +15,9 @@ import torch
 
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def evaluate_dagger_policy(
     rom_path: str = "data/raw/smw_usa.sfc",
@@ -25,15 +27,15 @@ def evaluate_dagger_policy(
     output_metrics: str = "results/dagger_policy_metrics.json",
     max_frames: int = 500,
 ) -> Dict:
-    print("====================================================================")
-    print("  EVALUATING MULTI-ITERATION DAGGER POLICY ON LIVE SNES HARDWARE    ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  EVALUATING MULTI-ITERATION DAGGER POLICY ON LIVE SNES HARDWARE    ")
+    logger.info("====================================================================")
 
     # Load on CPU for pure lightweight throughput measurement
     policy = DistilledActorPolicy(state_dim=12, action_dim=6)
     if os.path.exists(policy_checkpoint):
         policy.load_state_dict(torch.load(policy_checkpoint, map_location="cpu", weights_only=True))
-        print(f"Loaded DAgger policy from: {policy_checkpoint}")
+        logger.info(f"Loaded DAgger policy from: {policy_checkpoint}")
     policy.eval()
 
     emu = SnesLibretroEmulator(core_path)
@@ -82,11 +84,11 @@ def evaluate_dagger_policy(
         survived_frames += 1
 
         if frame % 100 == 0:
-            print(f"Frame {frame:3d} | X={s_dict['x']:.1f} (Progress: {s_dict['x']-start_x:.1f} px) | "
+            logger.info(f"Frame {frame:3d} | X={s_dict['x']:.1f} (Progress: {s_dict['x']-start_x:.1f} px) | "
                   f"Y={s_dict['y']:.1f} | Enemy dX={s_dict['delta_x_enemy']:.1f}")
 
         if s_dict["y"] > 450.0:
-            print(f"Mario fell into pit at frame {frame} (Progress: {s_dict['x']-start_x:.1f} px)")
+            logger.info(f"Mario fell into pit at frame {frame} (Progress: {s_dict['x']-start_x:.1f} px)")
             break
 
     total_time = time.time() - t_start
@@ -113,13 +115,13 @@ def evaluate_dagger_policy(
     with open(output_metrics, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    print("\n--- DAGGER POLICY EVALUATION RESULTS ---")
-    print(f"Survived Frames:            {survived_frames} / {max_frames}")
-    print(f"Total Progress:             {total_progress:.2f} pixels")
-    print(f"Rex Evaded:                 {rex_evaded}")
-    print(f"Inference Latency:          {mean_infer_us:.2f} us / step")
-    print(f"Policy Inference Throughput: {infer_fps:.1f} FPS (vs 23.7 FPS for CEM MPC)")
-    print(f"Metrics saved to: {output_metrics}")
+    logger.info("\n--- DAGGER POLICY EVALUATION RESULTS ---")
+    logger.info(f"Survived Frames:            {survived_frames} / {max_frames}")
+    logger.info(f"Total Progress:             {total_progress:.2f} pixels")
+    logger.info(f"Rex Evaded:                 {rex_evaded}")
+    logger.info(f"Inference Latency:          {mean_infer_us:.2f} us / step")
+    logger.info(f"Policy Inference Throughput: {infer_fps:.1f} FPS (vs 23.7 FPS for CEM MPC)")
+    logger.info(f"Metrics saved to: {output_metrics}")
 
     return metrics
 

@@ -28,7 +28,9 @@ from src.training.distill_mpc_policy import (
     collect_mpc_expert_demonstrations,
     extract_12d_vector,
 )
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def run_dagger_loop(
     rom_path: str = "data/raw/smw_usa.sfc",
@@ -42,12 +44,12 @@ def run_dagger_loop(
     frames_per_episode: int = 400,
     epochs_per_iter: int = 30,
 ):
-    print("====================================================================")
-    print("  INTERACTIVE DAGGER (DATASET AGGREGATION) FOR AMORTIZED CONTROL     ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  INTERACTIVE DAGGER (DATASET AGGREGATION) FOR AMORTIZED CONTROL     ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | DAgger Iterations: {dagger_iterations}")
+    logger.info(f"Device: {device} | DAgger Iterations: {dagger_iterations}")
 
     # 1. Setup Expert Oracle (CEM MPC)
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
@@ -87,7 +89,7 @@ def run_dagger_loop(
 
     aggregated_states = list(init_s)
     aggregated_actions = list(init_a)
-    print(f"Iteration 0 (Expert Seed): {len(aggregated_states)} samples collected.")
+    logger.info(f"Iteration 0 (Expert Seed): {len(aggregated_states)} samples collected.")
 
     # Initialize Policy Network
     policy = DistilledActorPolicy(state_dim=12, action_dim=6).to(device)
@@ -104,7 +106,7 @@ def run_dagger_loop(
 
     # 3. DAgger Iterations
     for it in range(1, dagger_iterations + 1):
-        print(f"\n>>> DAGGER ITERATION {it}/{dagger_iterations} <<<")
+        logger.info(f"\n>>> DAGGER ITERATION {it}/{dagger_iterations} <<<")
 
         # Step A: Train policy on current aggregated dataset
         dataset = TensorDataset(
@@ -127,7 +129,7 @@ def run_dagger_loop(
                 total_loss += loss.item()
                 batches += 1
 
-        print(f"Policy retrained on {len(aggregated_states)} samples | Final BCE Loss: {total_loss/batches:.4f}")
+        logger.info(f"Policy retrained on {len(aggregated_states)} samples | Final BCE Loss: {total_loss/batches:.4f}")
 
         # Step B: Rollout learned policy on SNES and query Oracle for corrective labels
         policy.eval()
@@ -174,7 +176,7 @@ def run_dagger_loop(
             policy_progresses.append(final_x - start_x)
 
         mean_prog = float(np.mean(policy_progresses))
-        print(f"Iteration {it} Complete | New samples added: {new_samples} | "
+        logger.info(f"Iteration {it} Complete | New samples added: {new_samples} | "
               f"Total Dataset: {len(aggregated_states)} | Policy Hardware Progress: {mean_prog:.1f} px")
 
         iter_logs.append({
@@ -189,7 +191,7 @@ def run_dagger_loop(
     # Save final model
     os.makedirs(os.path.dirname(output_policy_path), exist_ok=True)
     torch.save(policy.cpu().state_dict(), output_policy_path)
-    print(f"\nFinal DAgger policy weights saved to: {output_policy_path}")
+    logger.info(f"\nFinal DAgger policy weights saved to: {output_policy_path}")
 
     os.makedirs(os.path.dirname(output_metrics_path), exist_ok=True)
     with open(output_metrics_path, "w") as f:

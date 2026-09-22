@@ -4,7 +4,7 @@ Dataset handling, anomaly filtering, temporal splitting, and DataLoader construc
 for genuine Super Mario World RAM telemetry for statistical and PINN models.
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -49,9 +49,9 @@ class SMWSequenceDataset(Dataset):
         seq_len: int = 10,
     ):
         self.seq_len = seq_len
-        self.state_seqs = []
-        self.action_seqs = []
-        self.target_states = []
+        state_seqs: List[np.ndarray] = []
+        action_seqs: List[np.ndarray] = []
+        target_states: List[np.ndarray] = []
 
         unique_eps = np.unique(episodes)
         for ep in unique_eps:
@@ -65,13 +65,13 @@ class SMWSequenceDataset(Dataset):
                 continue
 
             for i in range(n_samples - seq_len):
-                self.state_seqs.append(ep_s[i : i + seq_len])
-                self.action_seqs.append(ep_a[i : i + seq_len])
-                self.target_states.append(ep_ns[i + seq_len - 1])
+                state_seqs.append(ep_s[i : i + seq_len])
+                action_seqs.append(ep_a[i : i + seq_len])
+                target_states.append(ep_ns[i + seq_len - 1])
 
-        self.state_seqs = torch.tensor(np.array(self.state_seqs), dtype=torch.float32)
-        self.action_seqs = torch.tensor(np.array(self.action_seqs), dtype=torch.float32)
-        self.target_states = torch.tensor(np.array(self.target_states), dtype=torch.float32)
+        self.state_seqs = torch.tensor(np.array(state_seqs), dtype=torch.float32)
+        self.action_seqs = torch.tensor(np.array(action_seqs), dtype=torch.float32)
+        self.target_states = torch.tensor(np.array(target_states), dtype=torch.float32)
 
     def __len__(self) -> int:
         return len(self.state_seqs)

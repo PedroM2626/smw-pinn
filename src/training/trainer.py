@@ -160,7 +160,7 @@ class DynamicsTrainer:
         verbose: bool = True,
         experiment: Optional[Any] = None,
     ) -> Dict[str, List[float]]:
-        history = {
+        history: Dict[str, List[float]] = {
             "train_loss": [],
             "train_kin": [],
             "val_loss": [],

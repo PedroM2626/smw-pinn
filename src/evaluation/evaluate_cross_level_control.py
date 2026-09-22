@@ -37,7 +37,9 @@ from src.planning.mpc_planner import (
     TrajectoryObjective,
 )
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -75,7 +77,7 @@ def evaluate_single_controller(
     max_frames: int = 400,
 ) -> Tuple[Dict, List[float], List[float]]:
     """Runs a single controller in closed loop on Yoshi's House."""
-    print(f"\nEvaluating: {controller_type} on Yoshi's House...")
+    logger.info(f"\nEvaluating: {controller_type} on Yoshi's House...")
 
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
@@ -171,7 +173,7 @@ def evaluate_single_controller(
         survived += 1
 
         if curr_y > 450.0:
-            print(f"[{controller_type}] Fell into pit at frame {frame}")
+            logger.info(f"[{controller_type}] Fell into pit at frame {frame}")
             break
 
     elapsed = time.time() - t_start
@@ -188,7 +190,7 @@ def evaluate_single_controller(
         "evaluation_time_seconds": float(elapsed),
     }
 
-    print(f"[{controller_type:16s}] Progress: {final_prog:6.2f} px | Survived: {survived:3d} frames | "
+    logger.info(f"[{controller_type:16s}] Progress: {final_prog:6.2f} px | Survived: {survived:3d} frames | "
           f"vx: {metrics['mean_vx']:5.1f} | Throughput: {metrics['throughput_fps']:6.1f} FPS")
 
     return metrics, traj_x, traj_y
@@ -202,13 +204,13 @@ def run_cross_level_control_benchmark(
     output_figure: str = "results/figures/cross_level_control_trajectories.png",
     max_frames: int = 400,
 ):
-    print("====================================================================")
-    print("  ZERO-SHOT CLOSED-LOOP CONTROL BENCHMARK ON UNSEEN STAGE B         ")
-    print("  Target Stage: Yoshi's House ($7E:0100 = 0x14)                     ")
-    print("====================================================================")
+    logger.info("====================================================================")
+    logger.info("  ZERO-SHOT CLOSED-LOOP CONTROL BENCHMARK ON UNSEEN STAGE B         ")
+    logger.info("  Target Stage: Yoshi's House ($7E:0100 = 0x14)                     ")
+    logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    logger.info(f"Device: {device}")
 
     controllers = [
         "Random_Baseline",
@@ -238,7 +240,7 @@ def run_cross_level_control_benchmark(
     os.makedirs(os.path.dirname(output_metrics), exist_ok=True)
     with open(output_metrics, "w") as f:
         json.dump(all_metrics, f, indent=2)
-    print(f"\nZero-shot control metrics saved to: {output_metrics}")
+    logger.info(f"\nZero-shot control metrics saved to: {output_metrics}")
 
     # Plot trajectories
     os.makedirs(os.path.dirname(output_figure), exist_ok=True)
@@ -282,7 +284,7 @@ def run_cross_level_control_benchmark(
     plt.tight_layout()
     plt.savefig(output_figure, dpi=300)
     plt.close()
-    print(f"Zero-shot control trajectory plot saved to: {output_figure}")
+    logger.info(f"Zero-shot control trajectory plot saved to: {output_figure}")
 
 
 if __name__ == "__main__":

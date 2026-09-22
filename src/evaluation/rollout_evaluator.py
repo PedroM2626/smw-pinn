@@ -154,10 +154,10 @@ class RolloutEvaluator:
                 action_sequence=actions[s : s + horizon],
                 ground_truth_states=next_states[s : s + horizon],
             )
-            mean_drifts.append(res["mean_drift"])
-            final_drifts.append(res["final_drift"])
-            kin_rates.append(res["kinematic_violations"] / horizon)
-            vel_rates.append(res["velocity_violations"] / horizon)
+            mean_drifts.append(float(res["mean_drift"]))
+            final_drifts.append(float(res["final_drift"]))
+            kin_rates.append(float(res["kinematic_violations"]) / horizon)
+            vel_rates.append(float(res["velocity_violations"]) / horizon)
 
         return {
             "starts": starts,
@@ -193,9 +193,9 @@ class RolloutEvaluator:
                 ground_truth_states=ground_truth_states,
             )
             results[name] = {
-                "mean_drift_pixels": rollout_res["mean_drift"],
-                "final_drift_pixels": rollout_res["final_drift"],
-                "kin_violations": rollout_res["kinematic_violations"],
-                "vel_violations": rollout_res["velocity_violations"],
+                "mean_drift_pixels": float(rollout_res["mean_drift"]),
+                "final_drift_pixels": float(rollout_res["final_drift"]),
+                "kin_violations": int(rollout_res["kinematic_violations"]),
+                "vel_violations": int(rollout_res["velocity_violations"]),
             }
         return results

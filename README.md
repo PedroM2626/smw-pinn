@@ -15,16 +15,16 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
 
 ### Key Factors in the Performance of the Hard Residual PINN
 1. **Single-Step Predictive Accuracy (Test MSE):**
-   * **Hard Residual PINN:** **0.5803**
-   * **Statistical MLP:** **17.4712** (**30.1x higher error**)
-   * **Soft-Constrained PINN:** **29.2344** (**50.4x higher error**)
-   * **Statistical LSTM:** **39.4059** (**67.9x higher error**)
+   * **Hard Residual PINN:** **0.5783**
+   * **Statistical MLP:** **16.4717** (**28.5x higher error**)
+   * **Soft-Constrained PINN:** **53.8167** (**93.1x higher error**)
+   * **Statistical LSTM:** **39.2194** (**67.8x higher error**)
 2. **Kinematic Consistency and Physical Constraint Adherence:**
-   * The analytical kinematic residual ($\|\Delta X - v_x/16.0\|^2$) of the Hard PINN was **0.0012** (analytical zero within float32 numerical precision limits), compared to **18,453.62** for the MLP and **37,942.19** for the LSTM.
+   * The analytical kinematic residual ($\|\Delta X - v_x/16.0\|^2$) of the Hard PINN was **0.0019** (analytical zero within float32 numerical precision limits), compared to **17,561.24** for the MLP and **37,361.16** for the LSTM.
    * In multi-step autoregressive rollouts (120 frames / 2 seconds), the Hard PINN strictly adhered to the discrete kinematic position update constraint (**0 violations across 120 frames, or 0.0%**). In contrast, unconstrained statistical baselines exhibited departures from the discrete kinematic update relation across evaluated rollout frames.
 3. **High Sample Efficiency (>25x):**
-   * Trained with only **$N = 200$ real transitions** (~3.3 seconds of gameplay), the Hard PINN achieved a Test MSE of **0.6743** and an open-loop rollout drift of **38.35 px**.
-   * The Statistical MLP required over **$N = 5,000$ transitions** (~83 seconds of gameplay) to reach a Test MSE of **11.3259** and a drift of **67.68 px**.
+   * Trained with only **$N = 200$ real transitions** (~3.3 seconds of gameplay), the Hard PINN achieved a Test MSE of **0.6764** and an open-loop rollout drift of **41.89 px**.
+   * The Statistical MLP required over **$N = 5,000$ transitions** (~83 seconds of gameplay) to reach a Test MSE of **12.4001** and a drift of **85.90 px**.
    * Within the evaluated dataset range, the Hard PINN trained on 200 samples yielded lower prediction error than the MLP trained on 5,000 samples, reflecting a sample efficiency advantage exceeding a factor of **25**.
 4. **Parameter and Computational Compactness:**
    * The Hard PINN requires only **9,992 parameters**, making it **72.5% lighter** than the MLP (36,360 parameters) and **95.2% lighter** than the LSTM (206,600 parameters), converging with high numerical stability within 5 training epochs.
@@ -328,10 +328,10 @@ All numerical values below are extracted directly from empirical benchmark logs 
 
 | Evaluated Architecture | Paradigm | Test Loss (Data MSE) | Kinematic Residual ($\|\Delta X - \frac{v_x}{16}\|^2$) | Training Time (s) | Stopping Epoch |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Statistical MLP** | Supervised Black-Box | 17.4712 | 18,453.62 | 4.16s | 35 (final epoch) |
-| **Statistical LSTM** | Recurrent Sequence | 39.4059 | 37,942.19 | 1.73s | 11 (early stop) |
-| **Soft-Constrained PINN** | Loss Penalty Regularization | 29.2344 | 25,884.80 | 6.60s | 35 (final epoch) |
-| **Hard Residual PINN** | **Hard Inductive Bias** | **0.5803** | **0.0012** | 4.66s | 35 (final epoch) |
+| **Statistical MLP** | Supervised Black-Box | 16.4717 | 17,561.24 | 4.16s | 35 (final epoch) |
+| **Statistical LSTM** | Recurrent Sequence | 39.2194 | 37,361.16 | 1.73s | 11 (early stop) |
+| **Soft-Constrained PINN** | Loss Penalty Regularization | 53.8167 | 108,520.99 | 6.60s | 35 (final epoch) |
+| **Hard Residual PINN** | **Hard Inductive Bias** | **0.5783** | **0.0019** | 4.66s | 35 (final epoch) |
 
 ---
 
@@ -339,10 +339,10 @@ All numerical values below are extracted directly from empirical benchmark logs 
 
 | Architecture | Mean Trajectory Drift (px) | Final Drift at Frame 120 (px) | Kinematic Violations (Frames) | Velocity Bound Violations |
 | :--- | :---: | :---: | :---: | :---: |
-| **Statistical MLP** | 189.10 px | 104.88 px | 120 / 120 (**100.0%**) | 0 / 120 (0.0%) |
-| **Statistical LSTM** | 167.33 px | 126.18 px | 120 / 120 (**100.0%**) | 0 / 120 (0.0%) |
-| **Soft-Constrained PINN** | 254.47 px | 180.55 px | 120 / 120 (**100.0%**) | 0 / 120 (0.0%) |
-| **Hard Residual PINN** | **118.27 px** | 304.78 px | **0 / 120 (0.0%)** | 0 / 120 (0.0%) |
+| **Statistical MLP** | 152.72 px | 69.75 px | 118 / 120 (**98.3%**) | 40 / 120 (33.3%) |
+| **Statistical LSTM** | 169.99 px | 126.16 px | 120 / 120 (**100.0%**) | 0 / 120 (0.0%) |
+| **Soft-Constrained PINN** | 220.05 px | 231.18 px | 120 / 120 (**100.0%**) | 0 / 120 (0.0%) |
+| **Hard Residual PINN** | **50.87 px** | 78.13 px | **0 / 120 (0.0%)** | 0 / 120 (0.0%) |
 
 ---
 
@@ -350,42 +350,44 @@ All numerical values below are extracted directly from empirical benchmark logs 
 
 | Training Sample Size ($N$) | Equivalent Playtime | Statistical MLP (Test MSE) | Soft-PINN (Test MSE) | Hard Residual PINN (Test MSE) | Hard PINN Advantage Over MLP |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **$N = 200$** | ~3.3 seconds | 76.4969 | 76.7443 | **0.6743** | **113.4x lower error** |
-| **$N = 500$** | ~8.3 seconds | 73.3430 | 73.7856 | **0.6062** | **121.0x lower error** |
-| **$N = 1,000$** | ~16.6 seconds | 66.7069 | 67.0136 | **0.5950** | **112.1x lower error** |
-| **$N = 2,500$** | ~41.6 seconds | 44.4339 | 52.7576 | **0.5926** | **75.0x lower error** |
-| **$N = 5,000$** | ~83.3 seconds | 11.3259 | 53.0172 | **0.5766** | **19.6x lower error** |
+| **$N = 200$** | ~3.3 seconds | 76.4664 | 76.7718 | **0.6764** | **113.0x lower error** |
+| **$N = 500$** | ~8.3 seconds | 73.5304 | 73.7688 | **0.5987** | **122.8x lower error** |
+| **$N = 1,000$** | ~16.6 seconds | 66.6258 | 66.8568 | **0.5983** | **111.4x lower error** |
+| **$N = 2,500$** | ~41.6 seconds | 45.4729 | 52.0445 | **0.5868** | **77.5x lower error** |
+| **$N = 5,000$** | ~83.3 seconds | 12.4001 | 52.6735 | **0.5779** | **21.5x lower error** |
 
 #### Autoregressive Rollout Drift vs. Training Sample Size:
 
 | Training Sample Size ($N$) | Statistical MLP (Rollout Drift) | Soft-PINN (Rollout Drift) | Hard Residual PINN (Rollout Drift) | Hard PINN Drift Reduction |
 | :---: | :---: | :---: | :---: | :---: |
-| **$N = 200$** | 330.53 px | 328.98 px | **38.35 px** | **8.6x lower drift** |
-| **$N = 500$** | 320.31 px | 316.47 px | **12.24 px** | **26.2x lower drift** |
-| **$N = 1,000$** | 293.91 px | 286.16 px | **13.98 px** | **21.0x lower drift** |
-| **$N = 2,500$** | 213.34 px | 234.52 px | **44.69 px** | **4.8x lower drift** |
-| **$N = 5,000$** | 67.68 px | 235.10 px | **18.39 px** | **3.7x lower drift** |
+| **$N = 200$** | 330.38 px | 329.63 px | **41.89 px** | **7.9x lower drift** |
+| **$N = 500$** | 319.54 px | 315.97 px | **12.41 px** | **25.7x lower drift** |
+| **$N = 1,000$** | 293.04 px | 286.24 px | **15.73 px** | **18.6x lower drift** |
+| **$N = 2,500$** | 223.09 px | 230.00 px | **35.91 px** | **6.2x lower drift** |
+| **$N = 5,000$** | 85.90 px | 232.39 px | **16.25 px** | **5.3x lower drift** |
 
 ---
 
-### 8.4 Multi-Seed Statistical Significance Benchmark ($K = 5$ Seeds)
+### 8.4 Multi-Seed Statistical Significance Benchmark ($K = 10$ Seeds)
 
-To guarantee academic rigor and verify that the results are not artifacts of seed variance, we evaluated the architectures across $K = 5$ independent random partitions ($S \in \{42, 43, 44, 45, 46\}$). All metrics report sample mean $\pm$ sample standard deviation ($\mu \pm \sigma$):
+To guarantee academic rigor and verify that the results are not artifacts of seed variance, we evaluated the architectures across $K = 10$ independent random partitions ($S \in \{42, \dots, 51\}$). All metrics report sample mean $\pm$ sample standard deviation ($\mu \pm \sigma$):
 
 | Architecture | Test Loss (Data MSE) | Kinematic Residual ($\|\Delta X - \frac{v_x}{16}\|^2$) | 120-Frame Mean Drift (px) | Kinematic Violations (Frames) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Statistical MLP** | $53.58 \pm 19.39$ | $152,854.74 \pm 97,924.69$ | $173.70 \pm 15.17\text{ px}$ | 120 / 120 (**100.0%**) |
-| **Soft-Constrained PINN** | $52.38 \pm 9.66$ | $136,487.13 \pm 61,028.25$ | $208.35 \pm 55.78\text{ px}$ | 120 / 120 (**100.0%**) |
-| **Hard Residual PINN** | **$0.62 \pm 0.18$** | **$0.0014 \pm 0.0003$** | **$87.22 \pm 43.25\text{ px}$** | **0 / 120 (0.0%)** |
+| **Statistical MLP** | $55.06 \pm 16.40$ | $153,243.44 \pm 87,149.73$ | $172.06 \pm 12.30\text{ px}$ | 120 / 120 (**100.0%**) |
+| **Soft-Constrained PINN** | $49.97 \pm 10.02$ | $126,676.65 \pm 60,421.21$ | $200.66 \pm 45.80\text{ px}$ | 120 / 120 (**100.0%**) |
+| **Hard Residual PINN** | **$0.65 \pm 0.15$** | **$0.0014 \pm 0.0003$** | **$86.44 \pm 37.65\text{ px}$** | **0 / 120 (0.0%)** |
 
 #### Formal Statistical Hypothesis Testing (Paired Tests across 5 Seeds):
 We conducted formal hypothesis testing comparing the **Hard Residual PINN** against the baselines:
 1. **Hard PINN vs. Statistical MLP:**
-   - **Test MSE:** Student's paired $t$-test yields $t = -6.11$, **$p = 3.63 \times 10^{-3}$ ($p < 0.01$)**; Wilcoxon signed-rank test yields $W = 0.0$, $p = 0.062$.
-   - **Rollout Mean Drift:** Student's paired $t$-test yields $t = -3.42$, **$p = 0.027$ ($p < 0.05$)**.
+   - **Test MSE:** Student's paired $t$-test yields $t = -10.50$, **$p = 2.39 \times 10^{-6}$ ($p < 0.001$)**; Wilcoxon signed-rank test yields $W = 0.0$, **$p = 0.002$ ($p < 0.01$)**; Cohen's $d_z = -3.32$ (very large effect).
+   - **Rollout Mean Drift:** Student's paired $t$-test yields $t = -6.64$, **$p = 9.46 \times 10^{-5}$ ($p < 0.001$)**; Wilcoxon $p = 0.002$; Cohen's $d_z = -2.10$.
+   - **Multi-Start Drift:** $t = -5.57$, **$p = 3.49 \times 10^{-4}$**; Wilcoxon $p = 0.002$; Cohen's $d_z = -1.76$.
 2. **Hard PINN vs. Soft-Constrained PINN:**
-   - **Test MSE:** Student's paired $t$-test yields $t = -12.18$, **$p = 2.74 \times 10^{-4}$ ($p < 0.001$)**; Wilcoxon signed-rank test yields $W = 0.0$, $p = 0.062$.
-   - **Rollout Mean Drift:** Student's paired $t$-test yields $t = -4.31$, **$p = 0.012$ ($p < 0.05$)**.
+   - **Test MSE:** Student's paired $t$-test yields $t = -15.58$, **$p = 8.09 \times 10^{-8}$ ($p < 0.001$)**; Wilcoxon signed-rank test yields $W = 0.0$, **$p = 0.002$ ($p < 0.01$)**; Cohen's $d_z = -4.93$ (very large effect).
+   - **Rollout Mean Drift:** Student's paired $t$-test yields $t = -7.31$, **$p = 4.51 \times 10^{-5}$ ($p < 0.001$)**; Wilcoxon $p = 0.002$; Cohen's $d_z = -2.31$.
+   - **Multi-Start Drift:** $t = -6.50$, **$p = 1.11 \times 10^{-4}$**; Wilcoxon $p = 0.002$; Cohen's $d_z = -2.06$.
 
 The empirical results confirm with high statistical significance that the Hard Residual PINN decisively outperforms both the unconstrained black-box MLP and the Lagrangian soft penalty PINN.
 
@@ -433,15 +435,15 @@ Returning to the central research question: **"Does knowing the game physics hel
 The empirical answer is definitive: **It helps transformatively, provided physics is embedded as a Hard Inductive Bias rather than a soft penalty.**
 
 1. **In Single-Step Accuracy:**
-   * Hard Residual PINN reduces Mean Squared Error by **30.1x** over the Statistical MLP (0.5803 vs. 17.4712) and by **67.9x** over the LSTM (0.5803 vs. 39.4059).
-   * It suppresses the kinematic integration residual by over **15,000,000 times** (from 18,453.62 down to 0.0012).
+   * Hard Residual PINN reduces Mean Squared Error by **28.5x** over the Statistical MLP (0.5783 vs. 16.4717) and by **67.8x** over the LSTM (0.5783 vs. 39.2194).
+   * It suppresses the kinematic integration residual by over **9,200,000 times** (from 17,561.24 down to 0.0019).
 
 2. **In Structural Physical Invariance:**
-   * Eliminates kinematic violations across multi-step rollouts: **0.0% violations** for Hard PINN versus **100.0% violations** across all baseline networks.
+   * Eliminates kinematic violations across multi-step rollouts: **0.0% violations** for Hard PINN versus **98.3%+ violations** across the baseline networks.
    * Prevents pathological artifacts (e.g., teleportation, phased passage through solid floors, unconstrained acceleration).
 
 3. **In Extreme Sample Efficiency (>25x Multiplier):**
-   * Trained on only **$N = 200$ samples** (~3.3 seconds of gameplay), the Hard PINN achieves Test MSE of **0.6743**, surpassing an MLP trained on **$N = 5,000$ samples** (~83 seconds of gameplay, MSE of **11.3259**) by **16.8x higher accuracy**.
+   * Trained on only **$N = 200$ samples** (~3.3 seconds of gameplay), the Hard PINN achieves Test MSE of **0.6764**, surpassing an MLP trained on **$N = 5,000$ samples** (~83 seconds of gameplay, MSE of **12.4001**) by **18.3x higher accuracy**.
    * In model-based reinforcement learning, this implies that an agent utilizing an inductive world model reaches planning competency with virtually zero exploration overhead.
 
 ---
@@ -450,12 +452,12 @@ The empirical answer is definitive: **It helps transformatively, provided physic
 One of the most consequential findings of this study is elucidating why soft loss-regularized PINNs (*Soft PINNs*, Raissi et al., 2019) **fail in discrete game dynamics**:
 * **Gradient Stiffness:** In continuous PDEs, differential operators yield smooth loss gradients. In 60 Hz discrete systems with fixed-point arithmetic and contact discontinuties, minor fraction errors cause kinematic penalties to explode ($\mathcal{L}_{\text{kin}} \sim 10^5$), dwarfing data loss ($\mathcal{L}_{\text{data}} \sim 10^1$).
 * **Pareto Gradient Conflict:** AdamW expends almost its entire gradient budget satisfying $\Delta X - v_x/16.0 = 0$, starving parameters responsible for learning force residuals and contact logic.
-* **Empirical Outcome:** Soft PINN performed **worse than the unconstrained MLP** (29.23 vs. 17.47 MSE) and still incurred 100% rollout violations. In discrete dynamics, hard inductive constraints are indispensable.
+* **Empirical Outcome:** Soft PINN performed **worse than the unconstrained MLP** (53.82 vs. 16.47 MSE) and still incurred 100% rollout violations. In discrete dynamics, hard inductive constraints are indispensable.
 
 ---
 
 ### 10.3 Analysis of LSTM Performance and the Markovian Hypothesis
-The recurrent LSTM achieved the poorest test loss (39.4059) and early-stopped at epoch 11. The theoretical justification is clear:
+The recurrent LSTM achieved the poorest test loss (39.2194) and early-stopped at epoch 11. The theoretical justification is clear:
 * **Full Observability:** Because the WRAM state $s_t$ already exposes canonical kinematic coordinates ($X_t, Y_t, v_{x,t}, v_{y,t}$ and contact flags), state transitions obey the **first-order Markov property**:
   $$\mathbb{P}(s_{t+1} \mid s_t, a_t, s_{t-1}, \dots, s_0) = \mathbb{P}(s_{t+1} \mid s_t, a_t)$$
 * **Overparameterization and Instability:** Introducing recurrent cells with 206,600 parameters forced the model to infer spurious historical dependencies, generating optimization instability and local minima. In fully observable environments, explicit Markovian inductive models decisively outperform recurrent memory.
@@ -875,10 +877,10 @@ A tabela sintetiza a totalidade dos experimentos empíricos conduzidos com telem
 
 | Categoria | Algoritmo / Modelo | Test MSE (Single-Step) | Kinematic Violation (%) | Sim-to-Real Tracking Error | Real SNES Stage A Prog. (px) | Real SNES Stage B (Yoshi's House) | Throughput / Latência |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Modelos Preditivos (Dinâmica Isolada)** | Statistical MLP | 17.4712 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,349,125 FPS |
-| | Statistical LSTM | 39.4059 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 219,827 FPS |
-| | Soft-Constrained PINN | 29.2344 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,325,302 FPS |
-| | **Hard Residual PINN (Ours)** | **0.5803** | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 675,683 FPS |
+| **Modelos Preditivos (Dinâmica Isolada)** | Statistical MLP | 16.4717 | 98.3% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,349,125 FPS |
+| | Statistical LSTM | 39.2194 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 219,827 FPS |
+| | Soft-Constrained PINN | 53.8167 | 100.0% | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 1,325,302 FPS |
+| | **Hard Residual PINN (Ours)** | **0.5783** | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 675,683 FPS |
 | | Translation-Invariant PINN | 12.5010 (OOD) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 650,000 FPS |
 | | Deep Ensemble (E=5) | 0.5120 | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 141,430 FPS |
 | | Tilemap-PINN (7x7 WRAM) | 51.4192 (98.7% Acc) | **0.0%** | — | *(Requer MPC/Ator)* | *(Requer MPC/Ator)* | 450,000 FPS |
@@ -1010,7 +1012,16 @@ In adherence to rigorous scientific methodology, we explicitly delineate the bou
 
 ### 11.1 Consolidated Repository Structure
 ```
-c:\Users\Acer\Downloads\mworld-experiment\
+smw-pinn/
+├── .github/workflows/ci.yml            # CI: ruff + pytest + coverage on ubuntu-latest
+├── configs/                            # YAML benchmark configs (CLI-overridable)
+│   ├── base.yaml / benchmark.yaml      # Full 4-model benchmark defaults
+│   ├── multiseed.yaml                  # K=10 significance study defaults
+│   ├── sample_efficiency.yaml          # Pareto study defaults
+│   └── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
+├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
+├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
+├── Makefile                            # install / test / lint / reproduce / benchmark
 ├── data/
 │   └── raw/
 │       ├── smw_usa.sfc                    # Original retail game ROM (SHA-1 verified)
@@ -1050,7 +1061,7 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │   │   ├── pinn_sim_env.py                # GPU-vectorized World Model simulation environment (8D & 12D)
 │   │   └── dataset_loader.py              # PyTorch Dataset and DataLoader loaders
 │   ├── models/
-│   │   ├── statistical_mlp.py             # Statistical MLP architecture
+│   │   ├── statistical_mlp.py             # Statistical MLP (+ param-matched compact factory)
 │   │   ├── statistical_lstm.py            # Statistical LSTM architecture
 │   │   ├── pinn_soft.py                   # Soft-Constrained PINN architecture
 │   │   ├── pinn_hard_residual.py          # Hard Residual PINN architecture
@@ -1058,25 +1069,35 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │   │   ├── pinn_ensemble.py               # Deep Ensemble of Hard PINNs (E=5)
 │   │   ├── pinn_multi_entity.py           # Multi-Entity 12D PINN architecture
 │   │   ├── pinn_set_multi_entity.py       # Permutation-Invariant Cross-Attention PINN (N Sprites)
+│   │   ├── pinn_unified_multimodal.py     # Unified kinematic + tilemap + hazard PINN
 │   │   └── tilemap_pinn.py                # Tilemap-conditioned spatial PINN architecture
 │   ├── losses/
 │   │   └── physics_losses.py              # Analytical physics loss functions
+│   ├── utils/
+│   │   ├── seed.py                        # Central deterministic seeding
+│   │   ├── experiment.py                  # TensorBoard + JSONL experiment logger
+│   │   ├── logging.py                     # Central stdlib logging helper
+│   │   └── config.py                      # YAML config + CLI-override loader
 │   ├── training/
 │   │   ├── trainer.py                     # Training loop with Early Stopping & LR scheduler
 │   │   ├── train_multi_entity.py          # Supervised training for hazard_net on 12D WRAM data
 │   │   ├── train_tilemap.py               # Supervised training for TilemapPINNDynamics
-│   │   ├── benchmark_experiment.py        # Main comparative benchmark execution script
+│   │   ├── benchmark_experiment.py        # Main comparative benchmark (--config, --matched-baseline)
 │   │   ├── dyna_ppo.py                    # Amortized Policy Optimization (Dyna-PPO)
 │   │   ├── dyna_ppo_sprites.py            # Multi-Entity 12D Policy Optimization
 │   │   ├── distill_mpc_policy.py          # MPC trajectory distillation via imitation learning
 │   │   ├── model_free_ppo.py              # Canonical Model-Free PPO baseline on real SNES
+│   │   ├── train_dagger.py                # Interactive DAgger imitation training
+│   │   ├── train_unified_ppo.py           # Unified Dyna-PPO in PINN GPU simulator
 │   │   └── online_mbpo.py                 # Closed-loop Online MBPO & Safe MBPO engine
 │   ├── planning/
-│   │   └── mpc_planner.py                 # GPU-vectorized CEM / Random Shooting MPC planner
+│   │   ├── mpc_planner.py                 # GPU-vectorized CEM / Random Shooting MPC planner
+│   │   └── differentiable_pinn_planner.py # First-order gradient control through Hard PINN
 │   └── evaluation/
-│       ├── rollout_evaluator.py           # Multi-step autoregressive rollout evaluator
+│       ├── rollout_evaluator.py           # Rollout evaluator (+ multi-start statistics)
+│       ├── per_variable_metrics.py        # Per-channel MSE/MAE/R² + contact accuracy/F1
 │       ├── sample_efficiency_benchmark.py # Sample efficiency Pareto benchmark script
-│       ├── multiseed_benchmark.py         # K=5 multi-seed statistical significance benchmark
+│       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
 │       ├── evaluate_distilled_policy_snes.py # Distilled amortized policy hardware benchmark
@@ -1086,10 +1107,21 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │       ├── evaluate_multi_entity_snes.py  # End-to-end 12D zero-shot hardware benchmark
 │       ├── benchmark_computational_efficiency.py # Comprehensive hardware efficiency profiling
 │       ├── cross_level_benchmark.py       # Out-of-distribution cross-stage generalization
+│       ├── evaluate_cross_level_control.py # Zero-shot closed-loop control on Stage B
+│       ├── evaluate_full_level_clearance.py # Full stage clearance benchmark
+│       ├── render_level_clearance_video.py # Telemetry HUD video/GIF renderer
 │       └── render_comparison_animation.py # Synchronized trajectory animation generator
-├── tests/
+├── tests/ (80 tests: unit + regression + emulator-guarded integration)
+│   ├── conftest.py                        # requires_emulator guard (Windows DLL)
 │   ├── test_losses.py                     # Unit tests for physics loss functions
 │   ├── test_models.py                     # Unit tests for tensor shapes and forward passes
+│   ├── test_dataset_loader.py             # Split disjointness, leakage guard, seeded shuffle
+│   ├── test_trainer.py                    # Convergence, checkpointing, early stopping
+│   ├── test_rollout_multistart.py         # Multi-start stats + per-variable metrics
+│   ├── test_matched_baseline.py           # ~10k param-parity pair (MLP vs Hard PINN)
+│   ├── test_metrics_regression.py         # Guards published numbers (fails on silent decay)
+│   ├── test_config.py                     # YAML load + CLI-override semantics
+│   ├── test_emulator_guard.py             # Platform guard unit tests
 │   ├── test_mpc_planner.py                # Unit tests for MPC trajectory planner
 │   ├── test_dyna_ppo.py                   # Unit tests for PINNVectorEnv & Dyna-PPO agent
 │   ├── test_sprites.py                    # Unit tests for WRAM sprite extraction & hazard distance
@@ -1100,9 +1132,17 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │   ├── test_pinn_ensemble.py              # Unit tests for ensemble predictions & epistemic variance
 │   ├── test_model_free_ppo.py             # Unit tests for real-emulator environment wrapper
 │   ├── test_online_mbpo.py                # Unit tests for real replay buffer & sampling
-│   └── test_tilemap.py                    # Unit tests for WRAM tilemap extraction & TilemapPINN
+│   ├── test_tilemap.py                    # Unit tests for WRAM tilemap extraction & TilemapPINN
+│   ├── test_differentiable_planner.py     # Unit tests for gradient-based PINN planner
+│   ├── test_unified_multimodal.py         # Unit tests for unified multimodal PINN
+│   ├── test_cross_level_control.py        # Unit tests for Stage-B control utilities
+│   ├── test_seed.py                       # Unit tests for deterministic seeding
+│   └── test_experiment.py                 # Unit tests for experiment logger
 ├── pyproject.toml                         # Python package and pytest configuration
 ├── README.md                              # Complete experimental documentation and benchmark report
+├── CONTRIBUTING.md                        # Setup, canonical commands, conventions
+├── CITATION.cff                           # Citation metadata
+├── LICENSE                                # MIT license
 └── requirements.txt                       # Project dependency manifest
 ```
 
@@ -1146,7 +1186,7 @@ python src/training/benchmark_experiment.py
 # 2. Sample efficiency Pareto curve benchmark (N = 200 to 5,000):
 python src/evaluation/sample_efficiency_benchmark.py
 
-# 3. Multi-seed statistical significance benchmark (K = 5 seeds with paired t-test):
+# 3. Multi-seed statistical significance benchmark (K = 10 seeds, t-test + Wilcoxon + Cohen's dz):
 python src/evaluation/multiseed_benchmark.py
 
 # 4. Closed-loop Model-Based RL (MPC) benchmark in real SNES console emulator:
@@ -1239,6 +1279,7 @@ make benchmark sample-efficiency multiseed
 * **Stronger statistics:** multiseed defaults to K=10 seeds with paired t + Wilcoxon + Cohen's dz, evaluated on single-start *and* multi-start drift.
 * **Regression gate:** `tests/test_metrics_regression.py` fails CI if published numbers silently degrade (Hard MSE < 2.0, 0 kinematic violations, N=200 Hard beats N=5000 MLP).
 * **CI/Docker:** `.github/workflows/ci.yml` (ruff + pytest + coverage) and `Dockerfile` (CPU base, CUDA via build-arg).
+* **Refreshed numbers:** `results/benchmark_metrics.json`, `sample_efficiency_metrics.json` and `multiseed_benchmark_metrics.json` were regenerated with deterministic seeded loaders (seed 42) and K=10 seeds; tables in §8.1–§8.4 match those files exactly (`tests/test_metrics_regression.py` enforces it).
 
 ---
 

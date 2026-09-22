@@ -15,7 +15,8 @@ explicit CLI flags still win over the file.
 from __future__ import annotations
 
 import argparse
-from typing import Any
+import warnings
+from typing import Any, Optional
 
 try:
     import yaml
@@ -23,7 +24,7 @@ except ImportError:  # pragma: no cover
     yaml = None
 
 
-def load_config(path: str) -> dict[str, Any]:
+def load_config(path: Optional[str]) -> dict[str, Any]:
     """Load a YAML config file into a plain dict (empty dict if path is None)."""
     if path is None:
         return {}
@@ -44,7 +45,16 @@ def parse_args_with_config(
     config_path = getattr(known, "config", None)
     if config_path:
         cfg = load_config(config_path)
-        # Only keys that match an existing argument take effect.
+        # Only keys that match an existing argument take effect; warn loudly
+        # on the rest so typos (e.g. `epoch: 10`) never pass silently.
         valid = {a.dest for a in parser._actions}
+        unknown = sorted(k for k in cfg if k not in valid)
+        if unknown:
+            warnings.warn(
+                f"Ignoring unknown config keys in {config_path}: {unknown}. "
+                f"Valid keys: {sorted(valid)}.",
+                UserWarning,
+                stacklevel=2,
+            )
         parser.set_defaults(**{k: v for k, v in cfg.items() if k in valid})
     return parser.parse_args(args)

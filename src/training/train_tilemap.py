@@ -16,7 +16,9 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.tilemap_pinn import TilemapPINNDynamics
+from src.utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 def train_tilemap_model(
     dataset_path: str = "data/raw/smw_tilemap_dataset.npz",
@@ -26,12 +28,12 @@ def train_tilemap_model(
     epochs: int = 25,
     lr: float = 1e-3,
 ):
-    print("==========================================================")
-    print("  TRAINING TILEMAP-CONDITIONED PINN (GENUINE WRAM DATA)   ")
-    print("==========================================================")
+    logger.info("==========================================================")
+    logger.info("  TRAINING TILEMAP-CONDITIONED PINN (GENUINE WRAM DATA)   ")
+    logger.info("==========================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    logger.info(f"Device: {device}")
 
     # 1. Load genuine dataset
     data = np.load(dataset_path)
@@ -41,7 +43,7 @@ def train_tilemap_model(
     next_states = data["next_states"]
 
     total_samples = len(states)
-    print(f"Total transitions loaded: {total_samples}")
+    logger.info(f"Total transitions loaded: {total_samples}")
 
     # 80/20 train/test split
     split_idx = int(0.80 * total_samples)
@@ -79,7 +81,7 @@ def train_tilemap_model(
     best_loss = float("inf")
     best_checkpoint = os.path.join(checkpoint_dir, "tilemap_pinn_best.pt")
 
-    print(f"\nStarting training for {epochs} epochs...")
+    logger.info(f"\nStarting training for {epochs} epochs...")
     t0 = time.time()
 
     for epoch in range(1, epochs + 1):
@@ -145,7 +147,7 @@ def train_tilemap_model(
             torch.save(tilemap_model.state_dict(), best_checkpoint)
 
         if epoch % 5 == 0 or epoch == epochs:
-            print(
+            logger.info(
                 f"Epoch {epoch:2d}/{epochs} | "
                 f"Train Loss: {total_loss/batches:.4f} (Contact BCE: {contact_loss_sum/batches:.4f}) | "
                 f"Val Loss: {val_mean_loss:.4f} | "
@@ -153,7 +155,7 @@ def train_tilemap_model(
             )
 
     train_time = time.time() - t0
-    print(f"\nTraining completed in {train_time:.2f} seconds.")
+    logger.info(f"\nTraining completed in {train_time:.2f} seconds.")
 
     # 3. Comprehensive Benchmark Evaluation on Independent Test Set
     tilemap_model.load_state_dict(torch.load(best_checkpoint, map_location=device))
@@ -210,12 +212,12 @@ def train_tilemap_model(
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    print("\n--- TEST SET BENCHMARK RESULTS ---")
-    print(f"Blind PINN (No Terrain):     MSE = {blind_mse:.4f} | Contact Acc = {blind_contact_acc:.2f}%")
-    print(f"Tilemap-PINN (With Terrain):  MSE = {tilemap_mse:.4f} | Contact Acc = {tilemap_contact_acc:.2f}%")
-    print(f"Contact Accuracy Gain:       +{tilemap_contact_acc - blind_contact_acc:.2f}%")
-    print(f"Analytical Kinematic Residual: {tilemap_kin_res:.6f} (0.0% violation)")
-    print(f"Metrics saved to: {metrics_path}")
+    logger.info("\n--- TEST SET BENCHMARK RESULTS ---")
+    logger.info(f"Blind PINN (No Terrain):     MSE = {blind_mse:.4f} | Contact Acc = {blind_contact_acc:.2f}%")
+    logger.info(f"Tilemap-PINN (With Terrain):  MSE = {tilemap_mse:.4f} | Contact Acc = {tilemap_contact_acc:.2f}%")
+    logger.info(f"Contact Accuracy Gain:       +{tilemap_contact_acc - blind_contact_acc:.2f}%")
+    logger.info(f"Analytical Kinematic Residual: {tilemap_kin_res:.6f} (0.0% violation)")
+    logger.info(f"Metrics saved to: {metrics_path}")
 
 
 if __name__ == "__main__":
