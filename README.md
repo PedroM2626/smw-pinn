@@ -33,7 +33,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
 
 ## Table of Contents
 
-1. [Academic Abstract](#1-academic-abstract)
+1. [Project Overview & Abstract](#1-project-overview--abstract)
 2. [Introduction and Scientific Motivation](#2-introduction-and-scientific-motivation)
 3. [SNES Hardware Architecture & WRAM Reverse Engineering](#3-snes-hardware-architecture--wram-reverse-engineering)
 4. [Mathematical Formulation of Super Mario World Physics](#4-mathematical-formulation-of-super-mario-world-physics)
@@ -63,23 +63,22 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.18 Genuine Multi-Entity Dataset & Supervised Hazard Dynamics Training](#1018-genuine-multi-entity-dataset--supervised-hazard-dynamics-training)
    * [10.19 Autonomous Multi-Entity MPC Planning on Real SNES Console (782 px Rex Evasion)](#1019-autonomous-multi-entity-mpc-planning-on-real-snes-console-782-px-rex-evasion)
    * [10.20 Spatial Discrete Tilemap Perception via WRAM ($7E:C800) & Tilemap-PINN](#1020-spatial-discrete-tilemap-perception-via-wram-7ec800--tilemap-pinn)
-   * [10.21 Formal Academic LaTeX Manuscript (NeurIPS / IEEE Format)](#1021-formal-academic-latex-manuscript-neurips--ieee-format)
-   * [10.22 Empirical Grounding of Tilemap-PINN (WRAM $7E:C800 Dataset & 98.66% Contact Accuracy)](#1022-empirical-grounding-of-tilemap-pinn-wram-7ec800-dataset--9866-contact-accuracy)
-   * [10.23 Permutation-Invariant Set Multi-Entity World Model (Cross-Attention for N Sprites)](#1023-permutation-invariant-set-multi-entity-world-model-cross-attention-for-n-sprites)
-   * [10.24 Amortized Policy Distillation from Live MPC Decisions (2,900 FPS vs 23.7 FPS)](#1024-amortized-policy-distillation-from-live-mpc-decisions-2900-fps-vs-237-fps)
-   * [10.25 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)](#1025-autonomous-extended-level-navigation-on-real-snes-hardware-1016-px-progress)
-   * [10.26 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)](#1026-multi-iteration-interactive-dagger-policy-831-px-progress--2707-fps)
-   * [10.27 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)](#1027-comprehensive-ablation-study-clamping-horizon-drift--cem-sensitivity)
-   * [10.28 Master Algorithm Comparison Table (World Models & Control Policies)](#1028-master-algorithm-comparison-table-world-models--control-policies)
-   * [10.29 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1029-frente-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
-   * [10.30 Frontier Consolidation: Differentiable Optimization, PPO & Multimodal Rendering](#1030-consolidao-das-fronteiras-a-b-c-e-d-otimizao-diferencivel-ppo-e-renderizao-multimodal)
-   * [10.31 Scope, Limitations & Threats to Validity](#1031-scope-limitations--threats-to-validity)
+   * [10.21 Empirical Grounding of Tilemap-PINN (WRAM $7E:C800 Dataset & 98.66% Contact Accuracy)](#1021-empirical-grounding-of-tilemap-pinn-wram-7ec800-dataset--9866-contact-accuracy)
+   * [10.22 Permutation-Invariant Set Multi-Entity World Model (Cross-Attention for N Sprites)](#1022-permutation-invariant-set-multi-entity-world-model-cross-attention-for-n-sprites)
+   * [10.23 Amortized Policy Distillation from Live MPC Decisions (2,900 FPS vs 23.7 FPS)](#1023-amortized-policy-distillation-from-live-mpc-decisions-2900-fps-vs-237-fps)
+   * [10.24 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)](#1024-autonomous-extended-level-navigation-on-real-snes-hardware-1016-px-progress)
+   * [10.25 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)](#1025-multi-iteration-interactive-dagger-policy-831-px-progress--2707-fps)
+   * [10.26 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)](#1026-comprehensive-ablation-study-clamping-horizon-drift--cem-sensitivity)
+   * [10.27 Master Algorithm Comparison Table (World Models & Control Policies)](#1027-master-algorithm-comparison-table-world-models--control-policies)
+   * [10.28 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1028-frente-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
+   * [10.29 Frontier Consolidation: Differentiable Optimization, PPO & Multimodal Rendering](#1029-consolidao-das-fronteiras-a-b-c-e-d-otimizao-diferencivel-ppo-e-renderizao-multimodal)
+   * [10.30 Scope, Limitations & Threats to Validity](#1030-scope-limitations--threats-to-validity)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
 ---
 
-## 1. Academic Abstract
+## 1. Project Overview & Abstract
 
 This research provides an empirical investigation into the impact of embedding known discrete kinematic constraints and structural physical priors (*Physics-Informed Machine Learning* — PIML / PINN) into predictive world modeling for discrete-time dynamic systems. Using *Super Mario World* (SNES, 1990) executed within a high-throughput headless emulation environment with direct Random Access Memory (RAM) telemetry (free of computer vision or pixel rendering pipelines), we benchmark four distinct neural network paradigms:
 1. **Statistical Multilayer Perceptron (MLP)**: Pure supervised black-box baseline;
@@ -778,21 +777,7 @@ To address the blindness of coordinate-only dynamics to static environmental geo
 
 ---
 
-### 10.21 Formal Academic LaTeX Manuscript (NeurIPS / IEEE Format)
-
-To support scholarly peer review and academic publication, the complete theoretical and empirical body of this research is compiled as a publication-ready academic manuscript in the `paper/` directory:
-- **`paper/main.tex`:** Comprehensive 9-page two-column monograph formatted in standard academic style, comprising:
-  1. *Abstract & Introduction:* Rigorous formulation of discrete hybrid dynamical systems vs. continuous ODE PINNs.
-  2. *SNES Architecture & Fixed-Point Kinematics:* Formal mathematical statement of the Discrete Kinematic Consistency Identity.
-  3. *Comparative Architecture Formalization:* Detailed descriptions of MLP, LSTM, Soft PINN, Hard Residual PINN, Translation-Invariant PINN, Deep Ensemble, Multi-Entity PINN, and Tilemap-PINN.
-  4. *Complete Empirical Tables:* Full reporting of single-step MSE ($N_{\text{test}}=1,356$), multi-seed significance ($K=5$ seeds, $p < 0.005$), sample efficiency Pareto curves, OOD cross-stage transfer, and hardware latency/FPS.
-  5. *Model-Based Control & Planning:* Closed-loop MPC, Dyna-PPO, and Safe MBPO formulations.
-  6. *Theoretical Discussion:* Mathematical analysis of the Soft PINN Pareto gradient conflict.
-- **`paper/references.bib`:** Curated BibTeX database with foundational citations (Raissi et al. 2019, Janner et al. 2019, Sutton 1990, Schulman et al. 2017, Greydanus et al. 2019, Kendall et al. 2018, Ha & Schmidhuber 2018, Hafner et al. 2020).
-
----
-
-### 10.22 Empirical Grounding of Tilemap-PINN (WRAM $7E:C800 Dataset & 98.66% Contact Accuracy)
+### 10.21 Empirical Grounding of Tilemap-PINN (WRAM $7E:C800 Dataset & 98.66% Contact Accuracy)
 
 To bridge the gap between theoretical architecture and empirical validation, we recorded a dedicated genuine dataset combining continuous kinematics with discrete local stage geometry:
 - **Genuine Dataset:** `data/raw/smw_tilemap_dataset.npz` containing **10,357 transitions** with local $7 \times 7$ tile patches extracted directly from `$7E:C800` during interactive gameplay in *Yoshi's Island 1* (throughput: 2,577 FPS).
@@ -803,7 +788,7 @@ To bridge the gap between theoretical architecture and empirical validation, we 
 
 ---
 
-### 10.23 Permutation-Invariant Set Multi-Entity World Model (Cross-Attention for N Sprites)
+### 10.22 Permutation-Invariant Set Multi-Entity World Model (Cross-Attention for N Sprites)
 
 To remove the single-hazard constraint ($K=1$), we implemented `SetMultiEntityPINNDynamics` (`src/models/pinn_set_multi_entity.py`):
 - **Cross-Attention & Deep Sets:** Mario's 8D kinematic state acts as Query $Q$, while a variable set of active sprites $\{e_1, \dots, e_K\}$ act as Keys/Values with padding masks for inactive slots.
@@ -815,7 +800,7 @@ To remove the single-hazard constraint ($K=1$), we implemented `SetMultiEntityPI
 
 ---
 
-### 10.24 Amortized Policy Distillation from Live MPC Decisions (2,900 FPS vs 23.7 FPS)
+### 10.23 Amortized Policy Distillation from Live MPC Decisions (2,900 FPS vs 23.7 FPS)
 
 To solve the Sim-to-Real Objective Mismatch failure of Dyna-PPO (which scored $-7.38\text{ px}$ due to model exploitation) without incurring the heavy inference cost of online CEM MPC (23.7 FPS):
 - **Expert Hardware Demonstrations:** `src/training/distill_mpc_policy.py` executed closed-loop MPC on authentic SNES emulation to gather 1,600 expert state-action pairs $(s_t, a_t^*)$ across 4 successful episodes (mean progress $\sim 764\text{ px}$).
@@ -828,7 +813,7 @@ To solve the Sim-to-Real Objective Mismatch failure of Dyna-PPO (which scored $-
 
 ---
 
-### 10.25 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)
+### 10.24 Autonomous Extended Level Navigation on Real SNES Hardware (1,016+ px Progress)
 
 To test the multi-entity world model beyond localized obstacle evasion, we deployed an extended horizon benchmark (`src/evaluation/evaluate_extended_navigation.py`) spanning up to 1,500 frames on live SNES hardware:
 - **Milestones Cleared:**
@@ -846,7 +831,7 @@ To test the multi-entity world model beyond localized obstacle evasion, we deplo
 
 ---
 
-### 10.26 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)
+### 10.25 Multi-Iteration Interactive DAgger Policy (831 px Progress & 2,707 FPS)
 
 While single-step Behavioral Cloning achieved 115 px before suffering from compounding drift, deploying the full **DAgger** algorithm (*Dataset Aggregation*, Ross & Bagnell, 2011) over 3 interactive on-policy iterations (`src/training/train_dagger.py`) completely closed the imitation gap:
 - **Iteration 1 (BC seed):** 115.0 px progress (pit fall at frame 174).
@@ -861,7 +846,7 @@ While single-step Behavioral Cloning achieved 115 px before suffering from compo
 
 ---
 
-### 10.27 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)
+### 10.26 Comprehensive Ablation Study (Clamping, Horizon Drift & CEM Sensitivity)
 
 To isolate the individual contribution of each component of the Hard PINN framework, we executed three systematic ablation studies (`src/evaluation/ablation_benchmark.py`):
 
@@ -880,7 +865,7 @@ To isolate the individual contribution of each component of the Hard PINN framew
 
 ---
 
-### 10.28 Master Algorithm Comparison Table (World Models, MPC & Reactive Policies)
+### 10.27 Master Algorithm Comparison Table (World Models, MPC & Reactive Policies)
 
 > [!NOTE]
 > **Por que modelos preditivos isolados não têm métrica de progresso direto?**
@@ -913,13 +898,13 @@ A tabela sintetiza a totalidade dos experimentos empíricos conduzidos com telem
 
 ---
 
-### 10.29 Frente 2: Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)
+### 10.28 Frente 2: Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)
 
 Para validar conclusivamente se o conhecimento físico incorporado no **Hard Residual PINN** e na política **DAgger** generaliza para novos ambientes sem sofrer de *overfitting* ou colapso fora da distribuição (OOD), submetemos todos os controladores ao teste de fogo em malha fechada no estágio inédito **Yoshi's House** (`$7E:0100 = 0x14`, `data/raw/smw_yoshi_house.state`).
 
 Nenhum modelo, planejador ou rede recebeu qualquer amostra de treino, ajuste fino ou calibração em Yoshi's House. O Mario foi inicializado na coordenada $X_0 = 16.0, Y_0 = 336.38$, e cada controlador operou autonomamente durante 400 frames a 60 Hz (`src/evaluation/evaluate_cross_level_control.py`):
 
-#### 10.29.1 Resultados Empíricos Obtidos no Console SNES Real
+#### 10.28.1 Resultados Empíricos Obtidos no Console SNES Real
 
 Os resultados salvos em `results/cross_level_control_metrics.json` revelam a robustez da formulação estruturada:
 
@@ -931,7 +916,7 @@ Os resultados salvos em `results/cross_level_control_metrics.json` revelam a rob
 | **MPC + Hard Residual PINN (Ours)** | **755.62 px** | **400 / 400 (100%)** | **30.30 px/f** | 18.80 ms | 53.2 FPS |
 | **Amortized DAgger Policy (Ours)** | **830.50 px** | **400 / 400 (100%)** | **34.66 px/f** | **0.33 ms** | **3,064.9 FPS** |
 
-#### 10.29.2 Análise Comparativa e Conclusões Científicas
+#### 10.28.2 Análise Comparativa e Conclusões Científicas
 
 1. **Superioridade do Hard PINN sob Transferência Zero-Shot:**
    - O **MPC com Hard Residual PINN** alcançou **755.62 px** de avanço, superando o MLP estatístico (**576.81 px**, $+31.0\%$) e o Soft PINN (**394.06 px**, $+91.8\%$). Como a garantia cinemática $(\Delta x = v_x \Delta t)$ é estrita na camada de saída, o planejador CEM pôde projetar trajetórias de salto de longa distância sem o risco de alucinar acelerações irreais no vácuo.
@@ -947,11 +932,11 @@ Os resultados salvos em `results/cross_level_control_metrics.json` revelam a rob
 
 ---
 
-### 10.30 Consolidação das Fronteiras A, B, C e D: Otimização Diferenciável, PPO e Renderização Multimodal
+### 10.29 Consolidação das Fronteiras A, B, C e D: Otimização Diferenciável, PPO e Renderização Multimodal
 
 Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançadas do aprendizado por reforço baseado em modelos (*Model-Based RL*) e física computacional, foram implementadas e validadas 4 novas frentes científicas:
 
-#### 10.30.1 Fronteira C: Modelo Multimodal Unificado (`src/models/pinn_unified_multimodal.py`)
+#### 10.29.1 Fronteira C: Modelo Multimodal Unificado (`src/models/pinn_unified_multimodal.py`)
 - **Arquitetura:** Unifica em um único grafo computacional:
   1. Estado cinemático 8D contínuo do Mario $[X, Y, v_x, v_y, c_g, c_c, c_l, c_r]$;
   2. Encoder convolucional 2D de terreno espacial da WRAM (`$7E:C800`) processando blocos locais $7 \times 7$;
@@ -959,19 +944,19 @@ Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançada
 - **Garantia Física:** Conservação analítica exata de $0{,}0\%$ de violação cinemática tanto para o jogador quanto para o vetor de deslocamento relativo aos inimigos.
 - **Testes:** 100% de cobertura e passagem em [`tests/test_unified_multimodal.py`](tests/test_unified_multimodal.py).
 
-#### 10.30.2 Fronteira B: Controlador por Gradiente Diferenciável através do Hard PINN (`src/planning/differentiable_pinn_planner.py`)
+#### 10.29.2 Fronteira B: Controlador por Gradiente Diferenciável através do Hard PINN (`src/planning/differentiable_pinn_planner.py`)
 - **Formula de Controle de Primeira Ordem:** Ao invés de busca estocástica por amostragem (CEM MPC de ordem zero), parametrizamos a sequência de ações como logits contínuos $\mathbf{U} \in \mathbb{R}^{H \times 6}$ com relaxação via Sigmoid e calculamos o gradiente analítico da recompensa diretamente através dos pesos e equações do Hard PINN:
   $$\nabla_{\mathbf{u}_{0:H-1}} J = \nabla_{\mathbf{u}_{0:H-1}} \sum_{\tau=0}^{H-1} R(s_\tau, \sigma(\mathbf{u}_\tau))$$
 - **Convergência:** Otimização via Adam ($lr = 0{,}25$, 15 passos de gradiente) ajusta os controles com base no campo gradiente exato da física do jogo.
 - **Testes:** Validado em [`tests/test_differentiable_planner.py`](tests/test_differentiable_planner.py).
 
-#### 10.30.3 PPO Amortizado no Simulador PINN (Unified Dyna-PPO — `src/training/train_unified_ppo.py`)
+#### 10.29.3 PPO Amortizado no Simulador PINN (Unified Dyna-PPO — `src/training/train_unified_ppo.py`)
 - **Treinamento Vetorial em GPU:** 128 ambientes paralelos simulados diretamente em tensores PyTorch na GPU, atingindo taxa de transferência de **14.395 transições por segundo** (200.000 timesteps concluídos em apenas 13,7 segundos).
 - **Diagnóstico Sim-to-Real no Hardware Real:**
   - O agente PPO puro treinado em simulação atingiu sobrevivência de **2.500 quadros no console real** operando a **1.425,1 FPS**, porém exibiu o clássico fenômeno de *Passive Hedging Collapse* (hesitação e agachamento no ponto de spawn, $-7{,}38\text{ px}$).
   - Em contrapartida, a política **DAgger** (treinada com agregação interativa on-policy de trajetórias de hardware) superou os marcos de **250 px, 500 px e 782 px**, acumulando **833,50 px de progresso real** a **2.860,4 FPS**.
 
-#### 10.30.4 Fronteira A e Opção 3: Conclusão Integral da Fase (Full Level Clearance) & Vídeo de Telemetria WRAM
+#### 10.29.4 Fronteira A e Opção 3: Conclusão Integral da Fase (Full Level Clearance) & Vídeo de Telemetria WRAM
 - **Status de Conclusão do Jogo:** **GOAL REACHED! (Fase 100% Concluída)** no console real SNES Libretro.
 - **Métricas Oficiais no Hardware (`results/full_level_clearance_metrics.json`):**
   - **Progresso Total:** **2.003,69 pixels** (de $X=16.0$ até $X=2.022,0$ px).
@@ -995,7 +980,7 @@ Com o objetivo de expandir o escopo do projeto para as fronteiras mais avançada
 
 ---
 
-### 10.31 Scope, Limitations & Threats to Validity
+### 10.30 Scope, Limitations & Threats to Validity
 
 In adherence to rigorous scientific methodology, we explicitly delineate the boundary conditions, core assumptions, and threats to internal and external validity of the empirical findings presented in this study:
 
@@ -1013,7 +998,7 @@ In adherence to rigorous scientific methodology, we explicitly delineate the bou
 
 4. **Domain-Specific Inductive Bias:**
    - The hard kinematic residual layer assumes prior knowledge of the discrete time-step ($\Delta t = 1$ frame) and the subpixel scaling constant ($1/16$ px per subpixel unit).
-   - While this structural formulation generalizes seamlessly across distinct game levels governed by the same engine routines (as demonstrated in Sections 10.16 and 10.29), porting to dynamical systems with unknown discretization schemes would necessitate either explicit system identification or meta-learning of the physical scaling factors.
+   - While this structural formulation generalizes seamlessly across distinct game levels governed by the same engine routines (as demonstrated in Sections 10.16 and 10.28), porting to dynamical systems with unknown discretization schemes would necessitate either explicit system identification or meta-learning of the physical scaling factors.
 
 5. **Local Trajectory Optimization and Non-Convex Barriers:**
    - In zero-shot cross-stage navigation with complex multi-height obstacles (e.g., pipe structures or vertical walls), pure local trajectory optimization (such as standard CEM MPC without global topological pathfinding) can suffer from local minima and horizon truncation. Addressing this requires pairing local predictive models with amortized global policies (e.g., DAgger or Dyna-PPO) or multi-scale planning hierarchies.
@@ -1034,9 +1019,6 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │       ├── smw_gameplay_dataset.npz       # 8,077 genuine interactive transitions (8D)
 │       ├── smw_multi_entity_dataset.npz   # 19,702 genuine interactive transitions (12D)
 │       └── smw_tilemap_dataset.npz        # 10,357 genuine transitions with 7x7 tilemaps
-├── paper/
-│   ├── main.tex                           # Formal 9-page academic manuscript in LaTeX
-│   └── references.bib                     # Comprehensive BibTeX bibliography database
 ├── results/
 │   ├── benchmark_metrics.json             # Raw empirical benchmark metrics (single-seed)
 │   ├── multiseed_benchmark_metrics.json   # Multi-seed statistical metrics & hypothesis tests
@@ -1120,7 +1102,7 @@ c:\Users\Acer\Downloads\mworld-experiment\
 │   ├── test_online_mbpo.py                # Unit tests for real replay buffer & sampling
 │   └── test_tilemap.py                    # Unit tests for WRAM tilemap extraction & TilemapPINN
 ├── pyproject.toml                         # Python package and pytest configuration
-├── README.md                              # Single consolidated academic monograph
+├── README.md                              # Complete experimental documentation and benchmark report
 └── requirements.txt                       # Project dependency manifest
 ```
 

@@ -20,9 +20,3 @@ keywords:
   - snes
   - libretro
 abstract: "Empirical benchmark of physics-informed world models (hard residual PINN, soft PINN, ensembles, tilemap and multi-entity variants) against statistical MLP/LSTM baselines for discrete-time dynamics modeling of Super Mario World (SNES) from genuine WRAM telemetry, including closed-loop MPC, Dyna-PPO, DAgger and cross-stage generalization."
-preferred-citation:
-  type: unpublished
-  title: "Physics-Informed Neural Networks vs. Statistical Models in Discrete Dynamical Systems: An Empirical World Modeling Benchmark in Super Mario World"
-  authors:
-    - family-names: Lahoz
-      given-names: Pedro Morato
