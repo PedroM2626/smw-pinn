@@ -1,0 +1,8 @@
+{
+  "total_timesteps": 200000,
+  "elapsed_seconds": 13.657773733139038,
+  "final_mean_return": 134.8788604736328,
+  "best_mean_return": 313.9088134765625,
+  "final_mean_progress": -5.021508693695068,
+  "mean_training_throughput_fps": 14643.675016721261
+}

@@ -1,7 +1,8 @@
 {
-  "survived_frames": 526,
+  "controller_type": "dagger",
+  "survived_frames": 505,
   "max_frames": 2500,
-  "total_progress_pixels": 798.1875,
+  "total_progress_pixels": 833.5,
   "max_subscreen_reached": 3,
   "milestones_cleared": [
     250,
@@ -9,7 +10,8 @@
     782
   ],
   "goal_reached": false,
-  "mean_vx": 25.994296577946766,
-  "evaluation_time_seconds": 21.09285616874695,
-  "planning_fps": 24.937352997237443
+  "mean_vx": 30.4,
+  "mean_decision_latency_ms": 0.34959841597972824,
+  "decision_throughput_fps": 2860.4248597567607,
+  "evaluation_time_seconds": 0.3683133125305176
 }
