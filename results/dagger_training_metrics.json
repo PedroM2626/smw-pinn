@@ -1,0 +1,23 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "total_samples": 1148,
+      "policy_mean_progress_px": 115.0,
+      "bce_loss": 0.18613361968443945
+    },
+    {
+      "iteration": 2,
+      "total_samples": 1948,
+      "policy_mean_progress_px": 889.125,
+      "bce_loss": 0.17639928807814917
+    },
+    {
+      "iteration": 3,
+      "total_samples": 2748,
+      "policy_mean_progress_px": 831.75,
+      "bce_loss": 0.16710022620616422
+    }
+  ],
+  "final_samples": 2748
+}

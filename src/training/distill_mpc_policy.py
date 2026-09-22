@@ -52,10 +52,11 @@ class DistilledActorPolicy(nn.Module):
     def predict_action(self, state_np: np.ndarray, threshold: float = 0.5) -> Tuple[Dict[str, bool], np.ndarray]:
         """Inference mode on CPU/GPU returning button dict and raw vector."""
         self.eval()
+        dev = next(self.parameters()).device
         with torch.no_grad():
-            inp = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
+            inp = torch.tensor(state_np, dtype=torch.float32, device=dev).unsqueeze(0)
             logits = self.forward(inp)
-            probs = torch.sigmoid(logits).squeeze(0).numpy()
+            probs = torch.sigmoid(logits).squeeze(0).cpu().numpy()
 
         action_vec = (probs > threshold).astype(np.float32)
         action_dict = {

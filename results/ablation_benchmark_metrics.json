@@ -1,0 +1,85 @@
+{
+  "ablation_clamping": {
+    "clamped": {
+      "test_mse": 22.61005401611328,
+      "max_predicted_vx": 37.91907501220703
+    },
+    "unclamped": {
+      "test_mse": 16.581510543823242,
+      "max_predicted_vx": 37.90220260620117
+    }
+  },
+  "ablation_horizon_degradation": {
+    "Statistical MLP": {
+      "drift_by_horizon": {
+        "1": 64277.63967590332,
+        "5": 66199.63561401368,
+        "15": 68342.37674560546,
+        "30": 70622.71335449218,
+        "60": 74057.23986816406,
+        "120": 77783.44764404297
+      },
+      "mean_kinematic_violation_pct": 99.41666666666667
+    },
+    "Statistical LSTM": {
+      "drift_by_horizon": {
+        "1": 138449.7798828125,
+        "5": 138881.5365234375,
+        "15": 139905.20029296874,
+        "30": 140936.3908203125,
+        "60": 143429.2630859375,
+        "120": 148811.9212890625
+      },
+      "mean_kinematic_violation_pct": 100.0
+    },
+    "Soft-Constrained PINN": {
+      "drift_by_horizon": {
+        "1": 56227.95777587891,
+        "5": 59500.812438964844,
+        "15": 61458.238598632815,
+        "30": 62595.33063964844,
+        "60": 64034.96267700195,
+        "120": 64902.81594238281
+      },
+      "mean_kinematic_violation_pct": 100.0
+    },
+    "Hard Residual PINN": {
+      "drift_by_horizon": {
+        "1": 6.075959432125091,
+        "5": 26.143669879436494,
+        "15": 191.16235361099243,
+        "30": 845.0868877410888,
+        "60": 4020.412809753418,
+        "120": 27037.13246459961
+      },
+      "mean_kinematic_violation_pct": 3.5833333333333335
+    }
+  },
+  "ablation_cem_mpc": {
+    "32": {
+      "mean_latency_ms": 41.24066500226036,
+      "throughput_fps": 24.24791161697298,
+      "mean_planning_reward": 88.05837211608886
+    },
+    "64": {
+      "mean_latency_ms": 40.49931999761611,
+      "throughput_fps": 24.69177260405514,
+      "mean_planning_reward": 88.40929222106934
+    },
+    "128": {
+      "mean_latency_ms": 39.599749998888,
+      "throughput_fps": 25.252684676748743,
+      "mean_planning_reward": 88.66226844787597
+    },
+    "256": {
+      "mean_latency_ms": 40.40948499459773,
+      "throughput_fps": 24.746665297359968,
+      "mean_planning_reward": 88.79577674865723
+    },
+    "512": {
+      "mean_latency_ms": 41.24564499943517,
+      "throughput_fps": 24.24498392530155,
+      "mean_planning_reward": 88.8634422302246
+    }
+  }
+}

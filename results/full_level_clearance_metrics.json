@@ -1,0 +1,15 @@
+{
+  "survived_frames": 526,
+  "max_frames": 2500,
+  "total_progress_pixels": 798.1875,
+  "max_subscreen_reached": 3,
+  "milestones_cleared": [
+    250,
+    500,
+    782
+  ],
+  "goal_reached": false,
+  "mean_vx": 25.994296577946766,
+  "evaluation_time_seconds": 21.09285616874695,
+  "planning_fps": 24.937352997237443
+}
