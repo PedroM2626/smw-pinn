@@ -37,7 +37,7 @@ lint:
 	$(PY) -m ruff check src tests scripts
 
 typecheck:
-	$(PY) -m mypy src/utils/config.py src/utils/logging.py src/utils/seed.py src/evaluation/per_variable_metrics.py src/evaluation/rollout_evaluator.py src/environment/dataset_loader.py src/training/trainer.py src/models/statistical_mlp.py
+	$(PY) -m mypy src/utils/config.py src/utils/logging.py src/utils/seed.py src/evaluation/per_variable_metrics.py src/evaluation/rollout_evaluator.py src/environment/dataset_loader.py src/training/trainer.py src/models/statistical_mlp.py src/planning/terminal_value.py src/planning/global_planner.py src/planning/tilemap_mpc.py src/perception/pixel_encoder.py src/perception/vision_dataset.py src/environment/sprite_sets.py src/models/pinn_gravity.py
 
 reproduce:
 	$(PY) -m src.training.benchmark_experiment --config $(CONFIG_DIR)/reproduce.yaml

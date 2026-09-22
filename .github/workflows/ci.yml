@@ -20,9 +20,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+      - name: Dependency consistency check
+        run: |
+          python -m pip check
+          python -c "import torch, numpy; print('torch', torch.__version__, '| numpy', numpy.__version__)"
       - name: Lint (ruff via Makefile)
         run: make lint
       - name: Typecheck (mypy via Makefile)
         run: make typecheck
       - name: Tests with coverage gate (via Makefile)
-        run: make test-cov
+        run: |
+          set -o pipefail
+          make test-cov 2>&1 | tee pytest.log
+      - name: Upload pytest log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: pytest.log

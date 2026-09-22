@@ -1,0 +1,10 @@
+{
+  "model_free_frames_to_converge": 39936,
+  "model_free_final_return": 1652.1606249999986,
+  "dyna_hard_progress_px": 115.0,
+  "dyna_real_frame_band": [
+    200,
+    8077
+  ],
+  "figure": "results\\figures\\learning_curve_comparison.png"
+}

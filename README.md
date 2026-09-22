@@ -72,7 +72,13 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.27 Master Algorithm Comparison Table (World Models & Control Policies)](#1027-master-algorithm-comparison-table-world-models--control-policies)
    * [10.28 Zero-Shot Closed-Loop Control on Unseen Stage B (*Yoshi's House*)](#1028-frente-2-zero-shot-closed-loop-control-on-unseen-stage-b-yoshis-house)
    * [10.29 Frontier Consolidation: Differentiable Optimization, PPO & Multimodal Rendering](#1029-consolidao-das-fronteiras-a-b-c-e-d-otimizao-diferencivel-ppo-e-renderizao-multimodal)
-   * [10.30 Scope, Limitations & Threats to Validity](#1030-scope-limitations--threats-to-validity)
+    * [10.30 Scope, Limitations & Threats to Validity](#1030-scope-limitations--threats-to-validity)
+    * [10.31 End-to-End Pixel Perception (Pixel-to-Action Front-End)](#1031-end-to-end-pixel-perception-pixel-to-action-front-end)
+    * [10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)](#1032-hierarchical-global--local-planning-a--cem-mpc)
+    * [10.33 MPC Reflex Ablation (Pure vs Reflexive) & TD-MPC Terminal Value](#1033-mpc-reflex-ablation-pure-vs-reflexive--td-mpc-terminal-value)
+    * [10.34 Connected Orphans: Tilemap Closed-Loop, Unified Joint Training, Set-12](#1034-connected-orphans-tilemap-closed-loop-unified-joint-training-set-12)
+    * [10.35 Formal Learning Curves & Spatial-Holdout OOD with Danger](#1035-formal-learning-curves--spatial-holdout-ood-with-danger)
+    * [10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics](#1036-yoshis-island-2-capture-blocked-with-full-diagnostics)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1005,6 +1011,96 @@ In adherence to rigorous scientific methodology, we explicitly delineate the bou
 5. **Local Trajectory Optimization and Non-Convex Barriers:**
    - In zero-shot cross-stage navigation with complex multi-height obstacles (e.g., pipe structures or vertical walls), pure local trajectory optimization (such as standard CEM MPC without global topological pathfinding) can suffer from local minima and horizon truncation. Addressing this requires pairing local predictive models with amortized global policies (e.g., DAgger or Dyna-PPO) or multi-scale planning hierarchies.
 
+### 10.31 End-to-End Pixel Perception (Pixel-to-Action Front-End)
+
+To close limitation §10.30-2 (privileged WRAM telemetry), the emulator now
+captures native RGB frames (opt-in `enable_frame_capture()`, verified
+256x224, RGB565/0RGB1555/RGB888 conversion unit-tested) and a CNN
+`PixelStateEstimator` (`src/perception/`) regresses frames directly to the 8D
+WRAM vector with a fitted `StateNormalizer`. `scripts/record_pixel_gameplay.py`
+records paired data; `src/training/train_pixel_estimator.py` trains with
+per-variable reports; `src/evaluation/evaluate_pixel_mpc.py` closes the loop
+pixels → estimate → Hard-PINN MPC (WRAM read in parallel only to *measure*
+estimator error, never for control). Scope is deliberately a supervised
+state-estimation front-end, not a pixel-space world model.
+
+### 10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)
+
+To close limitation §10.30-5 (local MPC minima at vertical obstacles),
+`src/planning/global_planner.py` builds the global occupancy grid from the
+WRAM tile buffer and runs 8-connected A* (no corner-cutting, climb penalty
+approximating jump effort, hazard costs) to extract pixel waypoints, tracked
+by a local 15-frame Hard-PINN CEM-MPC via `WaypointObjective`
+(`HierarchicalMPCController`, `--value-ckpt` flag for TD-MPC mode in
+`src/evaluation/evaluate_hierarchical_mpc.py`). Division of labor is explicit:
+A* gives topological guidance, the local MPC owns jump-arc feasibility.
+
+### 10.33 MPC Reflex Ablation (Pure vs Reflexive) & TD-MPC Terminal Value
+
+Published full-level runs overlay three hand-coded reflexes (wall vault,
+hazard vault, B edge-pulse, extracted verbatim into `apply_reflexes`). The
+head-to-head ablation on real hardware (`src/evaluation/mpc_reflex_ablation.py`,
+600 frames, same savestate) is decisive:
+
+| Condition | Progress (px) | Survived | Termination | Reflex firings |
+| :--- | :---: | :---: | :---: | :---: |
+| **Pure CEM-MPC (H=16)** | 114.1 | 181 frames | pit fall | 0 |
+| **MPC + reflexes** | **1065.2** | **600 frames** | timeout (alive) | 50 hazard + 22 B-pulse + 0 wall |
+
+The principled replacement (TD-MPC paradigm) is implemented, not just
+proposed: `TerminalValueObjective` adds a discounted learned terminal value
+$\gamma^H V(s_H)$ to waypoint tracking. $V$ was fit by Monte-Carlo regression
+on the genuine 971-frame clearance log (`src/training/train_terminal_value.py`,
+in-sample $R^2 = 0.80$, checkpoint `results/checkpoints/terminal_value_best.pt`).
+
+### 10.34 Connected Orphans: Tilemap Closed-Loop, Unified Joint Training, Set-12
+
+| Orphan | Connection | Measured result |
+| :--- | :--- | :---: |
+| Tilemap-PINN | `TilemapMPCWrapper` adapts (kinematics, patch, action) to the MPC interface (static-map approximation over horizon H, stated); `src/evaluation/evaluate_tilemap_mpc.py` refreshes the 7x7 patch every frame, **no reflexes** | 400/400 frames, **808.6 px** (vs 114.1 px pure 8D MPC) |
+| Unified Multimodal PINN | `src/training/train_unified_multimodal.py` alternates genuine tilemap batches (kinematics + patch + contact BCE) and multi-entity batches (hazard MSE, active-masked) | 5 epochs: train 1.04→0.89, val 1.06→0.95 (`unified_joint_best.pt`) |
+| Set-Multi-Entity (K=12) | `src/environment/sprite_sets.py` (shared slot-to-row conversion) + `scripts/record_set_multi_entity_gameplay.py` (all active sprites) + `src/training/train_set_multi_entity.py` (target-active-masked loss) | 3,580 genuine transitions (2,235 with live sprites); 5 epochs val 0.54→0.45 |
+| Vertical physics ID | `GravityIdentifiedPINNDynamics`: exact integrator + residual head + **learnable** $g_{\text{hold}}$ / $g_{\text{fall}}$ (init 3.0/6.0); unit test recovers $g_{\text{hold}} = 3$ from synthetic arcs | structural, tested |
+
+### 10.35 Formal Learning Curves & Spatial-Holdout OOD with Danger
+
+`src/evaluation/plot_learning_curves.py` builds the Model-Free vs Dyna figure
+from committed artifacts only (Dyna has no logged per-step curve, so it
+appears as an annotated operating band, never a fabricated curve):
+Model-Free PPO needed **39,936 real frames / 103 episodes** to converge
+(return 1,652.2); Dyna-PINN operates on **200–8,077 frames**.
+
+Yoshi's Island 2 capture is **blocked** (see §10.36), so OOD-with-danger is
+delivered as a spatial holdout on Yoshi's Island 1
+(`src/evaluation/spatial_holdout_benchmark.py`, pure `.npz`, runs in CI):
+committed checkpoints evaluated zero-shot on X > 700 (2,105 transitions;
+far 12D slice has **1,789 live-hazard frames, 78% danger density**):
+
+| Model | In-distribution MSE | Far-region MSE | Far violations | Far drift |
+| :--- | :---: | :---: | :---: | :---: |
+| Statistical MLP | 16.47 | **43,408.26** (2,600x collapse) | 100.0% | 667.5 px |
+| Hard Residual PINN | 0.58 | **27.82** (48x degradation, 1,560x better than MLP) | **0.0%** | 170.2 px |
+
+Honest reading: kinematics transfer (0.0% violations preserved); contact/force
+residuals transfer only partially — the next modeling frontier.
+
+### 10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics
+
+`scripts/navigate_to_level.py --level 2` reaches *a* level entry (mode 0x14)
+but the post-entry story message box never reaches a playable handoff despite
+an instrumented campaign (frame-capture debugging via the new pixel API):
+B/A/X holds and pulses, START hold, Y hold, single Y edge (fires a 0x14→0xC
+transition that returns to the map, 0xE), 1500-frame idle waits. Findings
+locked into the script, which **raises instead of saving garbage**:
+message dismissal needs a Y *edge* (consistent with the $7E:0016 latch);
+`set_input` was fixed to map START/SELECT/L/R (previously silently dropped)
+and to raise `KeyError` on unknown buttons. The capture recipe, verification
+gates (60 stable plausible frames + movement dx > 10 px), and the open
+question (entry-point ambiguity House-vs-YI2, $7E:0072 = 36 semantics) are
+documented here so the next attempt starts from evidence, not guesses.
+
+---
+
 ---
 
 
@@ -1050,16 +1146,22 @@ smw-pinn/
 │   └── figures/                           # High-resolution benchmark figures (.png) and .gif
 ├── scripts/
 │   ├── inspect_physics.py                 # 60 Hz WRAM telemetry inspector
-│   ├── navigate_to_level.py               # Autonomous boot & savestate generator
+│   ├── navigate_to_level.py               # Boot & savestate generator (--level 1/2, movement gate)
 │   ├── record_gameplay.py                 # 8D Mario telemetry recorder
 │   ├── record_multi_entity_gameplay.py    # 12D Mario + Sprite telemetry recorder
+│   ├── record_set_multi_entity_gameplay.py # Full 12-slot sprite-set recorder
+│   ├── record_pixel_gameplay.py           # Paired RGB frame + WRAM recorder
 │   └── record_tilemap_gameplay.py         # 8D + 7x7 tilemap WRAM telemetry recorder
 ├── src/
 │   ├── environment/
 │   │   ├── bin/snes9x_libretro.dll        # Snes9x Libretro 64-bit core
-│   │   ├── snes_emulator.py               # Libretro ctypes wrapper with WRAM sprites & Tilemap
+│   │   ├── snes_emulator.py               # ctypes wrapper: WRAM, sprites, tilemap, RGB capture
+│   │   ├── sprite_sets.py                 # 12-slot sprite → entity-row conversion
 │   │   ├── pinn_sim_env.py                # GPU-vectorized World Model simulation environment (8D & 12D)
 │   │   └── dataset_loader.py              # PyTorch Dataset and DataLoader loaders
+│   ├── perception/
+│   │   ├── pixel_encoder.py               # CNN pixel→8D estimator + StateNormalizer
+│   │   └── vision_dataset.py              # Paired frame/state dataset + seeded loaders
 │   ├── models/
 │   │   ├── statistical_mlp.py             # Statistical MLP (+ param-matched compact factory)
 │   │   ├── statistical_lstm.py            # Statistical LSTM architecture
@@ -1070,6 +1172,7 @@ smw-pinn/
 │   │   ├── pinn_multi_entity.py           # Multi-Entity 12D PINN architecture
 │   │   ├── pinn_set_multi_entity.py       # Permutation-Invariant Cross-Attention PINN (N Sprites)
 │   │   ├── pinn_unified_multimodal.py     # Unified kinematic + tilemap + hazard PINN
+│   │   ├── pinn_gravity.py                # Gravity-identified residual PINN (learnable g)
 │   │   └── tilemap_pinn.py                # Tilemap-conditioned spatial PINN architecture
 │   ├── losses/
 │   │   └── physics_losses.py              # Analytical physics loss functions
@@ -1089,9 +1192,16 @@ smw-pinn/
 │   │   ├── model_free_ppo.py              # Canonical Model-Free PPO baseline on real SNES
 │   │   ├── train_dagger.py                # Interactive DAgger imitation training
 │   │   ├── train_unified_ppo.py           # Unified Dyna-PPO in PINN GPU simulator
+│   │   ├── train_pixel_estimator.py       # CNN pixel→state supervised training
+│   │   ├── train_terminal_value.py        # TD-MPC terminal value (MC regression on hw log)
+│   │   ├── train_unified_multimodal.py    # Joint tilemap+hazard training (two datasets)
+│   │   ├── train_set_multi_entity.py      # Supervised training on 12-slot sprite sets
 │   │   └── online_mbpo.py                 # Closed-loop Online MBPO & Safe MBPO engine
 │   ├── planning/
 │   │   ├── mpc_planner.py                 # GPU-vectorized CEM / Random Shooting MPC planner
+│   │   ├── global_planner.py              # A* occupancy grid + waypoints + hierarchical MPC
+│   │   ├── terminal_value.py              # TD-MPC terminal value net + objective
+│   │   ├── tilemap_mpc.py                 # TilemapPINN→MPC adapter (static-map approx)
 │   │   └── differentiable_pinn_planner.py # First-order gradient control through Hard PINN
 │   └── evaluation/
 │       ├── rollout_evaluator.py           # Rollout evaluator (+ multi-start statistics)
@@ -1109,9 +1219,16 @@ smw-pinn/
 │       ├── cross_level_benchmark.py       # Out-of-distribution cross-stage generalization
 │       ├── evaluate_cross_level_control.py # Zero-shot closed-loop control on Stage B
 │       ├── evaluate_full_level_clearance.py # Full stage clearance benchmark
+│       ├── diagnose_obstacle_1000.py        # Formal X~1000 bottleneck diagnosis
+│       ├── mpc_reflex_ablation.py           # Pure vs reflexive MPC honesty ablation
+│       ├── evaluate_tilemap_mpc.py          # Terrain-anticipating closed-loop MPC
+│       ├── evaluate_pixel_mpc.py            # Pixel→estimate→MPC closed loop
+│       ├── evaluate_hierarchical_mpc.py     # A* global + local MPC (--value-ckpt TD-MPC)
+│       ├── plot_learning_curves.py          # Model-Free vs Dyna comparison figure
+│       ├── spatial_holdout_benchmark.py     # OOD-with-danger holdout (X>700, CI-safe)
 │       ├── render_level_clearance_video.py # Telemetry HUD video/GIF renderer
 │       └── render_comparison_animation.py # Synchronized trajectory animation generator
-├── tests/ (80 tests: unit + regression + emulator-guarded integration)
+├── tests/ (100+ tests: unit + regression + emulator-guarded integration)
 │   ├── conftest.py                        # requires_emulator guard (Windows DLL)
 │   ├── test_losses.py                     # Unit tests for physics loss functions
 │   ├── test_models.py                     # Unit tests for tensor shapes and forward passes
@@ -1137,7 +1254,11 @@ smw-pinn/
 │   ├── test_unified_multimodal.py         # Unit tests for unified multimodal PINN
 │   ├── test_cross_level_control.py        # Unit tests for Stage-B control utilities
 │   ├── test_seed.py                       # Unit tests for deterministic seeding
-│   └── test_experiment.py                 # Unit tests for experiment logger
+│   ├── test_experiment.py                 # Unit tests for experiment logger
+│   ├── test_pixel_perception.py           # Frame conversion, CNN estimator, vision data
+│   ├── test_global_planner.py             # A*, waypoints, hierarchical control
+│   ├── test_tdmpc_reflex.py               # Terminal value, reflex rules, diagnose math
+│   └── test_orphans_gravity.py            # Tilemap wrapper, sprite rows, gravity ID
 ├── pyproject.toml                         # Python package and pytest configuration
 ├── README.md                              # Complete experimental documentation and benchmark report
 ├── CONTRIBUTING.md                        # Setup, canonical commands, conventions
@@ -1258,6 +1379,37 @@ python src/evaluation/evaluate_full_level_clearance.py --controller ppo
 
 # 25. Render High-Resolution Video (MP4) and Animated GIF with Telemetry HUD:
 python src/evaluation/render_level_clearance_video.py
+
+# 26. Diagnose the X~1000 bottleneck (tile gaps + sprite census, real hardware):
+python src/evaluation/diagnose_obstacle_1000.py
+
+# 27. Honesty ablation: pure vs reflexive MPC (600 frames each, same savestate):
+python src/evaluation/mpc_reflex_ablation.py
+
+# 28. Terrain-anticipating Tilemap-MPC closed loop (no reflexes):
+python src/evaluation/evaluate_tilemap_mpc.py
+
+# 29. Joint training of Unified Multimodal PINN (tilemap + hazard datasets):
+python src/training/train_unified_multimodal.py
+
+# 30. Full 12-slot sprite-set recording + Set-Multi-Entity training:
+python scripts/record_set_multi_entity_gameplay.py
+python src/training/train_set_multi_entity.py
+
+# 31. Pixel perception: record frames, train estimator, close pixel→MPC loop:
+python scripts/record_pixel_gameplay.py
+python src/training/train_pixel_estimator.py
+python src/evaluation/evaluate_pixel_mpc.py
+
+# 32. Hierarchical A* + MPC (optional TD-MPC terminal value):
+python src/evaluation/evaluate_hierarchical_mpc.py
+
+# 33. TD-MPC terminal value fitting + spatial-holdout OOD (CI-safe, no emulator):
+python src/training/train_terminal_value.py
+python src/evaluation/spatial_holdout_benchmark.py
+
+# 34. Model-Free vs Dyna learning-curve figure (from committed artifacts):
+python src/evaluation/plot_learning_curves.py
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1265,9 +1417,10 @@ python src/evaluation/render_level_clearance_video.py
 ```bash
 # Canonical install (imports `from src...`) + shortcuts:
 pip install -e ".[dev]"
-make test        # 77 unit tests
+make test        # 100+ unit tests (emulator tests skip off-Windows)
 make test-cov    # with coverage gate (baseline 30%)
 make lint        # ruff check src tests scripts
+make typecheck   # mypy on typed core modules
 make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
 make benchmark sample-efficiency multiseed
 ```
@@ -1278,8 +1431,9 @@ make benchmark sample-efficiency multiseed
 * **Per-variable metrics:** `benchmark_metrics.json` now also reports per-channel MSE/MAE/R² (`x, y, vx, vy`) and accuracy/F1 (`c_*`) plus `rollout_multistart` (mean ± std over N starts) — aggregate MSE is dominated by coordinate scale (e.g. 1-epoch smoke: Hard PINN `x`-MSE 0.14 vs MLP 106k).
 * **Stronger statistics:** multiseed defaults to K=10 seeds with paired t + Wilcoxon + Cohen's dz, evaluated on single-start *and* multi-start drift.
 * **Regression gate:** `tests/test_metrics_regression.py` fails CI if published numbers silently degrade (Hard MSE < 2.0, 0 kinematic violations, N=200 Hard beats N=5000 MLP).
-* **CI/Docker:** `.github/workflows/ci.yml` (ruff + pytest + coverage) and `Dockerfile` (CPU base, CUDA via build-arg).
+* **CI/Docker:** `.github/workflows/ci.yml` (ruff + mypy + pytest + coverage; uploads `pytest.log` on failure) and `Dockerfile` (CPU base, CUDA via build-arg). Dependabot stays inside the validated torch envelope (`torch<2.7`, `torchvision<0.22`, `numpy<2.1`); widen caps only with hardware re-validation.
 * **Refreshed numbers:** `results/benchmark_metrics.json`, `sample_efficiency_metrics.json` and `multiseed_benchmark_metrics.json` were regenerated with deterministic seeded loaders (seed 42) and K=10 seeds; tables in §8.1–§8.4 match those files exactly (`tests/test_metrics_regression.py` enforces it).
+* **New frontiers (§10.31–§10.36):** pixel perception (`src/perception/`), hierarchical A\*+MPC (`src/planning/global_planner.py`), reflex ablation + TD-MPC value, connected orphans, spatial-holdout OOD. Emulator-dependent tests skip off-Windows via `@requires_emulator`; Yoshi's Island 2 capture is documented as blocked in §10.36.
 
 ---
 

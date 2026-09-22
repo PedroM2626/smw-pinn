@@ -1,0 +1,7 @@
+{
+  "survived_frames": 400,
+  "progress_px": 808.625,
+  "termination": "timeout",
+  "wall_time_s": 44.47602725028992,
+  "controller": "Tilemap-PINN MPC (no reflexes)"
+}

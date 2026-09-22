@@ -1,0 +1,28 @@
+{
+  "split_x": 700.0,
+  "far_8d_transitions": 2105,
+  "far_12d_transitions": 2294,
+  "far_hazard_active_transitions": 1789,
+  "single_step": {
+    "Statistical_MLP": {
+      "zero_shot_mse": 43408.26171875,
+      "kinematic_violation_pct": 100.0
+    },
+    "Hard_Residual_PINN": {
+      "zero_shot_mse": 27.8187313079834,
+      "kinematic_violation_pct": 0.0
+    }
+  },
+  "rollout": {
+    "Statistical_MLP": {
+      "mean_drift_px": 667.485595703125,
+      "final_drift_px": 841.6222534179688,
+      "kinematic_violations": 120
+    },
+    "Hard_Residual_PINN": {
+      "mean_drift_px": 170.16578674316406,
+      "final_drift_px": 410.4580383300781,
+      "kinematic_violations": 0
+    }
+  }
+}

@@ -29,6 +29,11 @@ RETRO_DEVICE_ID_JOYPAD_R = 11
 RETRO_MEMORY_SAVE_RAM = 0    # 2KB SRAM (Save RAM)
 RETRO_MEMORY_SYSTEM_RAM = 2  # 128KB SNES WRAM ($7E:0000 - $7F:FFFF)
 
+# Libretro pixel formats (RETRO_PIXEL_FORMAT_* in libretro.h)
+RETRO_PIXEL_FORMAT_0RGB1555 = 0
+RETRO_PIXEL_FORMAT_RGB565 = 1
+RETRO_PIXEL_FORMAT_RGB888 = 2
+
 # Callback types in ctypes
 ENV_CALLBACK = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_uint, ctypes.c_void_p)
 VIDEO_REFRESH_CALLBACK = ctypes.CFUNCTYPE(
@@ -53,6 +58,35 @@ class RetroGameInfo(ctypes.Structure):
     ]
 
 
+def _convert_frame_bytes(
+    raw: np.ndarray, width: int, height: int, pitch: int, pixel_format: int
+) -> np.ndarray:
+    """Converts a raw Libretro video row buffer to uint8 RGB [H, W, 3].
+
+    Pure function (no emulator needed) so it is unit-testable with synthetic
+    buffers. Supports the three libretro pixel formats; rows are `pitch` bytes
+    wide and only the first `width` pixels are kept.
+    """
+    if pixel_format == RETRO_PIXEL_FORMAT_RGB888:
+        # 32-bit 0x00RRGGBB stored little-endian: bytes are [B, G, R, 0].
+        rows = raw.reshape(height, pitch)
+        pix = rows[:, : width * 4].reshape(height, width, 4)
+        rgb = np.stack([pix[:, :, 2], pix[:, :, 1], pix[:, :, 0]], axis=-1)
+        return rgb.astype(np.uint8)
+    # 16-bit formats: pitch holds pitch//2 pixels per row.
+    row_pixels = pitch // 2
+    u16 = raw.view(np.uint16).reshape(height, row_pixels)[:, :width]
+    if pixel_format == RETRO_PIXEL_FORMAT_RGB565:
+        r = np.rint(((u16 >> 11) & 0x1F).astype(np.float32) * (255.0 / 31.0))
+        g = np.rint(((u16 >> 5) & 0x3F).astype(np.float32) * (255.0 / 63.0))
+        b = np.rint((u16 & 0x1F).astype(np.float32) * (255.0 / 31.0))
+    else:  # RETRO_PIXEL_FORMAT_0RGB1555 (libretro default)
+        r = np.rint(((u16 >> 10) & 0x1F).astype(np.float32) * (255.0 / 31.0))
+        g = np.rint(((u16 >> 5) & 0x1F).astype(np.float32) * (255.0 / 31.0))
+        b = np.rint((u16 & 0x1F).astype(np.float32) * (255.0 / 31.0))
+    return np.stack([r, g, b], axis=-1).astype(np.uint8)
+
+
 class SnesLibretroEmulator:
     """
     SNES emulator controller based on Snes9x Libretro via ctypes.
@@ -67,6 +101,11 @@ class SnesLibretroEmulator:
         self.rom_buffer = None
         self.wram_buffer = None
         self.is_loaded = False
+
+        # Pixel frame capture (opt-in; off by default to preserve headless speed).
+        self._capture_frames = False
+        self._last_frame = None  # np.ndarray uint8 [H, W, 3] RGB, or None
+        self._pixel_format = RETRO_PIXEL_FORMAT_0RGB1555  # libretro default
 
         # Joypad 1 button state (id -> 1 or 0)
         self.current_input: Dict[int, int] = {i: 0 for i in range(12)}
@@ -120,6 +159,14 @@ class SnesLibretroEmulator:
 
         def env_callback(cmd, data):
             if cmd == 10:  # RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+                # The core requests a format via *data; remember it for conversion.
+                if data:
+                    try:
+                        self._pixel_format = int(
+                            ctypes.cast(data, ctypes.POINTER(ctypes.c_int)).contents.value
+                        )
+                    except (ValueError, OSError):
+                        pass
                 return True
             elif cmd == 9:  # RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
                 if data:
@@ -138,8 +185,19 @@ class SnesLibretroEmulator:
             return False
 
         def video_refresh(data, width, height, pitch):
-            # Headless execution: discard pixel rendering for maximum speed
-            pass
+            # Headless execution: discard pixel rendering unless frame capture
+            # was explicitly enabled (see enable_frame_capture).
+            if not self._capture_frames or not data or width == 0 or height == 0:
+                return
+            try:
+                n_bytes = int(pitch) * int(height)
+                buf = (ctypes.c_uint8 * n_bytes).from_address(int(data))
+                raw = np.frombuffer(buf, dtype=np.uint8).copy()
+                self._last_frame = _convert_frame_bytes(
+                    raw, int(width), int(height), int(pitch), self._pixel_format
+                )
+            except (ValueError, OSError):
+                pass
 
         def audio_sample(left, right):
             pass
@@ -396,15 +454,30 @@ class SnesLibretroEmulator:
     def set_input(self, actions: Dict[str, bool]):
         """
         Maps semantic actions to SNES controller buttons.
+
+        Supported keys: B, Y, A, X, UP, DOWN, LEFT, RIGHT, START, SELECT,
+        L, R. Unknown keys raise KeyError instead of being silently dropped
+        (a dropped START once cost a full Yoshi's Island 2 capture attempt).
         """
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_B] = 1 if actions.get("B", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_Y] = 1 if actions.get("Y", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_A] = 1 if actions.get("A", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_X] = 1 if actions.get("X", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_UP] = 1 if actions.get("UP", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_DOWN] = 1 if actions.get("DOWN", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_LEFT] = 1 if actions.get("LEFT", False) else 0
-        self.current_input[RETRO_DEVICE_ID_JOYPAD_RIGHT] = 1 if actions.get("RIGHT", False) else 0
+        mapping = {
+            "B": RETRO_DEVICE_ID_JOYPAD_B,
+            "Y": RETRO_DEVICE_ID_JOYPAD_Y,
+            "SELECT": RETRO_DEVICE_ID_JOYPAD_SELECT,
+            "START": RETRO_DEVICE_ID_JOYPAD_START,
+            "UP": RETRO_DEVICE_ID_JOYPAD_UP,
+            "DOWN": RETRO_DEVICE_ID_JOYPAD_DOWN,
+            "LEFT": RETRO_DEVICE_ID_JOYPAD_LEFT,
+            "RIGHT": RETRO_DEVICE_ID_JOYPAD_RIGHT,
+            "A": RETRO_DEVICE_ID_JOYPAD_A,
+            "X": RETRO_DEVICE_ID_JOYPAD_X,
+            "L": RETRO_DEVICE_ID_JOYPAD_L,
+            "R": RETRO_DEVICE_ID_JOYPAD_R,
+        }
+        unknown = sorted(k for k in actions if k not in mapping)
+        if unknown:
+            raise KeyError(f"Unknown joypad buttons: {unknown}. Valid: {sorted(mapping)}.")
+        for key, btn_id in mapping.items():
+            self.current_input[btn_id] = 1 if actions.get(key, False) else 0
 
     def step_frame(self):
         """Advances emulator execution by exactly 1 frame (1/60 second)."""
@@ -433,3 +506,24 @@ class SnesLibretroEmulator:
             self.core.retro_unload_game()
             self.is_loaded = False
         self.core.retro_deinit()
+
+    def enable_frame_capture(self, enabled: bool = True) -> None:
+        """Opt-in RGB frame capture (default off: zero headless overhead).
+
+        When enabled, every `step_frame()` stores the latest rendered frame,
+        retrievable via `get_frame()`. SNES frames are natively 256x224
+        (up to 512x448 in hires modes).
+        """
+        self._capture_frames = bool(enabled)
+        if not enabled:
+            self._last_frame = None
+
+    def get_frame(self) -> np.ndarray | None:
+        """Returns a copy of the last captured RGB frame [H, W, 3] uint8.
+
+        Returns None if capture is disabled or no frame arrived yet (e.g. the
+        core duplicated the previous frame with data=NULL).
+        """
+        if self._last_frame is None:
+            return None
+        return self._last_frame.copy()

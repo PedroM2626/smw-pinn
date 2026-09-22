@@ -1,6 +1,7 @@
 """Dynamics architectures: statistical baselines and physics-informed world models."""
 
 from src.models.pinn_ensemble import DeepPINNEnsemble
+from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_invariant import TranslationInvariantPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
@@ -25,6 +26,7 @@ __all__ = [
     "StatisticalLSTMDynamics",
     "SoftPINNDynamics",
     "HardResidualPINNDynamics",
+    "GravityIdentifiedPINNDynamics",
     "MultiEntityPINNDynamics",
     "TranslationInvariantPINNDynamics",
     "DeepPINNEnsemble",

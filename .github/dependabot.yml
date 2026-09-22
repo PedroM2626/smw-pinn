@@ -5,6 +5,16 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    # The torch/CUDA envelope below is validated on RTX 4070 + CUDA 12.1.
+    # Major bumps need hardware re-validation first: keep dependabot inside
+    # the tested caps so CI stays green; widen caps deliberately in pyproject.
+    ignore:
+      - dependency-name: torch
+        versions: [">=2.7"]
+      - dependency-name: torchvision
+        versions: [">=0.22"]
+      - dependency-name: numpy
+        versions: [">=2.1"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

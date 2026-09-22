@@ -202,7 +202,8 @@ class ModelPredictiveController:
             # Smooth probability update (momentum)
             logits = torch.log(torch.clamp(elite_mean_probs, min=1e-6))
 
-        # First action of optimal plan
+        # First action of optimal plan (CEM always yields elites: num_elites >= 2).
+        assert best_sequence is not None and best_imagined_traj is not None
         best_first_action = best_sequence[0]
 
         info = {

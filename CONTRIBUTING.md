@@ -16,6 +16,14 @@ git lfs install && git lfs pull   # datasets, checkpoints, videos
 You also need your own dump of the commercial ROM (SHA-1 in README);
 never commit ROMs, savestates with personal data, or API keys.
 
+## Dependency envelope
+
+`torch>=2.5.1,<2.7`, `torchvision>=0.20.1,<0.22`, `numpy>=1.24.0,<2.1` are
+validated on RTX 4070 + CUDA 12.1. Dependabot is configured
+(`.github/dependabot.yml`) to stay inside these caps — widen them only with a
+full hardware re-validation (benchmarks + `make test-cov` on CUDA). CI uploads
+`pytest.log` as an artifact on failure; check it before re-running blindly.
+
 ## Canonical commands (use these, not ad-hoc scripts)
 
 ```bash
@@ -53,6 +61,9 @@ only `scripts/` bootstraps the repo root.
 - **Regression gate:** if you change training/eval code, check
   `tests/test_metrics_regression.py` still passes; regenerate `results/*.json`
   on GPU and update the README tables that cite them (§8.1–§8.4).
+- **Pixel datasets are huge:** `scripts/record_pixel_gameplay.py` defaults to
+  frame stride + downscale for a reason (full-res frames ≈ GBs). Keep frame
+  `.npz` files in Git-LFS and never commit ROMs or smoke-test dirs.
 
 ## Pull requests
 
