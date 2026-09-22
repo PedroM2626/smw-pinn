@@ -69,6 +69,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "spatial-holdout": "src.evaluation.spatial_holdout_benchmark",
     "learning-curves": "src.evaluation.plot_learning_curves",
     "baselines": "src.evaluation.analytical_baselines",
+    "piml-mfrl": "src.training.piml_mfrl",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -77,6 +78,7 @@ CONFIG_FLAGS: dict[str, str] = {
     "benchmark": "configs/benchmark.yaml",
     "sample-efficiency": "configs/sample_efficiency.yaml",
     "multiseed": "configs/multiseed.yaml",
+    "piml-mfrl": "configs/piml_mfrl.yaml",
 }
 
 # Seconds-scale counterparts of the studies that need a GPU and minutes. They run
@@ -115,6 +117,8 @@ CHECK_COMMANDS: dict[str, list[str]] = {
         "src/perception/vision_dataset.py",
         "src/environment/sprite_sets.py",
         "src/models/pinn_gravity.py",
+        "src/losses/physics_rl_losses.py",
+        "src/models/cbf_projection.py",
     ],
     "test": ["pytest", "tests/", "-q", "-p", "no:cacheprovider"],
     "test-cov": [

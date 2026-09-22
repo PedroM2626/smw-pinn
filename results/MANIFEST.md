@@ -84,6 +84,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `hierarchical_mpc_metrics.json` | `src/evaluation/evaluate_hierarchical_mpc.py` | yes | 10.32 |
 | `yi2_capture_attempt.json` | `scripts/navigate_to_level.py` | yes | 10.36 |
 | `obstacle_1000_diagnosis.json` | `src/evaluation/diagnose_obstacle_1000.py` | yes | 10.24 (X~1000 plateau) |
+| `piml_mfrl_metrics.json` | `src/training/piml_mfrl.py` | yes | 10.39 (pending hardware run) |
 
 ## Input freshness
 

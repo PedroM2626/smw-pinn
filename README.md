@@ -81,6 +81,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.36 Yoshi's Island 2 Capture: Blocked with Full Diagnostics](#1036-yoshis-island-2-capture-blocked-with-full-diagnostics)
    * [10.37 Analytical and Oracle-Model Baselines](#1037-analytical-and-oracle-model-baselines)
    * [10.38 Closed-Loop Reproduction Audit and Preamble Probe](#1038-closed-loop-reproduction-audit-and-preamble-probe)
+   * [10.39 Physics-Informed Model-Free RL (PIML-MFRL)](#1039-physics-informed-model-free-rl-piml-mfrl)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1306,6 +1307,68 @@ session, unlike Actions logs).
 
 ---
 
+### 10.39 Physics-Informed Model-Free RL (PIML-MFRL)
+
+Every closed-loop controller up to now split into two camps: model-based planners that
+roll the learned world model forward (Sections 10.6-10.14) and *model-free* PPO that
+learns only from real console transitions (Section 10.9). The natural third position -
+keep the agent model-free but let the known engine physics shape its **critic**, its
+**action** or its **objective** - was unbuilt. PIML-MFRL (`src/training/piml_mfrl.py`)
+trains standard PPO directly on the authentic SNES console (`SnesSingleEnv`) and couples
+the Section 4 physics through three independently switchable mechanisms, none of which
+predicts $s_{t+1}$, so the critic never stops being a genuine model-free value
+estimator.
+
+**Approach A - Physics-Informed Critic** (`--use-physics-critic`). The optimal value of
+a physical system is not an arbitrary statistic: as the agent falls toward a pit it must
+decay like a Control-Lyapunov function. `PhysicsInformedCriticLoss`
+(`src/losses/physics_rl_losses.py`) adds
+
+$$\mathcal{L}_{\text{critic}} = \mathcal{L}_{\text{TD}} + \lambda_c \, \mathbb{E}_{s\in\mathcal{D}_{\text{danger}}}\big[\, \mathrm{relu}\big(\nabla_s V_\phi(s)\cdot \dot{s} + \alpha\, V_\phi(s)\big)\, \big]$$
+
+where $\dot{s}$ is the *analytic* discrete drift of Section 4 ($\dot{x}=v_x/16$,
+$\dot{y}=v_y/16$, gravity on $\dot{v}_y$), never a rolled-out prediction, and
+$\mathcal{D}_{\text{danger}}$ is the falling-toward-pit slice. $\nabla_s V$ is taken with
+a differentiable backward pass (`create_graph=True`).
+
+**Approach B - Physics-Constrained Actor (CBF filter)** (`--use-cbf-filter`). The actor
+proposes action logits; a differentiable safety layer projects the *policy* onto the
+feasible action set before it reaches the console. `src/models/cbf_projection.py`
+ships both halves: `CBFQPLayer` solves the continuous projection
+$\min_a \lVert a-\hat{a}\rVert^2$ s.t. $b_i(s)\,a \ge c_i(s)$ (exact in closed form for
+one active constraint, a convergent POCS sweep for several) with the velocity-saturation
+barrier `smw_barrier_affine`; because SNES exposes 8 macro-actions, the trainer uses its
+categorical analogue `DiscreteCBFCategoricalFilter`, `logits_safe = logits - beta * R_phys`,
+whose $\beta\to\infty$ limit is a hard filter that never samples an infeasible action.
+
+**Approach C - Physical regularisation of the PPO surrogate** (`--use-action-penalty`).
+`ActionPhysicsViolation` charges $\mathcal{L}_{\text{PPO}} \mathrel{+}= \lambda_a\,\mathbb{E}_{(s,a)\sim\pi_\theta}[\,\mathcal{R}_{\text{phys}}(s,a)\,]$, where $\mathcal{R}_{\text{phys}}$
+counts the *force the engine resolves to zero*: thrust into a wall already flagged by
+`c_left`/`c_right`, a rise into a flagged ceiling, or acceleration demanding $|v_x|$ beyond
+the hardware ceiling. This is the same safety model the CBF filter re-weights by.
+
+| Mechanism | Acts on | Stays model-free because | Code |
+| :--- | :--- | :--- | :--- |
+| A - Critic Lyapunov/HJB | evaluation | scores $V(s)$ on real states, $\dot{s}$ is analytic kinematics, no $s_{t+1}$ roll-out | `PhysicsInformedCriticLoss` |
+| B - CBF actor filter | execution | projects the policy, does not simulate the transition | `CBFQPLayer`, `DiscreteCBFCategoricalFilter` |
+| C - Surrogate penalty | structure | penalises the commanded action's impossible force demand | `ActionPhysicsViolation` |
+
+**Cost.** The mechanisms add only a few tensor operations per mini-batch (A also one
+extra critic forward and a second-order grad), so wall-clock overhead against the Section
+10.9 model-free baseline is small; the physics does not require training a world model or
+running the emulator any differently.
+
+**Validation status.** The three mechanisms and the full PPO update path (with A, B and C
+combined) are covered by emulator-free unit + integration tests in
+`tests/test_piml_mfrl.py`, which run in CI against a mock console. The real-hardware
+learning-curve artifact `results/piml_mfrl_metrics.json` (writer
+`src/training/piml_mfrl.py`, command `python -m src.training.piml_mfrl --config
+configs/piml_mfrl.yaml`) is registered in `results/MANIFEST.md` and marked **pending a
+hardware re-run**: this repository publishes only numbers produced by a verified run, so no
+closed-loop figure is quoted here until that run is recorded.
+
+---
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -1668,6 +1731,11 @@ python -m src.evaluation.evaluate_hierarchical_mpc
 # 40. Yoshi's Island 2 capture attempt with the documented recipe and evidence
 #     gate - it raises and writes results/yi2_capture_attempt.json (10.36):
 python -m scripts.navigate_to_level --level 2
+
+# 41. Physics-Informed Model-Free RL (PIML-MFRL): model-free PPO on the real SNES
+#     console with the physics-informed critic (A), CBF actor filter (B) and
+#     action-violation penalty (C) enabled (10.39). Needs core + ROM.
+python -m src.training.piml_mfrl --config configs/piml_mfrl.yaml
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

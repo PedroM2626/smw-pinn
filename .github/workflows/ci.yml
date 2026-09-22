@@ -7,7 +7,14 @@ on:
 
 jobs:
   lint-test:
+    name: Lint + tests (ubuntu, py ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      # A single version's failure must not hide the others; the whole point of the
+      # matrix is to see *which* supported Python version drifted.
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -17,7 +24,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install (CPU, editable + dev)
         run: |
@@ -27,11 +34,16 @@ jobs:
         run: |
           python -m pip check
           python -c "import torch, numpy; print('torch', torch.__version__, '| numpy', numpy.__version__)"
+      # The static gates are version-independent, so run them once (on the pinned
+      # 3.10 reference interpreter) and keep every matrix leg cheap enough to stay green.
       - name: Lint (ruff via Makefile)
+        if: matrix.python-version == '3.10'
         run: make lint
       - name: Format check (ruff format via Makefile)
+        if: matrix.python-version == '3.10'
         run: make format-check
       - name: Typecheck (mypy via Makefile)
+        if: matrix.python-version == '3.10'
         run: make typecheck
       - name: Tests with coverage gate (via Makefile)
         run: |
@@ -50,5 +62,32 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: pytest-log
+          name: pytest-log-ubuntu-${{ matrix.python-version }}
           path: pytest.log
+
+  windows:
+    # This project's reference hardware is Windows (that is where the Libretro core
+    # loads). The Linux suite skips every emulator-dependent test, so without this job
+    # no CI ever exercises the code paths on the platform the study actually runs on.
+    # There is no ROM in CI, so @requires_emulator tests still skip here - but repo-root
+    # path resolution, CWD-safety, subprocess-based CLI behaviour and line endings are all
+    # validated natively. A self-hosted runner with a ROM dump is the follow-up that would
+    # additionally re-run the published closed-loop artifacts.
+    name: Native tests (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install (CPU, editable + dev)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+      - name: Unit + regression tests (emulator tests skip without a ROM)
+        shell: bash
+        run: python -m pytest tests/ -q -p no:cacheprovider

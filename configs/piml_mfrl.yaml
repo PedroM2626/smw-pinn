@@ -1,0 +1,33 @@
+# PIML-MFRL (Physics-Informed Model-Free RL) - README Section 10.39.
+# Runs model-free PPO directly on the authentic SNES console with all three physics
+# mechanisms enabled (Approach A critic Lyapunov + Approach B discrete CBF filter +
+# Approach C action-violation penalty). Keys map 1:1 to the CLI flags of
+# src.training.piml_mfrl (see src/utils/config.py); CLI flags override this file.
+#
+# Requires the Libretro core + your own ROM dump. Run:
+#   python -m src.training.piml_mfrl --config configs/piml_mfrl.yaml
+# or, on Windows:   smw-pinn piml-mfrl
+
+total_timesteps: 60000
+rollout_length: 128
+num_epochs: 4
+minibatch_size: 32
+lr: 0.0003
+gamma: 0.99
+gae_lambda: 0.95
+clip_coef: 0.2
+ent_coef: 0.01
+vf_coef: 0.5
+
+# Physics-informed mechanism weights / strengths.
+lambda_critic: 0.1
+lambda_action: 0.01
+cbf_beta: 1.0
+lyapunov_alpha: 1.0
+
+seed: 42
+output_dir: "results"
+
+use_physics_critic: true
+use_cbf_filter: true
+use_action_penalty: true

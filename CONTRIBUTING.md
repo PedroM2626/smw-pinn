@@ -26,6 +26,12 @@ validated on RTX 4070 + CUDA 12.1. Dependabot is configured
 full hardware re-validation (benchmarks + `make test-cov` on CUDA). CI uploads
 `pytest.log` as an artifact on failure; check it before re-running blindly.
 
+`requirements.txt`/`pyproject.toml` are install *ranges* (they must stay installable on
+both the CUDA reference box and the CPU CI image). `requirements.lock` is a separate,
+pinned `pip freeze` snapshot of the exact reference environment, kept as an audit record
+of what produced the published numbers - regenerate it with `python -m pip freeze >
+requirements.lock` after re-validating, and do not install it as-is on other hardware.
+
 ## Canonical commands (use these, not ad-hoc scripts)
 
 ```bash
@@ -54,7 +60,11 @@ only `scripts/` bootstraps the repo root.
 ## Code conventions
 
 - **Logging, not `print()`:** `from src.utils.logging import get_logger; log = get_logger(__name__)`.
-  `print()` is allowed only in `scripts/` (CLI tools).
+  `print()` is allowed only in `scripts/` (CLI tools). The two legitimate `src/` exceptions
+  are the console runner `src/cli.py` and the JSON-stdout contract in
+  `src/evaluation/analytical_baselines.py`; `tests/test_no_print_in_src.py` enforces this by
+  AST and fails if a `print` appears anywhere else (add a *justified* allowlist entry there
+  if a new console-stdout module is genuinely required).
 - **Determinism:** seed via `src.utils.seed.set_global_seed`; DataLoaders take
   an explicit `seed=` (seeded `torch.Generator` + `seed_worker`). Never use
   unseeded `shuffle=True` or bare `np.random` in training/eval code.
