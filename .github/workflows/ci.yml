@@ -12,6 +12,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           lfs: true
+          # results/MANIFEST.md freshness gate orders artifact and checkpoint commit
+          # dates, which a grafted single-commit clone cannot observe.
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.10"
@@ -34,6 +37,15 @@ jobs:
         run: |
           set -o pipefail
           make test-cov 2>&1 | tee pytest.log
+      - name: Publish the failure tail as annotations
+        if: failure()
+        # Actions logs need a signed-in session; annotations do not, so the failing
+        # assertions are re-emitted here for anyone reading the check.
+        run: |
+          if [ -f pytest.log ]; then
+            grep -E '^(FAILED|ERROR) |^E  |Required test coverage|passed|failed' pytest.log \
+              | tail -n 30 | sed -e 's/%/%25/g' -e 's/^/::error::/'
+          fi
       - name: Upload pytest log on failure
         if: failure()
         uses: actions/upload-artifact@v7

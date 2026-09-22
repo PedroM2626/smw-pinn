@@ -1298,6 +1298,11 @@ headline-number drift all fail CI). The freshness gate is what flagged §10.6;
 the copy of the master table in §10.27 also carried a Dyna-PPO row that had been
 pasted from the MPC row (164.75 px instead of the 115.00 px / 173 frames recorded in
 `results/dyna_ppo_metrics.json`) and is now corrected.
+The freshness gate compares git commit dates, so CI checks out with `fetch-depth: 0`
+and a shallow clone skips that single gate instead of judging every pair a tie - the
+first push of this batch failed precisely there, which is also why the workflow now
+republishes the failing assertions as check annotations (readable without a GitHub
+session, unlike Actions logs).
 
 ---
 

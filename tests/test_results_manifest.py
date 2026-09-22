@@ -163,6 +163,26 @@ def _commit_timestamp(relative: str) -> int | None:
     return int(stamp) if proc.returncode == 0 and stamp else None
 
 
+def _visible_commit_count() -> int:
+    """How many commits git can reach from HEAD (0 when git is unavailable)."""
+    if shutil.which("git") is None:
+        return 0
+    proc = subprocess.run(
+        ["git", "rev-list", "--count", "HEAD"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    stamp = proc.stdout.strip()
+    return int(stamp) if proc.returncode == 0 and stamp.isdigit() else 0
+
+
+def _history_is_grafted() -> bool:
+    """True for a shallow clone, where older commits are replaced by a graft."""
+    gitdir = REPO_ROOT / ".git"
+    return gitdir.is_dir() and (gitdir / "shallow").is_file()
+
+
 def _on_disk() -> set[str]:
     return {p.name for p in RESULTS.glob("*.json")}
 
@@ -266,7 +286,17 @@ def test_declared_inputs_are_not_newer_than_the_result():
     loads. This gate recomputes the git commit order and requires the `STALE`
     marker to match reality in both directions: an unmarked row that is actually
     stale fails, and a marked row that was re-run must be un-marked.
+
+    Ordering needs real history. A single-commit checkout (the historical
+    `actions/checkout` default) makes every path look as if the same commit added
+    it, so the gate would judge every pair a tie; CI therefore fetches the full
+    history (`fetch-depth: 0`) and shallow clones skip instead of lying.
     """
+    if _history_is_grafted() or _visible_commit_count() < 2:
+        pytest.skip(
+            "commit order is not observable in this checkout "
+            f"(visible commits: {_visible_commit_count()})"
+        )
     rows = _freshness_rows(_manifest_text())
     assert rows, "MANIFEST.md declares no checkpoint dependencies"
     checked = 0

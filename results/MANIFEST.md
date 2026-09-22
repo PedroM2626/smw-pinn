@@ -97,6 +97,10 @@ marker must be removed by actually re-running, never by editing. This gate is ho
 the 10.6 rows were found to have been recorded before the checkpoints were
 regenerated (see README 10.38).
 
+Commit dates only exist if the checkout carries history, so CI clones with
+`fetch-depth: 0`; a shallow or single-commit clone skips this one gate instead of
+judging every dependency pair a tie.
+
 ```freshness
       mbrl_mpc_metrics.json         <- pinn_hard_best.pt pinn_soft_best.pt mlp_best.pt
       oracle_mpc_metrics.json       <- pinn_hard_best.pt
