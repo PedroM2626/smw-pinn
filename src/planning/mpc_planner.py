@@ -41,11 +41,15 @@ class TrajectoryObjective:
         weight_velocity: float = 0.5,
         pit_penalty: float = 1000.0,
         death_y: float = 450.0,
+        hazard_penalty: float = 600.0,
+        leap_bonus: float = 200.0,
     ):
         self.weight_progress = weight_progress
         self.weight_velocity = weight_velocity
         self.pit_penalty = pit_penalty
         self.death_y = death_y
+        self.hazard_penalty = hazard_penalty
+        self.leap_bonus = leap_bonus
 
     def compute_trajectory_rewards(
         self,
@@ -79,6 +83,32 @@ class TrajectoryObjective:
             + self.weight_velocity * mean_vx
             - self.pit_penalty * fell_in_pit
         )
+
+        # 4. Multi-Entity Hazard Collision Avoidance & Leap Optimization (if state_dim >= 12)
+        if initial_states.shape[-1] >= 12:
+            dx_hazard = predicted_trajectories[:, :, 8]       # [B, H]
+            dy_hazard = predicted_trajectories[:, :, 9]       # [B, H]
+            active_h = predicted_trajectories[:, :, 11]       # [B, H]
+
+            # Detect fatal collision with active hazard hitbox in any future horizon step
+            collided_hazard = (
+                (active_h > 0.5)
+                & (dx_hazard.abs() < 14.0)
+                & (dy_hazard > -10.0)
+                & (dy_hazard < 16.0)
+            ).any(dim=1).float()
+
+            # Detect clean evasive leap: hazard was in front, is passed horizontally,
+            # while Mario jumped high enough above ground
+            passed_hazard = (
+                (active_h[:, -1] > 0.5)
+                & (initial_states[:, 8] > 0.0)
+                & (predicted_trajectories[:, -1, 8] <= 0.0)
+                & (all_y.min(dim=1).values < 325.0)
+            ).float()
+
+            rewards = rewards - self.hazard_penalty * collided_hazard + self.leap_bonus * passed_hazard
+
         return rewards
 
 

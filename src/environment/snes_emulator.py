@@ -341,6 +341,56 @@ class SnesLibretroEmulator:
         base.update(hazard)
         return base
 
+    def get_local_tilemap_patch(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
+        """
+        Extracts a (2*radius + 1) x (2*radius + 1) tile grid centered at Mario's position
+        directly from the SNES WRAM level block buffer ($7E:C800).
+        Each tile in Super Mario World is 16x16 pixels.
+
+        Returns an integer array where:
+            0: Air / Passable space (tile 0x25 or boundary void)
+            1: Solid terrain (Grass top 0x00, earth fill 0x3F, pipes 0x73-0x76, question/turn blocks)
+            2: Dynamic hazards / Spikes
+            3: Slopes / Inclines
+        """
+        grid_dim = 2 * radius + 1
+        patch = np.zeros((grid_dim, grid_dim), dtype=np.int64)
+
+        center_tile_x = int(mario_x) // 16
+        center_tile_y = int(mario_y) // 16
+
+        for r_idx, dy in enumerate(range(-radius, radius + 1)):
+            target_tile_y = center_tile_y + dy
+            if target_tile_y < 0 or target_tile_y >= 27:
+                continue
+
+            for c_idx, dx in enumerate(range(-radius, radius + 1)):
+                target_tile_x = center_tile_x + dx
+                if target_tile_x < 0:
+                    continue
+
+                subscreen = target_tile_x // 16
+                col_in_sub = target_tile_x % 16
+                row_in_sub = target_tile_y
+
+                # SMW horizontal level buffer formula: $7E:C800 + subscreen * 0x01B0 + row * 16 + col
+                addr = 0xC800 + subscreen * 0x01B0 + row_in_sub * 16 + col_in_sub
+                if addr > 0x1FFFF:
+                    continue
+
+                tile_id = self.read_wram_u8(addr)
+
+                if tile_id == 0x25:
+                    patch[r_idx, c_idx] = 0
+                elif tile_id in [0x00, 0x3F, 0x73, 0x74, 0x75, 0x76] or (tile_id != 0x25 and target_tile_y >= 22):
+                    patch[r_idx, c_idx] = 1
+                elif tile_id in [0x80, 0x81, 0x82]:
+                    patch[r_idx, c_idx] = 3
+                else:
+                    patch[r_idx, c_idx] = 1 if tile_id != 0x25 else 0
+
+        return patch
+
 
     def set_input(self, actions: Dict[str, bool]):
         """

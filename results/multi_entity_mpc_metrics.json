@@ -1,0 +1,11 @@
+{
+    "survived_frames": 400,
+    "total_progress_pixels": 782.9375,
+    "max_progress_pixels": 782.9375,
+    "mean_vx": 31.405,
+    "rex_evaded": true,
+    "evaluation_time_seconds": 16.88201904296875,
+    "fps": 23.69384840651494,
+    "horizon": 16,
+    "num_candidates": 256
+}
