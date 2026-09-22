@@ -1,175 +1,259 @@
 """
 render_level_clearance_video.py
-Renders a publication-grade animated video (MP4) and GIF of Mario's full level
-clearance trajectory on authentic SNES hardware, featuring live WRAM telemetry HUD:
-- Spatial Subscreen map (Subscreens 0 to 7)
-- Altitude profile with parabolic jump arcs and collision ground line
-- Telemetry HUD: Coordinates (X, Y), Velocities (vx, vy), Active Hazard distance, Joypad inputs
+High-impact publication-grade telemetry video & animated GIF renderer.
+Features:
+1. Dynamic Side-Scrolling Camera that tracks Mario in (X, Y) level space
+   with scrolling terrain blocks, Rex hazard proximity, and parabolic jump arcs.
+2. Prominent Real-Time Distance Gauge (0 -> 833.5 px, Subscreens 0 to 3, Milestones).
+3. Continuous Horizontal Progress Curve X(t) with moving time cursor.
+4. Live Joypad input HUD with illuminated buttons (B: Jump, Y: Dash, RIGHT).
 """
 
 import json
 import os
 import sys
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List
 import imageio
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, os.path.abspath("."))
 
 
-def render_trajectory_video(
-    metrics_path: str = "results/full_level_clearance_metrics.json",
+def render_dynamic_telemetry_video(
     trajectory_data_path: str = "results/full_level_trajectory_log.json",
     output_mp4: str = "results/figures/full_level_clearance.mp4",
     output_gif: str = "results/figures/full_level_clearance.gif",
     fps: int = 30,
-    stride: int = 2,  # Subsample frames (e.g. 60 FPS -> 30 FPS video)
+    stride: int = 2,
+    max_render_frame: int = 430,  # Focus on the continuous forward motion run
 ):
     print("====================================================================")
-    print("  RENDERING FULL LEVEL CLEARANCE VIDEO & TELEMETRY HUD ANIMATION    ")
+    print("  RENDERING DYNAMIC SIDE-SCROLLING TELEMETRY VIDEO & GIF ANIMATION  ")
     print("====================================================================")
 
     if not os.path.exists(trajectory_data_path):
-        print(f"Error: Trajectory log file not found at: {trajectory_data_path}")
+        print(f"Error: Trajectory log not found: {trajectory_data_path}")
         return
 
     with open(trajectory_data_path, "r") as f:
-        traj_data = json.load(f)
+        traj = json.load(f)
 
-    frames = traj_data["frames"]
-    x_vals = traj_data["x"]
-    y_vals = traj_data["y"]
-    vx_vals = traj_data["vx"]
-    vy_vals = traj_data["vy"]
-    hazard_dx = traj_data.get("hazard_dx", [999.0] * len(frames))
-    actions_log = traj_data.get("actions", [{"RIGHT": True}] * len(frames))
+    all_frames = traj["frames"]
+    all_x = traj["x"]
+    all_y = traj["y"]
+    all_vx = traj["vx"]
+    all_vy = traj["vy"]
+    all_hdx = traj.get("hazard_dx", [999.0] * len(all_frames))
+    all_actions = traj.get("actions", [{}] * len(all_frames))
 
-    total_frames = len(frames)
-    indices = list(range(0, total_frames, stride))
-    print(f"Total hardware frames: {total_frames} | Sampled video frames: {len(indices)} | Output FPS: {fps}")
+    # Slice up to max_render_frame to capture the active forward progress
+    end_idx = min(len(all_frames), max_render_frame)
+    frames = all_frames[:end_idx]
+    x_vals = all_x[:end_idx]
+    y_vals = all_y[:end_idx]
+    vx_vals = all_vx[:end_idx]
+    vy_vals = all_vy[:end_idx]
+    hdx_vals = all_hdx[:end_idx]
+    actions = all_actions[:end_idx]
+
+    indices = list(range(0, len(frames), stride))
+    print(f"Rendering {len(indices)} frames at {fps} FPS (active run: 0 -> {x_vals[-1]:.1f} px)...")
 
     os.makedirs(os.path.dirname(output_mp4), exist_ok=True)
-    temp_frames = []
+    rendered_frames = []
 
-    fig, (ax_map, ax_alt) = plt.subplots(2, 1, figsize=(12, 6.5), gridspec_kw={"height_ratios": [1.5, 1.2]})
+    # Setup 3-panel figure:
+    # 1. Top: Dynamic Side-Scrolling World View (Follows Mario)
+    # 2. Middle: Real-Time Cumulative Progress X(t) with time cursor
+    # 3. Bottom: Telemetry Dashboard (Speedometer, Buttons, Status)
+    fig = plt.figure(figsize=(13, 8), facecolor="#0d0e15")
+    gs = fig.add_gridspec(3, 1, height_ratios=[2.2, 1.3, 0.8], hspace=0.35)
+    ax_cam = fig.add_subplot(gs[0])
+    ax_prog = fig.add_subplot(gs[1])
+    ax_hud = fig.add_subplot(gs[2])
 
-    t0 = time.time()
-    for i, idx in enumerate(indices):
-        ax_map.clear()
-        ax_alt.clear()
+    t_start = time.time()
+
+    for step_i, idx in enumerate(indices):
+        ax_cam.clear()
+        ax_prog.clear()
+        ax_hud.clear()
 
         curr_frame = frames[idx]
         curr_x = x_vals[idx]
         curr_y = y_vals[idx]
         curr_vx = vx_vals[idx]
         curr_vy = vy_vals[idx]
-        curr_hdx = hazard_dx[idx]
-        curr_act = actions_log[idx]
+        curr_hdx = hdx_vals[idx]
+        curr_act = actions[idx]
 
-        # Top Panel: Level Progression Map across Subscreens
-        ax_map.set_facecolor("#1a1a24")
-        ax_map.set_xlim(-50, 2050)
-        ax_map.set_ylim(-10, 50)
+        # -------------------------------------------------------------
+        # PANEL 1: DYNAMIC SIDE-SCROLLING VIEWPORT (TRACKING CAMERA)
+        # -------------------------------------------------------------
+        ax_cam.set_facecolor("#151824")
+        cam_x_min = curr_x - 120
+        cam_x_max = curr_x + 280
+        ax_cam.set_xlim(cam_x_min, cam_x_max)
+        ax_cam.set_ylim(440, 240)  # Inverted Y (SNES coordinates)
 
-        # Draw subscreen demarcations
+        # Draw level ground and terrain blocks
+        ax_cam.axhline(y=384, color="#4a7c59", linewidth=8, label="Base Ground Level (Y=384)")
+        ax_cam.fill_between([cam_x_min - 50, cam_x_max + 50], 384, 450, color="#2d5037", alpha=0.9)
+
+        # Draw elevated platform at X ~ 380 - 833
+        ax_cam.fill_between([380, 850], 352, 384, color="#8b5a2b", alpha=0.6)
+        ax_cam.axhline(y=352, xmin=0, xmax=1, color="#c68b59", linewidth=2, linestyle="--")
+
+        # Subscreen grid markers
         for s in range(8):
-            ax_map.axvline(x=s * 256, color="#444455", linestyle=":", alpha=0.6)
-            ax_map.text(s * 256 + 10, 42, f"Subscreen {s}", color="#8888aa", fontsize=8, fontweight="bold")
+            sx = s * 256
+            if cam_x_min - 50 <= sx <= cam_x_max + 50:
+                ax_cam.axvline(x=sx, color="#445577", linestyle=":", linewidth=1.5, alpha=0.7)
+                ax_cam.text(sx + 5, 255, f"Subscreen {s}", color="#7799cc", fontsize=9, fontweight="bold")
 
-        # Ground representation
-        ax_map.axhline(y=0, color="#228b22", linewidth=6)
-        ax_map.axvline(x=1900, color="#ffd700", linestyle="-.", linewidth=2.0)
-        ax_map.text(1905, 20, "GOAL TAPE", color="#ffd700", fontsize=9, fontweight="bold", rotation=90)
+        # Milestone lines
+        for m, m_name in [(250, "250px"), (500, "500px"), (782, "782px Rex Evasion")]:
+            if cam_x_min - 50 <= m <= cam_x_max + 50:
+                ax_cam.axvline(x=m, color="#f39c12", linestyle="-.", linewidth=1.5)
+                ax_cam.text(m + 4, 275, f"[{m_name}]", color="#f39c12", fontsize=8, fontweight="bold")
 
-        # Trajectory trail
-        past_x = x_vals[:idx+1]
-        past_y_map = [5.0] * len(past_x)
-        ax_map.plot(past_x, past_y_map, color="#00ffff", linewidth=2.0, alpha=0.7)
+        # Mario's historical jump trajectory in local camera window
+        trail_start = max(0, idx - 60)
+        ax_cam.plot(
+            x_vals[trail_start:idx+1],
+            y_vals[trail_start:idx+1],
+            color="#00ffcc",
+            linewidth=2.5,
+            alpha=0.85,
+            label="Trajectory Ribbon",
+        )
 
-        # Mario marker
-        ax_map.scatter([curr_x], [5.0], color="#ff3333", s=120, edgecolors="white", linewidths=1.5, zorder=5)
+        # Draw Mario Agent
+        ax_cam.scatter([curr_x], [curr_y], color="#ff3344", s=180, edgecolors="white", linewidths=2.0, zorder=6)
+        ax_cam.text(curr_x - 15, curr_y - 14, "MARIO", color="white", fontsize=8, fontweight="bold", zorder=7)
 
-        # Active Rex marker if in proximity
-        if curr_hdx < 300.0:
+        # Draw Dynamic Hazard (Rex) if in camera range
+        if curr_hdx < 400.0:
             enemy_x = curr_x + curr_hdx
-            ax_map.scatter([enemy_x], [5.0], color="#ff9900", s=90, marker="s", edgecolors="black", zorder=4)
+            if cam_x_min - 50 <= enemy_x <= cam_x_max + 50:
+                ax_cam.scatter([enemy_x], [352 if enemy_x > 380 else 384], color="#ff9900", s=150, marker="D", edgecolors="black", linewidths=1.5, zorder=5)
+                ax_cam.text(enemy_x - 12, 335, "REX", color="#ffcc00", fontsize=8, fontweight="bold")
+                # Distance arrow
+                ax_cam.annotate(
+                    f"{curr_hdx:.1f}px",
+                    xy=(enemy_x, 320),
+                    xytext=(curr_x, 320),
+                    arrowprops=dict(arrowstyle="<->", color="#ffaa00", lw=1.2),
+                    color="#ffcc00",
+                    fontsize=8,
+                    ha="center",
+                )
 
-        ax_map.set_title(
-            f"Super Mario World Hardware Trajectory | Frame: {curr_frame:4d} | X: {curr_x:6.1f} px | "
-            f"vx: {curr_vx:4.1f} subpx/f | Subscreen: {int(curr_x)//256}",
-            fontsize=11,
-            fontweight="bold",
-            color="white",
+        ax_cam.set_title(
+            f"LIVE TRACKING VIEWPORT (Follows Mario) | Stage: Yoshi's Island 1 | Frame: {curr_frame:4d} (60Hz)",
+            fontsize=11, fontweight="bold", color="white", pad=8
         )
-        ax_map.set_xticks(range(0, 2049, 256))
-        ax_map.set_yticks([])
+        ax_cam.set_ylabel("Altitude Y (px)", color="#cccccc", fontsize=9, fontweight="bold")
+        ax_cam.tick_params(colors="#888899", labelsize=8)
+        ax_cam.legend(loc="upper right", facecolor="#1e2233", edgecolor="#334466", labelcolor="white", fontsize=8)
 
-        # Bottom Panel: Parabolic Jump Arc and Altitude Y
-        ax_alt.set_facecolor("#111118")
-        ax_alt.set_xlim(max(0, curr_frame - 180), curr_frame + 20)
-        ax_alt.set_ylim(260, 440)
-        ax_alt.invert_yaxis()
+        # -------------------------------------------------------------
+        # PANEL 2: HORIZONTAL PROGRESS CURVE X(t) WITH MOVING CURSOR
+        # -------------------------------------------------------------
+        ax_prog.set_facecolor("#151824")
+        ax_prog.set_xlim(0, frames[-1] + 10)
+        ax_prog.set_ylim(-20, max(x_vals) + 60)
 
-        past_frames = frames[:idx+1]
-        past_y = y_vals[:idx+1]
+        # Full progress curve in background
+        ax_prog.plot(frames, x_vals, color="#334466", linewidth=1.5, linestyle="--", alpha=0.6)
+        # Active progress curve up to current frame
+        ax_prog.plot(frames[:idx+1], x_vals[:idx+1], color="#2ecc71", linewidth=2.8, label="Real SNES Progress X(t)")
 
-        ax_alt.plot(past_frames, past_y, color="#39ff14", linewidth=2.0, label="Mario Altitude Y")
-        ax_alt.axhline(y=384.0, color="#8b4513", linestyle="--", linewidth=1.5, label="Solid Ground (Y=384)")
-        ax_alt.scatter([curr_frame], [curr_y], color="red", s=70, zorder=5)
+        # Moving time cursor
+        ax_prog.axvline(x=curr_frame, color="#ff3344", linestyle=":", linewidth=2.0)
+        ax_prog.scatter([curr_frame], [curr_x], color="#ff3344", s=90, zorder=5)
 
-        # Telemetry Text Box
-        btn_str = " ".join([k for k, v in curr_act.items() if v])
-        telemetry_txt = (
-            f"Telemetria WRAM:\n"
-            f"Pos X: {curr_x:6.1f} px\n"
-            f"Pos Y: {curr_y:6.1f} px\n"
-            f"Vel vx: {curr_vx:5.1f}\n"
-            f"Vel vy: {curr_vy:5.1f}\n"
-            f"Dist Rex: {curr_hdx:5.1f} px\n"
-            f"Inputs: [{btn_str}]"
+        # Milestone horizontal levels
+        for m in [250, 500, 782]:
+            ax_prog.axhline(y=m, color="#e67e22", linestyle=":", alpha=0.5)
+            ax_prog.text(5, m + 8, f"{m} px Milestone", color="#e67e22", fontsize=7.5)
+
+        ax_prog.set_title(
+            f"Horizontal Level Progression: {curr_x:6.1f} px / {x_vals[-1]:.1f} px | Velocity vx: {curr_vx:4.1f} subpx/f",
+            fontsize=10.5, fontweight="bold", color="white", pad=6
         )
-        ax_alt.text(
-            0.02, 0.95, telemetry_txt,
-            transform=ax_alt.transAxes,
-            verticalalignment="top",
-            fontfamily="monospace",
-            fontsize=9,
-            color="#ffffff",
-            bbox=dict(boxstyle="round,pad=0.5", facecolor="#222233", alpha=0.8, edgecolor="#555577"),
-        )
+        ax_prog.set_ylabel("Progress X (px)", color="#cccccc", fontsize=9, fontweight="bold")
+        ax_prog.set_xlabel("Hardware Simulation Frames (60 Hz)", color="#cccccc", fontsize=9, fontweight="bold")
+        ax_prog.tick_params(colors="#888899", labelsize=8)
+        ax_prog.legend(loc="upper left", facecolor="#1e2233", edgecolor="#334466", labelcolor="white", fontsize=8)
 
-        ax_alt.set_xlabel("Hardware Simulation Frames (60 Hz)", fontsize=9, fontweight="bold", color="white")
-        ax_alt.set_ylabel("Altitude Y (px)", fontsize=9, fontweight="bold", color="white")
-        ax_alt.legend(loc="upper right", facecolor="#222233", edgecolor="#555577", labelcolor="white")
-        ax_alt.tick_params(colors="white")
-        ax_map.tick_params(colors="white")
+        # -------------------------------------------------------------
+        # PANEL 3: TELEMETRY DASHBOARD & JOYPAD BUTTON INDICATORS
+        # -------------------------------------------------------------
+        ax_hud.set_facecolor("#0a0b10")
+        ax_hud.set_xlim(0, 10)
+        ax_hud.set_ylim(0, 2)
+        ax_hud.axis("off")
 
-        fig.patch.set_facecolor("#0a0a0f")
-        plt.tight_layout()
+        # Telemetry metrics boxes
+        telemetry_boxes = [
+            ("POSIÇÃO X", f"{curr_x:6.1f} px", "#3498db"),
+            ("ALTITUDE Y", f"{curr_y:5.1f} px", "#2ecc71"),
+            ("VELOCIDADE vx", f"{curr_vx:4.1f} subpx", "#9b59b6"),
+            ("VELOCIDADE vy", f"{curr_vy:4.1f} subpx", "#e67e22"),
+            ("SUBSCREEN", f"{int(curr_x)//256} / 7", "#1abc9c"),
+        ]
 
-        # Canvas to numpy RGB array
+        for b_i, (label, val, col) in enumerate(telemetry_boxes):
+            bx = 0.2 + b_i * 1.55
+            rect = patches.FancyBboxPatch((bx, 0.2), 1.4, 1.5, boxstyle="round,pad=0.1", facecolor="#151824", edgecolor=col, linewidth=1.5)
+            ax_hud.add_patch(rect)
+            ax_hud.text(bx + 0.7, 1.3, label, color="#8888aa", fontsize=7, fontweight="bold", ha="center")
+            ax_hud.text(bx + 0.7, 0.55, val, color="white", fontsize=9, fontweight="bold", ha="center")
+
+        # Joypad Button Lights
+        btn_x_start = 8.1
+        ax_hud.text(btn_x_start + 0.9, 1.45, "JOYPAD 60Hz", color="#8888aa", fontsize=7.5, fontweight="bold", ha="center")
+        joy_buttons = [("B", curr_act.get("B", False)), ("Y", curr_act.get("Y", False)), ("R", curr_act.get("RIGHT", False))]
+        for btn_i, (btn_name, active) in enumerate(joy_buttons):
+            bx = btn_x_start + btn_i * 0.6
+            btn_col = "#e74c3c" if active else "#2c3e50"
+            text_col = "white" if active else "#556677"
+            circ = patches.Circle((bx + 0.25, 0.7), 0.24, facecolor=btn_col, edgecolor="white" if active else "#445566", linewidth=1.2)
+            ax_hud.add_patch(circ)
+            ax_hud.text(bx + 0.25, 0.7, btn_name, color=text_col, fontsize=8, fontweight="bold", ha="center", va="center")
+
+        # Render canvas to RGB buffer
         fig.canvas.draw()
         rgba = np.asarray(fig.canvas.buffer_rgba())
-        rgb = rgba[:, :, :3]
-        temp_frames.append(rgb)
+        rgb = rgba[:, :, :3].copy()
+        rendered_frames.append(rgb)
 
     plt.close(fig)
-    print(f"Generated {len(temp_frames)} video frames in {time.time() - t0:.1f}s. Encoding video...")
+    print(f"Rendered {len(rendered_frames)} dynamic frames in {time.time() - t_start:.1f}s. Encoding video...")
 
-    # Write MP4
+    # Write MP4 Video
     try:
-        imageio.mimwrite(output_mp4, temp_frames, fps=fps, quality=8)
-        print(f"MP4 Video saved successfully to: {output_mp4}")
+        imageio.mimwrite(output_mp4, rendered_frames, fps=fps, quality=8)
+        print(f"MP4 Video saved to: {output_mp4}")
     except Exception as e:
         print(f"MP4 encoding notice: {e}")
 
-    # Write GIF (subsampled for compactness)
-    gif_frames = temp_frames[::2]  # Subsample for lightweight GIF
-    imageio.mimsave(output_gif, gif_frames, fps=fps//2, loop=0)
-    print(f"Animated GIF saved successfully to: {output_gif}")
+    # Write Animated GIF using Pillow save_all for guaranteed frame delay and animation
+    from PIL import Image
+    gif_imgs = [Image.fromarray(f) for f in rendered_frames[::2]]
+    gif_imgs[0].save(
+        output_gif,
+        save_all=True,
+        append_images=gif_imgs[1:],
+        duration=66,  # 15 FPS playback (66 ms per frame)
+        loop=0,
+    )
+    print(f"Animated GIF saved to: {output_gif} ({len(gif_imgs)} frames, looping)")
 
 
 if __name__ == "__main__":
-    render_trajectory_video()
+    render_dynamic_telemetry_video()
