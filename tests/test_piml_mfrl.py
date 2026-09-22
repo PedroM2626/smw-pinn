@@ -306,3 +306,66 @@ def test_artifact_written_with_meta(tmp_path) -> None:
     payload = json.loads(written[0].read_text(encoding="utf-8"))
     assert "_meta" in payload  # provenance required for new artifacts
     assert payload["_meta"]["seed"] == 7
+
+
+# --------------------------------------------------------------------------- #
+# Study aggregation (pure, emulator-free)
+# --------------------------------------------------------------------------- #
+def _synthetic_runs():
+    return [
+        {
+            "condition": "model_free_ppo",
+            "seed": 1,
+            "mean_final_return": 10.0,
+            "mean_action_violation": 0.4,
+            "total_episodes": 5,
+            "total_real_steps": 80,
+            "training_time_seconds": 1.0,
+        },
+        {
+            "condition": "model_free_ppo",
+            "seed": 2,
+            "mean_final_return": 20.0,
+            "mean_action_violation": 0.6,
+            "total_episodes": 7,
+            "total_real_steps": 80,
+            "training_time_seconds": 1.0,
+        },
+        {
+            "condition": "piml_mfrl_full",
+            "seed": 1,
+            "mean_final_return": 30.0,
+            "mean_action_violation": 0.1,
+            "total_episodes": 5,
+            "total_real_steps": 80,
+            "training_time_seconds": 1.0,
+        },
+    ]
+
+
+def test_study_aggregate_groups_by_condition() -> None:
+    from src.evaluation.piml_mfrl_study import aggregate_runs
+
+    summary = aggregate_runs(_synthetic_runs())
+    assert summary["conditions"] == ["model_free_ppo", "piml_mfrl_full"]
+    assert summary["model_free_ppo"]["mean_final_return"]["mean"] == pytest.approx(15.0)
+    assert summary["model_free_ppo"]["mean_final_return"]["n"] == 2
+    assert summary["piml_mfrl_full"]["mean_action_violation"]["mean"] == pytest.approx(0.1)
+    assert summary["model_free_ppo"]["seed_returns"] == {1: 10.0, 2: 20.0}
+
+
+def test_study_comparison_reports_delta_and_reduction() -> None:
+    from src.evaluation.piml_mfrl_study import _comparison, aggregate_runs
+
+    comparison = _comparison(aggregate_runs(_synthetic_runs()))
+    assert comparison["return_delta"] == pytest.approx(15.0)  # 30 - 15
+    assert comparison["return_change_pct"] == pytest.approx(100.0)
+    # baseline violation 0.5 -> piml 0.1 => 80% reduction
+    assert comparison["violation_reduction_pct"] == pytest.approx(80.0)
+
+
+def test_study_aggregate_handles_empty() -> None:
+    from src.evaluation.piml_mfrl_study import aggregate_runs
+
+    summary = aggregate_runs([])
+    assert summary == {"conditions": []}

@@ -7,14 +7,14 @@
     },
     "Dyna_PPO_Statistical_MLP": {
         "survived_frames": 213,
-        "total_progress_pixels": 93.125,
-        "max_progress_pixels": 93.125,
-        "mean_vx": 8.369158744812012
+        "total_progress_pixels": 92.375,
+        "max_progress_pixels": 92.375,
+        "mean_vx": 8.630841255187988
     },
     "Random_Baseline": {
-        "survived_frames": 456,
-        "total_progress_pixels": 126.75,
-        "max_progress_pixels": 126.75,
-        "mean_vx": 5.816192626953125
+        "survived_frames": 600,
+        "total_progress_pixels": 168.75,
+        "max_progress_pixels": 168.75,
+        "mean_vx": 4.519999980926514
     }
 }

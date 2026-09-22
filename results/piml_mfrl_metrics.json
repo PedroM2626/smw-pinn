@@ -1,0 +1,164 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-22T21:52:36+00:00",
+    "git_sha": "0de2a0c76dc3901726c7d188df635e903848aaff",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.piml_mfrl_study",
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "total_timesteps_per_run": 8000
+  },
+  "study": "piml_mfrl",
+  "action_space_size": 8,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "total_timesteps_per_run": 8000,
+  "conditions": {
+    "model_free_ppo": {
+      "use_physics_critic": false,
+      "use_cbf_filter": false,
+      "use_action_penalty": false
+    },
+    "piml_mfrl_full": {
+      "use_physics_critic": true,
+      "use_cbf_filter": true,
+      "use_action_penalty": true
+    }
+  },
+  "summary": {
+    "conditions": [
+      "model_free_ppo",
+      "piml_mfrl_full"
+    ],
+    "model_free_ppo": {
+      "mean_final_return": {
+        "mean": 1223.147291666666,
+        "std": 301.1331727462311,
+        "n": 3
+      },
+      "mean_action_violation": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 3
+      },
+      "total_episodes": {
+        "mean": 20.0,
+        "std": 0.816496580927726,
+        "n": 3
+      },
+      "training_time_seconds": {
+        "mean": 18.288304090499878,
+        "std": 0.0923122410071934,
+        "n": 3
+      },
+      "seed_returns": {
+        "42": 1295.762499999999,
+        "43": 823.429375,
+        "44": 1550.2499999999986
+      }
+    },
+    "piml_mfrl_full": {
+      "mean_final_return": {
+        "mean": 1193.7533771929816,
+        "std": 336.05766192929184,
+        "n": 3
+      },
+      "mean_action_violation": {
+        "mean": 8.400537634408601e-05,
+        "std": 0.00011880154253806241,
+        "n": 3
+      },
+      "total_episodes": {
+        "mean": 20.666666666666668,
+        "std": 1.247219128924647,
+        "n": 3
+      },
+      "training_time_seconds": {
+        "mean": 26.711222489674885,
+        "std": 0.07471786804906946,
+        "n": 3
+      },
+      "seed_returns": {
+        "42": 1231.8506249999987,
+        "43": 764.4443750000002,
+        "44": 1584.9651315789458
+      }
+    }
+  },
+  "comparison": {
+    "return_delta": -29.39391447368439,
+    "return_change_pct": -2.4031377638609746,
+    "violation_delta": 8.400537634408601e-05,
+    "violation_reduction_pct": 0.0
+  },
+  "per_run": [
+    {
+      "condition": "model_free_ppo",
+      "seed": 42,
+      "mean_final_return": 1295.762499999999,
+      "mean_action_violation": 0.0,
+      "total_episodes": 21,
+      "total_real_steps": 7936,
+      "training_time_seconds": 18.39102005958557
+    },
+    {
+      "condition": "model_free_ppo",
+      "seed": 43,
+      "mean_final_return": 823.429375,
+      "mean_action_violation": 0.0,
+      "total_episodes": 20,
+      "total_real_steps": 7936,
+      "training_time_seconds": 18.16716504096985
+    },
+    {
+      "condition": "model_free_ppo",
+      "seed": 44,
+      "mean_final_return": 1550.2499999999986,
+      "mean_action_violation": 0.0,
+      "total_episodes": 19,
+      "total_real_steps": 7936,
+      "training_time_seconds": 18.306727170944214
+    },
+    {
+      "condition": "piml_mfrl_full",
+      "seed": 42,
+      "mean_final_return": 1231.8506249999987,
+      "mean_action_violation": 0.0,
+      "total_episodes": 22,
+      "total_real_steps": 7936,
+      "training_time_seconds": 26.738478183746338
+    },
+    {
+      "condition": "piml_mfrl_full",
+      "seed": 43,
+      "mean_final_return": 764.4443750000002,
+      "mean_action_violation": 0.00025201612903225806,
+      "total_episodes": 21,
+      "total_real_steps": 7936,
+      "training_time_seconds": 26.78600835800171
+    },
+    {
+      "condition": "piml_mfrl_full",
+      "seed": 44,
+      "mean_final_return": 1584.9651315789458,
+      "mean_action_violation": 0.0,
+      "total_episodes": 19,
+      "total_real_steps": 7936,
+      "training_time_seconds": 26.60918092727661
+    }
+  ]
+}

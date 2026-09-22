@@ -17,8 +17,12 @@ numbers* - those are reported here and in README Section 12, never applied silen
   categorical filter (Approach B), and a physics-violation penalty on the PPO surrogate
   (Approach C). New modules: `src/losses/physics_rl_losses.py`,
   `src/models/cbf_projection.py`, `src/training/piml_mfrl.py`; config
-  `configs/piml_mfrl.yaml`; emulator-free coverage in `tests/test_piml_mfrl.py`. The
-  real-hardware artifact is registered in `results/MANIFEST.md` as pending a run.
+  `configs/piml_mfrl.yaml`; a multi-seed hardware comparison
+  (`src/evaluation/piml_mfrl_study.py`, README 10.39.1) and emulator-free coverage in
+  `tests/test_piml_mfrl.py`. The study reports an honest null result on Yoshi's Island 1
+  (PIML-MFRL statistically indistinguishable from model-free PPO within the +/-300 seed
+  standard deviation, with an executed-action violation rate ~0 for both) recorded in
+  `results/piml_mfrl_metrics.json`.
 - CI: a native `windows-latest` job (path/CWD/subprocess parity) and a Linux
   Python `3.10 / 3.11 / 3.12` test matrix (`.github/workflows/ci.yml`).
 - A `print()`-in-`src/` convention guard (`tests/test_no_print_in_src.py`) with a

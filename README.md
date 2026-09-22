@@ -540,12 +540,14 @@ Trained entirely in the "imagination" of the respective World Models, the result
 | Policy Controller | World Model Origin | Real Console Progress ($\Delta X$) | Mean Forward Velocity ($v_x$) | Inference Latency | Real Console Survival |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Dyna-PPO (Hard PINN)** | **Hard Residual PINN** | **+115.0 px** | **+19.5 subpixels/frame** | **0.89 ms (<1 ms)** | 173 frames (enemy contact) |
-| **Dyna-PPO (Statistical MLP)** | Statistical MLP | +93.1 px | +8.4 subpixels/frame | 0.65 ms (<1 ms) | 213 frames (drag collision) |
-| **Random Exploration Baseline** | N/A | +126.8 px | +5.8 subpixels/frame | N/A | 456 frames (erratic hops) |
+| **Dyna-PPO (Statistical MLP)** | Statistical MLP | +92.4 px | +8.6 subpixels/frame | 0.65 ms (<1 ms) | 213 frames (drag collision) |
+| **Random Exploration Baseline** | N/A | +168.8 px | +4.5 subpixels/frame | N/A | 600 frames (timeout, never fell) |
+
+> *Re-recorded 2026-09-22 with the corrected `start_episode()` preamble (Section 10.38.1): the Hard-PINN headline row reproduces exactly (+115.0 px / 173 frames, enemy contact); the MLP and random-baseline rows were refreshed from the regenerated policy checkpoints, clearing this artifact's `STALE` marker in `results/MANIFEST.md`.*
 
 #### 10.7.3 Key Scientific Findings from Policy Transfer:
 1. **Coordinated High-Momentum Maneuvers:** The policy trained inside the Hard PINN learned to execute an optimal running leap: holding dash (`Y`) to build maximum acceleration, initiating a high-arc parabolic jump (`B`), and landing smoothly with conserved forward momentum ($v_x \approx 35$ subpixels/frame). It traversed $+115$ pixels in only 65 simulation frames.
-2. **Model Exploitation in Statistical Models:** The policy trained inside the Statistical MLP failed to coordinate running jumps. It crawled forward along the ground with low velocity ($v_x \approx 8.4$ subpixels/frame), unable to develop momentum because the black-box MLP distorted the traction and air-state transition dynamics.
+2. **Model Exploitation in Statistical Models:** The policy trained inside the Statistical MLP failed to coordinate running jumps. It crawled forward along the ground with low velocity ($v_x \approx 8.6$ subpixels/frame), unable to develop momentum because the black-box MLP distorted the traction and air-state transition dynamics.
 3. **Inference Latency Amortization:** Dyna-PPO executes in **0.89 milliseconds per frame (>1,120 FPS)**, compared to 25–45 ms per frame for CEM-MPC, representing a **30x to 50x acceleration in real-time control throughput**.
 4. **The Boundary of Kinematic State Spaces:** At frame 173 ($X \approx 131$), $\pi_{\text{PINN}}$ collided with the first dynamic stage enemy (*Rex*). Because the 8-dimensional state vector contains only player kinematics without enemy sprite coordinates, the policy maximizes horizontal velocity straight into the enemy hitbox. This defines the next frontier: integrating WRAM sprite tables ($7E:00E4 / 7E:00D8$) into the World Model.
 
@@ -1358,14 +1360,40 @@ extra critic forward and a second-order grad), so wall-clock overhead against th
 10.9 model-free baseline is small; the physics does not require training a world model or
 running the emulator any differently.
 
-**Validation status.** The three mechanisms and the full PPO update path (with A, B and C
-combined) are covered by emulator-free unit + integration tests in
-`tests/test_piml_mfrl.py`, which run in CI against a mock console. The real-hardware
-learning-curve artifact `results/piml_mfrl_metrics.json` (writer
-`src/training/piml_mfrl.py`, command `python -m src.training.piml_mfrl --config
-configs/piml_mfrl.yaml`) is registered in `results/MANIFEST.md` and marked **pending a
-hardware re-run**: this repository publishes only numbers produced by a verified run, so no
-closed-loop figure is quoted here until that run is recorded.
+**Per-mechanism correctness** (Lyapunov decay, CBF projection identity and feasibility,
+violation-penalty sign, and the full A+B+C update path) is covered by emulator-free unit +
+integration tests in `tests/test_piml_mfrl.py`, which run in CI against a mock console.
+
+#### 10.39.1 Measured Study on Real Hardware
+
+`src/evaluation/piml_mfrl_study.py` (`smw-pinn piml-mfrl-study`) trained two PPO agents
+directly on Yoshi's Island 1 across 3 seeds (42/43/44) at a matched 8,000-console-frame
+budget each - once with every physics mechanism off (the canonical model-free baseline),
+once with Approaches A+B+C on (`results/piml_mfrl_metrics.json`, RTX 4070 Laptop GPU):
+
+| Agent | Mean final return (± std, n=3) | Executed-action physics violation | Mean training time |
+| :--- | :---: | :---: | :---: |
+| **Model-free PPO (baseline)** | **1223.1 ± 301.1** | 0.0000 | 18.3 s |
+| PIML-MFRL (A+B+C) | 1193.8 ± 336.1 | 0.0001 | 26.7 s |
+
+**Honest reading - a null result, reported as such.** At this budget on this stage the
+two agents are statistically indistinguishable (the -2.4% return difference sits far inside
+the ± 300 seed standard deviation), and the physics-violation rate of the executed actions
+is ~0 for *both*: a well-trained model-free policy almost never commands the non-
+penetration / over-saturation forces the CBF filter and the surrogate penalty guard
+against, so on open ground those mechanisms are correctly *inert* rather than useful. The
+only clean effect is cost: PIML-MFRL raises wall-clock training time ~1.5x (the critic
+Lyapunov term adds an extra critic forward pass and a second-order gradient per mini-batch).
+
+The finding therefore *localises* where physics-coupled model-free RL should pay off -
+environments or curricula where infeasible actions are common (hazard stages, narrow pipe
+geometry, dense sprite threats) - instead of over-claiming a gain this stage cannot
+exhibit. This is consistent with Section 10.30: the benefit of a structural prior scales
+with how often the unconstrained learner is tempted to violate it.
+
+![PIML-MFRL vs Model-Free PPO](results/figures/piml_mfrl_learning_curves.png)
+
+Regenerate: `python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000`.
 
 ---
 
@@ -1736,6 +1764,10 @@ python -m scripts.navigate_to_level --level 2
 #     console with the physics-informed critic (A), CBF actor filter (B) and
 #     action-violation penalty (C) enabled (10.39). Needs core + ROM.
 python -m src.training.piml_mfrl --config configs/piml_mfrl.yaml
+
+# 42. PIML-MFRL multi-seed comparison study (model-free PPO vs A+B+C), which writes
+#     results/piml_mfrl_metrics.json + the learning-curve figure (10.39.1). Needs core + ROM.
+python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

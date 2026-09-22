@@ -46,6 +46,7 @@ from src.utils.paths import (
     figure_file,
     results_file,
 )
+from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
@@ -251,11 +252,18 @@ def run_cross_level_control_benchmark(
     output_metrics: str = results_file("cross_level_control_metrics.json"),
     output_figure: str = figure_file("cross_level_control_trajectories.png"),
     max_frames: int = 400,
+    seed: int = 42,
 ):
     logger.info("====================================================================")
     logger.info("  ZERO-SHOT CLOSED-LOOP CONTROL BENCHMARK ON UNSEEN STAGE B         ")
     logger.info("  Target Stage: Yoshi's House ($7E:0100 = 0x14)                     ")
     logger.info("====================================================================")
+
+    # Seed before any controller runs: the CEM planners draw random action candidates
+    # and the random baseline draws np.random, so without a pinned seed the MPC and
+    # Random rows are a single irreproducible draw (CONTRIBUTING.md: no unseeded RNG
+    # in evaluation code).
+    set_global_seed(seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Device: {device}")

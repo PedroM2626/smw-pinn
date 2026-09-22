@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -27,6 +27,7 @@ help:
 	@echo "sample-efficiency  Pareto study (configs/sample_efficiency.yaml)"
 	@echo "multiseed          K-seed significance study (configs/multiseed.yaml)"
 	@echo "piml-mfrl          Physics-Informed Model-Free RL on real SNES (configs/piml_mfrl.yaml)"
+	@echo "piml-mfrl-study    Multi-seed PIML-MFRL vs model-free PPO comparison (real SNES)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -79,6 +80,10 @@ multiseed:
 # critic (A), discrete CBF filter (B) and action-violation penalty (C) enabled.
 piml-mfrl:
 	$(PY) -m src.training.piml_mfrl --config $(CONFIG_DIR)/piml_mfrl.yaml
+
+# Multi-seed hardware comparison behind README 10.39.1 (model-free PPO vs PIML-MFRL).
+piml-mfrl-study:
+	$(PY) -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 8000
 
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in

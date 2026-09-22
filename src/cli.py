@@ -70,6 +70,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "learning-curves": "src.evaluation.plot_learning_curves",
     "baselines": "src.evaluation.analytical_baselines",
     "piml-mfrl": "src.training.piml_mfrl",
+    "piml-mfrl-study": "src.evaluation.piml_mfrl_study",
 }
 
 # Config file injected for the workflows that accept --config.

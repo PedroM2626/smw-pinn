@@ -84,7 +84,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `hierarchical_mpc_metrics.json` | `src/evaluation/evaluate_hierarchical_mpc.py` | yes | 10.32 |
 | `yi2_capture_attempt.json` | `scripts/navigate_to_level.py` | yes | 10.36 |
 | `obstacle_1000_diagnosis.json` | `src/evaluation/diagnose_obstacle_1000.py` | yes | 10.24 (X~1000 plateau) |
-| `piml_mfrl_metrics.json` | `src/training/piml_mfrl.py` | yes | 10.39 (pending hardware run) |
+| `piml_mfrl_metrics.json` | `src/evaluation/piml_mfrl_study.py` | yes | 10.39.1 |
 
 ## Input freshness
 
@@ -110,16 +110,24 @@ judging every dependency pair a tie.
       hierarchical_mpc_metrics.json <- pinn_hard_best.pt
       pixel_mpc_metrics.json        <- pinn_hard_best.pt
       analytical_baseline_metrics.json <- pinn_hard_best.pt
-STALE dyna_ppo_metrics.json         <- pinn_hard_best.pt
+      dyna_ppo_metrics.json           <- pinn_hard_best.pt
 STALE cross_level_control_metrics.json <- pinn_hard_best.pt mlp_best.pt pinn_soft_best.pt dagger_policy_best.pt
 ```
 
 `STALE` rows are the honest backlog: `mbrl_mpc_metrics.json`,
 `oracle_mpc_metrics.json` and the §10.31-§10.32 rows were re-recorded on 2026-09-22
-with the corrected `start_episode()` preamble (README 10.38.1), but the remaining
-closed-loop artifacts (Dyna-PPO, cross-level control, and every other §10.x hardware
-row) were recorded before the checkpoints were last regenerated. Re-run them with
-the commands in the table above and drop the marker; never edit the marker alone.
+with the corrected `start_episode()` preamble (README 10.38.1). On the same date
+`dyna_ppo_metrics.json` was re-run against the regenerated policy checkpoints: the
+Hard-PINN headline row reproduced exactly (+115.0 px / 173 frames, Section 10.7.2), the
+MLP and random rows were refreshed and the README table updated, so its `STALE` marker
+was dropped. `cross_level_control_metrics.json` is deliberately left `STALE`: a
+re-record confirmed its DAgger row reproduces (830.50 px / 34.66) but the MPC and random
+rows are single-seed CEM draws and its latency/throughput columns are wall-clock, so
+overwriting the published table from one loaded-machine draw would reduce fidelity
+(cf. README 10.38.2). `evaluate_cross_level_control.py` now pins `set_global_seed` so a
+clean, unloaded, multi-seed re-record is reproducible; until that re-record replaces the
+table, the marker stays. The rule is unchanged: resolve a marker by re-running, never by
+editing it alone.
 
 ## Provenance policy
 
