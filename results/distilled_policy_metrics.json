@@ -1,0 +1,9 @@
+{
+  "survived_frames": 174,
+  "total_progress_pixels": 115.0,
+  "rex_evaded": false,
+  "mean_inference_latency_us": 344.7258636226942,
+  "inference_throughput_fps": 2900.855739372401,
+  "total_evaluation_time_seconds": 0.12513113021850586,
+  "hardware_framerate_fps": 1390.5412641615128
+}

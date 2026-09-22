@@ -99,12 +99,12 @@ class TrajectoryObjective:
             ).any(dim=1).float()
 
             # Detect clean evasive leap: hazard was in front, is passed horizontally,
-            # while Mario jumped high enough above ground
+            # while Mario leaped above the hazard's vertical collision zone
             passed_hazard = (
                 (active_h[:, -1] > 0.5)
                 & (initial_states[:, 8] > 0.0)
                 & (predicted_trajectories[:, -1, 8] <= 0.0)
-                & (all_y.min(dim=1).values < 325.0)
+                & ((dy_hazard.max(dim=1).values > 16.0) | ((initial_states[:, 1] - all_y.min(dim=1).values) > 16.0))
             ).float()
 
             rewards = rewards - self.hazard_penalty * collided_hazard + self.leap_bonus * passed_hazard

@@ -1,0 +1,13 @@
+{
+  "survived_frames": 627,
+  "max_frames": 1500,
+  "total_progress_pixels": 1016.0625,
+  "milestones_cleared": [
+    500,
+    782,
+    1000
+  ],
+  "mean_vx": 28.454545454545453,
+  "evaluation_time_seconds": 24.826293230056763,
+  "fps": 25.25548192755985
+}

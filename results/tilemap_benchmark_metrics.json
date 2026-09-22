@@ -1,0 +1,17 @@
+{
+  "dataset_samples": 10357,
+  "test_samples": 2072,
+  "tilemap_pinn": {
+    "test_mse": 51.419158935546875,
+    "contact_accuracy_pct": 98.66071343421936,
+    "kinematic_residual": 0.0,
+    "kinematic_violation_pct": 0.0
+  },
+  "blind_pinn": {
+    "test_mse": 34.137996673583984,
+    "contact_accuracy_pct": 98.0815589427948,
+    "kinematic_residual": 0.0,
+    "kinematic_violation_pct": 0.0
+  },
+  "contact_accuracy_gain_pct": 0.5791544914245605
+}
