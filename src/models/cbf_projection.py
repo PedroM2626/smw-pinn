@@ -139,6 +139,10 @@ class DiscreteCBFCategoricalFilter(nn.Module):
     returns the unfiltered policy (an exact identity, unit-tested).
     """
 
+    # Class-level annotation so mypy resolves the `register_buffer`-assigned attribute
+    # below as a Tensor instead of falling back to nn.Module.__getattr__ (-> Module).
+    action_table: torch.Tensor
+
     def __init__(
         self,
         action_table: torch.Tensor,

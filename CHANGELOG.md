@@ -59,6 +59,12 @@ numbers* - those are reported here and in README Section 12, never applied silen
   single irreproducible draw: the CEM planners and the random baseline drew from an
   unseeded RNG. It is now reseeded per seed and aggregated over 5 seeds; the deterministic
   DAgger policy reproduces exactly (+/-0.00), and the MPC rows report their seed variance.
+- `src/models/cbf_projection.py`: `DiscreteCBFCategoricalFilter.action_table` is set via
+  `nn.Module.register_buffer`, so mypy resolved reads of it through `__getattr__` and typed
+  it `Tensor | Module`, failing `physics_action_violation_table` once the module entered the
+  expanded typed core (CI typecheck, exit 1/2). Added the class-level `action_table:
+  torch.Tensor` annotation (the project's documented buffer-typing convention); verified
+  with a fresh, cacheless `mypy --no-incremental` over all 40 core modules.
 - CI run #14 (`Typecheck (mypy via Makefile)`, exit code 2): the `dev`/`all` extras
   declared `mypy>=1.0.0` with no upper bound, so CI resolved a newer interpreter that
   crashed the typecheck gate while the locally validated version passed. Pinned mypy to
