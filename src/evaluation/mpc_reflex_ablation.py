@@ -160,27 +160,31 @@ def run_ablation(
     max_frames: int = 600,
     seed: int = 42,
     output_dir: str = "results",
+    controller: ModelPredictiveController | None = None,
+    emulator_cls=SnesLibretroEmulator,
 ) -> Dict:
+    """Set `controller`/`emulator_cls` only in tests (dependency injection)."""
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
-    world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
-    world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
-    world_model.eval()
-    controller = ModelPredictiveController(
-        world_model=world_model,
-        device=device,
-        horizon=16,
-        num_candidates=256,
-        cem_iterations=3,
-        objective=TrajectoryObjective(
-            weight_progress=3.5, weight_velocity=0.6, pit_penalty=1200.0,
-            death_y=450.0, hazard_penalty=850.0, leap_bonus=400.0,
-        ),
-    )
+    if controller is None:
+        base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
+        world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
+        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.eval()
+        controller = ModelPredictiveController(
+            world_model=world_model,
+            device=device,
+            horizon=16,
+            num_candidates=256,
+            cem_iterations=3,
+            objective=TrajectoryObjective(
+                weight_progress=3.5, weight_velocity=0.6, pit_penalty=1200.0,
+                death_y=450.0, hazard_penalty=850.0, leap_bonus=400.0,
+            ),
+        )
 
-    emu = SnesLibretroEmulator(core_path)
+    emu = emulator_cls(core_path)
     emu.load_rom(rom_path)
     with open(state_path, "rb") as f:
         initial_savestate = f.read()
@@ -199,6 +203,7 @@ def run_ablation(
         )
     emu.close()
 
+    os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "mpc_reflex_ablation.json"), "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 

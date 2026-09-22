@@ -6,11 +6,13 @@ must skip instead of erroring when the Windows Libretro core cannot load.
 
 import ctypes
 
-from tests.conftest import emulator_available
+from tests.conftest import emulator_available, requires_emulator
 
 
+@requires_emulator
 def test_guard_passes_on_capable_platform():
-    # This dev machine (Windows + ROM + DLL) can boot the real emulator.
+    # Only runs where the native core loads (Windows + ROM + DLL); on Linux
+    # CI this skips by design instead of failing.
     assert emulator_available() is True
 
 

@@ -119,6 +119,7 @@ def run_spatial_holdout(
         "single_step": single,
         "rollout": roll,
     }
+    os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "spatial_holdout_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     return payload

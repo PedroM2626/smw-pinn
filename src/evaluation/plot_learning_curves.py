@@ -70,6 +70,7 @@ def run_plot(output_dir: str = "results") -> dict:
         "dyna_real_frame_band": [200, 8077],
         "figure": fig_path,
     }
+    os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "learning_curve_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     logger.info(f"Learning-curve comparison -> {fig_path}")
