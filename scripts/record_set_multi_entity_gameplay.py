@@ -13,15 +13,21 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.environment.sprite_sets import sprites_to_entity_rows
+from src.utils.paths import CORE_PATH, DATASET_SET_MULTI_ENTITY, ROM_PATH, STATE_YOSHI_ISLAND_1
 from src.utils.seed import set_global_seed
 
 
 def extract_vector(state_dict: dict) -> np.ndarray:
     return np.array(
         [
-            state_dict["x"], state_dict["y"], state_dict["vx"], state_dict["vy"],
-            state_dict["c_ground"], state_dict["c_ceiling"],
-            state_dict["c_left"], state_dict["c_right"],
+            state_dict["x"],
+            state_dict["y"],
+            state_dict["vx"],
+            state_dict["vy"],
+            state_dict["c_ground"],
+            state_dict["c_ceiling"],
+            state_dict["c_left"],
+            state_dict["c_right"],
         ],
         dtype=np.float32,
     )
@@ -42,10 +48,10 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
 
 
 def record_set_dataset(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    output_path: str = "data/raw/smw_set_multi_entity_dataset.npz",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    output_path: str = DATASET_SET_MULTI_ENTITY,
     num_episodes: int = 10,
     frames_per_episode: int = 400,
     max_entities: int = 12,
@@ -75,7 +81,7 @@ def record_set_dataset(
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        emu.wram_buffer[0x0100] = 0x14
+        emu.enable_gameplay_mode()
         for _ in range(5):
             emu.step_frame()
         set_global_seed(7000 + ep)
@@ -89,14 +95,10 @@ def record_set_dataset(
             action_dict = behaviors[pattern]
             emu.set_input(action_dict)
             s = emu.get_smw_state()
-            ent = sprites_to_entity_rows(
-                emu.get_active_sprites(), s["x"], s["y"], max_entities
-            )
+            ent = sprites_to_entity_rows(emu.get_active_sprites(), s["x"], s["y"], max_entities)
             emu.step_frame()
             s2 = emu.get_smw_state()
-            ent2 = sprites_to_entity_rows(
-                emu.get_active_sprites(), s2["x"], s2["y"], max_entities
-            )
+            ent2 = sprites_to_entity_rows(emu.get_active_sprites(), s2["x"], s2["y"], max_entities)
             if 0 <= s2["y"] <= 500:
                 mario_t.append(extract_vector(s))
                 ent_t.append(ent)

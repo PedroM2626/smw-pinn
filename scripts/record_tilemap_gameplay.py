@@ -16,6 +16,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.paths import CORE_PATH, DATASET_TILEMAP, ROM_PATH, STATE_YOSHI_ISLAND_1
 from src.utils.seed import set_global_seed
 
 
@@ -52,10 +53,10 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
 
 
 def record_tilemap_dataset(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    output_path: str = "data/raw/smw_tilemap_dataset.npz",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    output_path: str = DATASET_TILEMAP,
     num_episodes: int = 30,
     frames_per_episode: int = 500,
 ):
@@ -83,16 +84,16 @@ def record_tilemap_dataset(
         initial_savestate = f.read()
 
     action_behaviors = [
-        {"RIGHT": True, "Y": True},                 # Continuous run
-        {"RIGHT": True, "Y": True, "B": True},       # Running jump
-        {"RIGHT": True, "B": True},                 # Walking jump
-        {"RIGHT": True},                            # Walk
-        {"LEFT": True, "Y": True},                  # Left run
-        {"LEFT": True, "B": True},                  # Left jump
-        {"LEFT": True},                             # Left walk
-        {},                                         # Idle / deceleration
-        {"B": True},                                # High vertical jump
-        {"RIGHT": True, "DOWN": True},              # Crouch slide
+        {"RIGHT": True, "Y": True},  # Continuous run
+        {"RIGHT": True, "Y": True, "B": True},  # Running jump
+        {"RIGHT": True, "B": True},  # Walking jump
+        {"RIGHT": True},  # Walk
+        {"LEFT": True, "Y": True},  # Left run
+        {"LEFT": True, "B": True},  # Left jump
+        {"LEFT": True},  # Left walk
+        {},  # Idle / deceleration
+        {"B": True},  # High vertical jump
+        {"RIGHT": True, "DOWN": True},  # Crouch slide
     ]
 
     total_transitions = 0
@@ -100,7 +101,7 @@ def record_tilemap_dataset(
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        emu.wram_buffer[0x0100] = 0x14  # Ensure interactive mode
+        emu.enable_gameplay_mode()  # Ensure interactive mode
         for _ in range(5):
             emu.step_frame()
 
@@ -111,7 +112,9 @@ def record_tilemap_dataset(
         prev_b = False
 
         curr_state_dict = emu.get_smw_state()
-        curr_tilemap = emu.get_local_tilemap_patch(curr_state_dict["x"], curr_state_dict["y"], radius=3)
+        curr_tilemap = emu.get_local_tilemap_patch(
+            curr_state_dict["x"], curr_state_dict["y"], radius=3
+        )
 
         for f in range(frames_per_episode):
             if pattern_timer >= pattern_duration:
@@ -141,7 +144,9 @@ def record_tilemap_dataset(
 
             next_state_dict = emu.get_smw_state()
             next_s_vec = extract_vector(next_state_dict)
-            next_tilemap = emu.get_local_tilemap_patch(next_state_dict["x"], next_state_dict["y"], radius=3)
+            next_tilemap = emu.get_local_tilemap_patch(
+                next_state_dict["x"], next_state_dict["y"], radius=3
+            )
 
             # Record transition within valid level coordinates
             if 0 <= next_s_vec[1] <= 500:
@@ -163,7 +168,7 @@ def record_tilemap_dataset(
 
         if (ep + 1) % 5 == 0 or ep == num_episodes - 1:
             print(
-                f"Episode {ep+1:2d}/{num_episodes} completed | "
+                f"Episode {ep + 1:2d}/{num_episodes} completed | "
                 f"Accumulated transitions: {total_transitions}"
             )
 

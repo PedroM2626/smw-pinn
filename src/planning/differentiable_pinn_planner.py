@@ -78,7 +78,9 @@ class DifferentiablePINNPlanner:
         optimizer = optim.Adam([action_logits], lr=self.lr)
         loss_history = []
 
-        curr_s0 = torch.tensor(initial_state, dtype=torch.float32, device=self.device).unsqueeze(0)  # [1, state_dim]
+        curr_s0 = torch.tensor(initial_state, dtype=torch.float32, device=self.device).unsqueeze(
+            0
+        )  # [1, state_dim]
 
         for step in range(self.num_iterations):
             optimizer.zero_grad()
@@ -91,7 +93,7 @@ class DifferentiablePINNPlanner:
             traj_states = []
 
             for h in range(self.horizon):
-                a_h = actions[h:h+1]  # [1, 6]
+                a_h = actions[h : h + 1]  # [1, 6]
                 if state_dim == 8:
                     s_next = self.world_model(s_curr, a_h)
                 else:
@@ -109,7 +111,13 @@ class DifferentiablePINNPlanner:
             pit_penalty = torch.relu(traj_tensor[0, :, 1] - 420.0).sum() * 50.0
 
             # Total differentiable objective (maximize progress, minimize pit fall)
-            loss = -(delta_x * self.objective.weight_progress + mean_vx * self.objective.weight_velocity) + pit_penalty
+            loss = (
+                -(
+                    delta_x * self.objective.weight_progress
+                    + mean_vx * self.objective.weight_velocity
+                )
+                + pit_penalty
+            )
 
             loss.backward()
             optimizer.step()

@@ -1,5 +1,9 @@
 """Dynamics architectures: statistical baselines and physics-informed world models."""
 
+from src.models.analytical_kinematics import (
+    AnalyticalKinematicsDynamics,
+    EngineRuleParameters,
+)
 from src.models.pinn_ensemble import DeepPINNEnsemble
 from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
@@ -20,6 +24,8 @@ PINNInvariantDynamics = TranslationInvariantPINNDynamics
 PINNEnsembleDynamics = DeepPINNEnsemble
 
 __all__ = [
+    "AnalyticalKinematicsDynamics",
+    "EngineRuleParameters",
     "StatisticalMLPDynamics",
     "build_param_matched_mlp",
     "MATCHED_HIDDEN_DIMS",

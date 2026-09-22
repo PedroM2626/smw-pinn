@@ -1,0 +1,7 @@
+# Seconds-scale version of the unified Dyna-PPO run (README 10.29.3, `make smoke`).
+# 14k transitions/second on a laptop GPU, so the budget - not the code path - is
+# what has to shrink: 2 PPO updates over a tiny vectorized environment.
+total_timesteps: 512
+num_envs: 8
+num_steps: 8
+lr: 0.0003

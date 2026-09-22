@@ -129,7 +129,9 @@ class SetMultiEntityPINNDynamics(nn.Module):
 
         # 5. Predict accelerations for each entity
         # Condition on next Mario velocity
-        mario_v_expanded = torch.stack([mario_vx_next, mario_vy_next], dim=-1).unsqueeze(1).expand(-1, K, -1)  # [B, K, 2]
+        mario_v_expanded = (
+            torch.stack([mario_vx_next, mario_vy_next], dim=-1).unsqueeze(1).expand(-1, K, -1)
+        )  # [B, K, 2]
         dyn_in = torch.cat([entity_emb, mario_v_expanded], dim=-1)  # [B, K, hidden_dim + 2]
         accel_residuals = self.hazard_dynamics(dyn_in)  # [B, K, 2]
 

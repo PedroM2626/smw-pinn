@@ -19,13 +19,21 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Run / Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Run / Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -42,7 +50,7 @@ def run_blind_policy(
 ) -> Dict:
     """Runs the 8D blind policy that does not perceive sprites."""
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -62,7 +70,16 @@ def run_blind_policy(
         survived += 1
 
         curr_vec = torch.tensor(
-            [s["x"], s["y"], s["vx"], s["vy"], s["c_ground"], s["c_ceiling"], s["c_left"], s["c_right"]],
+            [
+                s["x"],
+                s["y"],
+                s["vx"],
+                s["vy"],
+                s["c_ground"],
+                s["c_ceiling"],
+                s["c_left"],
+                s["c_right"],
+            ],
             dtype=torch.float32,
             device=device,
         ).unsqueeze(0)
@@ -98,7 +115,7 @@ def run_sprite_aware_controller(
     a proactive running jump to leap over the hitbox when a collision is imminent.
     """
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -126,8 +143,15 @@ def run_sprite_aware_controller(
         # If an enemy is approaching ahead (20 < dx < 90) and Mario is airborne descending,
         # release B to guarantee a trigger-edge transition in WRAM $7E:0016 upon landing.
         if is_hazard and 20.0 <= dx_hazard <= 90.0 and ext_s["c_ground"] < 0.5:
-            action_vec = np.array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=np.float32)  # Release B, hold Run + Right
-        elif is_hazard and 10.0 <= dx_hazard <= 75.0 and ext_s["c_ground"] > 0.5 and jump_cooldown == 0:
+            action_vec = np.array(
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=np.float32
+            )  # Release B, hold Run + Right
+        elif (
+            is_hazard
+            and 10.0 <= dx_hazard <= 75.0
+            and ext_s["c_ground"] > 0.5
+            and jump_cooldown == 0
+        ):
             # Trigger high-arc evasive leap over Rex upon ground contact
             jump_cooldown = 28
             action_vec = np.array([1.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=np.float32)
@@ -138,7 +162,16 @@ def run_sprite_aware_controller(
         else:
             # Delegate to standard amortized policy
             curr_vec = torch.tensor(
-                [ext_s["x"], ext_s["y"], ext_s["vx"], ext_s["vy"], ext_s["c_ground"], ext_s["c_ceiling"], ext_s["c_left"], ext_s["c_right"]],
+                [
+                    ext_s["x"],
+                    ext_s["y"],
+                    ext_s["vx"],
+                    ext_s["vy"],
+                    ext_s["c_ground"],
+                    ext_s["c_ceiling"],
+                    ext_s["c_left"],
+                    ext_s["c_right"],
+                ],
                 dtype=torch.float32,
                 device=device,
             ).unsqueeze(0)
@@ -161,11 +194,11 @@ def run_sprite_aware_controller(
 
 
 def evaluate_sprite_perception(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    policy_path: str = "results/checkpoints/dyna_ppo_pinn_hard_policy.pt",
-    output_dir: str = "results",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    policy_path: str = checkpoint_file("dyna_ppo_pinn_hard_policy.pt"),
+    output_dir: str = RESULTS_DIR,
 ):
     logger.info("====================================================================")
     logger.info("  ZERO-SHOT HARDWARE EVALUATION: DYNAMIC SPRITE PERCEPTION IN SNES   ")
@@ -184,11 +217,15 @@ def evaluate_sprite_perception(
 
     logger.info("\n1. Executing Blind Agent (8D State - No Sprites)...")
     blind_res = run_blind_policy(emu, initial_savestate, agent, device)
-    logger.info(f"   Survived: {blind_res['survived_frames']} frames | Progress: {blind_res['total_progress']:+.1f} px")
+    logger.info(
+        f"   Survived: {blind_res['survived_frames']} frames | Progress: {blind_res['total_progress']:+.1f} px"
+    )
 
     logger.info("\n2. Executing Sprite-Aware Agent (12D WRAM Sprite Telemetry)...")
     sprite_res = run_sprite_aware_controller(emu, initial_savestate, agent, device)
-    logger.info(f"   Survived: {sprite_res['survived_frames']} frames | Progress: {sprite_res['total_progress']:+.1f} px")
+    logger.info(
+        f"   Survived: {sprite_res['survived_frames']} frames | Progress: {sprite_res['total_progress']:+.1f} px"
+    )
 
     emu.close()
 
@@ -213,11 +250,33 @@ def evaluate_sprite_perception(
     # Generate comparative trajectory figure
     sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(11, 5))
-    ax.plot(blind_res["trajectory_x"], blind_res["trajectory_y"], label="Blind Agent (Collides with Rex @ X≈131)", color="#e74c3c", linewidth=2.5)
-    ax.plot(sprite_res["trajectory_x"], sprite_res["trajectory_y"], label="Sprite-Aware Agent (Leaps Rex to X>400)", color="#2ecc71", linewidth=2.5)
-    ax.axvline(x=133.0, color="#f39c12", linestyle="--", alpha=0.7, label="Rex Spawn / Contact Zone (X≈133)")
+    ax.plot(
+        blind_res["trajectory_x"],
+        blind_res["trajectory_y"],
+        label="Blind Agent (Collides with Rex @ X≈131)",
+        color="#e74c3c",
+        linewidth=2.5,
+    )
+    ax.plot(
+        sprite_res["trajectory_x"],
+        sprite_res["trajectory_y"],
+        label="Sprite-Aware Agent (Leaps Rex to X>400)",
+        color="#2ecc71",
+        linewidth=2.5,
+    )
+    ax.axvline(
+        x=133.0,
+        color="#f39c12",
+        linestyle="--",
+        alpha=0.7,
+        label="Rex Spawn / Contact Zone (X≈133)",
+    )
     ax.invert_yaxis()
-    ax.set_title("Zero-Shot Dynamic Obstacle Evasion via WRAM Sprite Telemetry (SNES Console)", fontsize=12, fontweight="bold")
+    ax.set_title(
+        "Zero-Shot Dynamic Obstacle Evasion via WRAM Sprite Telemetry (SNES Console)",
+        fontsize=12,
+        fontweight="bold",
+    )
     ax.set_xlabel("Mario Level Coordinate X (Pixels)")
     ax.set_ylabel("Mario Level Coordinate Y (Pixels - Inverted)")
     ax.legend(loc="best", fontsize=10)

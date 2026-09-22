@@ -16,15 +16,23 @@ import torch
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def evaluate_dagger_policy(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    policy_checkpoint: str = "results/checkpoints/dagger_policy_best.pt",
-    output_metrics: str = "results/dagger_policy_metrics.json",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    policy_checkpoint: str = checkpoint_file("dagger_policy_best.pt"),
+    output_metrics: str = results_file("dagger_policy_metrics.json"),
     max_frames: int = 500,
 ) -> Dict:
     logger.info("====================================================================")
@@ -45,7 +53,7 @@ def evaluate_dagger_policy(
         initial_savestate = f.read()
 
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -84,11 +92,15 @@ def evaluate_dagger_policy(
         survived_frames += 1
 
         if frame % 100 == 0:
-            logger.info(f"Frame {frame:3d} | X={s_dict['x']:.1f} (Progress: {s_dict['x']-start_x:.1f} px) | "
-                  f"Y={s_dict['y']:.1f} | Enemy dX={s_dict['delta_x_enemy']:.1f}")
+            logger.info(
+                f"Frame {frame:3d} | X={s_dict['x']:.1f} (Progress: {s_dict['x'] - start_x:.1f} px) | "
+                f"Y={s_dict['y']:.1f} | Enemy dX={s_dict['delta_x_enemy']:.1f}"
+            )
 
         if s_dict["y"] > 450.0:
-            logger.info(f"Mario fell into pit at frame {frame} (Progress: {s_dict['x']-start_x:.1f} px)")
+            logger.info(
+                f"Mario fell into pit at frame {frame} (Progress: {s_dict['x'] - start_x:.1f} px)"
+            )
             break
 
     total_time = time.time() - t_start

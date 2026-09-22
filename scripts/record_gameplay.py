@@ -13,6 +13,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.paths import CORE_PATH, DATASET_GAMEPLAY, ROM_PATH
 from src.utils.seed import set_global_seed
 
 
@@ -49,9 +50,9 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
 
 
 def record_interactive_trajectories(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    output_path: str = "data/raw/smw_gameplay_dataset.npz",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    output_path: str = DATASET_GAMEPLAY,
     num_episodes: int = 15,
     frames_per_episode: int = 1000,
 ):
@@ -77,7 +78,7 @@ def record_interactive_trajectories(
     for _ in range(410):
         emu.step_frame()
 
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(30):
         emu.step_frame()
 
@@ -88,16 +89,16 @@ def record_interactive_trajectories(
 
     # Diverse action behaviors to cover the complete dynamic envelope
     action_behaviors = [
-        {"RIGHT": True, "Y": True},                 # Continuous run
-        {"RIGHT": True, "Y": True, "B": True},       # Running jump
-        {"RIGHT": True, "B": True},                 # Walking jump
-        {"RIGHT": True},                            # Simple walk
-        {"LEFT": True, "Y": True},                  # Left run / skidding
-        {"LEFT": True},                             # Left walk
-        {},                                         # Idle / natural surface friction deceleration
-        {"B": True},                                # Stationary vertical jump
-        {"RIGHT": True, "DOWN": True},              # Crouched slide
-        {"RIGHT": True, "Y": True, "A": True},       # Running Spin Jump
+        {"RIGHT": True, "Y": True},  # Continuous run
+        {"RIGHT": True, "Y": True, "B": True},  # Running jump
+        {"RIGHT": True, "B": True},  # Walking jump
+        {"RIGHT": True},  # Simple walk
+        {"LEFT": True, "Y": True},  # Left run / skidding
+        {"LEFT": True},  # Left walk
+        {},  # Idle / natural surface friction deceleration
+        {"B": True},  # Stationary vertical jump
+        {"RIGHT": True, "DOWN": True},  # Crouched slide
+        {"RIGHT": True, "Y": True, "A": True},  # Running Spin Jump
     ]
 
     total_transitions = 0
@@ -154,7 +155,7 @@ def record_interactive_trajectories(
                 break
 
         print(
-            f"Episode {ep+1:2d}/{num_episodes} completed | "
+            f"Episode {ep + 1:2d}/{num_episodes} completed | "
             f"Final Mario: X={curr_state_dict['x']:.1f}, Y={curr_state_dict['y']:.1f}, "
             f"vx={curr_state_dict['vx']:.1f}, vy={curr_state_dict['vy']:.1f} | "
             f"Accumulated transitions: {total_transitions}"
@@ -181,7 +182,7 @@ def record_interactive_trajectories(
     print(f"Total transitions recorded: {len(states_t_arr)}")
     print(f"State dimensions: {states_t_arr.shape}")
     print(f"Action dimensions: {actions_t_arr.shape}")
-    print(f"Emulation time: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
+    print(f"Emulation time: {elapsed:.2f}s ({total_transitions / elapsed:.1f} FPS)")
     print("==========================================================")
 
 

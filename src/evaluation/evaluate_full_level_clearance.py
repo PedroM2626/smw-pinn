@@ -32,13 +32,22 @@ from src.planning.mpc_planner import (
 from src.training.distill_mpc_policy import DistilledActorPolicy
 from src.training.train_unified_ppo import UnifiedActorCritic
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Run / Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Run / Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -68,16 +77,18 @@ def extract_12d_vector(state_dict: dict) -> np.ndarray:
 
 def run_full_level_clearance(
     controller_type: str = "ppo",
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    output_metrics: str = "results/full_level_clearance_metrics.json",
-    output_trajectory_log: str = "results/full_level_trajectory_log.json",
-    output_figure: str = "results/figures/full_level_clearance_trajectory.png",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    output_metrics: str = results_file("full_level_clearance_metrics.json"),
+    output_trajectory_log: str = results_file("full_level_trajectory_log.json"),
+    output_figure: str = figure_file("full_level_clearance_trajectory.png"),
     max_frames: int = 2500,
 ) -> Dict:
     logger.info("====================================================================")
-    logger.info(f"  FULL LEVEL CLEARANCE BENCHMARK ON LIVE SNES CONSOLE: [{controller_type.upper()}]")
+    logger.info(
+        f"  FULL LEVEL CLEARANCE BENCHMARK ON LIVE SNES CONSOLE: [{controller_type.upper()}]"
+    )
     logger.info("  Target Stage: Yoshi's Island 1 ($7E:0100 = 0x14)                  ")
     logger.info("====================================================================")
 
@@ -91,7 +102,7 @@ def run_full_level_clearance(
 
     if controller_type == "ppo":
         ppo_agent = UnifiedActorCritic(state_dim=12, num_actions=8).to(device)
-        ckpt = "results/checkpoints/unified_ppo_policy_best.pt"
+        ckpt = checkpoint_file("unified_ppo_policy_best.pt")
         if os.path.exists(ckpt):
             ppo_agent.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
             logger.info(f"Loaded trained PPO policy from: {ckpt}")
@@ -99,7 +110,7 @@ def run_full_level_clearance(
 
     elif controller_type == "dagger":
         dagger_policy = DistilledActorPolicy(state_dim=12, action_dim=6)
-        ckpt = "results/checkpoints/dagger_policy_best.pt"
+        ckpt = checkpoint_file("dagger_policy_best.pt")
         if os.path.exists(ckpt):
             dagger_policy.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
             logger.info(f"Loaded trained DAgger policy from: {ckpt}")
@@ -108,7 +119,7 @@ def run_full_level_clearance(
     elif controller_type == "mpc":
         base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
         world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
-        ckpt = "results/checkpoints/pinn_multi_entity_best.pt"
+        ckpt = checkpoint_file("pinn_multi_entity_best.pt")
         if os.path.exists(ckpt):
             world_model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
             logger.info(f"Loaded trained multi-entity weights from: {ckpt}")
@@ -139,7 +150,7 @@ def run_full_level_clearance(
         initial_savestate = f.read()
 
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -172,7 +183,9 @@ def run_full_level_clearance(
         for m in [250, 500, 782, 1000, 1250, 1500, 1750, 1900]:
             if prog >= m and m not in milestones_cleared:
                 milestones_cleared.append(m)
-                logger.info(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> STAGE MILESTONE CLEARED: {m} px! <<<")
+                logger.info(
+                    f"[{frame:4d} frames | {time.time() - t0:.1f}s] >>> STAGE MILESTONE CLEARED: {m} px! <<<"
+                )
 
         # Goal tape check (subscreen 7 / X > 1900 px)
         if curr_x >= 1900.0 and not goal_reached:
@@ -242,7 +255,7 @@ def run_full_level_clearance(
             logger.info(
                 f"Frame {frame:4d}/{max_frames} | "
                 f"Progress: {prog:6.1f} px | Y: {curr_y:5.1f} | "
-                f"vx: {curr_state['vx']:4.1f} | Subscreen: {int(curr_x)//256}"
+                f"vx: {curr_state['vx']:4.1f} | Subscreen: {int(curr_x) // 256}"
             )
 
         if curr_y > 450.0:
@@ -285,20 +298,34 @@ def run_full_level_clearance(
     with open(output_trajectory_log, "w") as f:
         json.dump(traj_log_data, f)
 
-    logger.info(f"\n[{controller_type.upper()}] Final Progress: {final_progress:6.2f} px | Survived: {survived_frames:4d} frames | "
-          f"Throughput: {metrics['decision_throughput_fps']:6.1f} FPS | Goal Reached: {goal_reached}")
+    logger.info(
+        f"\n[{controller_type.upper()}] Final Progress: {final_progress:6.2f} px | Survived: {survived_frames:4d} frames | "
+        f"Throughput: {metrics['decision_throughput_fps']:6.1f} FPS | Goal Reached: {goal_reached}"
+    )
 
     # Generate Publication Figure
     os.makedirs(os.path.dirname(output_figure), exist_ok=True)
     sns.set_theme(style="whitegrid")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), sharex=True)
 
-    ax1.plot(frames_log, x_log, color="#1f77b4", linewidth=2.2, label=f"Mario Stage Progress [{controller_type.upper()}]")
+    ax1.plot(
+        frames_log,
+        x_log,
+        color="#1f77b4",
+        linewidth=2.2,
+        label=f"Mario Stage Progress [{controller_type.upper()}]",
+    )
     for m in milestones_cleared:
         ax1.axhline(y=m, color="gray", linestyle="--", alpha=0.4)
-    ax1.axhline(y=1900.0, color="green", linestyle="-.", linewidth=1.5, label="Goal Tape Zone (~1900 px)")
+    ax1.axhline(
+        y=1900.0, color="green", linestyle="-.", linewidth=1.5, label="Goal Tape Zone (~1900 px)"
+    )
     ax1.set_ylabel("Progress X (pixels)", fontsize=11, fontweight="bold")
-    ax1.set_title(f"Full Stage Clearance Progression on Live SNES Hardware ({controller_type.upper()})", fontsize=13, fontweight="bold")
+    ax1.set_title(
+        f"Full Stage Clearance Progression on Live SNES Hardware ({controller_type.upper()})",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax1.legend(loc="upper left")
 
     ax2.plot(frames_log, y_log, color="#2ca02c", linewidth=1.5, label="Altitude Y (WRAM)")

@@ -15,6 +15,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.paths import CORE_PATH, DATASET_PIXEL, ROM_PATH
 from src.utils.seed import set_global_seed
 
 
@@ -49,9 +50,9 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
 
 
 def record_pixel_dataset(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    output_path: str = "data/raw/smw_pixel_dataset.npz",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    output_path: str = DATASET_PIXEL,
     num_episodes: int = 10,
     frames_per_episode: int = 600,
     frame_stride: int = 2,
@@ -68,7 +69,7 @@ def record_pixel_dataset(
 
     for _ in range(410):
         emu.step_frame()
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(30):
         emu.step_frame()
     initial_savestate = emu.save_state()

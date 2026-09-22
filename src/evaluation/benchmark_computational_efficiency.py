@@ -30,8 +30,12 @@ from src.models import (
     StatisticalMLPDynamics,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    RESULTS_DIR,
+)
 
 logger = get_logger(__name__)
+
 
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -95,7 +99,7 @@ def benchmark_latency(
     return latency_per_step_us, throughput_fps
 
 
-def run_profiling_suite(output_dir: str = "results") -> Dict:
+def run_profiling_suite(output_dir: str = RESULTS_DIR) -> Dict:
     logger.info("====================================================================")
     logger.info("  COMPUTATIONAL PROFILING & HARDWARE EFFICIENCY BENCHMARK           ")
     logger.info("====================================================================")
@@ -117,7 +121,9 @@ def run_profiling_suite(output_dir: str = "results") -> Dict:
     metrics = {}
 
     logger.info("\n" + "=" * 95)
-    logger.info(f"{'Model Architecture':<26} | {'Params':>8} | {'FLOPs':>10} | {'CPU-1 (us)':>11} | {'CUDA (us)':>10} | {'CUDA FPS (B=256)':>16}")
+    logger.info(
+        f"{'Model Architecture':<26} | {'Params':>8} | {'FLOPs':>10} | {'CPU-1 (us)':>11} | {'CUDA (us)':>10} | {'CUDA FPS (B=256)':>16}"
+    )
     logger.info("=" * 95)
 
     for name, (model, s_dim) in models.items():

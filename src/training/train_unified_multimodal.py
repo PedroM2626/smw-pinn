@@ -23,6 +23,11 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.models.pinn_unified_multimodal import UnifiedMultimodalPINNDynamics
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_MULTI_ENTITY,
+    DATASET_TILEMAP,
+    RESULTS_DIR,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -76,13 +81,13 @@ def _multi_loaders(path: str, batch_size: int, seed: int):
 
 
 def run_training(
-    tilemap_path: str = "data/raw/smw_tilemap_dataset.npz",
-    multi_path: str = "data/raw/smw_multi_entity_dataset.npz",
+    tilemap_path: str = DATASET_TILEMAP,
+    multi_path: str = DATASET_MULTI_ENTITY,
     epochs: int = 10,
     batch_size: int = 256,
     learning_rate: float = 1e-3,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ):
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -156,13 +161,13 @@ def run_training(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Joint training of Unified Multimodal PINN.")
     parser.add_argument("--config", default=None)
-    parser.add_argument("--tilemap-path", default="data/raw/smw_tilemap_dataset.npz")
-    parser.add_argument("--multi-path", default="data/raw/smw_multi_entity_dataset.npz")
+    parser.add_argument("--tilemap-path", default=DATASET_TILEMAP)
+    parser.add_argument("--multi-path", default=DATASET_MULTI_ENTITY)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     args = parse_args_with_config(parser)
     run_training(
         tilemap_path=args.tilemap_path,

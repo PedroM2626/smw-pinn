@@ -3,13 +3,20 @@ snes_emulator.py
 Pure ctypes wrapper for the Snes9x Libretro core.
 Provides high-performance, headless emulation with direct frame-by-frame
 access to Super Mario World Working RAM (128 KB WRAM).
+
+Register offsets come from `src.environment.wram`; asset locations (core, ROM,
+savestates) come from `src.utils.paths`, which honours the SMW_CORE / SMW_ROM /
+SMW_DATA_DIR environment overrides and is anchored to the repository root
+instead of the current working directory.
 """
 
 import ctypes
-import os
 from typing import Dict, List
 
 import numpy as np
+
+from src.environment import wram
+from src.utils.paths import REPO_ROOT, require_core, require_rom
 
 # Libretro API Constants (libretro.h)
 RETRO_DEVICE_JOYPAD = 1
@@ -26,7 +33,7 @@ RETRO_DEVICE_ID_JOYPAD_X = 9
 RETRO_DEVICE_ID_JOYPAD_L = 10
 RETRO_DEVICE_ID_JOYPAD_R = 11
 
-RETRO_MEMORY_SAVE_RAM = 0    # 2KB SRAM (Save RAM)
+RETRO_MEMORY_SAVE_RAM = 0  # 2KB SRAM (Save RAM)
 RETRO_MEMORY_SYSTEM_RAM = 2  # 128KB SNES WRAM ($7E:0000 - $7F:FFFF)
 
 # Libretro pixel formats (RETRO_PIXEL_FORMAT_* in libretro.h)
@@ -92,11 +99,10 @@ class SnesLibretroEmulator:
     SNES emulator controller based on Snes9x Libretro via ctypes.
     """
 
-    def __init__(self, core_path: str):
-        if not os.path.exists(core_path):
-            raise FileNotFoundError(f"Libretro core not found at: {core_path}")
-
-        self.core = ctypes.CDLL(core_path)
+    def __init__(self, core_path: str | None = None):
+        # `require_core` resolves platform suffixes and raises a message that
+        # explains how to obtain the asset (git lfs pull / SMW_CORE).
+        self.core = ctypes.CDLL(require_core(core_path))
         self.rom_data = None
         self.rom_buffer = None
         self.wram_buffer = None
@@ -152,8 +158,10 @@ class SnesLibretroEmulator:
         self.core.retro_unserialize.restype = ctypes.c_bool
 
     def _setup_callbacks(self):
-        system_dir = os.path.abspath("src/environment").encode("utf-8")
-        save_dir = os.path.abspath("data").encode("utf-8")
+        # Anchored to the repository root: the core must find the same
+        # directories no matter which working directory started the process.
+        system_dir = str(REPO_ROOT / "src" / "environment").encode("utf-8")
+        save_dir = str(REPO_ROOT / "data").encode("utf-8")
         self._c_system_dir = ctypes.c_char_p(system_dir)
         self._c_save_dir = ctypes.c_char_p(save_dir)
 
@@ -232,9 +240,9 @@ class SnesLibretroEmulator:
         self.core.retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD)
         self.core.retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD)
 
-    def load_rom(self, rom_path: str):
-        if not os.path.exists(rom_path):
-            raise FileNotFoundError(f"ROM not found at: {rom_path}")
+    def load_rom(self, rom_path: str | None = None):
+        # Verify the dump (existence + SHA-1 warning) before touching the core.
+        rom_path = require_rom(rom_path)
 
         with open(rom_path, "rb") as f:
             self.rom_data = f.read()
@@ -255,7 +263,7 @@ class SnesLibretroEmulator:
         wram_ptr = self.core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM)
         wram_size = self.core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM)
 
-        if not wram_ptr or wram_size < 0x20000:
+        if not wram_ptr or wram_size < wram.WRAM_SIZE_BYTES:
             raise RuntimeError(f"WRAM inaccessible or invalid size: {wram_size}")
 
         self.wram_buffer = (ctypes.c_uint8 * wram_size).from_address(wram_ptr)
@@ -282,10 +290,10 @@ class SnesLibretroEmulator:
         Extracts fundamental physical state variables directly from RAM.
         """
         # Integer pixel and subpixel coordinates
-        x_pos = self.read_wram_u16_le(0x0094)
-        y_pos = self.read_wram_u16_le(0x0096)
-        x_sub = self.read_wram_u8(0x13DA)
-        y_sub = self.read_wram_u8(0x13DC)
+        x_pos = self.read_wram_u16_le(wram.ADDR_PLAYER_X)
+        y_pos = self.read_wram_u16_le(wram.ADDR_PLAYER_Y)
+        x_sub = self.read_wram_u8(wram.ADDR_PLAYER_X_SUB)
+        y_sub = self.read_wram_u8(wram.ADDR_PLAYER_Y_SUB)
 
         # Exact continuous coordinates: 1 pixel = 256 register units ($7E:13DA / $7E:13DC)
         # Where 16 subpixels = 1 pixel, each unit is 1/256 pixel.
@@ -293,19 +301,19 @@ class SnesLibretroEmulator:
         total_y = float(y_pos) + (float(y_sub) / 256.0)
 
         # Velocities in subpixels/frame
-        vx = float(self.read_wram_s8(0x007B))
-        vy = float(self.read_wram_s8(0x007D))
+        vx = float(self.read_wram_s8(wram.ADDR_VX))
+        vy = float(self.read_wram_s8(wram.ADDR_VY))
 
         # Collision flags ($7E:0077)
         # SxxMUDLR: Bit 0=R, Bit 1=L, Bit 2=D(ground), Bit 3=U(ceiling)
-        blocked = self.read_wram_u8(0x0077)
-        c_right = float(bool(blocked & 0x01))
-        c_left = float(bool(blocked & 0x02))
-        c_ground = float(bool(blocked & 0x04))
-        c_ceiling = float(bool(blocked & 0x08))
+        blocked = self.read_wram_u8(wram.ADDR_COLLISION)
+        c_right = float(bool(blocked & wram.COLLISION_RIGHT))
+        c_left = float(bool(blocked & wram.COLLISION_LEFT))
+        c_ground = float(bool(blocked & wram.COLLISION_GROUND))
+        c_ceiling = float(bool(blocked & wram.COLLISION_CEILING))
 
-        air_state = float(self.read_wram_u8(0x0072))
-        powerup = float(self.read_wram_u8(0x0019))
+        air_state = float(self.read_wram_u8(wram.ADDR_AIR_STATE))
+        powerup = float(self.read_wram_u8(wram.ADDR_POWERUP))
 
         return {
             "x": total_x,
@@ -331,31 +339,35 @@ class SnesLibretroEmulator:
         - $7E:00AA: Y speed register (signed 8-bit)
         """
         sprites = []
-        for slot in range(12):
-            status = self.read_wram_u8(0x14C8 + slot)
-            if status >= 8:
-                sprite_id = self.read_wram_u8(0x009E + slot)
-                x_low = self.read_wram_u8(0x00E4 + slot)
-                x_high = self.read_wram_u8(0x14E0 + slot)
-                y_low = self.read_wram_u8(0x00D8 + slot)
-                y_high = self.read_wram_u8(0x14D4 + slot)
+        for slot in range(wram.NUM_SPRITE_SLOTS):
+            status = self.read_wram_u8(wram.ADDR_SPRITE_STATUS + slot)
+            if status >= wram.SPRITE_STATUS_ACTIVE:
+                sprite_id = self.read_wram_u8(wram.ADDR_SPRITE_ID + slot)
+                x_low = self.read_wram_u8(wram.ADDR_SPRITE_X_LOW + slot)
+                x_high = self.read_wram_u8(wram.ADDR_SPRITE_X_HIGH + slot)
+                y_low = self.read_wram_u8(wram.ADDR_SPRITE_Y_LOW + slot)
+                y_high = self.read_wram_u8(wram.ADDR_SPRITE_Y_HIGH + slot)
                 x_pos = float((x_high << 8) | x_low)
                 y_pos = float((y_high << 8) | y_low)
-                vx = float(self.read_wram_s8(0x00B6 + slot))
-                vy = float(self.read_wram_s8(0x00AA + slot))
+                vx = float(self.read_wram_s8(wram.ADDR_SPRITE_VX + slot))
+                vy = float(self.read_wram_s8(wram.ADDR_SPRITE_VY + slot))
 
-                sprites.append({
-                    "slot": slot,
-                    "id": sprite_id,
-                    "status": status,
-                    "x": x_pos,
-                    "y": y_pos,
-                    "vx": vx,
-                    "vy": vy,
-                })
+                sprites.append(
+                    {
+                        "slot": slot,
+                        "id": sprite_id,
+                        "status": status,
+                        "x": x_pos,
+                        "y": y_pos,
+                        "vx": vx,
+                        "vy": vy,
+                    }
+                )
         return sprites
 
-    def get_nearest_hazard(self, mario_x: float, mario_y: float, horizon_px: float = 300.0) -> Dict[str, float]:
+    def get_nearest_hazard(
+        self, mario_x: float, mario_y: float, horizon_px: float = 300.0
+    ) -> Dict[str, float]:
         """
         Computes spatial displacement vector (delta_x, delta_y, vx, is_active)
         to the nearest active enemy/hazard ahead of Mario.
@@ -400,7 +412,9 @@ class SnesLibretroEmulator:
         base.update(hazard)
         return base
 
-    def get_local_tilemap_patch(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
+    def get_local_tilemap_patch(
+        self, mario_x: float, mario_y: float, radius: int = 3
+    ) -> np.ndarray:
         """
         Extracts a (2*radius + 1) x (2*radius + 1) tile grid centered at Mario's position
         directly from the SNES WRAM level block buffer ($7E:C800).
@@ -415,12 +429,12 @@ class SnesLibretroEmulator:
         grid_dim = 2 * radius + 1
         patch = np.zeros((grid_dim, grid_dim), dtype=np.int64)
 
-        center_tile_x = int(mario_x) // 16
-        center_tile_y = int(mario_y) // 16
+        center_tile_x = int(mario_x) // wram.TILE_SIZE_PX
+        center_tile_y = int(mario_y) // wram.TILE_SIZE_PX
 
         for r_idx, dy in enumerate(range(-radius, radius + 1)):
             target_tile_y = center_tile_y + dy
-            if target_tile_y < 0 or target_tile_y >= 27:
+            if target_tile_y < 0 or target_tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN:
                 continue
 
             for c_idx, dx in enumerate(range(-radius, radius + 1)):
@@ -428,28 +442,74 @@ class SnesLibretroEmulator:
                 if target_tile_x < 0:
                     continue
 
-                subscreen = target_tile_x // 16
-                col_in_sub = target_tile_x % 16
+                subscreen = target_tile_x // wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+                col_in_sub = target_tile_x % wram.TILEMAP_COLUMNS_PER_SUBSCREEN
                 row_in_sub = target_tile_y
 
                 # SMW horizontal level buffer formula: $7E:C800 + subscreen * 0x01B0 + row * 16 + col
-                addr = 0xC800 + subscreen * 0x01B0 + row_in_sub * 16 + col_in_sub
-                if addr > 0x1FFFF:
+                addr = (
+                    wram.ADDR_TILEMAP_BASE
+                    + subscreen * wram.TILEMAP_SUBSCREEN_STRIDE
+                    + row_in_sub * wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+                    + col_in_sub
+                )
+                if addr > wram.WRAM_SIZE_BYTES - 1:
                     continue
 
                 tile_id = self.read_wram_u8(addr)
 
-                if tile_id == 0x25:
+                if tile_id == wram.TILE_AIR:
                     patch[r_idx, c_idx] = 0
-                elif tile_id in [0x00, 0x3F, 0x73, 0x74, 0x75, 0x76] or (tile_id != 0x25 and target_tile_y >= 22):
+                elif tile_id in wram.TILE_SOLID or (
+                    tile_id != wram.TILE_AIR
+                    and target_tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN - 5
+                ):
                     patch[r_idx, c_idx] = 1
-                elif tile_id in [0x80, 0x81, 0x82]:
+                elif tile_id in wram.TILE_SLOPE:
                     patch[r_idx, c_idx] = 3
                 else:
-                    patch[r_idx, c_idx] = 1 if tile_id != 0x25 else 0
+                    patch[r_idx, c_idx] = 1 if tile_id != wram.TILE_AIR else 0
 
         return patch
 
+    # --- Engine mode and episode hygiene -------------------------------------
+
+    def get_game_mode(self) -> int:
+        """Current value of the engine mode byte at $7E:0100."""
+        return self.read_wram_u8(wram.ADDR_GAME_MODE)
+
+    def in_level(self) -> bool:
+        """True when the engine is in interactive level/gameplay mode (0x14)."""
+        return self.get_game_mode() == wram.GAME_MODE_INTERACTIVE
+
+    def enable_gameplay_mode(self, mode: int = wram.GAME_MODE_INTERACTIVE) -> None:
+        """Force the engine mode byte (physics live, WRAM telemetry valid).
+
+        Every closed-loop benchmark used to poke `emu.enable_gameplay_mode()`
+        inline; this is the single place that writes it.
+        """
+        if self.wram_buffer is None:
+            raise RuntimeError("ROM not loaded: cannot set the engine mode byte.")
+        self.wram_buffer[wram.ADDR_GAME_MODE] = mode
+
+    def start_episode(
+        self,
+        savestate: bytes,
+        gameplay_mode: bool = True,
+        warmup_frames: int = 5,
+    ) -> Dict[str, float]:
+        """Restore a savestate, enter gameplay mode and settle the engine.
+
+        The load-state -> set-mode -> warm-up -> read-state preamble was
+        duplicated in ~15 evaluation scripts; stepping a few frames lets the
+        engine refresh derived WRAM so the first observation is not stale.
+        """
+        self.load_state(savestate)
+        if gameplay_mode:
+            self.enable_gameplay_mode()
+        for _ in range(warmup_frames):
+            self.step_frame()
+        return self.get_smw_state()
 
     def set_input(self, actions: Dict[str, bool]):
         """

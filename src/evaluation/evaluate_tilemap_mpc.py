@@ -18,6 +18,13 @@ from src.models.tilemap_pinn import TilemapPINNDynamics
 from src.planning.mpc_planner import ModelPredictiveController, TrajectoryObjective
 from src.planning.tilemap_mpc import TilemapMPCWrapper
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -30,13 +37,13 @@ def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
 
 
 def run_tilemap_mpc(
-    tilemap_ckpt: str = "results/checkpoints/tilemap_pinn_best.pt",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    rom_path: str = "data/raw/smw_usa.sfc",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
+    tilemap_ckpt: str = checkpoint_file("tilemap_pinn_best.pt"),
+    core_path: str = CORE_PATH,
+    rom_path: str = ROM_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
     max_frames: int = 400,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ) -> Dict:
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,7 +65,7 @@ def run_tilemap_mpc(
     emu.load_rom(rom_path)
     with open(state_path, "rb") as f:
         emu.load_state(f.read())
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
     start_x = emu.get_smw_state()["x"]
@@ -68,8 +75,17 @@ def run_tilemap_mpc(
     for _ in range(max_frames):
         st = emu.get_smw_state()
         s8 = np.array(
-            [st["x"], st["y"], st["vx"], st["vy"], st["c_ground"],
-             st["c_ceiling"], st["c_left"], st["c_right"]], dtype=np.float32,
+            [
+                st["x"],
+                st["y"],
+                st["vx"],
+                st["vy"],
+                st["c_ground"],
+                st["c_ceiling"],
+                st["c_left"],
+                st["c_right"],
+            ],
+            dtype=np.float32,
         )
         world_model.set_patch(emu.get_local_tilemap_patch(st["x"], st["y"], radius=3))
         action, _ = controller.plan(s8)

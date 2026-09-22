@@ -1,0 +1,7 @@
+# Seconds-scale version of configs/sample_efficiency.yaml (`make smoke`).
+# Same Pareto code path as the published 8.3 study, two budgets instead of five.
+sample_sizes: [200, 1000]
+epochs_per_run: 2
+seed: 42
+rollout_horizon: 20
+num_rollout_starts: 2

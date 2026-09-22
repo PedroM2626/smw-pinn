@@ -24,13 +24,22 @@ from src.planning.mpc_planner import (
     TrajectoryObjective,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -59,12 +68,12 @@ def extract_12d_vector(state_dict: dict) -> np.ndarray:
 
 
 def run_extended_navigation(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    model_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
-    output_metrics: str = "results/extended_navigation_metrics.json",
-    output_figure: str = "results/figures/extended_level_navigation.png",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    model_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
+    output_metrics: str = results_file("extended_navigation_metrics.json"),
+    output_figure: str = figure_file("extended_level_navigation.png"),
     max_frames: int = 1500,
     horizon: int = 16,
     num_candidates: int = 256,
@@ -81,7 +90,9 @@ def run_extended_navigation(
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
 
     if os.path.exists(model_checkpoint):
-        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.load_state_dict(
+            torch.load(model_checkpoint, map_location=device, weights_only=True)
+        )
         logger.info(f"Loaded trained multi-entity weights from: {model_checkpoint}")
     world_model.eval()
 
@@ -112,7 +123,7 @@ def run_extended_navigation(
         initial_savestate = f.read()
 
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -147,7 +158,9 @@ def run_extended_navigation(
         for m in [500, 782, 1000, 1200, 1500, 1800, 2000]:
             if prog >= m and m not in milestones_hit:
                 milestones_hit.append(m)
-                logger.info(f"[{frame:4d} frames | {time.time()-t0:.1f}s] >>> MILESTONE CLEARED: {m} pixels! <<<")
+                logger.info(
+                    f"[{frame:4d} frames | {time.time() - t0:.1f}s] >>> MILESTONE CLEARED: {m} pixels! <<<"
+                )
 
         # Stagnation detection (e.g. wall/pipe contact)
         if abs(curr_x - prev_x) < 0.2:
@@ -196,7 +209,9 @@ def run_extended_navigation(
             )
 
         if curr_y > 450.0:
-            logger.info(f"Termination: Mario fell into pit at frame {frame} (Progress: {curr_x - start_x:.1f} px)")
+            logger.info(
+                f"Termination: Mario fell into pit at frame {frame} (Progress: {curr_x - start_x:.1f} px)"
+            )
             break
 
     elapsed = time.time() - t0
@@ -223,12 +238,18 @@ def run_extended_navigation(
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 9), sharex=True)
 
     # Subplot 1: Progress X(t)
-    ax1.plot(frames_log, x_log, color="#1f77b4", linewidth=2.0, label="Mario Cumulative Progress (px)")
+    ax1.plot(
+        frames_log, x_log, color="#1f77b4", linewidth=2.0, label="Mario Cumulative Progress (px)"
+    )
     for m in milestones_hit:
         ax1.axhline(y=m, color="gray", linestyle="--", alpha=0.5)
         ax1.text(10, m + 20, f"Milestone {m} px", color="#333333", fontsize=9, fontweight="bold")
     ax1.set_ylabel("Progress X (pixels)", fontsize=11, fontweight="bold")
-    ax1.set_title("Autonomous Extended Level Navigation on Authentic SNES Hardware (Yoshi's Island 1)", fontsize=13, fontweight="bold")
+    ax1.set_title(
+        "Autonomous Extended Level Navigation on Authentic SNES Hardware (Yoshi's Island 1)",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax1.legend(loc="upper left")
 
     # Subplot 2: Altitude Y(t) & Jumping arcs
@@ -238,7 +259,14 @@ def run_extended_navigation(
     ax2.legend(loc="upper left")
 
     # Subplot 3: Velocity profile
-    ax3.plot(frames_log, vx_log, color="#d62728", linewidth=1.2, alpha=0.85, label="Horizontal Velocity vx (subpx/frame)")
+    ax3.plot(
+        frames_log,
+        vx_log,
+        color="#d62728",
+        linewidth=1.2,
+        alpha=0.85,
+        label="Horizontal Velocity vx (subpx/frame)",
+    )
     ax3.axhline(y=0, color="black", linestyle=":", alpha=0.5)
     ax3.set_xlabel("Hardware Simulation Frames (60 Hz)", fontsize=11, fontweight="bold")
     ax3.set_ylabel("Velocity vx", fontsize=11, fontweight="bold")

@@ -12,6 +12,7 @@ Implements:
 4. Out-of-Distribution (OOD) dynamics detection to eliminate model exploitation.
 """
 
+import argparse
 import os
 import time
 from typing import List, Tuple
@@ -21,10 +22,16 @@ import torch.nn as nn
 
 from src.environment.dataset_loader import create_dataloaders, load_and_preprocess_data
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
+from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    RESULTS_DIR,
+)
+from src.utils.provenance import write_metrics
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
+
 
 class DeepPINNEnsemble(nn.Module):
     """
@@ -98,7 +105,7 @@ def train_pinn_ensemble(
     num_epochs: int = 15,
     batch_size: int = 128,
     lr: float = 1e-3,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ) -> DeepPINNEnsemble:
     """
     Trains all E ensemble members using bootstrap partitions and distinct random seeds.
@@ -153,7 +160,9 @@ def train_pinn_ensemble(
 
         member_path = os.path.join(ckpt_dir, f"pinn_member_{m_idx}.pt")
         torch.save(member.state_dict(), member_path)
-        logger.info(f"  Member {m_idx + 1}/{num_models} trained (Seed {seed}) | Val MSE: {mean_val:.4f} | Saved: {member_path}")
+        logger.info(
+            f"  Member {m_idx + 1}/{num_models} trained (Seed {seed}) | Val MSE: {mean_val:.4f} | Saved: {member_path}"
+        )
 
     elapsed = time.time() - t0
     logger.info(f"\nAll {num_models} ensemble members trained successfully in {elapsed:.1f}s!")
@@ -180,7 +189,9 @@ def train_pinn_ensemble(
     ood_ratio = mean_unc_ood / (mean_unc_id + 1e-8)
 
     logger.info(f"  In-Distribution Mean Epistemic Uncertainty (sigma):  {mean_unc_id:.4f}")
-    logger.info(f"  Out-of-Distribution Mean Epistemic Uncertainty (sigma): {mean_unc_ood:.4f} ({ood_ratio:.1f}x higher)")
+    logger.info(
+        f"  Out-of-Distribution Mean Epistemic Uncertainty (sigma): {mean_unc_ood:.4f} ({ood_ratio:.1f}x higher)"
+    )
 
     metrics = {
         "num_models": num_models,
@@ -190,26 +201,48 @@ def train_pinn_ensemble(
         "ood_uncertainty_ratio": ood_ratio,
     }
 
-    import json
     metrics_path = os.path.join(output_dir, "pinn_ensemble_metrics.json")
-    with open(metrics_path, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=4)
+    write_metrics(
+        metrics_path,
+        metrics,
+        seed=42,
+        command="python -m src.models.pinn_ensemble",
+        extra_meta={"num_models": num_models, "num_epochs": num_epochs},
+    )
     logger.info(f"Ensemble metrics saved to: {metrics_path}")
 
     # Plot Epistemic Uncertainty Distribution
     import matplotlib.pyplot as plt
     import seaborn as sns
+
     sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.hist(unc_id.cpu().numpy(), bins=30, alpha=0.7, color="#2ecc71", label=f"In-Distribution (μ={mean_unc_id:.2f})")
-    ax.hist(unc_ood.cpu().numpy(), bins=30, alpha=0.7, color="#e74c3c", label=f"Out-of-Distribution (μ={mean_unc_ood:.2f})")
-    ax.set_title("Deep PINN Ensemble: Epistemic Uncertainty Disagreement (In-Dist vs. OOD)", fontsize=11, fontweight="bold")
+    ax.hist(
+        unc_id.cpu().numpy(),
+        bins=30,
+        alpha=0.7,
+        color="#2ecc71",
+        label=f"In-Distribution (μ={mean_unc_id:.2f})",
+    )
+    ax.hist(
+        unc_ood.cpu().numpy(),
+        bins=30,
+        alpha=0.7,
+        color="#e74c3c",
+        label=f"Out-of-Distribution (μ={mean_unc_ood:.2f})",
+    )
+    ax.set_title(
+        "Deep PINN Ensemble: Epistemic Uncertainty Disagreement (In-Dist vs. OOD)",
+        fontsize=11,
+        fontweight="bold",
+    )
     ax.set_xlabel("Epistemic Uncertainty Magnitude σ(s, a)")
     ax.set_ylabel("Transition Count")
     ax.legend(loc="upper right")
     plt.tight_layout()
 
     fig_path = os.path.join(output_dir, "figures", "pinn_ensemble_uncertainty.png")
+    os.makedirs(os.path.dirname(fig_path), exist_ok=True)
     plt.savefig(fig_path, dpi=300)
     plt.close()
     logger.info(f"Uncertainty plot saved to: {fig_path}")
@@ -218,5 +251,18 @@ def train_pinn_ensemble(
 
 
 if __name__ == "__main__":
-    train_pinn_ensemble(num_models=5, num_epochs=10)
-
+    parser = argparse.ArgumentParser(description="Deep PINN ensemble epistemic-uncertainty study.")
+    parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
+    parser.add_argument("--num-models", type=int, default=5)
+    parser.add_argument("--num-epochs", type=int, default=15)
+    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
+    args = parse_args_with_config(parser)
+    train_pinn_ensemble(
+        num_models=args.num_models,
+        num_epochs=args.num_epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        output_dir=args.output_dir,
+    )

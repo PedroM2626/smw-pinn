@@ -14,22 +14,24 @@ import torch
 from src.planning.terminal_value import compute_mc_returns, fit_terminal_value
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    RESULTS_DIR,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
 
 def run_training(
-    trajectory_log: str = "results/full_level_trajectory_log.json",
+    trajectory_log: str = results_file("full_level_trajectory_log.json"),
     gamma: float = 0.99,
     hidden_dim: int = 64,
     epochs: int = 200,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ):
     with open(trajectory_log, encoding="utf-8") as f:
         log = json.load(f)
-    states = np.stack(
-        [log["x"], log["y"], log["vx"], log["vy"]], axis=1
-    ).astype(np.float32)
+    states = np.stack([log["x"], log["y"], log["vx"], log["vy"]], axis=1).astype(np.float32)
     returns = compute_mc_returns(np.asarray(log["x"], dtype=np.float64), gamma=gamma)
     net, stats = fit_terminal_value(states, returns, hidden_dim=hidden_dim, epochs=epochs)
 
@@ -52,11 +54,11 @@ def run_training(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fit TD-MPC terminal value on hardware log.")
     parser.add_argument("--config", default=None)
-    parser.add_argument("--trajectory-log", default="results/full_level_trajectory_log.json")
+    parser.add_argument("--trajectory-log", default=results_file("full_level_trajectory_log.json"))
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=200)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     args = parse_args_with_config(parser)
     run_training(
         trajectory_log=args.trajectory_log,

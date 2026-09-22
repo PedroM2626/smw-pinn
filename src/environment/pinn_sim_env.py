@@ -170,11 +170,15 @@ class PINNVectorEnv:
             rewards = torch.where(passed_hazard, rewards + 45.0, rewards)
 
             # Stomp condition: falling on top of hazard
-            stomped_hazard = h_active & (dx_h.abs() < 16.0) & (dy_h <= -10.0) & (next_states[:, 3] > 0.0)
+            stomped_hazard = (
+                h_active & (dx_h.abs() < 16.0) & (dy_h <= -10.0) & (next_states[:, 3] > 0.0)
+            )
             rewards = torch.where(stomped_hazard, rewards + self.stomp_bonus, rewards)
 
             # Lateral / bottom impact condition: fatal collision
-            hit_hazard = h_active & (dx_h.abs() < 12.0) & (dy_h > -10.0) & (dy_h < 18.0) & (~stomped_hazard)
+            hit_hazard = (
+                h_active & (dx_h.abs() < 12.0) & (dy_h > -10.0) & (dy_h < 18.0) & (~stomped_hazard)
+            )
             rewards = torch.where(hit_hazard, rewards - self.hazard_penalty, rewards)
             dones = dones | hit_hazard
 

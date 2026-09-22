@@ -18,11 +18,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    RESULTS_DIR,
+)
 
 logger = get_logger(__name__)
 
 
-def run_plot(output_dir: str = "results") -> dict:
+def run_plot(output_dir: str = RESULTS_DIR) -> dict:
     with open(os.path.join(output_dir, "model_free_ppo_metrics.json"), encoding="utf-8") as f:
         mf = json.load(f)
     with open(os.path.join(output_dir, "dyna_ppo_metrics.json"), encoding="utf-8") as f:
@@ -37,8 +40,13 @@ def run_plot(output_dir: str = "results") -> dict:
 
     # Panel A: model-free learning curve + Dyna operating bands.
     ax1.plot(steps, returns, lw=2.0, label="Model-Free PPO (real SNES, 103 eps)")
-    ax1.axvspan(200, 8077, color="#10B981", alpha=0.2,
-                label="Dyna-PINN operating band (200-8,077 real frames)")
+    ax1.axvspan(
+        200,
+        8077,
+        color="#10B981",
+        alpha=0.2,
+        label="Dyna-PINN operating band (200-8,077 real frames)",
+    )
     ax1.axvline(39936, color="black", ls="--", lw=1.0, label="MF convergence (39,936 frames)")
     ax1.set_xlabel("Genuine environment frames")
     ax1.set_ylabel("Mean return")

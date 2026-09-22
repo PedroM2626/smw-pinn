@@ -26,6 +26,28 @@ ACTION_PRIMITIVES = {
 
 ACTION_MATRIX = np.stack(list(ACTION_PRIMITIVES.values()), axis=0)  # [num_actions, 6]
 
+# The six action channels, in the order used by every primitive above.
+ACTION_BUTTONS = ("B", "Y", "UP", "DOWN", "LEFT", "RIGHT")
+
+
+def action_vector_to_joypad(action) -> Dict[str, bool]:
+    """Convert a 6D planner action vector into an emulator joypad dict.
+
+    `SnesLibretroEmulator.set_input` takes button names (and raises `KeyError` on
+    anything else), while controllers return vectors - this is the single place
+    that bridges the two representations.
+
+    Args:
+        action: array-like of length 6, ordered [B, Y, UP, DOWN, LEFT, RIGHT].
+
+    Returns:
+        Mapping of button name to pressed state (threshold 0.5).
+    """
+    vec = np.asarray(action, dtype=np.float32).reshape(-1)
+    if vec.size != len(ACTION_BUTTONS):
+        raise ValueError(f"expected a {len(ACTION_BUTTONS)}-D action vector, got shape {vec.shape}")
+    return {button: bool(value > 0.5) for button, value in zip(ACTION_BUTTONS, vec)}
+
 
 class TrajectoryObjective:
     """
@@ -53,7 +75,7 @@ class TrajectoryObjective:
 
     def compute_trajectory_rewards(
         self,
-        initial_states: torch.Tensor,     # [B, state_dim]
+        initial_states: torch.Tensor,  # [B, state_dim]
         predicted_trajectories: torch.Tensor,  # [B, H, state_dim]
     ) -> torch.Tensor:
         """
@@ -66,8 +88,8 @@ class TrajectoryObjective:
         """
         init_x = initial_states[:, 0]  # [B]
         final_x = predicted_trajectories[:, -1, 0]  # [B]
-        all_y = predicted_trajectories[:, :, 1]     # [B, H]
-        all_vx = predicted_trajectories[:, :, 2]    # [B, H]
+        all_y = predicted_trajectories[:, :, 1]  # [B, H]
+        all_vx = predicted_trajectories[:, :, 2]  # [B, H]
 
         # 1. Forward horizontal progress
         progress = final_x - init_x
@@ -86,17 +108,21 @@ class TrajectoryObjective:
 
         # 4. Multi-Entity Hazard Collision Avoidance & Leap Optimization (if state_dim >= 12)
         if initial_states.shape[-1] >= 12:
-            dx_hazard = predicted_trajectories[:, :, 8]       # [B, H]
-            dy_hazard = predicted_trajectories[:, :, 9]       # [B, H]
-            active_h = predicted_trajectories[:, :, 11]       # [B, H]
+            dx_hazard = predicted_trajectories[:, :, 8]  # [B, H]
+            dy_hazard = predicted_trajectories[:, :, 9]  # [B, H]
+            active_h = predicted_trajectories[:, :, 11]  # [B, H]
 
             # Detect fatal collision with active hazard hitbox in any future horizon step
             collided_hazard = (
-                (active_h > 0.5)
-                & (dx_hazard.abs() < 14.0)
-                & (dy_hazard > -10.0)
-                & (dy_hazard < 16.0)
-            ).any(dim=1).float()
+                (
+                    (active_h > 0.5)
+                    & (dx_hazard.abs() < 14.0)
+                    & (dy_hazard > -10.0)
+                    & (dy_hazard < 16.0)
+                )
+                .any(dim=1)
+                .float()
+            )
 
             # Detect clean evasive leap: hazard was in front, is passed horizontally,
             # while Mario leaped above the hazard's vertical collision zone
@@ -104,10 +130,15 @@ class TrajectoryObjective:
                 (active_h[:, -1] > 0.5)
                 & (initial_states[:, 8] > 0.0)
                 & (predicted_trajectories[:, -1, 8] <= 0.0)
-                & ((dy_hazard.max(dim=1).values > 16.0) | ((initial_states[:, 1] - all_y.min(dim=1).values) > 16.0))
+                & (
+                    (dy_hazard.max(dim=1).values > 16.0)
+                    | ((initial_states[:, 1] - all_y.min(dim=1).values) > 16.0)
+                )
             ).float()
 
-            rewards = rewards - self.hazard_penalty * collided_hazard + self.leap_bonus * passed_hazard
+            rewards = (
+                rewards - self.hazard_penalty * collided_hazard + self.leap_bonus * passed_hazard
+            )
 
         return rewards
 
@@ -155,9 +186,13 @@ class ModelPredictiveController:
             best_action: 1D numpy array of shape [action_dim=6]
             info: dictionary with planning diagnostic metrics
         """
-        curr_s_tensor = torch.tensor(current_state, dtype=torch.float32, device=self.device).unsqueeze(0)
+        curr_s_tensor = torch.tensor(
+            current_state, dtype=torch.float32, device=self.device
+        ).unsqueeze(0)
         # Uniform initial distribution over action primitives for each horizon step: [H, num_actions]
-        logits = torch.zeros((self.horizon, self.num_actions), dtype=torch.float32, device=self.device)
+        logits = torch.zeros(
+            (self.horizon, self.num_actions), dtype=torch.float32, device=self.device
+        )
 
         best_reward = -float("inf")
         best_sequence = None
@@ -174,11 +209,15 @@ class ModelPredictiveController:
             action_candidates = self.action_tensor[sampled_indices]
 
             # Simulate batch rollouts: [num_candidates, H, state_dim]
-            init_batch = curr_s_tensor.expand(self.num_candidates, -1)  # [num_candidates, state_dim]
+            init_batch = curr_s_tensor.expand(
+                self.num_candidates, -1
+            )  # [num_candidates, state_dim]
             sim_traj = self._simulate_batch(init_batch, action_candidates)
 
             # Evaluate objective rewards
-            rewards = self.objective.compute_trajectory_rewards(init_batch, sim_traj)  # [num_candidates]
+            rewards = self.objective.compute_trajectory_rewards(
+                init_batch, sim_traj
+            )  # [num_candidates]
 
             # Select top elites
             top_vals, top_indices = torch.topk(rewards, k=self.num_elites)
@@ -217,8 +256,8 @@ class ModelPredictiveController:
 
     def _simulate_batch(
         self,
-        initial_states: torch.Tensor,      # [B, state_dim]
-        action_sequences: torch.Tensor,    # [B, H, action_dim]
+        initial_states: torch.Tensor,  # [B, state_dim]
+        action_sequences: torch.Tensor,  # [B, H, action_dim]
     ) -> torch.Tensor:
         """
         Vectorized forward autoregressive simulation through the neural dynamics model.

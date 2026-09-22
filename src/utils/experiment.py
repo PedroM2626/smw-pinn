@@ -21,6 +21,7 @@ from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class ExperimentLogger:
     """Unified logger for dynamics training and MBRL benchmarks.
 

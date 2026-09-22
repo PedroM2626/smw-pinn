@@ -15,15 +15,23 @@ import torch
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def evaluate_distilled_policy(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    policy_checkpoint: str = "results/checkpoints/distilled_mpc_policy.pt",
-    output_metrics: str = "results/distilled_policy_metrics.json",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    policy_checkpoint: str = checkpoint_file("distilled_mpc_policy.pt"),
+    output_metrics: str = results_file("distilled_policy_metrics.json"),
     max_frames: int = 400,
 ) -> Dict:
     logger.info("====================================================================")
@@ -42,7 +50,7 @@ def evaluate_distilled_policy(
         initial_savestate = f.read()
 
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 

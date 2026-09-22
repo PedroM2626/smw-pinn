@@ -23,8 +23,15 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+)
 
 logger = get_logger(__name__)
+
 
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
@@ -42,9 +49,9 @@ class SnesSingleEnv:
 
     def __init__(
         self,
-        rom_path: str = "data/raw/smw_usa.sfc",
-        core_path: str = "src/environment/bin/snes9x_libretro.dll",
-        state_path: str = "data/raw/smw_yoshi_island_1.state",
+        rom_path: str = ROM_PATH,
+        core_path: str = CORE_PATH,
+        state_path: str = STATE_YOSHI_ISLAND_1,
         max_episode_steps: int = 400,
         weight_progress: float = 2.0,
         weight_velocity: float = 0.2,
@@ -67,7 +74,7 @@ class SnesSingleEnv:
 
     def reset(self) -> np.ndarray:
         self.emu.load_state(self.initial_savestate)
-        self.emu.wram_buffer[0x0100] = 0x14
+        self.emu.enable_gameplay_mode()
         for _ in range(5):
             self.emu.step_frame()
 
@@ -78,7 +85,16 @@ class SnesSingleEnv:
 
     def _extract_obs(self, s: dict) -> np.ndarray:
         return np.array(
-            [s["x"], s["y"], s["vx"], s["vy"], s["c_ground"], s["c_ceiling"], s["c_left"], s["c_right"]],
+            [
+                s["x"],
+                s["y"],
+                s["vx"],
+                s["vy"],
+                s["c_ground"],
+                s["c_ceiling"],
+                s["c_left"],
+                s["c_right"],
+            ],
             dtype=np.float32,
         )
 
@@ -125,7 +141,7 @@ def train_model_free_ppo(
     clip_coef: float = 0.2,
     ent_coef: float = 0.01,
     vf_coef: float = 0.5,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ) -> Dict:
     logger.info("====================================================================")
     logger.info("  TRAINING CANONICAL MODEL-FREE PPO DIRECTLY ON SNES CONSOLE CORE    ")
@@ -234,7 +250,9 @@ def train_model_free_ppo(
                 end = start + minibatch_size
                 mb_idx = indices[start:end]
 
-                _, new_logp, entropy, new_val = agent.get_action_and_value(t_obs[mb_idx], t_act[mb_idx])
+                _, new_logp, entropy, new_val = agent.get_action_and_value(
+                    t_obs[mb_idx], t_act[mb_idx]
+                )
                 log_ratio = new_logp - t_logp[mb_idx]
                 ratio = torch.exp(log_ratio)
 
@@ -293,8 +311,18 @@ def train_model_free_ppo(
         window = 10
         if len(return_history) >= window:
             rolling = np.convolve(return_history, np.ones(window) / window, mode="valid")
-            ax.plot(step_history[window - 1:], rolling, color="#2980b9", linewidth=2.5, label=f"{window}-Episode Moving Avg")
-    ax.set_title("Canonical Model-Free PPO Learning Curve on Authentic SNES Console", fontsize=12, fontweight="bold")
+            ax.plot(
+                step_history[window - 1 :],
+                rolling,
+                color="#2980b9",
+                linewidth=2.5,
+                label=f"{window}-Episode Moving Avg",
+            )
+    ax.set_title(
+        "Canonical Model-Free PPO Learning Curve on Authentic SNES Console",
+        fontsize=12,
+        fontweight="bold",
+    )
     ax.set_xlabel("Real Console Simulation Frames")
     ax.set_ylabel("Episodic Return")
     ax.legend(loc="best")

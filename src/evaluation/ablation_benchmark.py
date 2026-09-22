@@ -32,8 +32,15 @@ from src.planning.mpc_planner import (
     TrajectoryObjective,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_GAMEPLAY,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
+
 
 class UnclampedHardResidualPINNDynamics(HardResidualPINNDynamics):
     """Ablation model: exact kinematic position integration WITHOUT velocity saturation clamping."""
@@ -72,7 +79,7 @@ class UnclampedHardResidualPINNDynamics(HardResidualPINNDynamics):
         return next_state
 
 
-def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/smw_gameplay_dataset.npz") -> Dict:
+def run_clamping_ablation(device: torch.device, dataset_path: str = DATASET_GAMEPLAY) -> Dict:
     logger.info("\n--- ABLATION 1: PHYSICAL SATURATION CLAMPING ---")
     data = np.load(dataset_path)
     states = data["states"]
@@ -116,16 +123,22 @@ def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/sm
 
     # Load Clamped Model
     clamped_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
-    if os.path.exists("results/checkpoints/pinn_hard_best.pt"):
-        clamped_model.load_state_dict(torch.load("results/checkpoints/pinn_hard_best.pt", map_location=device, weights_only=True))
+    if os.path.exists(checkpoint_file("pinn_hard_best.pt")):
+        clamped_model.load_state_dict(
+            torch.load(checkpoint_file("pinn_hard_best.pt"), map_location=device, weights_only=True)
+        )
     clamped_model.eval()
     with torch.no_grad():
         clamped_pred = clamped_model(test_s, test_a)
         clamped_mse = torch.mean((clamped_pred - test_targets) ** 2).item()
         clamped_max_vx = torch.max(torch.abs(clamped_pred[:, 2])).item()
 
-    logger.info(f"Hard Residual PINN (Clamped):   MSE = {clamped_mse:.4f} | Max |vx| = {clamped_max_vx:.1f} subpx")
-    logger.info(f"Hard Residual PINN (Unclamped): MSE = {unclamped_mse:.4f} | Max |vx| = {unclamped_max_vx:.1f} subpx")
+    logger.info(
+        f"Hard Residual PINN (Clamped):   MSE = {clamped_mse:.4f} | Max |vx| = {clamped_max_vx:.1f} subpx"
+    )
+    logger.info(
+        f"Hard Residual PINN (Unclamped): MSE = {unclamped_mse:.4f} | Max |vx| = {unclamped_max_vx:.1f} subpx"
+    )
 
     return {
         "clamped": {"test_mse": clamped_mse, "max_predicted_vx": clamped_max_vx},
@@ -133,7 +146,9 @@ def run_clamping_ablation(device: torch.device, dataset_path: str = "data/raw/sm
     }
 
 
-def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "data/raw/smw_gameplay_dataset.npz") -> Dict:
+def run_horizon_degradation_ablation(
+    device: torch.device, dataset_path: str = DATASET_GAMEPLAY
+) -> Dict:
     logger.info("\n--- ABLATION 2: MULTI-STEP HORIZON DEGRADATION (H in 1..120) ---")
     data = np.load(dataset_path)
     states = data["states"]
@@ -157,10 +172,10 @@ def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "
     }
 
     ckpt_map = {
-        "Statistical MLP": "results/checkpoints/mlp_best.pt",
-        "Statistical LSTM": "results/checkpoints/lstm_best.pt",
-        "Soft-Constrained PINN": "results/checkpoints/pinn_soft_best.pt",
-        "Hard Residual PINN": "results/checkpoints/pinn_hard_best.pt",
+        "Statistical MLP": checkpoint_file("mlp_best.pt"),
+        "Statistical LSTM": checkpoint_file("lstm_best.pt"),
+        "Soft-Constrained PINN": checkpoint_file("pinn_soft_best.pt"),
+        "Hard Residual PINN": checkpoint_file("pinn_hard_best.pt"),
     }
 
     for name, m in models.items():
@@ -178,7 +193,7 @@ def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "
             break
 
         true_traj = test_states[start_idx : start_idx + rollout_len]  # [120, 8]
-        acts = test_actions[start_idx : start_idx + rollout_len]      # [120, 6]
+        acts = test_actions[start_idx : start_idx + rollout_len]  # [120, 6]
 
         for name, model in models.items():
             curr_s = torch.tensor(true_traj[0], dtype=torch.float32).unsqueeze(0).to(device)
@@ -217,12 +232,16 @@ def run_horizon_degradation_ablation(device: torch.device, dataset_path: str = "
     for name in models:
         final_horizon_metrics[name] = {
             "drift_by_horizon": {h: float(np.mean(horizon_results[name][h])) for h in horizons},
-            "mean_kinematic_violation_pct": float(kinematic_violations[name] / max(1, num_eval_rollouts)),
+            "mean_kinematic_violation_pct": float(
+                kinematic_violations[name] / max(1, num_eval_rollouts)
+            ),
         }
-        logger.info(f"{name:24s} | H=1: {final_horizon_metrics[name]['drift_by_horizon'][1]:6.2f} | "
-              f"H=30: {final_horizon_metrics[name]['drift_by_horizon'][30]:7.2f} | "
-              f"H=120: {final_horizon_metrics[name]['drift_by_horizon'][120]:8.2f} | "
-              f"Violations: {final_horizon_metrics[name]['mean_kinematic_violation_pct']:.1f}%")
+        logger.info(
+            f"{name:24s} | H=1: {final_horizon_metrics[name]['drift_by_horizon'][1]:6.2f} | "
+            f"H=30: {final_horizon_metrics[name]['drift_by_horizon'][30]:7.2f} | "
+            f"H=120: {final_horizon_metrics[name]['drift_by_horizon'][120]:8.2f} | "
+            f"Violations: {final_horizon_metrics[name]['mean_kinematic_violation_pct']:.1f}%"
+        )
 
     return final_horizon_metrics
 
@@ -231,13 +250,19 @@ def run_mpc_sensitivity_ablation(device: torch.device) -> Dict:
     logger.info("\n--- ABLATION 3: CEM MPC CANDIDATE SENSITIVITY (N in 32..512) ---")
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
-    if os.path.exists("results/checkpoints/pinn_multi_entity_best.pt"):
-        world_model.load_state_dict(torch.load("results/checkpoints/pinn_multi_entity_best.pt", map_location=device, weights_only=True))
+    if os.path.exists(checkpoint_file("pinn_multi_entity_best.pt")):
+        world_model.load_state_dict(
+            torch.load(
+                checkpoint_file("pinn_multi_entity_best.pt"), map_location=device, weights_only=True
+            )
+        )
     world_model.eval()
 
     candidate_values = [32, 64, 128, 256, 512]
     # Sample state facing hazard
-    sample_state = np.array([100.0, 336.0, 24.0, 0.0, 1.0, 0.0, 0.0, 0.0, 60.0, 0.0, -16.0, 1.0], dtype=np.float32)
+    sample_state = np.array(
+        [100.0, 336.0, 24.0, 0.0, 1.0, 0.0, 0.0, 0.0, 60.0, 0.0, -16.0, 1.0], dtype=np.float32
+    )
 
     cem_results = {}
     for N in candidate_values:
@@ -247,7 +272,9 @@ def run_mpc_sensitivity_ablation(device: torch.device) -> Dict:
             horizon=16,
             num_candidates=N,
             cem_iterations=3,
-            objective=TrajectoryObjective(weight_progress=3.0, hazard_penalty=800.0, leap_bonus=350.0),
+            objective=TrajectoryObjective(
+                weight_progress=3.0, hazard_penalty=800.0, leap_bonus=350.0
+            ),
         )
 
         # Warmup
@@ -273,7 +300,9 @@ def run_mpc_sensitivity_ablation(device: torch.device) -> Dict:
             "throughput_fps": fps,
             "mean_planning_reward": mean_rew,
         }
-        logger.info(f"Candidates N={N:3d} | Latency: {mean_ms:5.2f} ms | Throughput: {fps:5.1f} FPS | Reward: {mean_rew:6.1f}")
+        logger.info(
+            f"Candidates N={N:3d} | Latency: {mean_ms:5.2f} ms | Throughput: {fps:5.1f} FPS | Reward: {mean_rew:6.1f}"
+        )
 
     return cem_results
 
@@ -306,7 +335,9 @@ def plot_ablation_results(horizon_data: Dict, cem_data: Dict, output_figure: str
     bar_colors = [colors[n] for n in names]
     ax2.bar(range(len(names)), viols, color=bar_colors, width=0.55, edgecolor="black", alpha=0.85)
     ax2.set_xticks(range(len(names)))
-    ax2.set_xticklabels(["MLP", "LSTM", "Soft PINN", "Hard PINN\n(Ours)"], fontsize=10, fontweight="bold")
+    ax2.set_xticklabels(
+        ["MLP", "LSTM", "Soft PINN", "Hard PINN\n(Ours)"], fontsize=10, fontweight="bold"
+    )
     ax2.set_ylabel("Kinematic Violation Rate (%)", fontsize=11, fontweight="bold")
     ax2.set_title("(B) Physical Constraint Violations (120 Steps)", fontsize=12, fontweight="bold")
     ax2.set_ylim(0, 105)
@@ -319,14 +350,25 @@ def plot_ablation_results(horizon_data: Dict, cem_data: Dict, output_figure: str
     rewards = [cem_data[c]["mean_planning_reward"] for c in candidates]
 
     ax3_twin = ax3.twinx()
-    p1 = ax3.plot(candidates, latencies, color="#1f77b4", marker="s", linewidth=2.0, label="Planning Latency (ms)")
-    p2 = ax3_twin.plot(candidates, rewards, color="#e377c2", marker="^", linewidth=2.0, label="Objective Reward")
+    p1 = ax3.plot(
+        candidates,
+        latencies,
+        color="#1f77b4",
+        marker="s",
+        linewidth=2.0,
+        label="Planning Latency (ms)",
+    )
+    p2 = ax3_twin.plot(
+        candidates, rewards, color="#e377c2", marker="^", linewidth=2.0, label="Objective Reward"
+    )
 
     ax3.set_xlabel("CEM Candidate Trajectories (N)", fontsize=11, fontweight="bold")
     ax3.set_ylabel("Latency per Step (ms)", color="#1f77b4", fontsize=11, fontweight="bold")
     ax3_twin.set_ylabel("Trajectory Reward", color="#e377c2", fontsize=11, fontweight="bold")
     ax3.set_title("(C) MPC Planning Trade-Off (N vs. Speed/Reward)", fontsize=12, fontweight="bold")
-    ax3.axhline(y=16.67, color="black", linestyle="--", alpha=0.6, label="Real-time 60 Hz Limit (16.7 ms)")
+    ax3.axhline(
+        y=16.67, color="black", linestyle="--", alpha=0.6, label="Real-time 60 Hz Limit (16.7 ms)"
+    )
 
     lines = p1 + p2
     labels = [ln.get_label() for ln in lines]
@@ -347,15 +389,17 @@ def main():
     metrics["ablation_horizon_degradation"] = run_horizon_degradation_ablation(device)
     metrics["ablation_cem_mpc"] = run_mpc_sensitivity_ablation(device)
 
-    metrics_path = "results/ablation_benchmark_metrics.json"
-    figure_path = "results/figures/ablation_study_comparison.png"
+    metrics_path = results_file("ablation_benchmark_metrics.json")
+    figure_path = figure_file("ablation_study_comparison.png")
 
     os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
 
     logger.info(f"Ablation metrics saved to: {metrics_path}")
-    plot_ablation_results(metrics["ablation_horizon_degradation"], metrics["ablation_cem_mpc"], figure_path)
+    plot_ablation_results(
+        metrics["ablation_horizon_degradation"], metrics["ablation_cem_mpc"], figure_path
+    )
 
 
 if __name__ == "__main__":

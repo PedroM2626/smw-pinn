@@ -39,9 +39,7 @@ def classify_tile(tile_id: int, tile_y: int) -> int:
         return FREE
     if tile_id in (0x80, 0x81, 0x82):
         return SLOPE
-    if tile_id in (0x00, 0x3F, 0x73, 0x74, 0x75, 0x76) or (
-        tile_id != 0x25 and tile_y >= 22
-    ):
+    if tile_id in (0x00, 0x3F, 0x73, 0x74, 0x75, 0x76) or (tile_id != 0x25 and tile_y >= 22):
         return SOLID
     return SOLID if tile_id != 0x25 else FREE
 
@@ -112,9 +110,14 @@ def astar(
         return []
 
     moves = [
-        (1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
-        (1, 1, math.sqrt(2)), (1, -1, math.sqrt(2)),
-        (-1, 1, math.sqrt(2)), (-1, -1, math.sqrt(2)),
+        (1, 0, 1.0),
+        (-1, 0, 1.0),
+        (0, 1, 1.0),
+        (0, -1, 1.0),
+        (1, 1, math.sqrt(2)),
+        (1, -1, math.sqrt(2)),
+        (-1, 1, math.sqrt(2)),
+        (-1, -1, math.sqrt(2)),
     ]
     counter = itertools.count()
     open_heap = [(0.0, next(counter), sx, sy)]
@@ -219,7 +222,11 @@ class WaypointObjective(TrajectoryObjective):
             device=final.device,
         )
         dist = torch.linalg.norm(final - target, dim=1)
-        return base - self.weight_target * dist + self.arrival_bonus * (dist < self.arrival_radius).float()
+        return (
+            base
+            - self.weight_target * dist
+            + self.arrival_bonus * (dist < self.arrival_radius).float()
+        )
 
 
 class HierarchicalMPCController:

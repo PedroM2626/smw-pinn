@@ -17,6 +17,7 @@ from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class DynamicsTrainer:
     """
     Trainer supporting pure supervised data losses as well as physics-informed (PINN) losses,
@@ -221,7 +222,9 @@ class DynamicsTrainer:
 
         # Restore best model checkpoint
         if os.path.exists(best_model_path):
-            self.model.load_state_dict(torch.load(best_model_path, map_location=self.device, weights_only=True))
+            self.model.load_state_dict(
+                torch.load(best_model_path, map_location=self.device, weights_only=True)
+            )
 
         elapsed = time.time() - t0
         if verbose:

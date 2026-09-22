@@ -37,7 +37,7 @@ class TilemapEncoder(nn.Module):
             nn.BatchNorm2d(24),
             nn.GELU(),
             nn.AdaptiveAvgPool2d((2, 2)),  # [B, 24, 2, 2]
-            nn.Flatten(),                 # [B, 96]
+            nn.Flatten(),  # [B, 96]
             nn.Linear(96, out_features),
             nn.LayerNorm(out_features),
             nn.GELU(),
@@ -76,7 +76,9 @@ class TilemapPINNDynamics(nn.Module):
         self.max_vy = max_vy
 
         # 1. Terrain spatial encoder
-        self.tile_encoder = TilemapEncoder(num_tile_classes=4, embed_dim=8, out_features=tile_features_dim)
+        self.tile_encoder = TilemapEncoder(
+            num_tile_classes=4, embed_dim=8, out_features=tile_features_dim
+        )
 
         # 2. Residual dynamics network
         # Input: kinematic_dim (8) + tile_features_dim (32) + action_dim (6) = 46
@@ -91,8 +93,8 @@ class TilemapPINNDynamics(nn.Module):
         )
 
         # Output heads
-        self.head_accel = nn.Linear(hidden_dim, 2)     # [delta_vx, delta_vy]
-        self.head_contact = nn.Linear(hidden_dim, 4)   # [c_ground, c_ceiling, c_left, c_right]
+        self.head_accel = nn.Linear(hidden_dim, 2)  # [delta_vx, delta_vy]
+        self.head_contact = nn.Linear(hidden_dim, 4)  # [c_ground, c_ceiling, c_left, c_right]
 
     def forward(
         self,

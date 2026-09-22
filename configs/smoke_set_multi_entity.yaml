@@ -1,0 +1,7 @@
+# Seconds-scale version of the permutation-invariant set-model study
+# (README 10.22, `make smoke`). The dataset default in `src/utils/paths.py` is
+# already repo-anchored, so only the budget is overridden here.
+epochs: 2
+batch_size: 128
+learning_rate: 0.001
+seed: 42

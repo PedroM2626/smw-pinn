@@ -38,13 +38,22 @@ from src.planning.mpc_planner import (
 )
 from src.training.distill_mpc_policy import DistilledActorPolicy, extract_12d_vector
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_HOUSE,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -86,7 +95,7 @@ def evaluate_single_controller(
         savestate = f.read()
 
     emu.load_state(savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(10):
         emu.step_frame()
 
@@ -94,35 +103,72 @@ def evaluate_single_controller(
     start_x = init_state["x"]
 
     # Controller initialization
-    objective = TrajectoryObjective(weight_progress=3.0, weight_velocity=0.5, pit_penalty=1000.0, death_y=450.0)
+    objective = TrajectoryObjective(
+        weight_progress=3.0, weight_velocity=0.5, pit_penalty=1000.0, death_y=450.0
+    )
     mpc = None
     dagger_policy = None
 
     if controller_type == "MPC_MLP":
         wm = StatisticalMLPDynamics(state_dim=8, action_dim=6).to(device)
-        if os.path.exists("results/checkpoints/mlp_best.pt"):
-            wm.load_state_dict(torch.load("results/checkpoints/mlp_best.pt", map_location=device, weights_only=True))
+        if os.path.exists(checkpoint_file("mlp_best.pt")):
+            wm.load_state_dict(
+                torch.load(checkpoint_file("mlp_best.pt"), map_location=device, weights_only=True)
+            )
         wm.eval()
-        mpc = ModelPredictiveController(world_model=wm, device=device, horizon=15, num_candidates=128, cem_iterations=3, objective=objective)
+        mpc = ModelPredictiveController(
+            world_model=wm,
+            device=device,
+            horizon=15,
+            num_candidates=128,
+            cem_iterations=3,
+            objective=objective,
+        )
 
     elif controller_type == "MPC_Soft_PINN":
         wm = SoftPINNDynamics(state_dim=8, action_dim=6).to(device)
-        if os.path.exists("results/checkpoints/pinn_soft_best.pt"):
-            wm.load_state_dict(torch.load("results/checkpoints/pinn_soft_best.pt", map_location=device, weights_only=True))
+        if os.path.exists(checkpoint_file("pinn_soft_best.pt")):
+            wm.load_state_dict(
+                torch.load(
+                    checkpoint_file("pinn_soft_best.pt"), map_location=device, weights_only=True
+                )
+            )
         wm.eval()
-        mpc = ModelPredictiveController(world_model=wm, device=device, horizon=15, num_candidates=128, cem_iterations=3, objective=objective)
+        mpc = ModelPredictiveController(
+            world_model=wm,
+            device=device,
+            horizon=15,
+            num_candidates=128,
+            cem_iterations=3,
+            objective=objective,
+        )
 
     elif controller_type == "MPC_Hard_PINN":
         wm = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
-        if os.path.exists("results/checkpoints/pinn_hard_best.pt"):
-            wm.load_state_dict(torch.load("results/checkpoints/pinn_hard_best.pt", map_location=device, weights_only=True))
+        if os.path.exists(checkpoint_file("pinn_hard_best.pt")):
+            wm.load_state_dict(
+                torch.load(
+                    checkpoint_file("pinn_hard_best.pt"), map_location=device, weights_only=True
+                )
+            )
         wm.eval()
-        mpc = ModelPredictiveController(world_model=wm, device=device, horizon=15, num_candidates=128, cem_iterations=3, objective=objective)
+        mpc = ModelPredictiveController(
+            world_model=wm,
+            device=device,
+            horizon=15,
+            num_candidates=128,
+            cem_iterations=3,
+            objective=objective,
+        )
 
     elif controller_type == "DAgger_Policy":
         dagger_policy = DistilledActorPolicy(state_dim=12, action_dim=6)
-        if os.path.exists("results/checkpoints/dagger_policy_best.pt"):
-            dagger_policy.load_state_dict(torch.load("results/checkpoints/dagger_policy_best.pt", map_location="cpu", weights_only=True))
+        if os.path.exists(checkpoint_file("dagger_policy_best.pt")):
+            dagger_policy.load_state_dict(
+                torch.load(
+                    checkpoint_file("dagger_policy_best.pt"), map_location="cpu", weights_only=True
+                )
+            )
         dagger_policy.eval()
 
     traj_x = []
@@ -190,18 +236,20 @@ def evaluate_single_controller(
         "evaluation_time_seconds": float(elapsed),
     }
 
-    logger.info(f"[{controller_type:16s}] Progress: {final_prog:6.2f} px | Survived: {survived:3d} frames | "
-          f"vx: {metrics['mean_vx']:5.1f} | Throughput: {metrics['throughput_fps']:6.1f} FPS")
+    logger.info(
+        f"[{controller_type:16s}] Progress: {final_prog:6.2f} px | Survived: {survived:3d} frames | "
+        f"vx: {metrics['mean_vx']:5.1f} | Throughput: {metrics['throughput_fps']:6.1f} FPS"
+    )
 
     return metrics, traj_x, traj_y
 
 
 def run_cross_level_control_benchmark(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_house.state",
-    output_metrics: str = "results/cross_level_control_metrics.json",
-    output_figure: str = "results/figures/cross_level_control_trajectories.png",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_HOUSE,
+    output_metrics: str = results_file("cross_level_control_metrics.json"),
+    output_figure: str = figure_file("cross_level_control_trajectories.png"),
     max_frames: int = 400,
 ):
     logger.info("====================================================================")
@@ -273,7 +321,11 @@ def run_cross_level_control_benchmark(
         ax2.plot(frames, ty, label=labels[c], color=colors[c], linewidth=lw, linestyle=style)
 
     ax1.set_ylabel("Horizontal Progress X (px)", fontsize=11, fontweight="bold")
-    ax1.set_title("Zero-Shot Hardware Control Transfer to Unseen Stage B (Yoshi's House)", fontsize=13, fontweight="bold")
+    ax1.set_title(
+        "Zero-Shot Hardware Control Transfer to Unseen Stage B (Yoshi's House)",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax1.legend(loc="upper left")
 
     ax2.set_ylabel("Altitude Y (px)", fontsize=11, fontweight="bold")

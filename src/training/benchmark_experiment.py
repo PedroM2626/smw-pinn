@@ -19,10 +19,12 @@ from src.environment.dataset_loader import (
     create_dataloaders,
     load_and_preprocess_data,
 )
+from src.evaluation.analytical_baselines import score_like_dynamics_trainer
 from src.evaluation.per_variable_metrics import compute_per_variable_metrics
 from src.evaluation.rollout_evaluator import RolloutEvaluator
 from src.models import (
     MATCHED_HIDDEN_DIMS,
+    AnalyticalKinematicsDynamics,
     HardResidualPINNDynamics,
     SoftPINNDynamics,
     StatisticalLSTMDynamics,
@@ -33,6 +35,10 @@ from src.training.trainer import DynamicsTrainer
 from src.utils.config import parse_args_with_config
 from src.utils.experiment import ExperimentLogger
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_GAMEPLAY,
+    RESULTS_DIR,
+)
 from src.utils.seed import get_seed_info, set_global_seed
 
 log = get_logger(__name__)
@@ -56,12 +62,23 @@ def _collect_test_predictions(trainer, loader, device):
     return torch.cat(preds), torch.cat(targets)
 
 
+def _collect_plain_predictions(model, loader, device):
+    """Gather (predicted, target) next-states for a plain (state, action) model."""
+    model.eval()
+    preds, targets = [], []
+    with torch.no_grad():
+        for curr_state, curr_action, target_next in loader:
+            preds.append(model(curr_state.to(device), curr_action.to(device)).cpu())
+            targets.append(target_next.cpu())
+    return torch.cat(preds), torch.cat(targets)
+
+
 def run_comprehensive_benchmark(
-    dataset_path: str = "data/raw/smw_gameplay_dataset.npz",
+    dataset_path: str = DATASET_GAMEPLAY,
     epochs: int = 35,
     batch_size: int = 128,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
     experiment_name: str = "benchmark_mlp_vs_pinn",
     log_dir: str = "runs",
     use_tensorboard: bool = True,
@@ -74,6 +91,7 @@ def run_comprehensive_benchmark(
     num_rollout_starts: int = 10,
     matched_baseline: bool = False,
     per_variable_metrics: bool = True,
+    analytical_baseline: bool = False,
 ):
     log.info("====================================================================")
     log.info("  ACADEMIC BENCHMARK: STATISTICAL ML VS. PINN ON SUPER MARIO WORLD  ")
@@ -114,7 +132,9 @@ def run_comprehensive_benchmark(
     # 1. Load genuine RAM telemetry dataset
     log.info("\n[1/5] Loading and partitioning genuine WRAM transitions...")
     data_dict = load_and_preprocess_data(dataset_path=dataset_path, seed=seed)
-    train_loader, val_loader, test_loader = create_dataloaders(data_dict, batch_size=batch_size, seed=seed)
+    train_loader, val_loader, test_loader = create_dataloaders(
+        data_dict, batch_size=batch_size, seed=seed
+    )
 
     log.info(
         f"Transitions - Train: {len(data_dict['train_states'])}, "
@@ -284,7 +304,63 @@ def run_comprehensive_benchmark(
             f"Velocity Violations: {res['velocity_violations']:3d}/{H}"
         )
 
-    # 6. Generate High-Resolution Figures
+    # 6. Optional zero-parameter reference: the published engine rules themselves.
+    # Reviewed studies ask how much of a PINN's win is structure vs. network, which
+    # needs a structural-but-no-network row. It is never gradient-trained: its six
+    # scalars are identified on the *train* split, then scored with the same
+    # SmoothL1 evaluator as every other model here (README section 10.37).
+    if analytical_baseline and state_dim == 8:
+        log.info("\n[extra] Fitting and evaluating the Analytical Engine-Rules baseline...")
+        analytical = AnalyticalKinematicsDynamics(state_dim=state_dim, action_dim=action_dim)
+        analytical_train = (
+            torch.tensor(data_dict["train_states"], dtype=torch.float32),
+            torch.tensor(data_dict["train_actions"], dtype=torch.float32),
+            torch.tensor(data_dict["train_next_states"], dtype=torch.float32),
+        )
+        analytical.fit_engine_rules(*analytical_train, device=device)
+        # DynamicsTrainer is unusable here (it constructs an optimizer, and this model
+        # has no parameters), so the identical evaluation math is reused directly.
+        name = "Analytical_Engine_Rules"
+        eval_metrics = score_like_dynamics_trainer(analytical, test_loader, device)
+        single_step_results[name] = {
+            "test_loss_data": eval_metrics["val_loss_data"],
+            "test_kinematic_error": eval_metrics["val_loss_kinematics"],
+        }
+        if per_variable_metrics:
+            preds, targets = _collect_plain_predictions(analytical, test_loader, device)
+            per_variable_results[name] = compute_per_variable_metrics(preds, targets)
+        res = evaluator.evaluate_rollout(
+            model=analytical,
+            model_type="mlp",
+            initial_state=init_state,
+            action_sequence=action_seq,
+            ground_truth_states=ground_truth,
+        )
+        rollout_metrics[name] = {
+            "mean_drift_pixels": res["mean_drift"],
+            "final_drift_pixels": res["final_drift"],
+            "kinematic_violations": res["kinematic_violations"],
+            "velocity_violations": res["velocity_violations"],
+        }
+        multi = evaluator.evaluate_rollout_multistart(
+            model=analytical,
+            model_type="mlp",
+            states=test_states,
+            actions=test_actions,
+            next_states=test_next_states,
+            horizon=H,
+            num_starts=num_rollout_starts,
+        )
+        rollout_multistart[name] = {
+            k: v for k, v in multi.items() if k not in ("mean_drifts", "final_drifts")
+        }
+        trajectories[name] = res["predicted_trajectory"]
+        log.info(
+            f"{name:20s} | Test MSE: {eval_metrics['val_loss_data']:.4f} | "
+            f"identified scalars: {analytical.params.as_dict()}"
+        )
+
+    # 7. Generate High-Resolution Figures
     log.info("\nGenerating high-resolution comparative figures...")
     sns.set_theme(style="whitegrid")
 
@@ -356,6 +432,7 @@ def run_comprehensive_benchmark(
             "rollout_horizon": H,
             "num_rollout_starts": num_rollout_starts,
             "matched_baseline": matched_baseline,
+            "analytical_baseline": analytical_baseline,
         },
     }
     with open(os.path.join(output_dir, "benchmark_metrics.json"), "w", encoding="utf-8") as f:
@@ -384,13 +461,15 @@ def run_comprehensive_benchmark(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="MLP vs PINN benchmark on Super Mario World WRAM telemetry.")
+    parser = argparse.ArgumentParser(
+        description="MLP vs PINN benchmark on Super Mario World WRAM telemetry."
+    )
     parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
-    parser.add_argument("--dataset-path", default="data/raw/smw_gameplay_dataset.npz")
+    parser.add_argument("--dataset-path", default=DATASET_GAMEPLAY)
     parser.add_argument("--epochs", type=int, default=35)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     parser.add_argument("--experiment-name", default="benchmark_mlp_vs_pinn")
     parser.add_argument("--log-dir", default="runs")
     parser.add_argument("--patience", type=int, default=8)
@@ -399,12 +478,39 @@ if __name__ == "__main__":
     parser.add_argument("--rollout-horizon", type=int, default=120)
     parser.add_argument("--num-rollout-starts", type=int, default=10)
     parser.add_argument("--matched-baseline", action="store_true")
-    parser.add_argument("--no-per-variable-metrics", action="store_true")
-    parser.add_argument("--no-tensorboard", action="store_true", help="Disable TensorBoard, keep JSONL logs.")
-    parser.add_argument("--wandb", action="store_true", help="Enable wandb mirroring (requires wandb install).")
+    parser.add_argument(
+        "--analytical-baseline",
+        action="store_true",
+        help="add the zero-parameter engine-rules reference row (README section 10.37)",
+    )
+    parser.add_argument(
+        "--per-variable-metrics",
+        dest="per_variable_metrics",
+        action="store_true",
+        default=True,
+    )
+    parser.add_argument(
+        "--no-per-variable-metrics",
+        dest="per_variable_metrics",
+        action="store_false",
+        help="Skip the per-channel MSE/MAE/R2 + contact accuracy report.",
+    )
+    parser.add_argument(
+        "--no-tensorboard", action="store_true", help="Disable TensorBoard, keep JSONL logs."
+    )
+    parser.add_argument(
+        "--wandb", action="store_true", help="Enable wandb mirroring (requires wandb install)."
+    )
+    parser.add_argument(
+        "--deterministic",
+        dest="deterministic",
+        action="store_true",
+        default=True,
+    )
     parser.add_argument(
         "--non-deterministic",
-        action="store_true",
+        dest="deterministic",
+        action="store_false",
         help="Disable deterministic cuDNN (faster, not bit-reproducible).",
     )
     args = parse_args_with_config(parser)
@@ -419,12 +525,13 @@ if __name__ == "__main__":
         log_dir=args.log_dir,
         use_tensorboard=not args.no_tensorboard,
         use_wandb=args.wandb,
-        deterministic=not args.non_deterministic,
+        deterministic=args.deterministic,
         patience=args.patience,
         learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
         rollout_horizon=args.rollout_horizon,
         num_rollout_starts=args.num_rollout_starts,
         matched_baseline=args.matched_baseline,
-        per_variable_metrics=not args.no_per_variable_metrics,
+        analytical_baseline=args.analytical_baseline,
+        per_variable_metrics=args.per_variable_metrics,
     )

@@ -5,7 +5,6 @@ ROM; not run in CI): A* global route over the WRAM tile grid, tracked by
 local Hard-PINN CEM-MPC.
 """
 
-import json
 import os
 from typing import Dict
 
@@ -23,28 +22,31 @@ from src.planning.global_planner import (
     build_global_grid_from_emulator,
     extract_waypoints,
 )
+from src.planning.mpc_planner import action_vector_to_joypad
 from src.planning.terminal_value import TerminalValueNet, TerminalValueObjective
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+)
+from src.utils.provenance import write_metrics
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
-BUTTONS = ["B", "Y", "UP", "DOWN", "LEFT", "RIGHT"]
-
-
-def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
-    return {b: bool(vec[i] > 0.5) for i, b in enumerate(BUTTONS)}
-
 
 def run_hierarchical(
-    pinn_ckpt: str = "results/checkpoints/pinn_hard_best.pt",
+    pinn_ckpt: str = checkpoint_file("pinn_hard_best.pt"),
     value_ckpt: str | None = None,
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    rom_path: str = "data/raw/smw_usa.sfc",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
+    core_path: str = CORE_PATH,
+    rom_path: str = ROM_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
     max_frames: int = 900,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ) -> Dict:
     """Set `value_ckpt` to a terminal_value checkpoint for TD-MPC mode."""
     set_global_seed(seed)
@@ -66,17 +68,16 @@ def run_hierarchical(
         logger.info(f"TD-MPC mode: terminal value from {value_ckpt}.")
     else:
         objective = WaypointObjective(weight_progress=1.0)
-    controller = HierarchicalMPCController(
-        world_model=pinn, device=device, objective=objective
-    )
+    controller = HierarchicalMPCController(world_model=pinn, device=device, objective=objective)
 
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
     with open(state_path, "rb") as f:
-        emu.load_state(f.read())
+        initial_savestate = f.read()
+    start_state = emu.start_episode(initial_savestate)
 
     grid = build_global_grid_from_emulator(emu)
-    s0 = emu.get_smw_state()
+    s0 = start_state  # post warm-up WRAM, already settled by start_episode
     start = (int(s0["x"]) // TILE_PX, int(s0["y"]) // TILE_PX)
     # Goal: rightmost column, first free cell above ground.
     gx = grid.shape[1] - 1
@@ -94,11 +95,20 @@ def run_hierarchical(
     for _ in range(max_frames):
         st = emu.get_smw_state()
         s8 = np.array(
-            [st["x"], st["y"], st["vx"], st["vy"], st["c_ground"],
-             st["c_ceiling"], st["c_left"], st["c_right"]], dtype=np.float32,
+            [
+                st["x"],
+                st["y"],
+                st["vx"],
+                st["vy"],
+                st["c_ground"],
+                st["c_ceiling"],
+                st["c_left"],
+                st["c_right"],
+            ],
+            dtype=np.float32,
         )
         action, _ = controller.plan(s8)
-        emu.set_input(action_vector_to_dict(action))
+        emu.set_input(action_vector_to_joypad(action))
         emu.step_frame()
         st = emu.get_smw_state()
         traj_x.append(st["x"])
@@ -116,8 +126,12 @@ def run_hierarchical(
         "controller": "A* global + Hard PINN local MPC",
     }
     os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "hierarchical_mpc_metrics.json"), "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2)
+    write_metrics(
+        os.path.join(output_dir, "hierarchical_mpc_metrics.json"),
+        metrics,
+        seed=seed,
+        command="python -m src.evaluation.evaluate_hierarchical_mpc",
+    )
     logger.info(f"Hierarchical MPC: {metrics}")
     return metrics
 

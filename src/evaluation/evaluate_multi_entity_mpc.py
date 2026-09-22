@@ -22,13 +22,22 @@ from src.planning.mpc_planner import (
     TrajectoryObjective,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Run / Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Run / Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -57,11 +66,11 @@ def extract_12d_vector(state_dict: dict) -> np.ndarray:
 
 
 def run_multi_entity_mpc(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    model_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
-    output_metrics: str = "results/multi_entity_mpc_metrics.json",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    model_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
+    output_metrics: str = results_file("multi_entity_mpc_metrics.json"),
     max_frames: int = 400,
     horizon: int = 16,
     num_candidates: int = 256,
@@ -78,7 +87,9 @@ def run_multi_entity_mpc(
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
 
     if os.path.exists(model_checkpoint):
-        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.load_state_dict(
+            torch.load(model_checkpoint, map_location=device, weights_only=True)
+        )
         logger.info(f"Loaded trained multi-entity weights from: {model_checkpoint}")
     else:
         logger.info(f"Warning: Checkpoint {model_checkpoint} not found, using base model.")
@@ -114,7 +125,7 @@ def run_multi_entity_mpc(
         initial_savestate = f.read()
 
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -139,7 +150,9 @@ def run_multi_entity_mpc(
 
         # Check death
         if ext_s["y"] > 450.0 or ext_s["y"] < 0.0 or ext_s["air_state"] == 9:
-            logger.info(f"Mario terminated at frame {frame} (Y={ext_s['y']:.1f}, air_state={ext_s['air_state']})")
+            logger.info(
+                f"Mario terminated at frame {frame} (Y={ext_s['y']:.1f}, air_state={ext_s['air_state']})"
+            )
             break
 
         survived += 1
@@ -207,7 +220,7 @@ def run_multi_entity_mpc(
     plt.ylabel("Level X Coordinate (Pixels)")
     plt.legend()
     plt.grid(True, alpha=0.3)
-    fig_path = "results/figures/multi_entity_mpc_trajectory.png"
+    fig_path = figure_file("multi_entity_mpc_trajectory.png")
     plt.savefig(fig_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Trajectory plot saved to: {fig_path}")

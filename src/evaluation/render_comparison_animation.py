@@ -21,13 +21,19 @@ import torch
 from src.environment.dataset_loader import load_and_preprocess_data
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    DATASET_GAMEPLAY,
+    FIGURES_DIR,
+)
 
 logger = get_logger(__name__)
 
+
 def generate_comparison_animation(
-    data_path: str = "data/raw/smw_gameplay_dataset.npz",
-    checkpoints_dir: str = "results/checkpoints",
-    output_dir: str = "results/figures",
+    data_path: str = DATASET_GAMEPLAY,
+    checkpoints_dir: str = CHECKPOINTS_DIR,
+    output_dir: str = FIGURES_DIR,
     horizon: int = 120,
     fps: int = 30,
 ):
@@ -56,13 +62,19 @@ def generate_comparison_animation(
     # 2. Load Models
     hard_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
     hard_pinn.load_state_dict(
-        torch.load(os.path.join(checkpoints_dir, "pinn_hard_best.pt"), map_location=device, weights_only=True)
+        torch.load(
+            os.path.join(checkpoints_dir, "pinn_hard_best.pt"),
+            map_location=device,
+            weights_only=True,
+        )
     )
     hard_pinn.eval()
 
     mlp = StatisticalMLPDynamics(state_dim=8, action_dim=6).to(device)
     mlp.load_state_dict(
-        torch.load(os.path.join(checkpoints_dir, "mlp_best.pt"), map_location=device, weights_only=True)
+        torch.load(
+            os.path.join(checkpoints_dir, "mlp_best.pt"), map_location=device, weights_only=True
+        )
     )
     mlp.eval()
 
@@ -95,16 +107,36 @@ def generate_comparison_animation(
     drift_mlp = np.linalg.norm(mlp_traj[:, :2] - gt_s[:, :2], axis=-1)
 
     # 4. Generate High-Resolution Composite PNG
-    plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+    plt.style.use(
+        "seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default"
+    )
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [2.5, 1.2]})
 
     # Trajectory Plot
     ax_traj = axes[0]
     ax_traj.plot(gt_s[:, 0], gt_s[:, 1], "k-", lw=3.0, label="Real SNES Ground Truth (WRAM)")
-    ax_traj.plot(pinn_traj[:, 0], pinn_traj[:, 1], color="#10B981", lw=2.5, linestyle="--", label=f"Hard Residual PINN (Final Drift: {drift_pinn[-1]:.2f}px)")
-    ax_traj.plot(mlp_traj[:, 0], mlp_traj[:, 1], color="#EF4444", lw=2.0, linestyle=":", label=f"Statistical MLP (Final Drift: {drift_mlp[-1]:.2f}px)")
+    ax_traj.plot(
+        pinn_traj[:, 0],
+        pinn_traj[:, 1],
+        color="#10B981",
+        lw=2.5,
+        linestyle="--",
+        label=f"Hard Residual PINN (Final Drift: {drift_pinn[-1]:.2f}px)",
+    )
+    ax_traj.plot(
+        mlp_traj[:, 0],
+        mlp_traj[:, 1],
+        color="#EF4444",
+        lw=2.0,
+        linestyle=":",
+        label=f"Statistical MLP (Final Drift: {drift_mlp[-1]:.2f}px)",
+    )
     ax_traj.invert_yaxis()
-    ax_traj.set_title("Open-Loop Multi-Step Rollout (120 Frames / 2.0s Continuous Prediction)", fontsize=13, fontweight="bold")
+    ax_traj.set_title(
+        "Open-Loop Multi-Step Rollout (120 Frames / 2.0s Continuous Prediction)",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax_traj.set_xlabel("Mario Horizontal Position X (pixels)", fontsize=11)
     ax_traj.set_ylabel("Mario Vertical Position Y (pixels)", fontsize=11)
     ax_traj.legend(loc="upper right", frameon=True, fontsize=10)
@@ -125,7 +157,9 @@ def generate_comparison_animation(
     logger.info(f"Composite trajectory figure saved to: {comp_png_path}")
 
     # 5. Generate Animated GIF
-    fig, (ax_anim, ax_hud) = plt.subplots(1, 2, figsize=(13, 5), gridspec_kw={"width_ratios": [2.5, 1.0]})
+    fig, (ax_anim, ax_hud) = plt.subplots(
+        1, 2, figsize=(13, 5), gridspec_kw={"width_ratios": [2.5, 1.0]}
+    )
 
     x_min = min(gt_s[:, 0].min(), pinn_traj[:, 0].min(), mlp_traj[:, 0].min()) - 20
     x_max = max(gt_s[:, 0].max(), pinn_traj[:, 0].max(), mlp_traj[:, 0].max()) + 20
@@ -144,15 +178,21 @@ def generate_comparison_animation(
     (line_pinn,) = ax_anim.plot([], [], color="#10B981", lw=2.5, linestyle="--", label="Hard PINN")
     (dot_pinn,) = ax_anim.plot([], [], "o", color="#10B981", markersize=7)
 
-    (line_mlp,) = ax_anim.plot([], [], color="#EF4444", lw=2.0, linestyle=":", label="Statistical MLP")
+    (line_mlp,) = ax_anim.plot(
+        [], [], color="#EF4444", lw=2.0, linestyle=":", label="Statistical MLP"
+    )
     (dot_mlp,) = ax_anim.plot([], [], "o", color="#EF4444", markersize=7)
 
     ax_anim.legend(loc="upper left")
 
     ax_hud.axis("off")
     hud_text = ax_hud.text(
-        0.05, 0.5, "", fontsize=11, fontfamily="monospace",
-        bbox=dict(boxstyle="round,pad=0.5", facecolor="#F8FAFC", edgecolor="#CBD5E1")
+        0.05,
+        0.5,
+        "",
+        fontsize=11,
+        fontfamily="monospace",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="#F8FAFC", edgecolor="#CBD5E1"),
     )
 
     def init():
@@ -179,7 +219,7 @@ def generate_comparison_animation(
         # HUD display
         hud = (
             f"FRAME: {i:03d} / {horizon}\n"
-            f"TIME:  {i/60.0:.2f}s\n"
+            f"TIME:  {i / 60.0:.2f}s\n"
             "--------------------\n"
             f"HARD PINN:\n"
             f"  Drift:  {drift_pinn[i]:6.2f} px\n"
@@ -187,7 +227,7 @@ def generate_comparison_animation(
             "--------------------\n"
             f"STAT MLP:\n"
             f"  Drift:  {drift_mlp[i]:6.2f} px\n"
-            f"  KinRes: {abs((mlp_traj[i, 0] - mlp_traj[max(0, i-1), 0]) - mlp_traj[i, 2]/16.0):.2f}\n"
+            f"  KinRes: {abs((mlp_traj[i, 0] - mlp_traj[max(0, i - 1), 0]) - mlp_traj[i, 2] / 16.0):.2f}\n"
         )
         hud_text.set_text(hud)
         return line_gt, dot_gt, line_pinn, dot_pinn, line_mlp, dot_mlp, hud_text
@@ -195,7 +235,12 @@ def generate_comparison_animation(
     # Sample every 2 frames for compact GIF size
     frames_to_render = range(0, horizon + 1, 2)
     anim = animation.FuncAnimation(
-        fig, animate, init_func=init, frames=frames_to_render, interval=1000 // (fps // 2), blit=True
+        fig,
+        animate,
+        init_func=init,
+        frames=frames_to_render,
+        interval=1000 // (fps // 2),
+        blit=True,
     )
 
     gif_path = os.path.join(output_dir, "model_comparison_animation.gif")

@@ -18,18 +18,22 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.models.pinn_set_multi_entity import SetMultiEntityPINNDynamics
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_SET_MULTI_ENTITY,
+    RESULTS_DIR,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
 
 def run_training(
-    dataset_path: str = "data/raw/smw_set_multi_entity_dataset.npz",
+    dataset_path: str = DATASET_SET_MULTI_ENTITY,
     epochs: int = 10,
     batch_size: int = 128,
     learning_rate: float = 1e-3,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
 ):
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -87,7 +91,9 @@ def run_training(
                 val_loss += (loss_fn(pred_m, m_t) + loss_fn(pred_e * mask, ent_t * mask)).item()
                 val_steps += 1
         val_loss /= max(1, val_steps)
-        logger.info(f"Epoch {epoch}/{epochs} | train {train_loss / max(1, steps):.4f} | val {val_loss:.4f}")
+        logger.info(
+            f"Epoch {epoch}/{epochs} | train {train_loss / max(1, steps):.4f} | val {val_loss:.4f}"
+        )
         if val_loss < best:
             best, bad = val_loss, 0
             torch.save(model.state_dict(), ckpt)
@@ -98,7 +104,9 @@ def run_training(
                 break
 
     metrics = {"best_val_loss": best, "max_entities": k}
-    with open(os.path.join(output_dir, "set_multi_entity_metrics.json"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(output_dir, "set_multi_entity_metrics.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump(metrics, f, indent=2)
     logger.info(f"Saved {ckpt} (val {best:.4f})")
     return metrics
@@ -107,12 +115,12 @@ def run_training(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train SetMultiEntityPINN on 12-slot sets.")
     parser.add_argument("--config", default=None)
-    parser.add_argument("--dataset-path", default="data/raw/smw_set_multi_entity_dataset.npz")
+    parser.add_argument("--dataset-path", default=DATASET_SET_MULTI_ENTITY)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     args = parse_args_with_config(parser)
     run_training(
         dataset_path=args.dataset_path,

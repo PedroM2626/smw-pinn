@@ -17,13 +17,19 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.tilemap_pinn import TilemapPINNDynamics
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    DATASET_TILEMAP,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def train_tilemap_model(
-    dataset_path: str = "data/raw/smw_tilemap_dataset.npz",
-    checkpoint_dir: str = "results/checkpoints",
-    metrics_path: str = "results/tilemap_benchmark_metrics.json",
+    dataset_path: str = DATASET_TILEMAP,
+    checkpoint_dir: str = CHECKPOINTS_DIR,
+    metrics_path: str = results_file("tilemap_benchmark_metrics.json"),
     batch_size: int = 128,
     epochs: int = 25,
     lr: float = 1e-3,
@@ -72,7 +78,9 @@ def train_tilemap_model(
     contact_bce_fn = nn.BCELoss()
 
     optimizer = torch.optim.AdamW(tilemap_model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=3
+    )
 
     # Also train blind model for comparison
     blind_opt = torch.optim.AdamW(blind_model.parameters(), lr=lr, weight_decay=1e-4)
@@ -113,7 +121,9 @@ def train_tilemap_model(
             # --- Blind PINN forward & backward ---
             blind_opt.zero_grad()
             blind_pred = blind_model(b_states, b_actions)
-            blind_loss = state_loss_fn(blind_pred[:, :4], b_targets[:, :4]) + 2.0 * state_loss_fn(blind_pred[:, 4:], b_targets[:, 4:])
+            blind_loss = state_loss_fn(blind_pred[:, :4], b_targets[:, :4]) + 2.0 * state_loss_fn(
+                blind_pred[:, 4:], b_targets[:, 4:]
+            )
             blind_loss.backward()
             torch.nn.utils.clip_grad_norm_(blind_model.parameters(), max_norm=1.0)
             blind_opt.step()
@@ -149,7 +159,7 @@ def train_tilemap_model(
         if epoch % 5 == 0 or epoch == epochs:
             logger.info(
                 f"Epoch {epoch:2d}/{epochs} | "
-                f"Train Loss: {total_loss/batches:.4f} (Contact BCE: {contact_loss_sum/batches:.4f}) | "
+                f"Train Loss: {total_loss / batches:.4f} (Contact BCE: {contact_loss_sum / batches:.4f}) | "
                 f"Val Loss: {val_mean_loss:.4f} | "
                 f"Best Val: {best_loss:.4f}"
             )
@@ -188,7 +198,9 @@ def train_tilemap_model(
 
         # Kinematic residual verification
         # hat_X - (X + hat_vx / 16.0)
-        tilemap_kin_res = torch.mean((pred_tilemap[:, 0] - (all_test_states[:, 0] + pred_tilemap[:, 2] / 16.0)) ** 2).item()
+        tilemap_kin_res = torch.mean(
+            (pred_tilemap[:, 0] - (all_test_states[:, 0] + pred_tilemap[:, 2] / 16.0)) ** 2
+        ).item()
 
     metrics = {
         "dataset_samples": total_samples,
@@ -213,8 +225,12 @@ def train_tilemap_model(
         json.dump(metrics, f, indent=2)
 
     logger.info("\n--- TEST SET BENCHMARK RESULTS ---")
-    logger.info(f"Blind PINN (No Terrain):     MSE = {blind_mse:.4f} | Contact Acc = {blind_contact_acc:.2f}%")
-    logger.info(f"Tilemap-PINN (With Terrain):  MSE = {tilemap_mse:.4f} | Contact Acc = {tilemap_contact_acc:.2f}%")
+    logger.info(
+        f"Blind PINN (No Terrain):     MSE = {blind_mse:.4f} | Contact Acc = {blind_contact_acc:.2f}%"
+    )
+    logger.info(
+        f"Tilemap-PINN (With Terrain):  MSE = {tilemap_mse:.4f} | Contact Acc = {tilemap_contact_acc:.2f}%"
+    )
     logger.info(f"Contact Accuracy Gain:       +{tilemap_contact_acc - blind_contact_acc:.2f}%")
     logger.info(f"Analytical Kinematic Residual: {tilemap_kin_res:.6f} (0.0% violation)")
     logger.info(f"Metrics saved to: {metrics_path}")

@@ -31,6 +31,13 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.models import HardResidualPINNDynamics, MultiEntityPINNDynamics
 from src.planning.mpc_planner import ModelPredictiveController, TrajectoryObjective
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -82,11 +89,18 @@ def apply_reflexes(
 def _extract_12d(curr_state: dict) -> np.ndarray:
     return np.array(
         [
-            curr_state["x"], curr_state["y"], curr_state["vx"], curr_state["vy"],
-            curr_state["c_ground"], curr_state["c_ceiling"],
-            curr_state["c_left"], curr_state["c_right"],
-            curr_state["delta_x_enemy"], curr_state["delta_y_enemy"],
-            curr_state["vx_enemy"], curr_state["hazard_active"],
+            curr_state["x"],
+            curr_state["y"],
+            curr_state["vx"],
+            curr_state["vy"],
+            curr_state["c_ground"],
+            curr_state["c_ceiling"],
+            curr_state["c_left"],
+            curr_state["c_right"],
+            curr_state["delta_x_enemy"],
+            curr_state["delta_y_enemy"],
+            curr_state["vx_enemy"],
+            curr_state["hazard_active"],
         ],
         dtype=np.float32,
     )
@@ -100,7 +114,7 @@ def run_condition(
     max_frames: int,
 ) -> Dict:
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
     start_x = emu.get_smw_state()["x"]
@@ -153,13 +167,13 @@ def run_condition(
 
 
 def run_ablation(
-    model_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    rom_path: str = "data/raw/smw_usa.sfc",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
+    model_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
+    core_path: str = CORE_PATH,
+    rom_path: str = ROM_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
     max_frames: int = 600,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
     controller: ModelPredictiveController | None = None,
     emulator_cls=SnesLibretroEmulator,
 ) -> Dict:
@@ -170,7 +184,9 @@ def run_ablation(
     if controller is None:
         base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
         world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
-        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.load_state_dict(
+            torch.load(model_checkpoint, map_location=device, weights_only=True)
+        )
         world_model.eval()
         controller = ModelPredictiveController(
             world_model=world_model,
@@ -179,8 +195,12 @@ def run_ablation(
             num_candidates=256,
             cem_iterations=3,
             objective=TrajectoryObjective(
-                weight_progress=3.5, weight_velocity=0.6, pit_penalty=1200.0,
-                death_y=450.0, hazard_penalty=850.0, leap_bonus=400.0,
+                weight_progress=3.5,
+                weight_velocity=0.6,
+                pit_penalty=1200.0,
+                death_y=450.0,
+                hazard_penalty=850.0,
+                leap_bonus=400.0,
             ),
         )
 
@@ -213,7 +233,9 @@ def run_ablation(
     ax1.set_ylabel("Progress (px)")
     ax1.set_title("MPC pure vs reflexive: hardware progress")
     for i, n in enumerate(names):
-        ax1.text(i, results[n]["progress_px"] + 5, f"{results[n]['progress_px']:.0f}px", ha="center")
+        ax1.text(
+            i, results[n]["progress_px"] + 5, f"{results[n]['progress_px']:.0f}px", ha="center"
+        )
     hits = results["reflex"]["reflex_interventions"]
     ax2.bar(list(hits), list(hits.values()), color="#F59E0B")
     ax2.set_ylabel("Interventions (frames)")

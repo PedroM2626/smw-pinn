@@ -19,6 +19,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.environment.snes_emulator import SnesLibretroEmulator
+from src.utils.paths import CORE_PATH, DATASET_MULTI_ENTITY, ROM_PATH, STATE_YOSHI_ISLAND_1
 from src.utils.seed import set_global_seed
 
 
@@ -59,10 +60,10 @@ def extract_action_vector(action_dict: dict) -> np.ndarray:
 
 
 def record_multi_entity_dataset(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    output_path: str = "data/raw/smw_multi_entity_dataset.npz",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    output_path: str = DATASET_MULTI_ENTITY,
     num_episodes: int = 35,
     frames_per_episode: int = 600,
 ):
@@ -89,17 +90,17 @@ def record_multi_entity_dataset(
 
     # Diverse action primitives designed to encounter, interact with, leap over, and stomp Rex
     action_behaviors = [
-        {"RIGHT": True, "Y": True},                 # Continuous run
-        {"RIGHT": True, "Y": True, "B": True},       # Running jump
-        {"RIGHT": True, "B": True},                 # Walking jump
-        {"RIGHT": True},                            # Simple walk
-        {"LEFT": True, "Y": True},                  # Left run
-        {"LEFT": True},                             # Left walk
-        {},                                         # Idle / deceleration
-        {"B": True},                                # Stationary vertical jump
-        {"RIGHT": True, "DOWN": True},              # Crouch slide
-        {"RIGHT": True, "Y": True, "B": True},       # Sustained running jump
-        {"LEFT": True, "B": True},                  # Backward retreat jump
+        {"RIGHT": True, "Y": True},  # Continuous run
+        {"RIGHT": True, "Y": True, "B": True},  # Running jump
+        {"RIGHT": True, "B": True},  # Walking jump
+        {"RIGHT": True},  # Simple walk
+        {"LEFT": True, "Y": True},  # Left run
+        {"LEFT": True},  # Left walk
+        {},  # Idle / deceleration
+        {"B": True},  # Stationary vertical jump
+        {"RIGHT": True, "DOWN": True},  # Crouch slide
+        {"RIGHT": True, "Y": True, "B": True},  # Sustained running jump
+        {"LEFT": True, "B": True},  # Backward retreat jump
     ]
 
     total_transitions = 0
@@ -108,7 +109,7 @@ def record_multi_entity_dataset(
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        emu.wram_buffer[0x0100] = 0x14
+        emu.enable_gameplay_mode()
         for _ in range(5):
             emu.step_frame()
 
@@ -187,7 +188,7 @@ def record_multi_entity_dataset(
 
         if (ep + 1) % 5 == 0 or (ep + 1) == num_episodes:
             print(
-                f"Episode {ep+1:2d}/{num_episodes} | "
+                f"Episode {ep + 1:2d}/{num_episodes} | "
                 f"Mario X={curr_ext_s['x']:.1f}, Rex dx={curr_ext_s['delta_x_enemy']:.1f} (Active={curr_ext_s['hazard_active']:.0f}) | "
                 f"Total transitions: {total_transitions}"
             )
@@ -213,7 +214,7 @@ def record_multi_entity_dataset(
     print(f"Total transitions: {len(states_arr)}")
     print(f"State shape: {states_arr.shape}")
     print(f"Rex interaction frames: {rex_encounters}")
-    print(f"Emulation time: {elapsed:.2f}s ({total_transitions/elapsed:.1f} FPS)")
+    print(f"Emulation time: {elapsed:.2f}s ({total_transitions / elapsed:.1f} FPS)")
     print("==========================================================")
 
 

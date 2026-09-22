@@ -17,13 +17,22 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Run / Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Run / Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -43,7 +52,7 @@ def run_multi_entity_neural_policy(
     All jump timing, speed modulation, and leap arcs are decided purely by the neural network.
     """
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -66,9 +75,18 @@ def run_multi_entity_neural_policy(
         # Construct 12D state tensor
         s_vec = torch.tensor(
             [
-                ext_s["x"], ext_s["y"], ext_s["vx"], ext_s["vy"],
-                ext_s["c_ground"], ext_s["c_ceiling"], ext_s["c_left"], ext_s["c_right"],
-                ext_s["delta_x_enemy"], ext_s["delta_y_enemy"], ext_s["vx_enemy"], ext_s["hazard_active"],
+                ext_s["x"],
+                ext_s["y"],
+                ext_s["vx"],
+                ext_s["vy"],
+                ext_s["c_ground"],
+                ext_s["c_ceiling"],
+                ext_s["c_left"],
+                ext_s["c_right"],
+                ext_s["delta_x_enemy"],
+                ext_s["delta_y_enemy"],
+                ext_s["vx_enemy"],
+                ext_s["hazard_active"],
             ],
             dtype=torch.float32,
             device=device,
@@ -109,7 +127,7 @@ def run_blind_8d_policy(
     max_frames: int = 500,
 ) -> Dict:
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -129,7 +147,16 @@ def run_blind_8d_policy(
         survived += 1
 
         curr_vec = torch.tensor(
-            [s["x"], s["y"], s["vx"], s["vy"], s["c_ground"], s["c_ceiling"], s["c_left"], s["c_right"]],
+            [
+                s["x"],
+                s["y"],
+                s["vx"],
+                s["vy"],
+                s["c_ground"],
+                s["c_ceiling"],
+                s["c_left"],
+                s["c_right"],
+            ],
             dtype=torch.float32,
             device=device,
         ).unsqueeze(0)
@@ -159,9 +186,9 @@ def benchmark_multi_entity_hardware():
     logger.info("====================================================================")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    core_path = "src/environment/bin/snes9x_libretro.dll"
-    rom_path = "data/raw/smw_usa.sfc"
-    savestate_path = "data/raw/smw_yoshi_island_1.state"
+    core_path = CORE_PATH
+    rom_path = ROM_PATH
+    savestate_path = STATE_YOSHI_ISLAND_1
 
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
@@ -170,12 +197,12 @@ def benchmark_multi_entity_hardware():
 
     # Load policies
     policy_8d = ActorCritic(state_dim=8, num_actions=8, hidden_dim=128).to(device)
-    ckpt_8d = "results/checkpoints/dyna_ppo_pinn_hard_policy.pt"
+    ckpt_8d = checkpoint_file("dyna_ppo_pinn_hard_policy.pt")
     if os.path.exists(ckpt_8d):
         policy_8d.load_state_dict(torch.load(ckpt_8d, map_location=device, weights_only=True))
 
     policy_12d = ActorCritic(state_dim=12, num_actions=8, hidden_dim=128).to(device)
-    ckpt_12d = "results/checkpoints/dyna_ppo_multi_entity_best.pt"
+    ckpt_12d = checkpoint_file("dyna_ppo_multi_entity_best.pt")
     if os.path.exists(ckpt_12d):
         policy_12d.load_state_dict(torch.load(ckpt_12d, map_location=device, weights_only=True))
     else:
@@ -187,11 +214,15 @@ def benchmark_multi_entity_hardware():
     # Execute console trials
     logger.info("Executing Trial 1: Blind 8D Policy...")
     res_8d = run_blind_8d_policy(emu, initial_savestate, policy_8d, device)
-    logger.info(f"Blind 8D Policy: Progress = {res_8d['total_progress']:.1f} px | Survived = {res_8d['survived_frames']} frames")
+    logger.info(
+        f"Blind 8D Policy: Progress = {res_8d['total_progress']:.1f} px | Survived = {res_8d['survived_frames']} frames"
+    )
 
     logger.info("Executing Trial 2: End-to-End Multi-Entity 12D Policy...")
     res_12d = run_multi_entity_neural_policy(emu, initial_savestate, policy_12d, device)
-    logger.info(f"Multi-Entity 12D Policy: Progress = {res_12d['total_progress']:.1f} px | Survived = {res_12d['survived_frames']} frames | Rex Evaded: {res_12d['rex_evaded']}")
+    logger.info(
+        f"Multi-Entity 12D Policy: Progress = {res_12d['total_progress']:.1f} px | Survived = {res_12d['survived_frames']} frames | Rex Evaded: {res_12d['rex_evaded']}"
+    )
 
     emu.close()
 
@@ -210,13 +241,26 @@ def benchmark_multi_entity_hardware():
             "rex_evaded": res_12d["rex_evaded"],
         },
     }
-    with open("results/multi_entity_hardware_metrics.json", "w") as f:
+    with open(results_file("multi_entity_hardware_metrics.json"), "w") as f:
         json.dump(results, f, indent=2)
 
     # Plot comparison trajectories
     plt.figure(figsize=(10, 5))
-    plt.plot(res_8d["trajectory_x"], res_8d["trajectory_y"], color="#EF4444", lw=2, linestyle="--", label=f"Blind 8D (Fatal at X={res_8d['trajectory_x'][-1]:.0f})")
-    plt.plot(res_12d["trajectory_x"], res_12d["trajectory_y"], color="#10B981", lw=2.5, label=f"Multi-Entity 12D (Progress +{res_12d['total_progress']:.1f}px)")
+    plt.plot(
+        res_8d["trajectory_x"],
+        res_8d["trajectory_y"],
+        color="#EF4444",
+        lw=2,
+        linestyle="--",
+        label=f"Blind 8D (Fatal at X={res_8d['trajectory_x'][-1]:.0f})",
+    )
+    plt.plot(
+        res_12d["trajectory_x"],
+        res_12d["trajectory_y"],
+        color="#10B981",
+        lw=2.5,
+        label=f"Multi-Entity 12D (Progress +{res_12d['total_progress']:.1f}px)",
+    )
     plt.axvline(x=131.0, color="#F59E0B", linestyle=":", lw=1.5, label="Rex Spawn Zone (X~131)")
     plt.gca().invert_yaxis()
     plt.xlabel("Horizontal Position X (pixels)")
@@ -225,7 +269,7 @@ def benchmark_multi_entity_hardware():
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("results/figures/multi_entity_snes_trajectories.png", dpi=300)
+    plt.savefig(figure_file("multi_entity_snes_trajectories.png"), dpi=300)
     plt.close()
 
     logger.info("Multi-Entity hardware evaluation completed successfully.")

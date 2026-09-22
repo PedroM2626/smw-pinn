@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+from src.utils.paths import DATASET_GAMEPLAY
 from src.utils.seed import seed_worker, set_global_seed
 
 
@@ -81,7 +82,7 @@ class SMWSequenceDataset(Dataset):
 
 
 def load_and_preprocess_data(
-    dataset_path: str = "data/raw/smw_gameplay_dataset.npz",
+    dataset_path: str = DATASET_GAMEPLAY,
     train_ratio: float = 0.70,
     val_ratio: float = 0.15,
     seed: int = 42,
@@ -101,9 +102,7 @@ def load_and_preprocess_data(
     if not 0.0 < val_ratio < 1.0:
         raise ValueError(f"val_ratio must be in (0, 1), got {val_ratio}")
     if train_ratio + val_ratio >= 1.0:
-        raise ValueError(
-            f"train_ratio + val_ratio must be < 1.0, got {train_ratio + val_ratio}"
-        )
+        raise ValueError(f"train_ratio + val_ratio must be < 1.0, got {train_ratio + val_ratio}")
     raw_data = np.load(dataset_path)
     states = raw_data["states"]
     actions = raw_data["actions"]

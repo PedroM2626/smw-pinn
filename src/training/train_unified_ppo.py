@@ -5,7 +5,7 @@ inside the GPU-vectorized PINN simulation environment for high-speed,
 hazard-aware real-time control (sub-millisecond latency) in place of online MPC.
 """
 
-import json
+import argparse
 import os
 import time
 from typing import Dict, Tuple
@@ -20,9 +20,17 @@ from torch.distributions import Categorical
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
+from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    checkpoint_file,
+    figure_file,
+    results_file,
+)
+from src.utils.provenance import write_metrics
 
 logger = get_logger(__name__)
+
 
 class UnifiedActorCritic(nn.Module):
     """Actor-Critic architecture for 12D state and discrete action primitives."""
@@ -46,7 +54,9 @@ class UnifiedActorCritic(nn.Module):
         value = self.critic(feat)
         return Categorical(logits=logits), value.squeeze(-1)
 
-    def get_action(self, x: torch.Tensor, deterministic: bool = False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_action(
+        self, x: torch.Tensor, deterministic: bool = False
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         dist, value = self(x)
         if deterministic:
             action = torch.argmax(dist.logits, dim=-1)
@@ -79,7 +89,9 @@ def generate_initial_state_pool(device: torch.device, n_samples: int = 256) -> t
             delta_y = 0.0
             vx_h = 0.0
 
-        pool.append([x, y, vx, vy, c_ground, c_ceiling, c_left, c_right, delta_x, delta_y, vx_h, active])
+        pool.append(
+            [x, y, vx, vy, c_ground, c_ceiling, c_left, c_right, delta_x, delta_y, vx_h, active]
+        )
 
     return torch.tensor(pool, dtype=torch.float32, device=device)
 
@@ -92,10 +104,22 @@ def train_unified_ppo(
     gae_lambda: float = 0.95,
     clip_eps: float = 0.2,
     lr: float = 3e-4,
-    checkpoint_path: str = "results/checkpoints/unified_ppo_policy_best.pt",
-    output_metrics: str = "results/unified_ppo_metrics.json",
-    output_figure: str = "results/figures/unified_ppo_learning_curve.png",
+    output_dir: str | None = None,
+    checkpoint_path: str | None = None,
+    output_metrics: str | None = None,
+    output_figure: str | None = None,
 ) -> Dict:
+    """Train the amortized controller. `output_dir` redirects all three artifacts;
+    the explicit paths win when both are given (that is how the smoke tests write
+    into a temporary directory)."""
+    if output_dir is not None:
+        checkpoint_path = checkpoint_path or os.path.join(output_dir, "unified_ppo_policy_best.pt")
+        output_metrics = output_metrics or os.path.join(output_dir, "unified_ppo_metrics.json")
+        output_figure = output_figure or os.path.join(output_dir, "unified_ppo_learning_curve.png")
+    else:
+        checkpoint_path = checkpoint_path or checkpoint_file("unified_ppo_policy_best.pt")
+        output_metrics = output_metrics or results_file("unified_ppo_metrics.json")
+        output_figure = output_figure or figure_file("unified_ppo_learning_curve.png")
     logger.info("====================================================================")
     logger.info("  TRAINING UNIFIED DYNA-PPO AMORTIZED CONTROLLER (12D PINN)          ")
     logger.info("====================================================================")
@@ -106,8 +130,12 @@ def train_unified_ppo(
     # Load World Model for Simulation
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
-    if os.path.exists("results/checkpoints/pinn_multi_entity_best.pt"):
-        world_model.load_state_dict(torch.load("results/checkpoints/pinn_multi_entity_best.pt", map_location=device, weights_only=True))
+    if os.path.exists(checkpoint_file("pinn_multi_entity_best.pt")):
+        world_model.load_state_dict(
+            torch.load(
+                checkpoint_file("pinn_multi_entity_best.pt"), map_location=device, weights_only=True
+            )
+        )
     world_model.eval()
 
     # Create Vectorized Environment
@@ -182,12 +210,12 @@ def train_unified_ppo(
         with torch.no_grad():
             _, _, next_val = agent.get_action(obs)
 
-        obs_t = torch.stack(obs_buf)        # [num_steps, num_envs, 12]
-        act_t = torch.stack(act_buf)        # [num_steps, num_envs]
-        logp_t = torch.stack(logp_buf)      # [num_steps, num_envs]
-        rew_t = torch.stack(rew_buf)        # [num_steps, num_envs]
-        val_t = torch.stack(val_buf)        # [num_steps, num_envs]
-        done_t = torch.stack(done_buf)      # [num_steps, num_envs]
+        obs_t = torch.stack(obs_buf)  # [num_steps, num_envs, 12]
+        act_t = torch.stack(act_buf)  # [num_steps, num_envs]
+        logp_t = torch.stack(logp_buf)  # [num_steps, num_envs]
+        rew_t = torch.stack(rew_buf)  # [num_steps, num_envs]
+        val_t = torch.stack(val_buf)  # [num_steps, num_envs]
+        done_t = torch.stack(done_buf)  # [num_steps, num_envs]
 
         advantages = torch.zeros_like(rew_t)
         last_gae = 0.0
@@ -196,8 +224,8 @@ def train_unified_ppo(
                 next_non_terminal = 1.0 - done_t[t].float()
                 next_values = next_val
             else:
-                next_non_terminal = 1.0 - done_t[t+1].float()
-                next_values = val_t[t+1]
+                next_non_terminal = 1.0 - done_t[t + 1].float()
+                next_values = val_t[t + 1]
             delta = rew_t[t] + gamma * next_values * next_non_terminal - val_t[t]
             advantages[t] = last_gae = delta + gamma * gae_lambda * next_non_terminal * last_gae
         returns = advantages + val_t
@@ -256,7 +284,9 @@ def train_unified_ppo(
             )
 
     elapsed = time.time() - t_start
-    logger.info(f"\nPPO Training Complete in {elapsed:.1f} seconds. Checkpoint saved to: {checkpoint_path}")
+    logger.info(
+        f"\nPPO Training Complete in {elapsed:.1f} seconds. Checkpoint saved to: {checkpoint_path}"
+    )
 
     metrics = {
         "total_timesteps": total_timesteps,
@@ -268,20 +298,40 @@ def train_unified_ppo(
     }
 
     os.makedirs(os.path.dirname(output_metrics), exist_ok=True)
-    with open(output_metrics, "w") as f:
-        json.dump(metrics, f, indent=2)
+    write_metrics(
+        output_metrics,
+        metrics,
+        command="python -m src.training.train_unified_ppo",
+        extra_meta={"num_envs": num_envs, "num_steps": num_steps},
+    )
 
     # Plot Learning Curves
     os.makedirs(os.path.dirname(output_figure), exist_ok=True)
     sns.set_theme(style="whitegrid")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
-    ax1.plot(range(1, num_updates + 1), history_rewards, color="#1f77b4", linewidth=2.0, label="PPO Episode Return")
+    ax1.plot(
+        range(1, num_updates + 1),
+        history_rewards,
+        color="#1f77b4",
+        linewidth=2.0,
+        label="PPO Episode Return",
+    )
     ax1.set_ylabel("Mean Return", fontweight="bold")
-    ax1.set_title("Unified Dyna-PPO Training inside Hard PINN Vectorized Simulation", fontweight="bold", fontsize=12)
+    ax1.set_title(
+        "Unified Dyna-PPO Training inside Hard PINN Vectorized Simulation",
+        fontweight="bold",
+        fontsize=12,
+    )
     ax1.legend(loc="lower right")
 
-    ax2.plot(range(1, num_updates + 1), history_progress, color="#2ca02c", linewidth=2.0, label="Simulated Progress (px)")
+    ax2.plot(
+        range(1, num_updates + 1),
+        history_progress,
+        color="#2ca02c",
+        linewidth=2.0,
+        label="Simulated Progress (px)",
+    )
     ax2.set_ylabel("Progress (px)", fontweight="bold")
     ax2.set_xlabel("PPO Iteration Updates", fontweight="bold")
     ax2.legend(loc="lower right")
@@ -295,4 +345,27 @@ def train_unified_ppo(
 
 
 if __name__ == "__main__":
-    train_unified_ppo()
+    parser = argparse.ArgumentParser(description="Unified Dyna-PPO inside the PINN simulator.")
+    parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
+    parser.add_argument("--total-timesteps", type=int, default=200_000)
+    parser.add_argument("--num-envs", type=int, default=128)
+    parser.add_argument("--num-steps", type=int, default=64)
+    parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="seconds-scale run; requires --output-dir so published artifacts are not overwritten",
+    )
+    args = parse_args_with_config(parser)
+    if args.smoke_test:
+        if not args.output_dir:
+            parser.error("--smoke-test needs --output-dir (never write into results/)")
+        args.total_timesteps, args.num_envs, args.num_steps = 512, 8, 8
+    train_unified_ppo(
+        total_timesteps=args.total_timesteps,
+        num_envs=args.num_envs,
+        num_steps=args.num_steps,
+        lr=args.lr,
+        output_dir=args.output_dir,
+    )

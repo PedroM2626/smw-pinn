@@ -1,0 +1,7 @@
+# Seconds-scale version of the deep-ensemble study (README 10.10, `make smoke`).
+# Two members instead of five and two epochs instead of fifteen; the uncertainty
+# statistic itself is what is being smoke-tested, so the shape must stay identical.
+num_models: 2
+num_epochs: 2
+batch_size: 128
+lr: 0.001

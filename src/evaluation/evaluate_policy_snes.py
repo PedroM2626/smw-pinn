@@ -19,6 +19,13 @@ from src.environment.snes_emulator import SnesLibretroEmulator
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+)
 from src.utils.seed import set_global_seed
 
 # Mapping from 6D action vector [B, Y, UP, DOWN, LEFT, RIGHT] to emulator joypad dict
@@ -26,10 +33,11 @@ from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
+
 def action_vector_to_dict(vec: np.ndarray) -> Dict[str, bool]:
     return {
-        "B": bool(vec[0] > 0.5),      # Jump
-        "Y": bool(vec[1] > 0.5),      # Run / Dash
+        "B": bool(vec[0] > 0.5),  # Jump
+        "Y": bool(vec[1] > 0.5),  # Run / Dash
         "UP": bool(vec[2] > 0.5),
         "DOWN": bool(vec[3] > 0.5),
         "LEFT": bool(vec[4] > 0.5),
@@ -67,7 +75,7 @@ def run_policy_evaluation_trial(
     """
     emu.load_state(initial_savestate)
     # Enable Interactive Gameplay Mode (0x14) directly in WRAM
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -129,7 +137,7 @@ def run_policy_evaluation_trial(
         f"[{policy_name:25s}] Survived: {survived_frames:4d}/{max_frames} frames | "
         f"Progress: {total_progress:+7.1f} px (Max: {max_progress:+7.1f} px) | "
         f"Mean vx: {mean_vx:+5.1f} | "
-        f"Latency: {1000.0 * elapsed / max(1, survived_frames):.2f} ms/frame ({survived_frames/max(1e-3, elapsed):.0f} FPS)"
+        f"Latency: {1000.0 * elapsed / max(1, survived_frames):.2f} ms/frame ({survived_frames / max(1e-3, elapsed):.0f} FPS)"
     )
 
     return {
@@ -154,7 +162,7 @@ def run_random_control_baseline(
     """Stochastic random action baseline."""
     set_global_seed(seed)
     emu.load_state(initial_savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -208,11 +216,11 @@ def run_random_control_baseline(
 
 
 def run_zero_shot_model_to_real_benchmark(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    checkpoints_dir: str = "results/checkpoints",
-    output_dir: str = "results",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    checkpoints_dir: str = CHECKPOINTS_DIR,
+    output_dir: str = RESULTS_DIR,
     max_frames: int = 600,
 ):
     logger.info("====================================================================")
@@ -290,17 +298,23 @@ def run_zero_shot_model_to_real_benchmark(
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
     colors = {
-        "Dyna_PPO_Hard_PINN": "#2ecc71",       # Emerald Green
+        "Dyna_PPO_Hard_PINN": "#2ecc71",  # Emerald Green
         "Dyna_PPO_Statistical_MLP": "#e74c3c",  # Red
-        "Random_Baseline": "#7f8c8d",          # Gray
+        "Random_Baseline": "#7f8c8d",  # Gray
     }
 
     # Plot 1: 2D World Trajectory (X vs Y) in SNES Level Space
     for name, r in benchmark_results.items():
         c = colors.get(name, "#3498db")
-        ax1.plot(r["trajectory_x"], r["trajectory_y"], label=name, color=c, linewidth=2.5, alpha=0.9)
+        ax1.plot(
+            r["trajectory_x"], r["trajectory_y"], label=name, color=c, linewidth=2.5, alpha=0.9
+        )
     ax1.invert_yaxis()
-    ax1.set_title("Dyna-PPO Zero-Shot Model-to-Real Trajectory Execution in Super Mario World", fontsize=13, fontweight="bold")
+    ax1.set_title(
+        "Dyna-PPO Zero-Shot Model-to-Real Trajectory Execution in Super Mario World",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax1.set_xlabel("Level Horizontal Coordinate X (Pixels)")
     ax1.set_ylabel("Level Vertical Coordinate Y (Pixels - Inverted)")
     ax1.legend(loc="best", fontsize=10)
@@ -311,7 +325,9 @@ def run_zero_shot_model_to_real_benchmark(
         frames = np.arange(len(r["trajectory_x"]))
         prog = np.array(r["trajectory_x"]) - r["trajectory_x"][0]
         ax2.plot(frames, prog, label=name, color=c, linewidth=2.5)
-    ax2.set_title("Cumulative Forward Progress on Physical SNES Hardware", fontsize=13, fontweight="bold")
+    ax2.set_title(
+        "Cumulative Forward Progress on Physical SNES Hardware", fontsize=13, fontweight="bold"
+    )
     ax2.set_xlabel("Simulation Frame (60 Hz)")
     ax2.set_ylabel("Forward Displacement ΔX (Pixels)")
     ax2.legend(loc="best", fontsize=10)
@@ -326,11 +342,15 @@ def run_zero_shot_model_to_real_benchmark(
     logger.info("\n====================================================================")
     logger.info("  DYNA-PPO MODEL-TO-REAL TRANSFER BENCHMARK SUMMARY")
     logger.info("====================================================================")
-    logger.info(f"{'Policy Controller':32s} | {'Progress (px)':16s} | {'Mean vx':12s} | {'Frames Alive':12s}")
+    logger.info(
+        f"{'Policy Controller':32s} | {'Progress (px)':16s} | {'Mean vx':12s} | {'Frames Alive':12s}"
+    )
     logger.info("-" * 80)
     for name, s in summary_metrics.items():
         prog_str = f"{s['total_progress_pixels']:+7.1f} px"
-        logger.info(f"{name:32s} | {prog_str:16s} | {s['mean_vx']:+5.1f} subpix | {s['survived_frames']:4d}/{max_frames}")
+        logger.info(
+            f"{name:32s} | {prog_str:16s} | {s['mean_vx']:+5.1f} subpix | {s['survived_frames']:4d}/{max_frames}"
+        )
     logger.info("====================================================================")
 
     return summary_metrics

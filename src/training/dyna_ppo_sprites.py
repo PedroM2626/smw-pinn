@@ -21,8 +21,14 @@ from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    FIGURES_DIR,
+    results_file,
+)
 
 logger = get_logger(__name__)
+
 
 def generate_multi_entity_initial_pool(
     device: torch.device,
@@ -56,8 +62,18 @@ def generate_multi_entity_initial_pool(
             vx_hazard = 0.0
 
         vec = [
-            mario_x, mario_y, mario_vx, mario_vy, c_ground, c_ceiling, c_left, c_right,
-            delta_x, delta_y, vx_hazard, active
+            mario_x,
+            mario_y,
+            mario_vx,
+            mario_vy,
+            c_ground,
+            c_ceiling,
+            c_left,
+            c_right,
+            delta_x,
+            delta_y,
+            vx_hazard,
+            active,
         ]
         pool.append(vec)
 
@@ -68,8 +84,8 @@ def train_multi_entity_dyna_ppo(
     total_timesteps: int = 300000,
     num_envs: int = 256,
     num_steps: int = 64,
-    checkpoint_dir: str = "results/checkpoints",
-    figures_dir: str = "results/figures",
+    checkpoint_dir: str = CHECKPOINTS_DIR,
+    figures_dir: str = FIGURES_DIR,
 ) -> Dict:
     logger.info("====================================================================")
     logger.info("  TRAINING END-TO-END MULTI-ENTITY DYNA-PPO (12D WORLD MODEL)       ")
@@ -192,7 +208,9 @@ def train_multi_entity_dyna_ppo(
                 end = start + minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_act[mb_inds])
+                _, newlogprob, entropy, newvalue = agent.get_action_and_value(
+                    b_obs[mb_inds], b_act[mb_inds]
+                )
                 logratio = newlogprob - b_logp[mb_inds]
                 ratio = logratio.exp()
 
@@ -250,7 +268,7 @@ def train_multi_entity_dyna_ppo(
         "history_returns": history_returns,
         "history_hazard_hits": history_hazard_hits,
     }
-    with open("results/dyna_ppo_multi_entity_metrics.json", "w") as f:
+    with open(results_file("dyna_ppo_multi_entity_metrics.json"), "w") as f:
         json.dump(metrics, f, indent=2)
 
     # Plot learning curve

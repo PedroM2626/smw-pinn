@@ -70,6 +70,12 @@ class GravityIdentifiedPINNDynamics(nn.Module):
         hat_x = x_t + hat_vx / self.subpixels_per_pixel
         hat_y = y_t + hat_vy / self.subpixels_per_pixel
         return torch.cat(
-            [hat_x.unsqueeze(-1), hat_y.unsqueeze(-1),
-             hat_vx.unsqueeze(-1), hat_vy.unsqueeze(-1), aux], dim=-1,
+            [
+                hat_x.unsqueeze(-1),
+                hat_y.unsqueeze(-1),
+                hat_vx.unsqueeze(-1),
+                hat_vy.unsqueeze(-1),
+                aux,
+            ],
+            dim=-1,
         )

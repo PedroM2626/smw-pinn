@@ -28,8 +28,16 @@ from src.models import DeepPINNEnsemble, HardResidualPINNDynamics
 from src.planning.mpc_planner import ACTION_MATRIX
 from src.training.dyna_ppo import ActorCritic, DynaPPOTrainer
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    DATASET_GAMEPLAY,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+)
 
 logger = get_logger(__name__)
+
 
 class RealReplayBuffer:
     """Circular replay buffer storing authentic console transitions."""
@@ -55,9 +63,17 @@ class RealReplayBuffer:
         self.ptr = (self.ptr + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
 
-    def sample(self, batch_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def sample(
+        self, batch_size: int
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         idx = np.random.choice(self.size, size=batch_size, replace=False)
-        return self.states[idx], self.actions[idx], self.rewards[idx], self.next_states[idx], self.dones[idx]
+        return (
+            self.states[idx],
+            self.actions[idx],
+            self.rewards[idx],
+            self.next_states[idx],
+            self.dones[idx],
+        )
 
     def sample_states(self, batch_size: int) -> np.ndarray:
         idx = np.random.choice(self.size, size=batch_size, replace=False)
@@ -72,7 +88,7 @@ def train_online_mbpo(
     real_steps_per_iter: int = 1000,
     model_rollout_steps: int = 40000,
     branch_horizon_k: int = 10,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
     use_safe_ensemble: bool = False,
 ) -> Dict:
     logger.info("====================================================================")
@@ -85,9 +101,9 @@ def train_online_mbpo(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"MBPO Compute Device: {device} | Safe Mode: {use_safe_ensemble}")
 
-    core_path = "src/environment/bin/snes9x_libretro.dll"
-    rom_path = "data/raw/smw_usa.sfc"
-    state_path = "data/raw/smw_yoshi_island_1.state"
+    core_path = CORE_PATH
+    rom_path = ROM_PATH
+    state_path = STATE_YOSHI_ISLAND_1
 
     os.makedirs(os.path.join(output_dir, "checkpoints"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "figures"), exist_ok=True)
@@ -100,14 +116,21 @@ def train_online_mbpo(
             for i, member in enumerate(world_model.members):
                 m_path = os.path.join(ens_dir, f"ensemble_pinn_seed_{42 + i * 17}.pt")
                 if os.path.exists(m_path):
-                    member.load_state_dict(torch.load(m_path, map_location=device, weights_only=True))
+                    member.load_state_dict(
+                        torch.load(m_path, map_location=device, weights_only=True)
+                    )
             logger.info("Preloaded Deep Ensemble member weights.")
-        model_optimizers = [torch.optim.AdamW(m.parameters(), lr=1e-3, weight_decay=1e-4) for m in world_model.members]
+        model_optimizers = [
+            torch.optim.AdamW(m.parameters(), lr=1e-3, weight_decay=1e-4)
+            for m in world_model.members
+        ]
     else:
         world_model = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
         pinn_best_path = os.path.join(output_dir, "checkpoints", "pinn_hard_best.pt")
         if os.path.exists(pinn_best_path):
-            world_model.load_state_dict(torch.load(pinn_best_path, map_location=device, weights_only=True))
+            world_model.load_state_dict(
+                torch.load(pinn_best_path, map_location=device, weights_only=True)
+            )
             logger.info("Preloaded base Hard Residual PINN dynamics checkpoint.")
         model_optimizers = [torch.optim.AdamW(world_model.parameters(), lr=1e-3, weight_decay=1e-4)]
 
@@ -117,8 +140,12 @@ def train_online_mbpo(
     replay_buffer = RealReplayBuffer(capacity=50000)
 
     # Pre-populate buffer with initial offline dataset
-    raw_dataset = np.load("data/raw/smw_gameplay_dataset.npz")
-    init_s, init_a, init_ns = raw_dataset["states"][:2000], raw_dataset["actions"][:2000], raw_dataset["next_states"][:2000]
+    raw_dataset = np.load(DATASET_GAMEPLAY)
+    init_s, init_a, init_ns = (
+        raw_dataset["states"][:2000],
+        raw_dataset["actions"][:2000],
+        raw_dataset["next_states"][:2000],
+    )
     for i in range(len(init_s)):
         replay_buffer.add(init_s[i], init_a[i], 0.0, init_ns[i], False)
     logger.info(f"Replay buffer seeded with {len(replay_buffer)} authentic transitions.")
@@ -138,12 +165,24 @@ def train_online_mbpo(
 
         # Step A: Collect real transitions with current policy in authentic SNES emulator
         emu.load_state(initial_savestate)
-        emu.wram_buffer[0x0100] = 0x14
+        emu.enable_gameplay_mode()
         for _ in range(5):
             emu.step_frame()
 
         s_dict = emu.get_smw_state()
-        curr_s = np.array([s_dict["x"], s_dict["y"], s_dict["vx"], s_dict["vy"], s_dict["c_ground"], s_dict["c_ceiling"], s_dict["c_left"], s_dict["c_right"]], dtype=np.float32)
+        curr_s = np.array(
+            [
+                s_dict["x"],
+                s_dict["y"],
+                s_dict["vx"],
+                s_dict["vy"],
+                s_dict["c_ground"],
+                s_dict["c_ceiling"],
+                s_dict["c_left"],
+                s_dict["c_right"],
+            ],
+            dtype=np.float32,
+        )
         x_start = curr_s[0]
         max_x = curr_s[0]
         survived_frames = 0
@@ -151,19 +190,36 @@ def train_online_mbpo(
         for step in range(real_steps_per_iter):
             curr_s_t = torch.tensor(curr_s, dtype=torch.float32, device=device).unsqueeze(0)
             with torch.no_grad():
-                action_idx = int(torch.argmax(policy_agent.actor(policy_agent.in_norm(curr_s_t)), dim=-1).item())
+                action_idx = int(
+                    torch.argmax(policy_agent.actor(policy_agent.in_norm(curr_s_t)), dim=-1).item()
+                )
 
             action_vec = ACTION_MATRIX[action_idx]
             from src.evaluation.evaluate_policy_snes import action_vector_to_dict
+
             emu.set_input(action_vector_to_dict(action_vec))
             emu.step_frame()
 
             ns_dict = emu.get_smw_state()
-            next_s = np.array([ns_dict["x"], ns_dict["y"], ns_dict["vx"], ns_dict["vy"], ns_dict["c_ground"], ns_dict["c_ceiling"], ns_dict["c_left"], ns_dict["c_right"]], dtype=np.float32)
+            next_s = np.array(
+                [
+                    ns_dict["x"],
+                    ns_dict["y"],
+                    ns_dict["vx"],
+                    ns_dict["vy"],
+                    ns_dict["c_ground"],
+                    ns_dict["c_ceiling"],
+                    ns_dict["c_left"],
+                    ns_dict["c_right"],
+                ],
+                dtype=np.float32,
+            )
 
             fell_in_pit = next_s[1] > 450.0 or next_s[1] < 0.0 or ns_dict["air_state"] == 9
             delta_x = next_s[0] - curr_s[0]
-            reward = float(2.0 * np.clip(delta_x, -5.0, 10.0) + 0.2 * (max(0.0, next_s[2]) / 16.0) + 0.05)
+            reward = float(
+                2.0 * np.clip(delta_x, -5.0, 10.0) + 0.2 * (max(0.0, next_s[2]) / 16.0) + 0.05
+            )
             if fell_in_pit:
                 reward -= 100.0
 
@@ -173,18 +229,32 @@ def train_online_mbpo(
 
             if fell_in_pit:
                 emu.load_state(initial_savestate)
-                emu.wram_buffer[0x0100] = 0x14
+                emu.enable_gameplay_mode()
                 for _ in range(5):
                     emu.step_frame()
                 ns_dict = emu.get_smw_state()
-                next_s = np.array([ns_dict["x"], ns_dict["y"], ns_dict["vx"], ns_dict["vy"], ns_dict["c_ground"], ns_dict["c_ceiling"], ns_dict["c_left"], ns_dict["c_right"]], dtype=np.float32)
+                next_s = np.array(
+                    [
+                        ns_dict["x"],
+                        ns_dict["y"],
+                        ns_dict["vx"],
+                        ns_dict["vy"],
+                        ns_dict["c_ground"],
+                        ns_dict["c_ceiling"],
+                        ns_dict["c_left"],
+                        ns_dict["c_right"],
+                    ],
+                    dtype=np.float32,
+                )
 
             curr_s = next_s
 
         iter_progress = float(max_x - x_start)
         iter_progress_history.append(iter_progress)
         iter_survival_history.append(survived_frames)
-        logger.info(f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}")
+        logger.info(
+            f"  Real interaction completed: {real_steps_per_iter} frames | Buffer Size: {len(replay_buffer)}"
+        )
         logger.info(f"  Max Real Console Progress: {iter_progress:+6.1f} px")
 
         # Step B: Fine-tune World Model on newly collected real buffer data
@@ -227,7 +297,9 @@ def train_online_mbpo(
 
         trainer = DynaPPOTrainer(env=sim_env, actor_critic=policy_agent, device=device)
         trainer.train(total_timesteps=model_rollout_steps)
-        logger.info(f"  Imagined Policy Optimization completed ({model_rollout_steps} transitions via branched PINN rollouts).")
+        logger.info(
+            f"  Imagined Policy Optimization completed ({model_rollout_steps} transitions via branched PINN rollouts)."
+        )
 
     emu.close()
 
@@ -257,9 +329,17 @@ def train_online_mbpo(
     fig, ax = plt.subplots(figsize=(8, 4.5))
     iters = np.arange(1, num_iterations + 1)
     plot_color = "#3B82F6" if use_safe_ensemble else "#2ecc71"
-    plot_label = "Safe MBPO (Deep Ensemble E=5)" if use_safe_ensemble else "Standard MBPO (Hard PINN)"
-    ax.plot(iters, iter_progress_history, marker="o", color=plot_color, linewidth=2.5, label=plot_label)
-    ax.set_title(f"Online MBPO Progress Across Iterations (SNES Console - {plot_label})", fontsize=11, fontweight="bold")
+    plot_label = (
+        "Safe MBPO (Deep Ensemble E=5)" if use_safe_ensemble else "Standard MBPO (Hard PINN)"
+    )
+    ax.plot(
+        iters, iter_progress_history, marker="o", color=plot_color, linewidth=2.5, label=plot_label
+    )
+    ax.set_title(
+        f"Online MBPO Progress Across Iterations (SNES Console - {plot_label})",
+        fontsize=11,
+        fontweight="bold",
+    )
     ax.set_xlabel("MBPO Iteration (Real Interaction + Branched PINN Rollout)")
     ax.set_ylabel("Real Console Max Progress (Pixels)")
     ax.set_xticks(iters)
@@ -277,8 +357,11 @@ def train_online_mbpo(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Online MBPO Training")
-    parser.add_argument("--safe", action="store_true", help="Enable Safe MBRL with Deep PINN Ensemble")
+    parser.add_argument(
+        "--safe", action="store_true", help="Enable Safe MBRL with Deep PINN Ensemble"
+    )
     parser.add_argument("--iterations", type=int, default=3, help="Number of MBPO iterations")
     parser.add_argument("--real_steps", type=int, default=1000, help="Real steps per iteration")
     parser.add_argument("--rollout_steps", type=int, default=40000, help="Imagined rollout steps")

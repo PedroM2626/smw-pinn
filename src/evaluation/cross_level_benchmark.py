@@ -28,12 +28,19 @@ from src.models import (
     TranslationInvariantPINNDynamics,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_HOUSE,
+)
 
 logger = get_logger(__name__)
 
+
 def record_stage_b_transitions(
     emu: SnesLibretroEmulator,
-    savestate_path: str = "data/raw/smw_yoshi_house.state",
+    savestate_path: str = STATE_YOSHI_HOUSE,
     num_frames: int = 1000,
 ) -> Dict[str, np.ndarray]:
     """Records genuine transitions directly from Stage B (Yoshi's House)."""
@@ -41,7 +48,7 @@ def record_stage_b_transitions(
         savestate = f.read()
 
     emu.load_state(savestate)
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(30):
         emu.step_frame()
 
@@ -67,25 +74,43 @@ def record_stage_b_transitions(
         emu.set_input(act_dict)
 
         s_vec = np.array(
-            [curr_dict["x"], curr_dict["y"], curr_dict["vx"], curr_dict["vy"],
-             curr_dict["c_ground"], curr_dict["c_ceiling"], curr_dict["c_left"], curr_dict["c_right"]],
+            [
+                curr_dict["x"],
+                curr_dict["y"],
+                curr_dict["vx"],
+                curr_dict["vy"],
+                curr_dict["c_ground"],
+                curr_dict["c_ceiling"],
+                curr_dict["c_left"],
+                curr_dict["c_right"],
+            ],
             dtype=np.float32,
         )
         a_vec = np.array(
-            [1.0 if act_dict.get("B") else 0.0,
-             1.0 if act_dict.get("Y") else 0.0,
-             1.0 if act_dict.get("UP") else 0.0,
-             1.0 if act_dict.get("DOWN") else 0.0,
-             1.0 if act_dict.get("LEFT") else 0.0,
-             1.0 if act_dict.get("RIGHT") else 0.0],
+            [
+                1.0 if act_dict.get("B") else 0.0,
+                1.0 if act_dict.get("Y") else 0.0,
+                1.0 if act_dict.get("UP") else 0.0,
+                1.0 if act_dict.get("DOWN") else 0.0,
+                1.0 if act_dict.get("LEFT") else 0.0,
+                1.0 if act_dict.get("RIGHT") else 0.0,
+            ],
             dtype=np.float32,
         )
 
         emu.step_frame()
         next_dict = emu.get_smw_state()
         next_s_vec = np.array(
-            [next_dict["x"], next_dict["y"], next_dict["vx"], next_dict["vy"],
-             next_dict["c_ground"], next_dict["c_ceiling"], next_dict["c_left"], next_dict["c_right"]],
+            [
+                next_dict["x"],
+                next_dict["y"],
+                next_dict["vx"],
+                next_dict["vy"],
+                next_dict["c_ground"],
+                next_dict["c_ceiling"],
+                next_dict["c_left"],
+                next_dict["c_right"],
+            ],
             dtype=np.float32,
         )
 
@@ -101,7 +126,7 @@ def record_stage_b_transitions(
     }
 
 
-def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
+def run_cross_level_benchmark(output_dir: str = RESULTS_DIR) -> Dict:
     logger.info("====================================================================")
     logger.info("  CROSS-STAGE ZERO-SHOT GENERALIZATION BENCHMARK (STAGE A -> STAGE B)")
     logger.info("====================================================================")
@@ -109,9 +134,9 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Compute Device: {device}")
 
-    core_path = "src/environment/bin/snes9x_libretro.dll"
-    rom_path = "data/raw/smw_usa.sfc"
-    state_b_path = "data/raw/smw_yoshi_house.state"
+    core_path = CORE_PATH
+    rom_path = ROM_PATH
+    state_b_path = STATE_YOSHI_HOUSE
 
     emu = SnesLibretroEmulator(core_path)
     emu.load_rom(rom_path)
@@ -130,11 +155,21 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
     checkpoints_dir = os.path.join(output_dir, "checkpoints")
 
     mlp = StatisticalMLPDynamics(state_dim=8, action_dim=6).to(device)
-    mlp.load_state_dict(torch.load(os.path.join(checkpoints_dir, "mlp_best.pt"), map_location=device, weights_only=True))
+    mlp.load_state_dict(
+        torch.load(
+            os.path.join(checkpoints_dir, "mlp_best.pt"), map_location=device, weights_only=True
+        )
+    )
     mlp.eval()
 
     hard_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
-    hard_pinn.load_state_dict(torch.load(os.path.join(checkpoints_dir, "pinn_hard_best.pt"), map_location=device, weights_only=True))
+    hard_pinn.load_state_dict(
+        torch.load(
+            os.path.join(checkpoints_dir, "pinn_hard_best.pt"),
+            map_location=device,
+            weights_only=True,
+        )
+    )
     hard_pinn.eval()
 
     inv_pinn = TranslationInvariantPINNDynamics(state_dim=8, action_dim=6).to(device)
@@ -155,7 +190,9 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
 
     results = {}
     logger.info("\n" + "=" * 80)
-    logger.info(f"{'Model Architecture':<30} | {'Zero-Shot MSE':>14} | {'Kinematic Violation Rate':>26}")
+    logger.info(
+        f"{'Model Architecture':<30} | {'Zero-Shot MSE':>14} | {'Kinematic Violation Rate':>26}"
+    )
     logger.info("=" * 80)
 
     # Single-step evaluation
@@ -194,7 +231,10 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
                 traj.append(curr.cpu().numpy()[0, :2])
         traj = np.array(traj)
         drift = float(np.linalg.norm(traj[-1] - gt_traj[-1]))
-        rollout_results[name] = {"drift_120_frames_px": round(drift, 2), "trajectory": traj.tolist()}
+        rollout_results[name] = {
+            "drift_120_frames_px": round(drift, 2),
+            "trajectory": traj.tolist(),
+        }
         results[name]["drift_120_frames_px"] = round(drift, 2)
 
     # Save metrics
@@ -204,27 +244,39 @@ def run_cross_level_benchmark(output_dir: str = "results") -> Dict:
 
     # Plot Cross-Stage Rollout Comparison
     plt.figure(figsize=(9, 4.5))
-    plt.plot(gt_traj[:, 0], gt_traj[:, 1], "k-", lw=3.0, label="Stage B Real Telemetry (Yoshi's House)")
+    plt.plot(
+        gt_traj[:, 0], gt_traj[:, 1], "k-", lw=3.0, label="Stage B Real Telemetry (Yoshi's House)"
+    )
     plt.plot(
         np.array(rollout_results["Translation-Invariant PINN"]["trajectory"])[:, 0],
         np.array(rollout_results["Translation-Invariant PINN"]["trajectory"])[:, 1],
-        color="#06B6D4", lw=2.5, linestyle="--",
+        color="#06B6D4",
+        lw=2.5,
+        linestyle="--",
         label=f"Translation-Invariant PINN (Drift: {rollout_results['Translation-Invariant PINN']['drift_120_frames_px']} px)",
     )
     plt.plot(
         np.array(rollout_results["Hard Residual PINN"]["trajectory"])[:, 0],
         np.array(rollout_results["Hard Residual PINN"]["trajectory"])[:, 1],
-        color="#10B981", lw=2.0, linestyle="-.",
+        color="#10B981",
+        lw=2.0,
+        linestyle="-.",
         label=f"Hard Residual PINN (Drift: {rollout_results['Hard Residual PINN']['drift_120_frames_px']} px)",
     )
     plt.plot(
         np.array(rollout_results["Statistical MLP"]["trajectory"])[:, 0],
         np.array(rollout_results["Statistical MLP"]["trajectory"])[:, 1],
-        color="#EF4444", lw=2.0, linestyle=":",
+        color="#EF4444",
+        lw=2.0,
+        linestyle=":",
         label=f"Statistical MLP (Drift: {rollout_results['Statistical MLP']['drift_120_frames_px']} px)",
     )
     plt.gca().invert_yaxis()
-    plt.title("Zero-Shot Cross-Stage Generalization (Stage B: Yoshi's House)", fontsize=12, fontweight="bold")
+    plt.title(
+        "Zero-Shot Cross-Stage Generalization (Stage B: Yoshi's House)",
+        fontsize=12,
+        fontweight="bold",
+    )
     plt.xlabel("Mario X Position (pixels)")
     plt.ylabel("Mario Y Position (pixels)")
     plt.legend()

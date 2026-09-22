@@ -23,8 +23,15 @@ from src.planning.mpc_planner import (
     TrajectoryObjective,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+)
 
 logger = get_logger(__name__)
+
 
 class DistilledActorPolicy(nn.Module):
     """
@@ -32,7 +39,9 @@ class DistilledActorPolicy(nn.Module):
     [B, Y, UP, DOWN, LEFT, RIGHT]
     """
 
-    def __init__(self, state_dim: int = 12, action_dim: int = 6, hidden_dims: List[int] = [128, 64]):
+    def __init__(
+        self, state_dim: int = 12, action_dim: int = 6, hidden_dims: List[int] = [128, 64]
+    ):
         super().__init__()
         layers = []
         curr = state_dim
@@ -48,7 +57,9 @@ class DistilledActorPolicy(nn.Module):
         """Returns button press logits [B, 6]."""
         return self.net(state)
 
-    def predict_action(self, state_np: np.ndarray, threshold: float = 0.5) -> Tuple[Dict[str, bool], np.ndarray]:
+    def predict_action(
+        self, state_np: np.ndarray, threshold: float = 0.5
+    ) -> Tuple[Dict[str, bool], np.ndarray]:
         """Inference mode on CPU/GPU returning button dict and raw vector."""
         self.eval()
         dev = next(self.parameters()).device
@@ -90,10 +101,10 @@ def extract_12d_vector(state_dict: dict) -> np.ndarray:
 
 
 def collect_mpc_expert_demonstrations(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    model_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    model_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
     num_episodes: int = 5,
     max_frames: int = 400,
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
@@ -104,7 +115,9 @@ def collect_mpc_expert_demonstrations(
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
     if os.path.exists(model_checkpoint):
-        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.load_state_dict(
+            torch.load(model_checkpoint, map_location=device, weights_only=True)
+        )
     world_model.eval()
 
     objective = TrajectoryObjective(
@@ -136,7 +149,7 @@ def collect_mpc_expert_demonstrations(
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        emu.wram_buffer[0x0100] = 0x14
+        emu.enable_gameplay_mode()
         for _ in range(5):
             emu.step_frame()
 
@@ -184,7 +197,9 @@ def collect_mpc_expert_demonstrations(
             if s_dict["y"] > 450.0:
                 break
 
-        logger.info(f"Episode {ep+1}/{num_episodes} recorded | Progress: {s_dict['x'] - 27.0:.1f} px")
+        logger.info(
+            f"Episode {ep + 1}/{num_episodes} recorded | Progress: {s_dict['x'] - 27.0:.1f} px"
+        )
 
     emu.close()
 
@@ -194,7 +209,7 @@ def collect_mpc_expert_demonstrations(
 def train_distilled_policy(
     expert_states: np.ndarray,
     expert_actions: np.ndarray,
-    checkpoint_path: str = "results/checkpoints/distilled_mpc_policy.pt",
+    checkpoint_path: str = checkpoint_file("distilled_mpc_policy.pt"),
     epochs: int = 40,
     lr: float = 2e-3,
     batch_size: int = 64,
@@ -230,7 +245,9 @@ def train_distilled_policy(
             batches += 1
 
         if ep % 10 == 0 or ep == epochs:
-            logger.info(f"Distillation Epoch {ep:2d}/{epochs} | BCE Loss: {total_loss/batches:.4f}")
+            logger.info(
+                f"Distillation Epoch {ep:2d}/{epochs} | BCE Loss: {total_loss / batches:.4f}"
+            )
 
     os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
     torch.save(policy.cpu().state_dict(), checkpoint_path)
@@ -239,7 +256,9 @@ def train_distilled_policy(
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    states, actions = collect_mpc_expert_demonstrations(device=device, num_episodes=4, max_frames=400)
+    states, actions = collect_mpc_expert_demonstrations(
+        device=device, num_episodes=4, max_frames=400
+    )
     logger.info(f"Total expert demonstration samples: {len(states)}")
     train_distilled_policy(states, actions)
 

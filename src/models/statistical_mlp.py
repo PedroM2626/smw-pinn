@@ -62,9 +62,7 @@ class StatisticalMLPDynamics(nn.Module):
 MATCHED_HIDDEN_DIMS = [64, 64, 64]
 
 
-def build_param_matched_mlp(
-    state_dim: int = 8, action_dim: int = 6
-) -> "StatisticalMLPDynamics":
+def build_param_matched_mlp(state_dim: int = 8, action_dim: int = 6) -> "StatisticalMLPDynamics":
     """Compact MLP (~10k params) matched to the compact Hard PINN (~10k params).
 
     Default [128 x3] models are already size-matched (~36k each); this factory

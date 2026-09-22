@@ -29,6 +29,10 @@ from src.models import (
 from src.training.trainer import DynamicsTrainer
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_GAMEPLAY,
+    RESULTS_DIR,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -44,11 +48,11 @@ def _cohen_dz(paired_a, paired_b) -> float:
 
 
 def run_multiseed_benchmark(
-    dataset_path: str = "data/raw/smw_gameplay_dataset.npz",
+    dataset_path: str = DATASET_GAMEPLAY,
     seeds: List[int] | None = None,
     epochs: int = 30,
     batch_size: int = 128,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
     patience: int = 8,
     learning_rate: float = 1e-3,
     rollout_horizon: int = 120,
@@ -162,8 +166,12 @@ def run_multiseed_benchmark(
             raw_results[model_name]["kinematic_residual"].append(float(kin_res))
             raw_results[model_name]["mean_drift_pixels"].append(float(rollout_res["mean_drift"]))
             raw_results[model_name]["final_drift_pixels"].append(float(rollout_res["final_drift"]))
-            raw_results[model_name]["kinematic_violations"].append(int(rollout_res["kinematic_violations"]))
-            raw_results[model_name]["mean_drift_multistart"].append(float(multi_res["mean_drift_mean"]))
+            raw_results[model_name]["kinematic_violations"].append(
+                int(rollout_res["kinematic_violations"])
+            )
+            raw_results[model_name]["mean_drift_multistart"].append(
+                float(multi_res["mean_drift_mean"])
+            )
             raw_results[model_name]["kinematic_violation_rate_multistart"].append(
                 float(multi_res["kinematic_violation_rate_mean"])
             )
@@ -268,7 +276,9 @@ def run_multiseed_benchmark(
     logger.info("\n====================================================================")
     logger.info("  SUMMARY: MULTI-SEED STATISTICAL BENCHMARK (Mean ± Std)")
     logger.info("====================================================================")
-    logger.info(f"{'Architecture':20s} | {'Test MSE':20s} | {'Kinematic Residual':22s} | {'Mean Drift (px)':20s}")
+    logger.info(
+        f"{'Architecture':20s} | {'Test MSE':20s} | {'Kinematic Residual':22s} | {'Mean Drift (px)':20s}"
+    )
     logger.info("-" * 90)
     for model_name, s in summary_stats.items():
         mse_str = f"{s['test_mse']['mean']:.4f} ± {s['test_mse']['std']:.4f}"
@@ -280,7 +290,9 @@ def run_multiseed_benchmark(
     for comp, tests in hypothesis_tests.items():
         p_mse = tests["test_mse"]["p_value_ttest"]
         p_drift = tests["mean_drift"]["p_value_ttest"]
-        logger.info(f"Hypothesis Test [{comp}]: Test MSE p-value = {p_mse:.4e} | Mean Drift p-value = {p_drift:.4e}")
+        logger.info(
+            f"Hypothesis Test [{comp}]: Test MSE p-value = {p_mse:.4e} | Mean Drift p-value = {p_drift:.4e}"
+        )
 
     return output_payload
 
@@ -290,11 +302,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="K-seed significance benchmark (default K=10).")
     parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
-    parser.add_argument("--dataset-path", default="data/raw/smw_gameplay_dataset.npz")
+    parser.add_argument("--dataset-path", default=DATASET_GAMEPLAY)
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     parser.add_argument("--patience", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--rollout-horizon", type=int, default=120)

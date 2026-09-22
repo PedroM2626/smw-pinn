@@ -29,16 +29,24 @@ from src.training.distill_mpc_policy import (
     extract_12d_vector,
 )
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+    checkpoint_file,
+    results_file,
+)
 
 logger = get_logger(__name__)
 
+
 def run_dagger_loop(
-    rom_path: str = "data/raw/smw_usa.sfc",
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    model_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
-    output_policy_path: str = "results/checkpoints/dagger_policy_best.pt",
-    output_metrics_path: str = "results/dagger_training_metrics.json",
+    rom_path: str = ROM_PATH,
+    core_path: str = CORE_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    model_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
+    output_policy_path: str = checkpoint_file("dagger_policy_best.pt"),
+    output_metrics_path: str = results_file("dagger_training_metrics.json"),
     dagger_iterations: int = 3,
     episodes_per_iter: int = 2,
     frames_per_episode: int = 400,
@@ -55,7 +63,9 @@ def run_dagger_loop(
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6)
     world_model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
     if os.path.exists(model_checkpoint):
-        world_model.load_state_dict(torch.load(model_checkpoint, map_location=device, weights_only=True))
+        world_model.load_state_dict(
+            torch.load(model_checkpoint, map_location=device, weights_only=True)
+        )
     world_model.eval()
 
     objective = TrajectoryObjective(
@@ -129,7 +139,9 @@ def run_dagger_loop(
                 total_loss += loss.item()
                 batches += 1
 
-        logger.info(f"Policy retrained on {len(aggregated_states)} samples | Final BCE Loss: {total_loss/batches:.4f}")
+        logger.info(
+            f"Policy retrained on {len(aggregated_states)} samples | Final BCE Loss: {total_loss / batches:.4f}"
+        )
 
         # Step B: Rollout learned policy on SNES and query Oracle for corrective labels
         policy.eval()
@@ -138,7 +150,7 @@ def run_dagger_loop(
 
         for ep in range(episodes_per_iter):
             emu.load_state(initial_savestate)
-            emu.wram_buffer[0x0100] = 0x14
+            emu.enable_gameplay_mode()
             for _ in range(5):
                 emu.step_frame()
 
@@ -176,15 +188,19 @@ def run_dagger_loop(
             policy_progresses.append(final_x - start_x)
 
         mean_prog = float(np.mean(policy_progresses))
-        logger.info(f"Iteration {it} Complete | New samples added: {new_samples} | "
-              f"Total Dataset: {len(aggregated_states)} | Policy Hardware Progress: {mean_prog:.1f} px")
+        logger.info(
+            f"Iteration {it} Complete | New samples added: {new_samples} | "
+            f"Total Dataset: {len(aggregated_states)} | Policy Hardware Progress: {mean_prog:.1f} px"
+        )
 
-        iter_logs.append({
-            "iteration": it,
-            "total_samples": len(aggregated_states),
-            "policy_mean_progress_px": mean_prog,
-            "bce_loss": float(total_loss / batches),
-        })
+        iter_logs.append(
+            {
+                "iteration": it,
+                "total_samples": len(aggregated_states),
+                "policy_mean_progress_px": mean_prog,
+                "bce_loss": float(total_loss / batches),
+            }
+        )
 
     emu.close()
 

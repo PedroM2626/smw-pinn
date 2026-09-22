@@ -23,6 +23,12 @@ import numpy as np
 
 from src.environment.snes_emulator import SnesLibretroEmulator
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CORE_PATH,
+    RESULTS_DIR,
+    ROM_PATH,
+    STATE_YOSHI_ISLAND_1,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -52,10 +58,10 @@ def min_takeoff_vx(gap_width_px: float, vy0: float = VY_JUMP) -> float:
 
 
 def run_diagnosis(
-    core_path: str = "src/environment/bin/snes9x_libretro.dll",
-    rom_path: str = "data/raw/smw_usa.sfc",
-    state_path: str = "data/raw/smw_yoshi_island_1.state",
-    output_dir: str = "results",
+    core_path: str = CORE_PATH,
+    rom_path: str = ROM_PATH,
+    state_path: str = STATE_YOSHI_ISLAND_1,
+    output_dir: str = RESULTS_DIR,
     seed: int = 7,
 ) -> dict:
     set_global_seed(seed)
@@ -63,7 +69,7 @@ def run_diagnosis(
     emu.load_rom(rom_path)
     with open(state_path, "rb") as f:
         emu.load_state(f.read())
-    emu.wram_buffer[0x0100] = 0x14
+    emu.enable_gameplay_mode()
     for _ in range(5):
         emu.step_frame()
 
@@ -87,11 +93,13 @@ def run_diagnosis(
         patch = emu.get_local_tilemap_patch(st["x"], st["y"], radius=3)
         samples.append(
             {
-                "x": st["x"], "y": st["y"], "vx": st["vx"], "vy": st["vy"],
+                "x": st["x"],
+                "y": st["y"],
+                "vx": st["vx"],
+                "vy": st["vy"],
                 "c_ground": st["c_ground"],
                 "hazards": [
-                    {"id": s["id"], "x": s["x"], "y": s["y"], "vx": s["vx"]}
-                    for s in sprites
+                    {"id": s["id"], "x": s["x"], "y": s["y"], "vx": s["vx"]} for s in sprites
                 ],
                 "ground_below": bool((patch[4:, 3] == 1).any()),
             }
@@ -162,9 +170,11 @@ def run_diagnosis(
     for g in gaps:
         ax.axvspan(g["x_start"], g["x_end"], color="red", alpha=0.3)
         ax.text(
-            (g["x_start"] + g["x_end"]) / 2, 0.5,
+            (g["x_start"] + g["x_end"]) / 2,
+            0.5,
             f"gap {g['width_px']:.0f}px\nvx>={g['min_takeoff_vx_subpx']:.0f}",
-            ha="center", fontsize=8,
+            ha="center",
+            fontsize=8,
         )
     for e in encounters[:: max(1, len(encounters) // 30)]:
         ax.plot(e["mario_x"], 0.9, "ro", ms=3)

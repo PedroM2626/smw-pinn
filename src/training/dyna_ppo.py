@@ -17,8 +17,13 @@ from torch.distributions import Categorical
 from src.environment.pinn_sim_env import PINNVectorEnv
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    DATASET_GAMEPLAY,
+)
 
 logger = get_logger(__name__)
+
 
 class ActorCritic(nn.Module):
     """
@@ -102,14 +107,14 @@ class DynaPPOTrainer:
         self.ent_coef = ent_coef
         self.max_grad_norm = max_grad_norm
 
-    def collect_rollouts(
-        self, rollout_length: int = 128
-    ) -> Tuple[torch.Tensor, ...]:
+    def collect_rollouts(self, rollout_length: int = 128) -> Tuple[torch.Tensor, ...]:
         """
         Collects T-step rollouts across all parallel environments in the world model.
         """
         num_envs = self.env.num_envs
-        obs_buf = torch.zeros((rollout_length, num_envs, self.env.states.shape[1]), device=self.device)
+        obs_buf = torch.zeros(
+            (rollout_length, num_envs, self.env.states.shape[1]), device=self.device
+        )
         actions_buf = torch.zeros((rollout_length, num_envs), dtype=torch.int64, device=self.device)
         logprobs_buf = torch.zeros((rollout_length, num_envs), device=self.device)
         rewards_buf = torch.zeros((rollout_length, num_envs), device=self.device)
@@ -249,12 +254,16 @@ class DynaPPOTrainer:
         t0 = time.time()
 
         if verbose:
-            logger.info(f"Starting Dyna-PPO Training: {num_iterations} iterations ({batch_size} samples/iter)...")
+            logger.info(
+                f"Starting Dyna-PPO Training: {num_iterations} iterations ({batch_size} samples/iter)..."
+            )
 
         for iteration in range(1, num_iterations + 1):
             t_iter = time.time()
             obs, actions, logprobs, returns, advs, vals = self.collect_rollouts(rollout_length)
-            metrics = self.update(obs, actions, logprobs, returns, advs, update_epochs, mini_batch_size)
+            metrics = self.update(
+                obs, actions, logprobs, returns, advs, update_epochs, mini_batch_size
+            )
 
             elapsed = time.time() - t_iter
             mean_return = float(returns.mean().item())
@@ -277,14 +286,16 @@ class DynaPPOTrainer:
 
         total_time = time.time() - t0
         if verbose:
-            logger.info(f"Dyna-PPO finished in {total_time:.2f}s ({int(total_timesteps / total_time)} overall FPS).")
+            logger.info(
+                f"Dyna-PPO finished in {total_time:.2f}s ({int(total_timesteps / total_time)} overall FPS)."
+            )
 
         return history
 
 
 def train_dyna_ppo_agents(
-    checkpoints_dir: str = "results/checkpoints",
-    output_dir: str = "results/checkpoints",
+    checkpoints_dir: str = CHECKPOINTS_DIR,
+    output_dir: str = CHECKPOINTS_DIR,
     total_timesteps: int = 800_000,
     num_envs: int = 512,
     device: Optional[torch.device] = None,
@@ -300,7 +311,7 @@ def train_dyna_ppo_agents(
 
     # Initial state pool from genuine transitions
     initial_states = None
-    dataset_path = "data/raw/smw_gameplay_dataset.npz"
+    dataset_path = DATASET_GAMEPLAY
     if os.path.exists(dataset_path):
         data = np.load(dataset_path)
         states = data["states"]

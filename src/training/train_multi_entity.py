@@ -16,14 +16,19 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
 from src.models.pinn_multi_entity import MultiEntityPINNDynamics
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_MULTI_ENTITY,
+    checkpoint_file,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
+
 def train_multi_entity_model(
-    data_path: str = "data/raw/smw_multi_entity_dataset.npz",
-    base_checkpoint: str = "results/checkpoints/pinn_hard_best.pt",
-    output_checkpoint: str = "results/checkpoints/pinn_multi_entity_best.pt",
+    data_path: str = DATASET_MULTI_ENTITY,
+    base_checkpoint: str = checkpoint_file("pinn_hard_best.pt"),
+    output_checkpoint: str = checkpoint_file("pinn_multi_entity_best.pt"),
     batch_size: int = 128,
     epochs: int = 50,
     lr: float = 1e-3,
@@ -48,7 +53,9 @@ def train_multi_entity_model(
 
     # Filter to give high importance to frames where hazard is active
     active_mask = states[:, 11] > 0.5
-    logger.info(f"Active hazard transitions: {int(active_mask.sum())} / {n_samples} ({100.0*active_mask.mean():.1f}%)")
+    logger.info(
+        f"Active hazard transitions: {int(active_mask.sum())} / {n_samples} ({100.0 * active_mask.mean():.1f}%)"
+    )
 
     # Train / Test split (80 / 20)
     set_global_seed(42)
@@ -74,7 +81,9 @@ def train_multi_entity_model(
     # 2. Instantiate model
     base_pinn = HardResidualPINNDynamics(state_dim=8, action_dim=6).to(device)
     if os.path.exists(base_checkpoint):
-        base_pinn.load_state_dict(torch.load(base_checkpoint, map_location=device, weights_only=True))
+        base_pinn.load_state_dict(
+            torch.load(base_checkpoint, map_location=device, weights_only=True)
+        )
         logger.info(f"Preloaded base Hard PINN from {base_checkpoint}")
 
     model = MultiEntityPINNDynamics(base_pinn=base_pinn).to(device)
@@ -84,7 +93,9 @@ def train_multi_entity_model(
         param.requires_grad = False
 
     optimizer = torch.optim.AdamW(model.hazard_net.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=4)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=4
+    )
 
     criterion_mse = nn.MSELoss()
     best_test_loss = float("inf")

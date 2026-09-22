@@ -104,10 +104,13 @@ class UnifiedMultimodalPINNDynamics(nn.Module):
 
             # Construct refined Mario state with terrain-grounded contacts
             # Retain exact analytical kinematic positions [X, Y] and physical velocities [vx, vy]
-            next_mario = torch.cat([
-                next_mario_base[:, 0:4],  # X, Y, vx, vy
-                contact_probs,            # c_ground, c_ceiling, c_left, c_right
-            ], dim=-1)
+            next_mario = torch.cat(
+                [
+                    next_mario_base[:, 0:4],  # X, Y, vx, vy
+                    contact_probs,  # c_ground, c_ceiling, c_left, c_right
+                ],
+                dim=-1,
+            )
         else:
             contact_logits = next_mario_base[:, 4:8]
             next_mario = next_mario_base

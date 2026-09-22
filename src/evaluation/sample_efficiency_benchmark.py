@@ -28,17 +28,21 @@ from src.models import (
 from src.training.trainer import DynamicsTrainer
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    DATASET_GAMEPLAY,
+    RESULTS_DIR,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
 
 
 def run_sample_efficiency_study(
-    dataset_path: str = "data/raw/smw_gameplay_dataset.npz",
+    dataset_path: str = DATASET_GAMEPLAY,
     sample_sizes: List[int] | None = None,
     epochs_per_run: int = 25,
     seed: int = 42,
-    output_dir: str = "results",
+    output_dir: str = RESULTS_DIR,
     rollout_horizon: int = 60,
     num_rollout_starts: int = 5,
 ):
@@ -139,7 +143,9 @@ def run_sample_efficiency_study(
             test_mse = test_res["val_loss_data"]
 
             # Rollout evaluation (single start + multi-start average)
-            roll_res = evaluator.evaluate_rollout(model, "mlp", init_state, action_seq, ground_truth)
+            roll_res = evaluator.evaluate_rollout(
+                model, "mlp", init_state, action_seq, ground_truth
+            )
             mean_drift = roll_res["mean_drift"]
             multi_res = evaluator.evaluate_rollout_multistart(
                 model,
@@ -157,7 +163,9 @@ def run_sample_efficiency_study(
                 multi_res["mean_drift_mean"]
             )
 
-            logger.info(f"  {name:20s} | N={N:4d} | Test MSE: {test_mse:.4f} | Rollout Drift: {mean_drift:.2f} px")
+            logger.info(
+                f"  {name:20s} | N={N:4d} | Test MSE: {test_mse:.4f} | Rollout Drift: {mean_drift:.2f} px"
+            )
 
     # Sample Efficiency Plots
     fig_dir = os.path.join(output_dir, "figures")
@@ -169,7 +177,11 @@ def run_sample_efficiency_study(
     for name, res in efficiency_results.items():
         plt.plot(sample_sizes, res["test_mse"], marker="o", linewidth=2.5, label=name)
     plt.xscale("log")
-    plt.title("Sample Efficiency Curve: Test MSE vs. Training Dataset Volume", fontsize=13, fontweight="bold")
+    plt.title(
+        "Sample Efficiency Curve: Test MSE vs. Training Dataset Volume",
+        fontsize=13,
+        fontweight="bold",
+    )
     plt.xlabel("Number of Training Transitions (N - Log Scale)", fontsize=11)
     plt.ylabel("Test Set Mean Squared Error (MSE)", fontsize=11)
     plt.legend(fontsize=11)
@@ -182,7 +194,9 @@ def run_sample_efficiency_study(
     for name, res in efficiency_results.items():
         plt.plot(sample_sizes, res["mean_drift"], marker="s", linewidth=2.5, label=name)
     plt.xscale("log")
-    plt.title("Long-Horizon Rollout Stability vs. Training Dataset Volume", fontsize=13, fontweight="bold")
+    plt.title(
+        "Long-Horizon Rollout Stability vs. Training Dataset Volume", fontsize=13, fontweight="bold"
+    )
     plt.xlabel("Number of Training Transitions (N - Log Scale)", fontsize=11)
     plt.ylabel("Mean Trajectory Drift (Pixels)", fontsize=11)
     plt.legend(fontsize=11)
@@ -191,7 +205,9 @@ def run_sample_efficiency_study(
     plt.close()
 
     # Save summary metrics
-    with open(os.path.join(output_dir, "sample_efficiency_metrics.json"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(output_dir, "sample_efficiency_metrics.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump(
             {
                 "sample_sizes": sample_sizes,
@@ -217,11 +233,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Sample-efficiency Pareto study.")
     parser.add_argument("--config", default=None, help="YAML config file (CLI flags override it).")
-    parser.add_argument("--dataset-path", default="data/raw/smw_gameplay_dataset.npz")
+    parser.add_argument("--dataset-path", default=DATASET_GAMEPLAY)
     parser.add_argument("--sample-sizes", type=int, nargs="+", default=None)
     parser.add_argument("--epochs-per-run", type=int, default=25)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-dir", default="results")
+    parser.add_argument("--output-dir", default=RESULTS_DIR)
     parser.add_argument("--rollout-horizon", type=int, default=60)
     parser.add_argument("--num-rollout-starts", type=int, default=5)
     args = parse_args_with_config(parser)

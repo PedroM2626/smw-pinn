@@ -22,6 +22,12 @@ import torch.nn as nn
 from src.evaluation.rollout_evaluator import RolloutEvaluator
 from src.models import HardResidualPINNDynamics, StatisticalMLPDynamics
 from src.utils.logging import get_logger
+from src.utils.paths import (
+    CHECKPOINTS_DIR,
+    DATASET_GAMEPLAY,
+    DATASET_MULTI_ENTITY,
+    RESULTS_DIR,
+)
 from src.utils.seed import set_global_seed
 
 logger = get_logger(__name__)
@@ -35,10 +41,10 @@ def far_region_mask(states: np.ndarray, threshold: float = SPLIT_X) -> np.ndarra
 
 
 def run_spatial_holdout(
-    dataset_path: str = "data/raw/smw_gameplay_dataset.npz",
-    multi_path: str = "data/raw/smw_multi_entity_dataset.npz",
-    checkpoints_dir: str = "results/checkpoints",
-    output_dir: str = "results",
+    dataset_path: str = DATASET_GAMEPLAY,
+    multi_path: str = DATASET_MULTI_ENTITY,
+    checkpoints_dir: str = CHECKPOINTS_DIR,
+    output_dir: str = RESULTS_DIR,
     seed: int = 42,
 ) -> dict:
     set_global_seed(seed)
@@ -82,8 +88,8 @@ def run_spatial_holdout(
             single[name] = {
                 "zero_shot_mse": float(crit(pred, ns).item()),
                 "kinematic_violation_pct": float(
-                    ((pred[:, 0] - s[:, 0] - pred[:, 2] / 16.0).abs() > 0.05)
-                    .float().mean().item() * 100.0
+                    ((pred[:, 0] - s[:, 0] - pred[:, 2] / 16.0).abs() > 0.05).float().mean().item()
+                    * 100.0
                 ),
             }
         res = evaluator.evaluate_rollout(model, "mlp", far_states[0], far_actions[:H], far_next[:H])
@@ -92,8 +98,10 @@ def run_spatial_holdout(
             "final_drift_px": res["final_drift"],
             "kinematic_violations": res["kinematic_violations"],
         }
-        logger.info(f"[{name}] far-MSE={single[name]['zero_shot_mse']:.2f} "
-                    f"drift={roll[name]['mean_drift_px']:.1f}px")
+        logger.info(
+            f"[{name}] far-MSE={single[name]['zero_shot_mse']:.2f} "
+            f"drift={roll[name]['mean_drift_px']:.1f}px"
+        )
 
     fig, ax = plt.subplots(figsize=(10, 4))
     xs = np.arange(H)

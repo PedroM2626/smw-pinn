@@ -1,0 +1,11 @@
+# Seconds-scale version of configs/multiseed.yaml (`make smoke`).
+# Same loaders, same statistics machinery, same artifact shape as the published
+# 8.4 study - only the budget shrinks. Write it somewhere other than results/:
+# published artifacts are regenerated only by `make multiseed`.
+seeds: [42, 7]
+epochs: 2
+patience: 1
+learning_rate: 0.001
+batch_size: 128
+rollout_horizon: 20
+num_rollout_starts: 2

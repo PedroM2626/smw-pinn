@@ -48,7 +48,9 @@ class RolloutEvaluator:
         state_dim = len(initial_state)
 
         pred_traj = np.zeros((H, state_dim), dtype=np.float32)
-        curr_state = torch.tensor(initial_state, dtype=torch.float32, device=self.device).unsqueeze(0)
+        curr_state = torch.tensor(initial_state, dtype=torch.float32, device=self.device).unsqueeze(
+            0
+        )
 
         # Buffer for recurrent LSTM if applicable
         if "lstm" in model_type.lower():
@@ -170,7 +172,9 @@ class RolloutEvaluator:
             "mean_drift_mean": float(np.mean(mean_drifts)),
             "mean_drift_std": float(np.std(mean_drifts, ddof=1)) if len(mean_drifts) > 1 else 0.0,
             "final_drift_mean": float(np.mean(final_drifts)),
-            "final_drift_std": float(np.std(final_drifts, ddof=1)) if len(final_drifts) > 1 else 0.0,
+            "final_drift_std": float(np.std(final_drifts, ddof=1))
+            if len(final_drifts) > 1
+            else 0.0,
             "kinematic_violation_rate_mean": float(np.mean(kin_rates)),
             "velocity_violation_rate_mean": float(np.mean(vel_rates)),
         }
