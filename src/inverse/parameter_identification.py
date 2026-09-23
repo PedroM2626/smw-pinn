@@ -1,100 +1,123 @@
-"""
-parameter_identification.py
-Physics parameter identification (the inverse problem) for the SMW engine model.
+"""Inverse-problem core: identify the engine's physics constants from
+transition data and use the recovered parameters for zero-shot control
+transfer (README section 10.40).
 
-Everything else in this repository solves the *forward* problem: given the state
-``s_t``, the action ``a_t`` and a fixed set of engine constants ``theta``, predict the
-next state ``s_{t+1}`` (Sections 5-8) or plan forward in time with it (Sections 10.6,
-10.31). This module solves the *inverse* problem: given only observed transitions,
-recover the physical constants ``theta`` that generated them. It is the concrete realisation
-of the deferred future-work item in README Section 10.16-6 ("porting to dynamical systems
-with unknown discretization schemes would necessitate either explicit system identification
-or meta-learning of the physical scaling factors") and of the "system identification inside
-the graph" idea introduced in ``src/models/pinn_gravity.py``.
+The forward problem the rest of this repository solves is *"given a world
+model, predict / plan"*.  This module inverts it: *"given observed
+transitions, recover the physical constants that generated them"*.  The
+generator is the exact one-step kinematics encoded by the analytic
+traction/friction parameter set
+(``src.losses.physics_rl_losses.TractionFrictionParams``), re-derived here as
+a closed-form, fully differentiable integrator so the constants can be fit by
+gradient descent and -- crucially -- evaluated analytically in the MPC planner
+of section 10.36, unlike the learned networks.
 
-The identified parameter vector is the six structural constants that drive the analytic
-fixed-point kinematics of Section 4 (the same quantities as
-``src.losses.physics_rl_losses.TractionFrictionParams``):
+The analytic world model is the extended hybrid kinematic map:
+  * horizontal: directional input accelerates ``vx`` toward ``+/-max_vx``
+    (the run tier applies when the run button is held); releasing every
+    direction applies Coulomb-style friction ``decel`` toward zero;
+  * vertical: held-jump ascent integrates ``g_hold``, everything else
+    ``g_fall``, clamped to the engine's jump-impulse and terminal-velocity
+    bounds (the asymmetry the residual PINN is built to learn);
+  * ground contact: when the grounded flag is set, downward velocity is
+    reset to zero (Mario cannot sink through the floor).
 
-    theta = [max_vx, walk_accel, run_accel, subpixels_per_pixel, held_gravity, fall_gravity]
+Why this is a clean inverse problem.  Six of the seven constants are
+*genuinely free* in the engine (they are not derivable from tile geometry);
+the jump impulse and terminal velocity are fixed structural bounds.  Fitting
+the free constants against rollouts, with a per-channel variance weighting so
+the sub-pixel velocity channels are not swamped by the wide horizontal
+position channel, recovers them to sub-percent accuracy on synthetic data
+and improves real-data prediction -- and a Laplace/Gauss-Newton posterior
+turns the point estimate into a full uncertainty statement, exposing which
+directions of parameter space the data can and cannot resolve.
 
-The forward simulator :func:`simulate_step` reproduces the Hard-Residual-PINN integrator
-exactly but with the *learned residual force removed*: velocities follow the traction /
-asymmetric-gravity budget and positions integrate them through the subpixel ratio. Because
-the simulator is written with differentiable tensor operations, ``theta`` is fitted by
-gradient descent on an open-loop multi-step rollout loss, which is the standard non-linear
-least-squares formulation of a discrete-time inverse dynamics problem.
-
-Only tensor/parameter mathematics lives here; the closed-loop *transfer* experiment (which
-is what the recovered parameters are ultimately for) is driven from
-``src/evaluation/inverse_transfer_benchmark.py``. This module is emulator-free and
-deterministic under ``set_global_seed``, so it runs in CI.
+No emulator and no network: the whole pipeline runs on CPU from a recorded
+dataset (or a synthetic ground truth), so it is a hardware-free, deterministic
+gate.  ``src/evaluation/inverse_transfer_benchmark.py`` composes these into
+the published benchmark.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
+from torch import Tensor
 
 from src.losses.physics_rl_losses import TractionFrictionParams
-from src.utils.logging import get_logger
-from src.utils.seed import set_global_seed
 
-logger = get_logger(__name__)
+# Fixed structural bounds of the one-step map: the upward jump-impulse cap
+# and the downward terminal velocity, in sub-pixels per frame.  These are not
+# identified -- they are the clamp levels the engine hard-codes.
+MIN_VY = -80.0
+TERMINAL_VY = 64.0
 
-# Fixed structural clamps of the SMW engine (README Section 4.2). These are hardware
-# constants that are *not* part of the identified vector: they define the sign/constrain
-# the velocity, and identification of the subpixel scale would be degenerate if the clamps
-# were simultaneously free.
-MIN_VY = -80.0  # maximum ascent velocity (subpixels/frame).
-TERMINAL_VY = 64.0  # maximum descent (fall) velocity (subpixels/frame).
-
-# Ordered names of the identified vector; every tensor of parameters uses this order.
-PARAM_NAMES: List[str] = [
+# The seven identified constants, in the fixed order of the theta vector.
+PARAM_NAMES = [
     "max_vx",
     "walk_accel",
     "run_accel",
     "subpixels_per_pixel",
     "held_gravity",
     "fall_gravity",
+    "decel",
 ]
 
-# Button-column indices of the shared 6-wide action layout [B, Y, UP, DOWN, LEFT, RIGHT].
-_A_JUMP, _A_RUN, _, _, _A_LEFT, _A_RIGHT = range(6)
+# Action bit indices, matching ACTION_NAMES in src/training/physics_rl_losses.py.
+_A_JUMP, _A_RUN, _A_LEFT, _A_RIGHT = 0, 1, 4, 5
 
 
 @dataclass(frozen=True)
 class EngineParams:
-    """A concrete value of the identified engine constants (units: subpixels / frames).
+    """The physical constants of the extended one-step kinematic map.
 
-    Defaults are the reverse-engineered WRAM values (README Section 4.3), which double as
-    the ground-truth for the synthetic recovery experiment and as the "prior" a zero-shot
-    controller would naively carry into an unknown world.
+    Defaults are the WRAM-measured Super Mario World values used throughout
+    this repository (README section 2); they double as the informative prior
+    for the identification experiments.  ``decel`` is the coast-down
+    friction applied when no direction is held, and ``ground_vy_reset``
+    encodes the (structural, not free) floor contact handled in
+    :func:`simulate_step`.
     """
 
     max_vx: float = 72.0
     walk_accel: float = 0.75
-    run_accel: float = 1.50
+    run_accel: float = 1.5
     subpixels_per_pixel: float = 16.0
     held_gravity: float = 3.0
     fall_gravity: float = 6.0
+    decel: float = 0.5
 
     def as_vector(self) -> np.ndarray:
         return np.array(
-            [getattr(self, name) for name in PARAM_NAMES],
+            [
+                self.max_vx,
+                self.walk_accel,
+                self.run_accel,
+                self.subpixels_per_pixel,
+                self.held_gravity,
+                self.fall_gravity,
+                self.decel,
+            ],
             dtype=np.float64,
         )
 
-    @staticmethod
-    def from_vector(vec: torch.Tensor | np.ndarray) -> "EngineParams":
-        vals = [float(x) for x in np.asarray(_to_numpy(vec), dtype=np.float64)]
-        return EngineParams(**dict(zip(PARAM_NAMES, vals)))
+    @classmethod
+    def from_vector(cls, vec: np.ndarray | Tensor) -> "EngineParams":
+        arr = np.asarray(
+            vec.detach().cpu().numpy() if isinstance(vec, Tensor) else vec, dtype=np.float64
+        )
+        return cls(*arr)
 
     def to_traction(self) -> TractionFrictionParams:
-        """Bridge to the PIML safety model, which consumes the same constants."""
+        """Bridge to the analytic MPC planner (``src/planning/mpc_planner``).
+
+        The planner's ``decel`` is fixed (0.0), so this bridge carries the six
+        constants it models; the identified coast-down friction is used only
+        by :func:`simulate_step` here.
+        """
         return TractionFrictionParams(
             max_vx=self.max_vx,
             walk_accel=self.walk_accel,
@@ -105,72 +128,67 @@ class EngineParams:
         )
 
 
-def _to_numpy(x: torch.Tensor | np.ndarray) -> np.ndarray:
-    return x.detach().cpu().numpy() if isinstance(x, torch.Tensor) else np.asarray(x)
-
-
-def _inv_softplus(y: torch.Tensor) -> torch.Tensor:
-    """Inverse of softplus, for parameterising strictly-positive constants."""
-    return torch.log(torch.expm1(y.clamp(min=1e-6)))
-
-
-def _softplus(raw: torch.Tensor) -> torch.Tensor:
-    return torch.nn.functional.softplus(raw)
-
-
-def theta_tensor(params: EngineParams | TractionFrictionParams) -> torch.Tensor:
-    """Return the identified-vector ordering of a params object as a float32 tensor."""
-    if isinstance(params, TractionFrictionParams):
-        params = EngineParams(
-            max_vx=params.max_vx,
-            walk_accel=params.walk_accel,
-            run_accel=params.run_accel,
-            subpixels_per_pixel=params.subpixels_per_pixel,
-            held_gravity=params.held_gravity,
-            fall_gravity=params.fall_gravity,
-        )
+def theta_tensor(params: EngineParams | Tensor) -> Tensor:
+    """Return ``params`` (an :class:`EngineParams` or a length-7 tensor) as a
+    float32 tensor of the seven constants."""
+    if isinstance(params, Tensor):
+        return params.detach().to(torch.float32).clone()
     return torch.tensor(params.as_vector(), dtype=torch.float32)
 
 
+def _softplus_inv(y: Tensor) -> Tensor:
+    """Inverse of ``F.softplus`` on the positive orthant; guarantees the
+    unconstrained optimiser stays in the physically positive domain even at
+    the zero boundary (clamped to a small floor)."""
+    y = y.clamp(min=1e-6)
+    return y + torch.log(-torch.expm1(-y))
+
+
 def simulate_step(
-    states: torch.Tensor,
-    actions: torch.Tensor,
-    params: torch.Tensor,
-) -> torch.Tensor:
-    """Differentiable one-frame analytic forward step.
+    states: Tensor, actions: Tensor, params: Tensor, grounded: Optional[Tensor] = None
+) -> Tensor:
+    """One differentiable frame of the extended kinematic map.
 
-    Args:
-        states: ``[B, C]`` with ``C >= 4``; columns 0..3 are ``[x, y, vx, vy]``
-            (positions in pixels, velocities in subpixels/frame).
-        actions: ``[B, 6]`` button vectors in ``[B, Y, UP, DOWN, LEFT, RIGHT]`` order.
-        params: ``[6]`` positive engine constants in :data:`PARAM_NAMES` order.
-
-    Returns:
-        ``[B, 4]`` predicted ``[x, y, vx, vy]`` one frame later.
+    ``states`` is ``[..., 4]`` as ``[x, y, vx, vy]`` (position in pixel units,
+    velocity in sub-pixels per frame); ``actions`` is ``[..., 6]`` one-hot
+    button channels.  ``params`` is the length-7 theta tensor.  ``grounded``
+    is an optional ``[...]`` 0/1 flag; when set, downward velocity is snapped
+    to zero so the state cannot penetrate the floor.  Returns ``[..., 4]``.
     """
-    x, y, vx, vy = states[..., 0], states[..., 1], states[..., 2], states[..., 3]
-    jump, run = actions[..., _A_JUMP], actions[..., _A_RUN]
+    x = states[..., 0]
+    y = states[..., 1]
+    vx = states[..., 2]
+    vy = states[..., 3]
+    jump = actions[..., _A_JUMP]
+    run = actions[..., _A_RUN]
     direction = actions[..., _A_RIGHT] - actions[..., _A_LEFT]
 
-    max_vx, walk_accel, run_accel, scale, g_hold, g_fall = (
-        params[0],
-        params[1],
-        params[2],
-        params[3],
-        params[4],
-        params[5],
-    )
+    max_vx = params[0]
+    walk = params[1]
+    run_a = params[2]
+    scale = params[3]
+    g_hold = params[4]
+    g_fall = params[5]
+    decel = params[6]
 
-    # Horizontal: the traction tier is applied only while a direction is held; with no
-    # directional input the body coasts at constant velocity (drag is out of scope and is
-    # deliberately NOT in the identified vector, cf. README Section 4 traction budget).
-    tier = torch.where(run > 0.5, run_accel, walk_accel)
+    # Horizontal: directional input accelerates toward the +/-max_vx speed
+    # cap; releasing every direction applies Coulomb friction toward zero.
+    tier = torch.where(run > 0.5, run_a, walk)
     a_cmd = direction * tier
-    vx_next = torch.clamp(vx + a_cmd, -max_vx, max_vx)
+    vx_drive = torch.clamp(vx + a_cmd, -max_vx, max_vx)
+    moving = direction != 0
+    vx_fric = torch.where(
+        vx > 0, torch.clamp(vx - decel, min=0.0), torch.clamp(vx + decel, max=0.0)
+    )
+    vx_next = torch.where(moving, vx_drive, vx_fric)
 
-    # Vertical: asymmetric gravity, lighter while jump is held during ascent, else fall.
-    g = torch.where((jump > 0.5) & (vy < 0.0), g_hold, g_fall)
+    # Vertical: held-jump ascent integrates g_hold, everything else g_fall;
+    # clamped to the engine's structural bounds; ground contact snaps the
+    # downward (+vy) component to zero.
+    g = torch.where((jump > 0.5) & (vy < 0), g_hold, g_fall)
     vy_next = torch.clamp(vy + g, MIN_VY, TERMINAL_VY)
+    if grounded is not None:
+        vy_next = torch.where(grounded > 0.5, torch.clamp(vy_next, max=0.0), vy_next)
 
     x_next = x + vx_next / scale
     y_next = y + vy_next / scale
@@ -178,315 +196,369 @@ def simulate_step(
 
 
 def simulate_rollout(
-    s0: torch.Tensor,
-    action_seq: torch.Tensor,
-    params: torch.Tensor,
-) -> torch.Tensor:
-    """Open-loop multi-step rollout under a fixed, time-indexed action sequence.
+    s0: Tensor, action_seq: Tensor, params: Tensor, grounded: Optional[Tensor] = None
+) -> Tensor:
+    """Unroll :func:`simulate_step``L`` times.
 
-    Args:
-        s0: ``[B, 4]`` initial ``[x, y, vx, vy]``.
-        action_seq: ``[B, L, 6]`` action buttons, one per frame.
-        params: ``[6]`` engine constants.
-
-    Returns:
-        ``[B, L, 4]`` predicted states (frame ``t`` = state after applying ``action_seq[:, t]``).
+    ``s0`` is ``[B, 4]``, ``action_seq`` is ``[B, L, 6]``, ``grounded`` is an
+    optional ``[B, L]`` contact-flag sequence.  Returns predicted next-states
+    ``[B, L, 4]`` (state at ``t = 1 .. L``), all differentiable in ``params``.
     """
     state = s0
-    outs: List[torch.Tensor] = []
+    outs = []
     for t in range(action_seq.shape[1]):
-        state = simulate_step(state, action_seq[:, t, :], params)
+        gz = None if grounded is None else grounded[:, t]
+        state = simulate_step(state, action_seq[:, t, :], params, gz)
         outs.append(state)
     return torch.stack(outs, dim=1)
 
 
 def make_windows(
-    states: np.ndarray,
-    actions: np.ndarray,
-    next_states: np.ndarray,
-    episodes: np.ndarray,
-    rollout_len: int,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Split flat transitions into contiguous within-episode open-loop windows.
+    states: Tensor, actions: Tensor, next_states: Tensor, episodes: Tensor, rollout_len: int
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    """Cut per-episode rollouts from a dataset for multi-step fitting.
 
-    Only consecutive frames belonging to the same episode are chained, so a rollout never
-    jumps a reset boundary. Positions/velocities are truncated to the four kinematic
-    channels the simulator predicts.
-
-    Returns:
-        ``(s0 [W,4], action_seq [W,L,6], targets [W,L,4])`` float32 tensors.
+    ``states`` / ``next_states`` are ``[N, >=4]`` (only the first four
+    channels are used; channel 4 of ``next_states`` is the ground-contact
+    flag).  ``episodes`` tags each transition.  Only windows fully inside one
+    episode are kept, so no rollout crosses a reset boundary.  Returns
+    ``(s0, actions, targets, grounded)`` with shapes
+    ``[W, 4] / [W, L, 6] / [W, L, 4] / [W, L]``.
     """
-    s0_list: List[np.ndarray] = []
-    act_list: List[np.ndarray] = []
-    tgt_list: List[np.ndarray] = []
-    for ep in np.unique(episodes):
-        mask = episodes == ep
-        st = states[mask]
-        ac = actions[mask]
-        nx = next_states[mask]
-        n = len(st)
-        if n < rollout_len + 1:
+    states = torch.as_tensor(states)
+    actions = torch.as_tensor(actions)
+    next_states = torch.as_tensor(next_states)
+    episodes = torch.as_tensor(episodes)
+    n = states.shape[0]
+    s0s, acts, tgts, grs = [], [], [], []
+    i = 0
+    while i < n - rollout_len:
+        if episodes[i] != episodes[i + rollout_len]:
+            i += 1
             continue
-        for i in range(n - rollout_len):
-            s0_list.append(st[i, :4])
-            act_list.append(ac[i : i + rollout_len])
-            tgt_list.append(nx[i : i + rollout_len, :4])
-    if not s0_list:
-        empty = torch.zeros(0, 4)
-        empty_a = torch.zeros(0, rollout_len, 6)
-        return empty, empty_a, torch.zeros(0, rollout_len, 4)
-    return (
-        torch.tensor(np.stack(s0_list), dtype=torch.float32),
-        torch.tensor(np.stack(act_list), dtype=torch.float32),
-        torch.tensor(np.stack(tgt_list), dtype=torch.float32),
-    )
+        s0s.append(states[i, :4])
+        acts.append(actions[i : i + rollout_len])
+        tgts.append(next_states[i : i + rollout_len, :4])
+        grs.append((next_states[i : i + rollout_len, 4] > 0.5).float())
+        i += 1
+    if not s0s:
+        empty = torch.zeros((0, 4))
+        return (
+            empty,
+            torch.zeros((0, rollout_len, 6)),
+            torch.zeros((0, rollout_len, 4)),
+            torch.zeros((0, rollout_len)),
+        )
+    return torch.stack(s0s), torch.stack(acts), torch.stack(tgts), torch.stack(grs)
 
 
 def generate_synthetic_windows(
-    true_params: torch.Tensor,
+    true_params: EngineParams,
     n_windows: int,
     rollout_len: int,
-    seed: int = 42,
+    seed: int,
     x_span: Tuple[float, float] = (0.0, 600.0),
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Produce (s0, action_seq, targets) windows from the true simulator.
-
-    The initial conditions and button statistics are chosen to *excite every identified
-    constant*: horizontal states are seeded near the velocity ceiling with directional input
-    held so the saturation clamp binds (making ``max_vx`` identifiable); vertical states span
-    both signs of ``vy`` with the jump button frequently held so the ascending-held
-    (``held_gravity``) and falling (``fall_gravity``) branches are both observed; and both
-    run and walk traction tiers appear. A generator that failed to exercise a constant would
-    correctly report it as unidentifiable - which is itself a real result (cf. the negative
-    jump-impulse identifiability in README 10.37.1) - so the ranges here are deliberate.
-
-    Targets are the *true* states the simulator produces, so recovering ``true_params`` from
-    them is a clean inverse problem with a known ground truth.
+    floor_y: float = 336.0,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    """Build ground-truth rollouts under ``true_params`` with a floor at
+    ``floor_y``.  Deliberately spans the regimes that make each constant
+    observable: sustained sprints that saturate ``max_vx``, release frames
+    that coast under ``decel``, and held-jump ascents versus falls (the
+    gravity asymmetry).  The ground-contact flag is generated coherently with
+    the floor, so the contact reset is exercised too.
     """
     g = torch.Generator().manual_seed(seed)
-    max_vx = float(true_params[0])
-    x0 = torch.rand(n_windows, generator=g) * (x_span[1] - x_span[0]) + x_span[0]
-    y0 = torch.full((n_windows,), 336.0)
-    # Per-window sustained "sprint" flag decides both the initial velocity and the button
-    # pattern: sprint windows start *near the ceiling moving outward*, so the saturation clamp
-    # binds within the first frames - a strong, unambiguous signal for max_vx (a weakly excited
-    # ceiling is the honest reason max_vx is the hardest of the six to identify).
-    sprint = torch.rand(n_windows, generator=g) < 0.6
-    dir_sign = torch.where(x0 >= 0, torch.ones_like(x0), -torch.ones_like(x0))
-    vx0 = (torch.rand(n_windows, generator=g) * 2 - 1) * max_vx * 0.95
-    # Seed both ascent (vy < 0) and descent (vy > 0) so held_gravity and fall_gravity bind.
-    vy0 = (torch.rand(n_windows, generator=g) * 2 - 1) * 60.0
+    p = theta_tensor(true_params)
+    max_vx_true = float(p[0])
+    lo, hi = x_span
+    sign = torch.where(
+        torch.rand((n_windows,), generator=g) < 0.5, torch.ones(n_windows), -torch.ones(n_windows)
+    )
+    x0 = sign * (lo + (hi - lo) * torch.rand((n_windows,), generator=g))
+    y0 = torch.full((n_windows,), floor_y)
+    # Start near the speed cap so the ceiling clamp is active from step one.
+    vx0 = sign * max_vx_true * 0.95 * (0.4 + 0.6 * torch.rand((n_windows,), generator=g))
+    # Half start grounded (vy 0), half mid-jump (vy<0) to exercise both g_tiers.
+    vy0 = torch.where(
+        torch.rand((n_windows,), generator=g) < 0.5,
+        torch.zeros(n_windows),
+        -60.0 * torch.rand((n_windows,), generator=g),
+    )
     s0 = torch.stack([x0, y0, vx0, vy0], dim=-1)
-    jump = (torch.rand(n_windows, rollout_len, generator=g) < 0.5).float()
-    run = torch.where(
-        sprint.unsqueeze(1),
-        torch.ones(n_windows, rollout_len),
-        (torch.rand(n_windows, rollout_len, generator=g) < 0.4).float(),
-    )
-    right = torch.clamp(
-        sprint.unsqueeze(1).float() * (dir_sign > 0).float().unsqueeze(1)
-        + (torch.rand(n_windows, rollout_len, generator=g) < 0.2).float(),
-        max=1.0,
-    )
-    left = torch.clamp(
-        sprint.unsqueeze(1).float() * (dir_sign < 0).float().unsqueeze(1)
-        + (torch.rand(n_windows, rollout_len, generator=g) < 0.1).float(),
-        max=1.0,
-    )
-    down = torch.zeros(n_windows, rollout_len)
-    up = (torch.rand(n_windows, rollout_len, generator=g) < 0.1).float()
-    # Button layout [B, Y, UP, DOWN, LEFT, RIGHT].
-    action_seq = torch.stack([jump, run, up, down, left, right], dim=-1)
-    targets = simulate_rollout(s0, action_seq, true_params)
-    return s0, action_seq, targets
+
+    actions = torch.zeros((n_windows, rollout_len, 6))
+    run = torch.rand((n_windows, rollout_len), generator=g)
+    jump = torch.rand((n_windows, rollout_len), generator=g)
+    actions[:, :, _A_RUN] = (run < 0.7).float()
+    right = (
+        (sign > 0).unsqueeze(-1) & (torch.rand((n_windows, rollout_len), generator=g) < 0.6)
+    ).float()
+    left = (
+        (sign < 0).unsqueeze(-1) & (torch.rand((n_windows, rollout_len), generator=g) < 0.6)
+    ).float()
+    actions[:, :, _A_RIGHT] = right
+    actions[:, :, _A_LEFT] = left
+    # Press Y for the first third of held-jump windows to exercise g_hold.
+    jump_len = max(1, rollout_len // 3)
+    actions[:, :jump_len, _A_JUMP] = (jump[:, :jump_len] < 0.5).float()
+
+    # Roll with a coherent floor-contact flag.
+    state = s0.clone()
+    outs, gr_flags = [], []
+    for t in range(rollout_len):
+        gz = (state[:, 1] >= floor_y - 1e-3).float()
+        state = simulate_step(state, actions[:, t, :], p, gz)
+        # Keep Mario from sinking: clamp y back to the floor when grounded.
+        state = torch.stack(
+            [state[:, 0], torch.clamp(state[:, 1], max=floor_y), state[:, 2], state[:, 3]], dim=-1
+        )
+        outs.append(state)
+        gr_flags.append(gz)
+    targets = torch.stack(outs, dim=1)
+    grounded = torch.stack(gr_flags, dim=1)
+    return s0, actions, targets, grounded
 
 
-def rollout_mse(windows, params: torch.Tensor) -> float:
-    s0, acts, tgts = windows
-    if s0.shape[0] == 0:
-        return float("nan")
-    pred = simulate_rollout(s0, acts, params)
-    return float(((pred - tgts) ** 2).mean())
-
-
-def per_variable_mse(windows, params: torch.Tensor) -> Dict[str, float]:
-    """Open-loop rollout MSE decomposed by predicted channel (x, y, vx, vy)."""
-    s0, acts, tgts = windows
-    names = ["x", "y", "vx", "vy"]
-    if s0.shape[0] == 0:
-        return {n: float("nan") for n in names}
-    pred = simulate_rollout(s0, acts, params)
-    err = (pred - tgts) ** 2
-    return {n: float(err[..., k].mean()) for k, n in enumerate(names)}
+def _channel_weights(targets: Tensor) -> Tensor:
+    """Per-channel inverse-variance weights, shape ``[4]``."""
+    var = targets.reshape(-1, 4).var(dim=0, unbiased=False).clamp(min=1e-6)
+    return 1.0 / var
 
 
 def identify_params(
-    windows,
-    init: torch.Tensor,
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor],
+    init: EngineParams | Tensor,
     steps: int = 400,
     lr: float = 0.05,
     batch: int = 256,
     seed: int = 42,
-    device: Optional[torch.device] = None,
-) -> Tuple[torch.Tensor, Dict[str, object]]:
-    """Fit the six engine constants by gradient descent on the open-loop rollout loss.
+) -> Tuple[Tensor, dict]:
+    """Recover the seven physical constants by weighted multi-step
+    least-squares regression of the simulator onto observed rollouts.
 
-    Args:
-        windows: ``(s0, action_seq, targets)`` as produced by :func:`make_windows` or
-            :func:`generate_synthetic_windows`.
-        init: ``[6]`` positive starting guess (the prior a zero-shot agent would carry in).
-        steps: optimisation iterations.
-        lr: Adam learning rate on the softplus-constrained parameters.
-        batch: window sub-sample per step (0 or >= N uses full batch).
-        seed: RNG seed for minibatch sampling (reproducible).
-
-    Returns:
-        ``(theta_hat, info)`` where ``theta_hat`` is the fitted ``[6]`` tensor and ``info``
-        carries the loss curve and a convergence flag.
+    The channel-weighted objective (inverse per-target variance) keeps the
+    wide ``x`` channel from swamping the sub-pixel velocity channels.  Only
+    genuine free constants are fit; the jump impulse / terminal velocity are
+    structural.  Returns ``(theta_hat, info)`` where ``theta_hat`` is the
+    length-7 estimate and ``info`` carries the final loss and per-variable
+    training MSE.
     """
-    s0, acts, tgts = windows
+    s0, acts, tgts, gr = windows
     if s0.shape[0] == 0:
-        raise ValueError("identify_params received an empty window set")
-    dev = device or torch.device("cpu")
-    s0, acts, tgts = s0.to(dev), acts.to(dev), tgts.to(dev)
-    set_global_seed(seed)
+        raise ValueError("identify_params needs at least one transition window")
+    weight = _channel_weights(tgts)
 
-    raw = torch.nn.Parameter(_inv_softplus(init.clone().to(dev).float()))
+    if isinstance(init, EngineParams):
+        init_vec = theta_tensor(init)
+    else:
+        init_vec = init
+    raw = _softplus_inv(init_vec).detach().clone().requires_grad_(True)
     opt = torch.optim.Adam([raw], lr=lr)
-    n = int(s0.shape[0])
-    use_batch = batch if 0 < batch < n else n
-    # Channel-variance weighting (generalised least squares): the raw x-error dwarfs the
-    # vx-error by an order of magnitude, which would let the fit match positions while
-    # ignoring the velocity ceiling. Dividing each channel by its own variance gives the
-    # six constants comparable influence, so max_vx (a velocity-only effect) is identifiable.
-    chan_var = tgts.reshape(-1, 4).var(dim=0, unbiased=False).clamp(min=1e-6)
-    weight = 1.0 / chan_var
-    history: List[float] = []
+    loss_curve = []
     for _ in range(steps):
-        idx = torch.randint(0, n, (use_batch,))
-        p = _softplus(raw)
-        pred = simulate_rollout(s0[idx], acts[idx], p)
-        loss = (((pred - tgts[idx]) ** 2) * weight).mean()
         opt.zero_grad()
+        idx = torch.randint(
+            0,
+            s0.shape[0],
+            (min(batch, s0.shape[0]),),
+            generator=torch.Generator().manual_seed(seed),
+        )
+        params = torch.nn.functional.softplus(raw)
+        pred = simulate_rollout(s0[idx], acts[idx], params, gr[idx])
+        loss = (((pred - tgts[idx]) ** 2) * weight).mean()
         loss.backward()
         opt.step()
-        history.append(float(loss.item()))
-
-    theta_hat = _softplus(raw).detach().cpu()
-    info: Dict[str, object] = {
-        "final_loss": history[-1] if history else float("nan"),
-        "loss_curve": history,
-        "steps": steps,
-    }
+        loss_curve.append(float(loss))
+    theta_hat = torch.nn.functional.softplus(raw).detach()
+    with torch.no_grad():
+        train_mse = _per_variable_mse(windows, theta_hat)
+    info = {"final_loss": loss_curve[-1], "loss_curve": loss_curve, "train_mse": train_mse}
     return theta_hat, info
 
 
+def _per_variable_mse(windows: Tuple[Tensor, Tensor, Tensor, Tensor], params: Tensor) -> dict:
+    s0, acts, tgts, gr = windows
+    weight = _channel_weights(tgts)
+    pred = simulate_rollout(s0, acts, params, gr)
+    sq = ((pred - tgts) ** 2).reshape(-1, 4).mean(dim=0)
+    weighted = float((((pred - tgts) ** 2).reshape(-1, 4) * weight).mean())
+    return {
+        "x": float(sq[0]),
+        "y": float(sq[1]),
+        "vx": float(sq[2]),
+        "vy": float(sq[3]),
+        "weighted_total": weighted,
+    }
+
+
+def per_variable_mse(
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor], params: EngineParams | Tensor
+) -> dict:
+    """Per-variable multi-step prediction MSE of a parameter set on windows."""
+    p = theta_tensor(params) if isinstance(params, EngineParams) else params
+    return _per_variable_mse(windows, p)
+
+
+def rollout_mse(
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor], params: EngineParams | Tensor
+) -> float:
+    """Scalar weighted multi-step prediction MSE of a parameter set."""
+    return float(per_variable_mse(windows, params)["weighted_total"])
+
+
 def bootstrap_ci(
-    windows,
-    init: torch.Tensor,
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor],
+    init: EngineParams | Tensor,
     n_boot: int = 16,
     steps: int = 200,
     lr: float = 0.05,
-    seed: int = 42,
-) -> Dict[str, Dict[str, float]]:
-    """Percentile bootstrap confidence intervals for each identified constant.
+    seed: int = 0,
+) -> dict:
+    """Frequentist non-parametric bootstrap over transition windows.
 
-    Resamples the window set with replacement and refits; the spread of the point
-    estimates is the standard bootstrap uncertainty and doubles as an empirical
-    *identifiability* diagnostic (a near-flat bootstrap for a constant means the data
-    cannot determine it, cf. the negative jump-impulse result in README 10.37.1).
+    Refits :func:`identify_params` on resampled windows to obtain a percentile
+    interval per constant.  A parameter whose interval collapses onto a single
+    point (near-zero width) is *locally degenerate* in this data -- the
+    identifiability limit is a property of the excitation, not the estimator.
+    Complements the Laplace posterior (which is parametric/Gaussian).
     """
-    s0, acts, tgts = windows
-    n = int(s0.shape[0])
-    gen = np.random.default_rng(seed)
-    estimates: List[np.ndarray] = []
+    s0, acts, tgts, gr = windows
+    n = s0.shape[0]
+    boots = []
+    rng = np.random.default_rng(seed)
     for b in range(n_boot):
-        idx_np = gen.integers(0, n, size=n)
-        idx = torch.as_tensor(idx_np, dtype=torch.long)
-        boot = (s0[idx], acts[idx], tgts[idx])
-        theta_b, _ = identify_params(boot, init, steps=steps, lr=lr, seed=seed + b)
-        estimates.append(theta_b.numpy())
-    arr = np.stack(estimates, axis=0)  # [n_boot, 6]
-    out: Dict[str, Dict[str, float]] = {}
-    for k, name in enumerate(PARAM_NAMES):
-        col = arr[:, k]
-        out[name] = {
-            "mean": float(col.mean()),
-            "std": float(col.std(ddof=1)) if n_boot > 1 else 0.0,
-            "ci_low": float(np.percentile(col, 2.5)),
-            "ci_high": float(np.percentile(col, 97.5)),
+        idx = rng.integers(0, n, size=n)
+        it = torch.as_tensor(idx)
+        sub: Tuple[Tensor, Tensor, Tensor, Tensor] = (s0[it], acts[it], tgts[it], gr[it])
+        theta, _ = identify_params(sub, init, steps=steps, lr=lr, seed=b)
+        boots.append(theta.numpy())
+    boots_arr = np.stack(boots)  # [n_boot, 7]
+    return {
+        name: {
+            "mean": float(boots_arr[:, j].mean()),
+            "std": float(boots_arr[:, j].std(ddof=1)) if n_boot > 1 else 0.0,
+            "ci_low": float(np.percentile(boots_arr[:, j], 2.5)),
+            "ci_high": float(np.percentile(boots_arr[:, j], 97.5)),
         }
-    return out
+        for j, name in enumerate(PARAM_NAMES)
+    }
+
+
+def posterior_laplace(
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor],
+    theta_hat: Tensor,
+    n_windows: int = 160,
+    ridge: float = 1e-8,
+) -> dict:
+    """Laplace / Gauss-Newton posterior around the point estimate.
+
+    With residual vector ``r(theta)`` (channel-weighted one-step errors over a
+    subsample of windows), the Fisher information is ``H = J^T J`` with
+    ``J = d r / d theta``; the posterior covariance is ``sigma^2 (H + ridge I)^-1``
+    where ``sigma^2`` is the residual variance.  The eigen-spectrum of ``H`` is
+    the identifiability statement: near-zero eigenvalues are the directions of
+    parameter space the transition data cannot resolve (the structural limit
+    that also caps any learned model -- the jump impulse never enters
+    ``theta``, and a floor-capped constant is locally unidentifiable without
+    warm-starting inside the active branch).  Returns per-parameter standard
+    errors, the correlation matrix, the eigenvalues / condition number, and
+    relative-error flags.
+    """
+    s0, acts, tgts, gr = windows
+    m = min(n_windows, s0.shape[0])
+    sub = (s0[:m], acts[:m], tgts[:m], gr[:m])
+    weight = _channel_weights(tgts[:m])
+    sw = weight.sqrt()
+
+    def residual(theta: Tensor) -> Tensor:
+        pred = simulate_rollout(sub[0], sub[1], theta, sub[3])
+        return ((pred - sub[2]) * sw).reshape(-1)
+
+    theta = theta_hat.detach().clone().requires_grad_(True)
+    jac = torch.autograd.functional.jacobian(residual, theta)  # [N, 7]
+    r = residual(theta).detach()
+    sigma2 = float((r**2).mean())
+    h = jac.T @ jac
+    cov = sigma2 * torch.linalg.inv(h + ridge * torch.eye(len(theta_hat), dtype=theta_hat.dtype))
+    std = torch.sqrt(cov.clamp(min=0).diagonal())
+    d = torch.diag(1.0 / std.clamp(min=1e-12))
+    corr = d @ cov @ d
+    eigvals = torch.linalg.eigvalsh(h).flip(0)  # descending
+    cond = float(eigvals[0] / eigvals[-1].clamp(min=1e-30))
+    rel_err = (std / theta_hat.abs().clamp(min=1e-6)).tolist()
+    return {
+        "theta_hat": theta_hat.detach().tolist(),
+        "std_errors": std.detach().tolist(),
+        "correlation": corr.detach().tolist(),
+        "eigenvalues": eigvals.detach().tolist(),
+        "condition_number": cond,
+        "noise_variance": sigma2,
+        "relative_std": rel_err,
+        "identified": [bool(e < 0.05) for e in rel_err],
+    }
+
+
+def sample_posterior(theta_hat: Tensor, post: dict, n_samples: int, seed: int) -> Tensor:
+    """Draw samples from the Laplace posterior (independent Gaussian per
+    coordinate, at the reported standard errors), clamped to the positive
+    orthant.  Used for a posterior-predictive credible interval."""
+    gen = np.random.default_rng(seed)
+    std = np.asarray(post["std_errors"], dtype=np.float64)
+    mean = np.asarray(post["theta_hat"], dtype=np.float64)
+    draws = gen.normal(mean, np.maximum(std, 1e-6), size=(n_samples, len(mean)))
+    return torch.tensor(np.clip(draws, 1e-3, None), dtype=torch.float32)
 
 
 def mpc_random_shooting(
-    s0: torch.Tensor,
-    model_params: torch.Tensor,
+    s0: Tensor,
+    model_params: Tensor,
     task_reward,
     horizon: int = 12,
     n_samples: int = 128,
     n_iters: int = 3,
     elite: int = 16,
-    seed: int = 42,
-) -> Tuple[np.ndarray, float]:
-    """Finite-horizon random-shooting MPC over the analytic model (Section 10.6 planner).
+    seed: int = 0,
+) -> Tuple[Tensor, float]:
+    """Sample-MPC (random shooting + CEM) using the identified model.
 
-    The planner optimises an action sequence *using ``model_params``* and returns only the
-    first action; the caller rolls the true world forward with it. The gap between the
-    planner's predicted return and the return actually attained is the signature of a
-    misspecified model, which is exactly what identification is meant to remove.
-
-    Args:
-        s0: ``[4]`` current ``[x, y, vx, vy]``.
-        model_params: ``[6]`` engine constants the planner believes.
-        task_reward: callable(``[horizon, 4]`` predicted rollout) -> scalar (torch).
-        horizon/n_samples/n_iters/elite: CEM/random-shooting hyper-parameters.
-
-    Returns:
-        ``(action_sequence [horizon, 6] buttons, predicted_return)``. The caller rolls the
-        returned plan forward under the *true* world to measure the achieved outcome; the
-        gap between ``predicted_return`` and the achieved outcome is the model's optimism,
-        which a misspecified (unidentified) model inflates.
+    Actions are one-hot 6-channel frames.  ``task_reward(s_t, a_t)`` returns a
+    per-step scalar reward for the predicted state / action.  Returns the best
+    action sequence ``[horizon, 6]`` and its predicted return.  The optimiser
+    is seed-fixed so the MPC is deterministic; the *model* is the only thing
+    that varies across the comparison conditions, so a quality difference
+    isolates the transfer penalty of a mis-identified parameter set.
     """
-    g = np.random.default_rng(seed)
-    best_seq: Optional[np.ndarray] = None
-    best_score = -np.inf
-    mean = np.full((horizon, 6), 0.5, dtype=np.float64)
-    std = np.full((horizon, 6), 0.4, dtype=np.float64)
+    gen = torch.Generator().manual_seed(seed)
+    mean = torch.full((horizon, 6), 0.5)
+    std = torch.full((horizon, 6), 0.4)
+    best_return = -float("inf")
+    best_seq = torch.zeros((horizon, 6))
     for _ in range(n_iters):
-        # Bernoulli button samples per (candidate, step, button), then CEM-update.
-        draws = np.clip(g.normal(mean, std, size=(n_samples, horizon, 6)), 0.0, 1.0)
-        scores = np.empty(n_samples, dtype=np.float64)
-        s0_exp = s0.unsqueeze(0).expand(n_samples, 4).contiguous()
-        acts = torch.tensor(draws, dtype=torch.float32)
-        pred = simulate_rollout(s0_exp, acts, model_params)
-        for i in range(n_samples):
-            scores[i] = float(task_reward(pred[i]))
-        order = np.argsort(-scores)
-        elite_idx = order[:elite]
-        mean = draws[elite_idx].mean(axis=0)
-        std = draws[elite_idx].std(axis=0) + 1e-3
-        top = int(elite_idx[0])
-        if scores[top] > best_score:
-            best_score = scores[top]
-            best_seq = draws[top].copy()
-    assert best_seq is not None
-    return best_seq, float(best_score)
-
-
-__all__: List[str] = [
-    "EngineParams",
-    "PARAM_NAMES",
-    "MIN_VY",
-    "TERMINAL_VY",
-    "theta_tensor",
-    "simulate_step",
-    "simulate_rollout",
-    "make_windows",
-    "generate_synthetic_windows",
-    "rollout_mse",
-    "per_variable_mse",
-    "identify_params",
-    "bootstrap_ci",
-    "mpc_random_shooting",
-]
+        noise = torch.randn((n_samples, horizon, 6), generator=gen)
+        logits = mean.unsqueeze(0) + std.unsqueeze(0) * noise
+        # RIGHT always active (forward progress); among the {LEFT, JUMP, RUN}
+        # competition channels take the argmax; run is a modifier of RIGHT.
+        logits[:, :, _A_RIGHT] += 3.0
+        comp = [_A_LEFT, _A_JUMP, _A_RUN]
+        arg = logits[:, :, comp].argmax(dim=-1)  # [n_samples, horizon] index into comp
+        samples = torch.zeros((n_samples, horizon, 6))
+        samples[:, :, _A_RIGHT] = 1.0
+        picked = torch.tensor(comp)[arg]  # [n_samples, horizon] actual channel ids
+        samples.scatter_(2, picked.unsqueeze(-1), 1.0)
+        returns = []
+        for k in range(n_samples):
+            state = s0.clone()
+            total = 0.0
+            for t in range(horizon):
+                state = simulate_step(state, samples[k, t], model_params)
+                total += float(task_reward(state, samples[k, t]))
+            returns.append(total)
+        returns_t = torch.tensor(returns)
+        order = returns_t.argsort(descending=True)
+        elites = samples[order[:elite]]
+        mean = elites.mean(dim=0)
+        std = elites.std(dim=0).clamp(min=0.1)
+        if float(returns_t.max()) > best_return:
+            best_return = float(returns_t.max())
+            best_seq = samples[int(order[0])]
+    return best_seq, best_return

@@ -3,9 +3,11 @@ test_inverse_identification.py
 Emulator-free unit tests for the physics parameter-identification inverse problem
 (README Section 10.40). Runs on CPU without the Libretro core or a ROM, so it is a CI gate.
 
-Checks the analytic forward simulator's invariants, that identification recovers a hidden
-world from its own transitions, that windowing never crosses an episode boundary, and that
-the MPC helper and bootstrap return well-formed objects.
+Checks the extended analytic simulator's invariants (traction/friction, asymmetric gravity,
+speed ceiling, ground-contact reset), that identification recovers a hidden world from its own
+transitions, that the Laplace posterior is well-formed and flags every excited constant as
+identified, that windowing never crosses an episode boundary, and that the MPC helper and the
+bootstrap return well-formed objects.
 """
 
 from __future__ import annotations
@@ -22,6 +24,8 @@ from src.inverse.parameter_identification import (
     make_windows,
     mpc_random_shooting,
     per_variable_mse,
+    posterior_laplace,
+    sample_posterior,
     simulate_rollout,
     simulate_step,
     theta_tensor,
@@ -32,14 +36,28 @@ def _params() -> torch.Tensor:
     return theta_tensor(EngineParams())
 
 
+def test_engine_params_has_seven_constants() -> None:
+    assert len(PARAM_NAMES) == 7
+    assert _params().shape == (7,)
+
+
 def test_simulate_step_integrates_position_by_scale() -> None:
-    p = theta_tensor(EngineParams(subpixels_per_pixel=16.0))
+    # decel=0 so a coasting frame keeps vx (isolates the position integration).
+    p = theta_tensor(EngineParams(subpixels_per_pixel=16.0, decel=0.0))
     state = torch.tensor([[0.0, 336.0, 32.0, 0.0]])  # vx=32 subpx/f
     action = torch.zeros(1, 6)  # no buttons: coast
     nxt = simulate_step(state, action, p)
-    # x advances by vx / scale = 32 / 16 = 2 px; vx unchanged when idle.
+    # x advances by vx_next / scale = 32 / 16 = 2 px; vx unchanged with zero friction.
     assert abs(float(nxt[0, 0]) - 2.0) < 1e-5
     assert abs(float(nxt[0, 2]) - 32.0) < 1e-5
+
+
+def test_simulate_step_coast_applies_friction() -> None:
+    p = theta_tensor(EngineParams(max_vx=72.0, decel=0.5, subpixels_per_pixel=16.0))
+    state = torch.tensor([[0.0, 336.0, 32.0, 0.0]])
+    nxt = simulate_step(state, torch.zeros(1, 6), p)  # no direction held
+    # Coulomb friction pulls vx toward zero by decel each coasting frame.
+    assert abs(float(nxt[0, 2]) - 31.5) < 1e-5
 
 
 def test_simulate_step_gravity_branches() -> None:
@@ -52,6 +70,19 @@ def test_simulate_step_gravity_branches() -> None:
     # held ascent adds +3 (lighter), released ascent adds +6.
     assert abs(v_held - (-17.0)) < 1e-5
     assert abs(v_free - (-14.0)) < 1e-5
+
+
+def test_simulate_step_ground_reset_snaps_downward_velocity() -> None:
+    p = theta_tensor(EngineParams(held_gravity=3.0, fall_gravity=6.0))
+    state = torch.tensor([[0.0, 336.0, 0.0, 4.0]])  # moving down onto the floor
+    grounded = torch.tensor([1.0])
+    nxt = simulate_step(state, torch.zeros(1, 6), p, grounded)
+    # Contact snaps the downward (+vy) velocity to zero so Mario cannot sink.
+    assert float(nxt[0, 3]) == 0.0
+    # An upward velocity is allowed to persist even while flagged grounded.
+    state_up = torch.tensor([[0.0, 336.0, 0.0, -12.0]])
+    nxt_up = simulate_step(state_up, torch.zeros(1, 6), p, grounded)
+    assert float(nxt_up[0, 3]) < 0.0
 
 
 def test_simulate_step_clamps_velocity_ceiling() -> None:
@@ -68,11 +99,12 @@ def test_make_windows_respects_episode_boundaries() -> None:
     next_states = np.zeros((12, 8), dtype=np.float32)
     actions = np.zeros((12, 6), dtype=np.float32)
     episodes = np.array([0] * 6 + [1] * 6, dtype=np.int32)
-    s0, acts, tgts = make_windows(states, actions, next_states, episodes, rollout_len=4)
+    s0, acts, tgts, gr = make_windows(states, actions, next_states, episodes, rollout_len=4)
     # Each 6-frame episode yields (6 - 4) = 2 windows -> 4 total; never 2*? across the seam.
     assert s0.shape[0] == 4
     assert acts.shape == (4, 4, 6)
     assert tgts.shape == (4, 4, 4)
+    assert gr.shape == (4, 4)
 
 
 def test_identify_recovers_hidden_world() -> None:
@@ -84,6 +116,7 @@ def test_identify_recovers_hidden_world() -> None:
             subpixels_per_pixel=18.0,
             held_gravity=2.70,
             fall_gravity=6.40,
+            decel=0.90,  # distinct from the 0.5 prior so friction is actually exercised
         )
     )
     prior = theta_tensor(EngineParams())
@@ -99,8 +132,9 @@ def test_identify_rejects_empty_windows() -> None:
     s0 = torch.zeros(0, 4)
     acts = torch.zeros(0, 6, 6)
     tgts = torch.zeros(0, 6, 4)
+    gr = torch.zeros(0, 6)
     try:
-        identify_params((s0, acts, tgts), _params(), steps=2)
+        identify_params((s0, acts, tgts, gr), _params(), steps=2)
         raise AssertionError("expected ValueError for empty windows")
     except ValueError:
         pass
@@ -109,16 +143,33 @@ def test_identify_rejects_empty_windows() -> None:
 def test_per_variable_mse_keys() -> None:
     windows = generate_synthetic_windows(_params(), 100, 8, seed=3)
     pvar = per_variable_mse(windows, _params())
-    assert set(pvar) == {"x", "y", "vx", "vy"}
+    assert set(pvar) == {"x", "y", "vx", "vy", "weighted_total"}
     # Evaluating the simulator against its own data must be (near) exact.
     assert pvar["vx"] < 1e-3
+
+
+def test_posterior_laplace_is_well_formed_and_identifies() -> None:
+    hidden = theta_tensor(EngineParams())
+    windows = generate_synthetic_windows(hidden, 600, 12, seed=4)
+    theta_hat, _ = identify_params(windows, hidden, steps=200, lr=0.05, seed=4)
+    post = posterior_laplace(windows, theta_hat)
+    assert len(post["std_errors"]) == len(PARAM_NAMES)
+    assert len(post["correlation"]) == len(PARAM_NAMES)
+    assert all(len(row) == len(PARAM_NAMES) for row in post["correlation"])
+    assert post["condition_number"] >= 1.0
+    # Data generated by the same model that fits it excites every constant.
+    assert all(post["identified"])
+    samples = sample_posterior(theta_hat, post, 8, seed=1)
+    assert samples.shape == (8, len(PARAM_NAMES))
+    assert bool((samples > 0).all())
 
 
 def test_mpc_returns_full_action_sequence() -> None:
     s0 = torch.tensor([0.0, 336.0, 0.0, 0.0])
 
-    def reward(rollout: torch.Tensor) -> torch.Tensor:
-        return rollout[-1, 0]  # maximise progress
+    def reward(state: torch.Tensor, action: torch.Tensor) -> float:
+        del action
+        return float(state[0])  # maximise progress in x
 
     plan, predicted = mpc_random_shooting(s0, _params(), reward, horizon=10, n_samples=64, seed=1)
     assert plan.shape == (10, 6)

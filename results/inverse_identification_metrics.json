@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-23T00:44:58+00:00",
-    "git_sha": "e0098578f66b0dcbf24d3552dad1ae1865abc227",
+    "generated_utc": "2026-09-23T01:45:30+00:00",
+    "git_sha": "9b78f36571dd1e391e262e2097c08ad76aa46b97",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -18,9 +18,10 @@
       "run_accel": 1.8,
       "subpixels_per_pixel": 20.0,
       "held_gravity": 2.4,
-      "fall_gravity": 5.2
+      "fall_gravity": 5.2,
+      "decel": 0.6
     },
-    "n_bootstrap": 12
+    "n_bootstrap": 16
   },
   "study": "inverse_physics_identification",
   "hidden_world": {
@@ -29,7 +30,8 @@
     "run_accel": 1.7999999523162842,
     "subpixels_per_pixel": 20.0,
     "held_gravity": 2.4000000953674316,
-    "fall_gravity": 5.199999809265137
+    "fall_gravity": 5.199999809265137,
+    "decel": 0.6000000238418579
   },
   "prior": {
     "max_vx": 72.0,
@@ -37,7 +39,8 @@
     "run_accel": 1.5,
     "subpixels_per_pixel": 16.0,
     "held_gravity": 3.0,
-    "fall_gravity": 6.0
+    "fall_gravity": 6.0,
+    "decel": 0.5
   },
   "identifiability_note": "A constant is identifiable only if the observed data excite the term that uses it; the bootstrap width is the empirical identifiability measure (a very wide interval means the windows did not exercise that invariant).",
   "E1_synthetic_recovery": {
@@ -45,80 +48,132 @@
       "max_vx": {
         "true": 48.0,
         "prior": 72.0,
-        "identified": 47.999996185302734,
-        "abs_error": 3.814697265625e-06,
-        "rel_error_pct": 7.947285970052084e-06,
+        "identified": 48.00027847290039,
+        "abs_error": 0.000278472900390625,
+        "rel_error_pct": 0.0005801518758138021,
         "prior_rel_error_pct": 50.0,
-        "boot_ci_low": 47.99999341964722,
-        "boot_ci_high": 48.000002765655516,
-        "boot_std": 3.2531847864447627e-06,
-        "truth_in_ci": true
+        "boot_ci_low": 48.000173568725586,
+        "boot_ci_high": 48.00037336349487,
+        "boot_std": 5.618536670226604e-05,
+        "truth_in_ci": false
       },
       "walk_accel": {
         "true": 1.0,
         "prior": 0.75,
-        "identified": 1.0000001192092896,
-        "abs_error": 1.1920928955078125e-07,
-        "rel_error_pct": 1.1920928955078125e-05,
+        "identified": 1.000035285949707,
+        "abs_error": 3.528594970703125e-05,
+        "rel_error_pct": 0.003528594970703125,
         "prior_rel_error_pct": 25.0,
-        "boot_ci_low": 0.9999998807907104,
-        "boot_ci_high": 1.0,
-        "boot_std": 8.61881730429559e-08,
-        "truth_in_ci": true
+        "boot_ci_low": 1.0000156462192535,
+        "boot_ci_high": 1.0000387728214264,
+        "boot_std": 7.221433406812139e-06,
+        "truth_in_ci": false
       },
       "run_accel": {
         "true": 1.7999999523162842,
         "prior": 1.5,
-        "identified": 1.7999999523162842,
-        "abs_error": 0.0,
-        "rel_error_pct": 0.0,
+        "identified": 1.800034999847412,
+        "abs_error": 3.504753112792969e-05,
+        "rel_error_pct": 0.001947085114242901,
         "prior_rel_error_pct": 16.666664459087173,
-        "boot_ci_low": 1.7999999523162842,
-        "boot_ci_high": 1.7999999523162842,
-        "boot_std": 2.490200756710692e-07,
-        "truth_in_ci": true
+        "boot_ci_low": 1.800021916627884,
+        "boot_ci_high": 1.8000460863113403,
+        "boot_std": 7.076655492710415e-06,
+        "truth_in_ci": false
       },
       "subpixels_per_pixel": {
         "true": 20.0,
         "prior": 16.0,
-        "identified": 19.999982833862305,
-        "abs_error": 1.71661376953125e-05,
-        "rel_error_pct": 8.58306884765625e-05,
+        "identified": 20.120935440063477,
+        "abs_error": 0.12093544006347656,
+        "rel_error_pct": 0.6046772003173828,
         "prior_rel_error_pct": 20.0,
-        "boot_ci_low": 19.999948501586914,
-        "boot_ci_high": 19.99995231628418,
-        "boot_std": 2.1517794266401324e-06,
+        "boot_ci_low": 20.07875680923462,
+        "boot_ci_high": 20.156915426254272,
+        "boot_std": 0.02155875973403454,
         "truth_in_ci": false
       },
       "held_gravity": {
         "true": 2.4000000953674316,
         "prior": 3.0,
-        "identified": 2.400003671646118,
-        "abs_error": 3.5762786865234375e-06,
-        "rel_error_pct": 0.00014901160601728732,
+        "identified": 2.3392555713653564,
+        "abs_error": 0.060744524002075195,
+        "rel_error_pct": 2.5310217328460323,
         "prior_rel_error_pct": 24.999995032946465,
-        "boot_ci_low": 2.400008571147919,
-        "boot_ci_high": 2.40001123547554,
-        "boot_std": 9.455114877710002e-07,
+        "boot_ci_low": 2.299284517765045,
+        "boot_ci_high": 2.3633806109428406,
+        "boot_std": 0.01866799034178257,
         "truth_in_ci": false
       },
       "fall_gravity": {
         "true": 5.199999809265137,
         "prior": 6.0,
-        "identified": 5.19999885559082,
-        "abs_error": 9.5367431640625e-07,
-        "rel_error_pct": 1.8339891372823397e-05,
+        "identified": 5.189896583557129,
+        "abs_error": 0.010103225708007812,
+        "rel_error_pct": 0.19429280920369107,
         "prior_rel_error_pct": 15.384619616898009,
-        "boot_ci_low": 5.1999945640563965,
-        "boot_ci_high": 5.199995040893555,
-        "boot_std": 4.0664809830559534e-07,
+        "boot_ci_low": 5.183486461639404,
+        "boot_ci_high": 5.198357045650482,
+        "boot_std": 0.004239337053149939,
+        "truth_in_ci": false
+      },
+      "decel": {
+        "true": 0.6000000238418579,
+        "prior": 0.5,
+        "identified": 0.5999767780303955,
+        "abs_error": 2.3245811462402344e-05,
+        "rel_error_pct": 0.0038743017564494705,
+        "prior_rel_error_pct": 16.66666997803569,
+        "boot_ci_low": 0.5999643877148628,
+        "boot_ci_high": 0.5999834313988686,
+        "boot_std": 5.367507583287079e-06,
         "truth_in_ci": false
       }
     },
-    "final_loss": 3.6594232960714124e-13,
-    "steps": 2000,
-    "bootstrap_n": 12,
-    "max_rel_error_pct": 0.00014901160601728732
+    "final_loss": 0.0002805456460919231,
+    "bootstrap_n": 16,
+    "max_rel_error_pct": 2.5310217328460323,
+    "posterior_laplace": {
+      "std_errors": {
+        "max_vx": 0.03471704572439194,
+        "walk_accel": 0.00959800649434328,
+        "run_accel": 0.00585606275126338,
+        "subpixels_per_pixel": 0.005937677808105946,
+        "held_gravity": 0.003515670308843255,
+        "fall_gravity": 0.0013311486691236496,
+        "decel": 0.005705623421818018
+      },
+      "relative_std": {
+        "max_vx": 0.0007232676143757999,
+        "walk_accel": 0.00959766749292612,
+        "run_accel": 0.0032533048652112484,
+        "subpixels_per_pixel": 0.0002950994821731001,
+        "held_gravity": 0.001502901315689087,
+        "fall_gravity": 0.00025648847804404795,
+        "decel": 0.009509740397334099
+      },
+      "identified": {
+        "max_vx": true,
+        "walk_accel": true,
+        "run_accel": true,
+        "subpixels_per_pixel": true,
+        "held_gravity": true,
+        "fall_gravity": true,
+        "decel": true
+      },
+      "condition_number": 1576.8612060546875,
+      "fisher_eigenvalues": [
+        210.94114685058594,
+        22.648479461669922,
+        13.813179969787598,
+        4.367493629455566,
+        3.1033761501312256,
+        1.6295932531356812,
+        0.1337728053331375
+      ],
+      "noise_variance": 0.00016134577163029462,
+      "note": "Gauss-Newton/Laplace posterior covariance sigma^2 (J^T J)^-1 at the point estimate; the Fisher eigen-spectrum is the identifiability statement - a near-zero eigenvalue is a parameter direction the transitions cannot resolve, the same structural limit that caps any learned model."
+    }
   },
   "E2_real_data_identification": {
     "params": {
@@ -130,67 +185,75 @@
       },
       "walk_accel": {
         "wram_reference": 0.75,
-        "identified": 0.007561735343188047,
-        "abs_error": 0.742438264656812,
-        "rel_error_pct": 98.99176862090826
+        "identified": 0.09076450765132904,
+        "abs_error": 0.659235492348671,
+        "rel_error_pct": 87.89806564648946
       },
       "run_accel": {
         "wram_reference": 1.5,
-        "identified": 0.49180248379707336,
-        "abs_error": 1.0081975162029266,
-        "rel_error_pct": 67.21316774686177
+        "identified": 0.5018061995506287,
+        "abs_error": 0.9981938004493713,
+        "rel_error_pct": 66.54625336329143
       },
       "subpixels_per_pixel": {
         "wram_reference": 16.0,
-        "identified": 21.776641845703125,
-        "abs_error": 5.776641845703125,
-        "rel_error_pct": 36.10401153564453
+        "identified": 21.40958023071289,
+        "abs_error": 5.409580230712891,
+        "rel_error_pct": 33.809876441955566
       },
       "held_gravity": {
         "wram_reference": 3.0,
-        "identified": 2.075350046157837,
-        "abs_error": 0.9246499538421631,
-        "rel_error_pct": 30.8216651280721
+        "identified": 1.325053095817566,
+        "abs_error": 1.674946904182434,
+        "rel_error_pct": 55.8315634727478
       },
       "fall_gravity": {
         "wram_reference": 6.0,
-        "identified": 0.07561223208904266,
-        "abs_error": 5.924387767910957,
-        "rel_error_pct": 98.73979613184929
+        "identified": 2.0437333583831787,
+        "abs_error": 3.9562666416168213,
+        "rel_error_pct": 65.93777736028035
+      },
+      "decel": {
+        "wram_reference": 0.5,
+        "identified": 0.4434594511985779,
+        "abs_error": 0.05654054880142212,
+        "rel_error_pct": 11.308109760284424
       }
     },
     "train_windows": 6249,
     "test_windows": 1332,
-    "final_loss": 0.08088728040456772,
+    "final_loss": 0.07842257618904114,
     "test_rollout_mse_px2": {
       "prior": {
-        "x": 5.912817478179932,
-        "y": 89.10030364990234,
-        "vx": 41.286598205566406,
-        "vy": 1235.9156494140625
+        "x": 5.7419514656066895,
+        "y": 64.8803939819336,
+        "vx": 40.81182098388672,
+        "vy": 831.3878784179688,
+        "weighted_total": 0.16292493045330048
       },
       "identified": {
-        "x": 4.826805114746094,
-        "y": 35.9512939453125,
-        "vx": 30.505393981933594,
-        "vy": 457.1596374511719
+        "x": 4.581472396850586,
+        "y": 59.18463134765625,
+        "vx": 29.97139549255371,
+        "vy": 713.5880126953125,
+        "weighted_total": 0.13680237531661987
       }
     },
-    "model_scope_note": "The analytic model excludes contact velocity-resets and drag, so real-data recovery is bounded by model misspecification; the honest result is how much identification still lowers open-loop rollout error versus the prior."
+    "model_scope_note": "The analytic model now includes coast friction and a ground-contact velocity reset but still excludes collision response and wall checks, so real-data recovery is bounded by residual model misspecification; the honest result is how much identification lowers open-loop rollout error versus the prior."
   },
   "E3_zero_shot_transfer": {
     "metric": "held-out control battery: signed (predicted - achieved) final x per world model; |mean| is planner optimism, mean-abs is the transfer error",
     "models": {
       "prior_smw_constants": {
-        "mean_optimism_px": 1.6269505023956299,
-        "mae_transfer_px": 8.743758201599121,
-        "relative_mae_pct": 2.8431646823883057,
+        "mean_optimism_px": 0.26116812229156494,
+        "mae_transfer_px": 11.174840927124023,
+        "relative_mae_pct": 3.2408087253570557,
         "n_controls": 400
       },
       "identified": {
-        "mean_optimism_px": 1.2977272490388714e-05,
-        "mae_transfer_px": 2.753481203399133e-05,
-        "relative_mae_pct": 8.953359611041378e-06,
+        "mean_optimism_px": -0.011332673951983452,
+        "mae_transfer_px": 0.27822035551071167,
+        "relative_mae_pct": 0.08068650960922241,
         "n_controls": 400
       },
       "oracle_true_world": {
@@ -199,6 +262,12 @@
         "relative_mae_pct": 0.0,
         "n_controls": 400
       }
+    },
+    "posterior_predictive_identified": {
+      "mean_mae_px": 0.2766758846119046,
+      "ci_low_px": 0.22554492205381393,
+      "ci_high_px": 0.3260628320276737,
+      "n_samples": 16
     }
   }
 }

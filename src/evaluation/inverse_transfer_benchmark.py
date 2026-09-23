@@ -13,18 +13,20 @@ Three experiments are run from one hidden target world ``theta_ood``:
 
 * **E1 - synthetic recovery.** Transitions are generated from a simulator parameterised by
   ``theta_ood``; identification is started from the *wrong* prior (the hard-coded SMW
-  constants) and must recover ``theta_ood``. A bootstrap over refits gives per-constant
-  confidence intervals and doubles as an identifiability diagnostic.
+  constants) and must recover ``theta_ood``. A bootstrap over refits and a Laplace /
+  Gauss-Newton posterior both give per-constant uncertainty, and the posterior's Fisher
+  eigen-spectrum is a formal identifiability diagnostic.
 * **E2 - real-data identification.** The same estimator is run on genuine WRAM gameplay
-  transitions (``smw_gameplay_dataset.npz``). Because the analytic model omits contact
-  velocity-resets and drag, the recovered constants are only approximate; the experiment
-  reports how far they sit from the reverse-engineered values and how much identification
-  lowers open-loop rollout error relative to the prior anyway - an honest measure of the
-  model-misspecification ceiling.
-* **E3 - zero-shot control transfer.** An open-loop random-shooting MPC plans a
-  reach-a-target manoeuvre under three world models: the misspecified prior, the identified
-  ``theta_hat``, and the oracle ``theta_ood``. Executing each plan on the *true* world shows
-  the prior systematically misses the target while the identified model matches the oracle.
+  transitions (``smw_gameplay_dataset.npz``). The analytic model now includes coast friction
+  and a ground-contact velocity reset, but still omits collision response and wall checks, so
+  the recovered constants remain approximate; the experiment reports how far they sit from
+  the reverse-engineered values and how much identification lowers open-loop rollout error
+  relative to the prior anyway - an honest measure of the model-misspecification ceiling.
+* **E3 - zero-shot control transfer.** Predictive-control optimism is measured on a held-out
+  control battery under three world models: the misspecified prior, the identified
+  ``theta_hat``, and the oracle ``theta_ood``. The prior is systematically optimistic about
+  held-out outcomes while the identified model matches the oracle; a posterior-predictive
+  sample gives a credible interval on the identified model's transfer error.
 
 Everything is emulator-free and deterministic under ``set_global_seed``. Writes
 ``results/inverse_identification_metrics.json`` (with ``_meta``) and
@@ -54,6 +56,8 @@ from src.inverse.parameter_identification import (  # noqa: E402
     identify_params,
     make_windows,
     per_variable_mse,
+    posterior_laplace,
+    sample_posterior,
     simulate_rollout,
     theta_tensor,
 )
@@ -74,6 +78,7 @@ OOD_WORLD = EngineParams(
     subpixels_per_pixel=20.0,
     held_gravity=2.40,
     fall_gravity=5.20,
+    decel=0.60,
 )
 PRIOR = EngineParams()  # the hard-coded SMW constants a naive zero-shot agent would carry in.
 
@@ -96,11 +101,11 @@ def run_e3_transfer(
     optimistic. Because the plans are fixed and held out, this metric is about the physics, not
     about search quality.
     """
-    s0, acts, targets = generate_synthetic_windows(true_params, n_windows, horizon, seed=seed)
+    s0, acts, targets, gr = generate_synthetic_windows(true_params, n_windows, horizon, seed=seed)
     achieved = targets[:, -1, 0]  # true final x of each held-out control
     out: Dict[str, Dict[str, float]] = {}
     for name, mp in models.items():
-        pred = simulate_rollout(s0, acts, mp)[:, -1, 0]
+        pred = simulate_rollout(s0, acts, mp, gr)[:, -1, 0]
         gap = pred - achieved
         out[name] = {
             "mean_optimism_px": float(gap.mean()),
@@ -111,7 +116,42 @@ def run_e3_transfer(
     return out
 
 
-def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, object]:
+def posterior_predictive_transfer(
+    synth,
+    theta_hat: torch.Tensor,
+    post: Dict[str, object],
+    ood_t: torch.Tensor,
+    n_samples: int = 16,
+    seed: int = 101,
+    n_windows: int = 200,
+    horizon: int = 24,
+) -> Dict[str, float]:
+    """Credible interval on the identified model's transfer error.
+
+    Draws ``n_samples`` parameter vectors from the Laplace posterior and, for
+    each, evaluates the held-out control-battery transfer error against the
+    true world.  The spread is the posterior uncertainty propagated to the
+    control-relevant quantity - the Bayesian-inverse analogue of the Deep
+    Ensemble's predictive spread (README Section 10.9), here over *physics*
+    constants rather than network weights.
+    """
+    samples = sample_posterior(theta_hat, post, n_samples, seed=7)
+    s0, acts, targets, gr = generate_synthetic_windows(ood_t, n_windows, horizon, seed=seed)
+    achieved = targets[:, -1, 0]
+    maes = []
+    for theta in samples:
+        pred = simulate_rollout(s0, acts, theta, gr)[:, -1, 0]
+        maes.append(float((pred - achieved).abs().mean()))
+    arr = np.asarray(maes)
+    return {
+        "mean_mae_px": float(arr.mean()),
+        "ci_low_px": float(np.percentile(arr, 2.5)),
+        "ci_high_px": float(np.percentile(arr, 97.5)),
+        "n_samples": int(n_samples),
+    }
+
+
+def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 16) -> Dict[str, object]:
     """Run all three experiments and write the aggregate artifact + figure."""
     set_global_seed(42)
     torch.manual_seed(42)
@@ -129,7 +169,8 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
     init_vec = prior_t.clone()
     init_vec[0] = float(synth[0][:, 2].abs().max()) * 1.05
     theta_hat, info1 = identify_params(synth, init_vec, steps=2000, lr=0.05, seed=11)
-    boot = bootstrap_ci(synth, init_vec, n_boot=n_boot, steps=600, lr=0.05, seed=11)
+    boot = bootstrap_ci(synth, init_vec, n_boot=n_boot, steps=1500, lr=0.05, seed=11)
+    post = posterior_laplace(synth, theta_hat)
 
     recovery: Dict[str, Dict[str, float]] = {}
     for k, name in enumerate(PARAM_NAMES):
@@ -204,6 +245,7 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
         {"prior_smw_constants": prior_t, "identified": theta_hat, "oracle_true_world": ood_t},
         ood_t,
     )
+    pp = posterior_predictive_transfer(synth, theta_hat, post, ood_t)
     for name, row in transfer.items():
         logger.info(
             "  %-20s transfer MAE = %.2f px (%.1f%% rel), optimism = %+.2f px",
@@ -212,6 +254,12 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
             row["relative_mae_pct"],
             row["mean_optimism_px"],
         )
+    logger.info(
+        "  posterior-predictive identified MAE = %.2f px [%.2f, %.2f] (95%% credible)",
+        pp["mean_mae_px"],
+        pp["ci_low_px"],
+        pp["ci_high_px"],
+    )
 
     payload: Dict[str, object] = {
         "study": "inverse_physics_identification",
@@ -225,9 +273,22 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
         "E1_synthetic_recovery": {
             "params": recovery,
             "final_loss": info1["final_loss"],
-            "steps": info1["steps"],
             "bootstrap_n": n_boot,
             "max_rel_error_pct": max(recovery[n]["rel_error_pct"] for n in PARAM_NAMES),
+            "posterior_laplace": {
+                "std_errors": dict(zip(PARAM_NAMES, post["std_errors"])),
+                "relative_std": dict(zip(PARAM_NAMES, post["relative_std"])),
+                "identified": dict(zip(PARAM_NAMES, post["identified"])),
+                "condition_number": post["condition_number"],
+                "fisher_eigenvalues": post["eigenvalues"],
+                "noise_variance": post["noise_variance"],
+                "note": (
+                    "Gauss-Newton/Laplace posterior covariance sigma^2 (J^T J)^-1 at the point"
+                    " estimate; the Fisher eigen-spectrum is the identifiability statement - a"
+                    " near-zero eigenvalue is a parameter direction the transitions cannot"
+                    " resolve, the same structural limit that caps any learned model."
+                ),
+            },
         },
         "E2_real_data_identification": {
             "params": real_recovery,
@@ -236,9 +297,10 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
             "final_loss": info2["final_loss"],
             "test_rollout_mse_px2": rollout_drift_px,
             "model_scope_note": (
-                "The analytic model excludes contact velocity-resets and drag, so real-data"
-                " recovery is bounded by model misspecification; the honest result is how"
-                " much identification still lowers open-loop rollout error versus the prior."
+                "The analytic model now includes coast friction and a ground-contact velocity"
+                " reset but still excludes collision response and wall checks, so real-data"
+                " recovery is bounded by residual model misspecification; the honest result is"
+                " how much identification lowers open-loop rollout error versus the prior."
             ),
         },
         "E3_zero_shot_transfer": {
@@ -247,6 +309,7 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 12) -> Dict[str, 
                 " model; |mean| is planner optimism, mean-abs is the transfer error"
             ),
             "models": transfer,
+            "posterior_predictive_identified": pp,
         },
     }
 
@@ -310,7 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=None)
     parser.add_argument("--output-dir", dest="output_dir", default=RESULTS_DIR)
-    parser.add_argument("--bootstrap-n", dest="bootstrap_n", type=int, default=12)
+    parser.add_argument("--bootstrap-n", dest="bootstrap_n", type=int, default=16)
     return parser
 
 
