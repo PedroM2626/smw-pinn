@@ -145,15 +145,19 @@ def _softplus_inv(y: Tensor) -> Tensor:
 
 
 def simulate_step(
-    states: Tensor, actions: Tensor, params: Tensor, grounded: Optional[Tensor] = None
+    states: Tensor, actions: Tensor, params: Tensor, contact: Optional[Tensor] = None
 ) -> Tensor:
     """One differentiable frame of the extended kinematic map.
 
     ``states`` is ``[..., 4]`` as ``[x, y, vx, vy]`` (position in pixel units,
     velocity in sub-pixels per frame); ``actions`` is ``[..., 6]`` one-hot
-    button channels.  ``params`` is the length-7 theta tensor.  ``grounded``
-    is an optional ``[...]`` 0/1 flag; when set, downward velocity is snapped
-    to zero so the state cannot penetrate the floor.  Returns ``[..., 4]``.
+    button channels.  ``params`` is the length-7 theta tensor.  ``contact`` is
+    an optional ``[..., 4]`` 0/1 flag vector ordered ``[ground, ceiling,
+    left_wall, right_wall]`` (engine collision byte ``$7E:0077`` bits, matching
+    state channels 4-7); when present it applies the rigid-body *collision
+    response* -- ground kills downward velocity, ceiling kills upward velocity,
+    a right wall kills rightward velocity and a left wall kills leftward
+    velocity -- so the state cannot penetrate terrain.  Returns ``[..., 4]``.
     """
     x = states[..., 0]
     y = states[..., 1]
@@ -183,12 +187,22 @@ def simulate_step(
     vx_next = torch.where(moving, vx_drive, vx_fric)
 
     # Vertical: held-jump ascent integrates g_hold, everything else g_fall;
-    # clamped to the engine's structural bounds; ground contact snaps the
-    # downward (+vy) component to zero.
+    # clamped to the engine's structural bounds.
     g = torch.where((jump > 0.5) & (vy < 0), g_hold, g_fall)
     vy_next = torch.clamp(vy + g, MIN_VY, TERMINAL_VY)
-    if grounded is not None:
-        vy_next = torch.where(grounded > 0.5, torch.clamp(vy_next, max=0.0), vy_next)
+
+    # Rigid collision response on the four terrain-contact channels: each one
+    # zeroes only the velocity component that would push into the surface, so
+    # Mario can still slide along / away from it (the classic SMW wall-slide).
+    if contact is not None:
+        c_ground = contact[..., 0]
+        c_ceiling = contact[..., 1]
+        c_left = contact[..., 2]
+        c_right = contact[..., 3]
+        vy_next = torch.where(c_ground > 0.5, torch.clamp(vy_next, max=0.0), vy_next)
+        vy_next = torch.where(c_ceiling > 0.5, torch.clamp(vy_next, min=0.0), vy_next)
+        vx_next = torch.where(c_right > 0.5, torch.clamp(vx_next, max=0.0), vx_next)
+        vx_next = torch.where(c_left > 0.5, torch.clamp(vx_next, min=0.0), vx_next)
 
     x_next = x + vx_next / scale
     y_next = y + vy_next / scale
@@ -196,19 +210,20 @@ def simulate_step(
 
 
 def simulate_rollout(
-    s0: Tensor, action_seq: Tensor, params: Tensor, grounded: Optional[Tensor] = None
+    s0: Tensor, action_seq: Tensor, params: Tensor, contact: Optional[Tensor] = None
 ) -> Tensor:
     """Unroll :func:`simulate_step``L`` times.
 
-    ``s0`` is ``[B, 4]``, ``action_seq`` is ``[B, L, 6]``, ``grounded`` is an
-    optional ``[B, L]`` contact-flag sequence.  Returns predicted next-states
-    ``[B, L, 4]`` (state at ``t = 1 .. L``), all differentiable in ``params``.
+    ``s0`` is ``[B, 4]``, ``action_seq`` is ``[B, L, 6]``, ``contact`` is an
+    optional ``[B, L, 4]`` terrain-contact sequence.  Returns predicted
+    next-states ``[B, L, 4]`` (state at ``t = 1 .. L``), all differentiable in
+    ``params``.
     """
     state = s0
     outs = []
     for t in range(action_seq.shape[1]):
-        gz = None if grounded is None else grounded[:, t]
-        state = simulate_step(state, action_seq[:, t, :], params, gz)
+        ct = None if contact is None else contact[:, t, :]
+        state = simulate_step(state, action_seq[:, t, :], params, ct)
         outs.append(state)
     return torch.stack(outs, dim=1)
 
@@ -218,19 +233,19 @@ def make_windows(
 ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     """Cut per-episode rollouts from a dataset for multi-step fitting.
 
-    ``states`` / ``next_states`` are ``[N, >=4]`` (only the first four
-    channels are used; channel 4 of ``next_states`` is the ground-contact
-    flag).  ``episodes`` tags each transition.  Only windows fully inside one
-    episode are kept, so no rollout crosses a reset boundary.  Returns
-    ``(s0, actions, targets, grounded)`` with shapes
-    ``[W, 4] / [W, L, 6] / [W, L, 4] / [W, L]``.
+    ``states`` / ``next_states`` are ``[N, >=8]`` (the first four channels are
+    the fitted state; channels 4-7 of ``next_states`` are the terrain-contact
+    flags ``[ground, ceiling, left_wall, right_wall]``).  ``episodes`` tags each
+    transition.  Only windows fully inside one episode are kept, so no rollout
+    crosses a reset boundary.  Returns ``(s0, actions, targets, contact)`` with
+    shapes ``[W, 4] / [W, L, 6] / [W, L, 4] / [W, L, 4]``.
     """
     states = torch.as_tensor(states)
     actions = torch.as_tensor(actions)
     next_states = torch.as_tensor(next_states)
     episodes = torch.as_tensor(episodes)
     n = states.shape[0]
-    s0s, acts, tgts, grs = [], [], [], []
+    s0s, acts, tgts, cts = [], [], [], []
     i = 0
     while i < n - rollout_len:
         if episodes[i] != episodes[i + rollout_len]:
@@ -239,7 +254,7 @@ def make_windows(
         s0s.append(states[i, :4])
         acts.append(actions[i : i + rollout_len])
         tgts.append(next_states[i : i + rollout_len, :4])
-        grs.append((next_states[i : i + rollout_len, 4] > 0.5).float())
+        cts.append((next_states[i : i + rollout_len, 4:8] > 0.5).float())
         i += 1
     if not s0s:
         empty = torch.zeros((0, 4))
@@ -247,9 +262,9 @@ def make_windows(
             empty,
             torch.zeros((0, rollout_len, 6)),
             torch.zeros((0, rollout_len, 4)),
-            torch.zeros((0, rollout_len)),
+            torch.zeros((0, rollout_len, 4)),
         )
-    return torch.stack(s0s), torch.stack(acts), torch.stack(tgts), torch.stack(grs)
+    return torch.stack(s0s), torch.stack(acts), torch.stack(tgts), torch.stack(cts)
 
 
 def generate_synthetic_windows(
@@ -264,8 +279,8 @@ def generate_synthetic_windows(
     ``floor_y``.  Deliberately spans the regimes that make each constant
     observable: sustained sprints that saturate ``max_vx``, release frames
     that coast under ``decel``, and held-jump ascents versus falls (the
-    gravity asymmetry).  The ground-contact flag is generated coherently with
-    the floor, so the contact reset is exercised too.
+    gravity asymmetry).  The ground-contact channel is generated coherently
+    with the floor, so the collision response is exercised too.
     """
     g = torch.Generator().manual_seed(seed)
     p = theta_tensor(true_params)
@@ -302,21 +317,25 @@ def generate_synthetic_windows(
     jump_len = max(1, rollout_len // 3)
     actions[:, :jump_len, _A_JUMP] = (jump[:, :jump_len] < 0.5).float()
 
-    # Roll with a coherent floor-contact flag.
+    # Roll with a coherent floor-contact flag (only the ground channel is
+    # active in this synthetic world; walls / ceiling are exercised on real
+    # data via make_windows).
     state = s0.clone()
-    outs, gr_flags = [], []
+    outs, contact_flags = [], []
+    zeros = torch.zeros(n_windows)
     for t in range(rollout_len):
-        gz = (state[:, 1] >= floor_y - 1e-3).float()
-        state = simulate_step(state, actions[:, t, :], p, gz)
+        cg = (state[:, 1] >= floor_y - 1e-3).float()
+        ct = torch.stack([cg, zeros, zeros, zeros], dim=-1)  # [B, 4]
+        state = simulate_step(state, actions[:, t, :], p, ct)
         # Keep Mario from sinking: clamp y back to the floor when grounded.
         state = torch.stack(
             [state[:, 0], torch.clamp(state[:, 1], max=floor_y), state[:, 2], state[:, 3]], dim=-1
         )
         outs.append(state)
-        gr_flags.append(gz)
+        contact_flags.append(ct)
     targets = torch.stack(outs, dim=1)
-    grounded = torch.stack(gr_flags, dim=1)
-    return s0, actions, targets, grounded
+    contact = torch.stack(contact_flags, dim=1)  # [B, L, 4]
+    return s0, actions, targets, contact
 
 
 def _channel_weights(targets: Tensor) -> Tensor:
@@ -489,6 +508,7 @@ def posterior_laplace(
     return {
         "theta_hat": theta_hat.detach().tolist(),
         "std_errors": std.detach().tolist(),
+        "cov": cov.detach().tolist(),
         "correlation": corr.detach().tolist(),
         "eigenvalues": eigvals.detach().tolist(),
         "condition_number": cond,
@@ -499,14 +519,122 @@ def posterior_laplace(
 
 
 def sample_posterior(theta_hat: Tensor, post: dict, n_samples: int, seed: int) -> Tensor:
-    """Draw samples from the Laplace posterior (independent Gaussian per
-    coordinate, at the reported standard errors), clamped to the positive
-    orthant.  Used for a posterior-predictive credible interval."""
-    gen = np.random.default_rng(seed)
-    std = np.asarray(post["std_errors"], dtype=np.float64)
+    """Draw samples from the full-covariance Laplace posterior.
+
+    Uses a Cholesky factor of the reported covariance ``post["cov"]`` (falling
+    back to the diagonal of squared standard errors) so parameter *correlations*
+    -- the near-degenerate directions the Fisher spectrum flags -- are honoured,
+    rather than assuming coordinate independence.  Samples are clamped to the
+    positive orthant.  Used for a posterior-predictive credible interval.
+    """
     mean = np.asarray(post["theta_hat"], dtype=np.float64)
-    draws = gen.normal(mean, np.maximum(std, 1e-6), size=(n_samples, len(mean)))
+    d = len(mean)
+    if post.get("cov") is not None:
+        cov = np.asarray(post["cov"], dtype=np.float64) + 1e-12 * np.eye(d)
+    else:
+        cov = np.diag(np.maximum(np.asarray(post["std_errors"], dtype=np.float64), 1e-6) ** 2)
+    try:
+        chol = np.linalg.cholesky(cov)
+    except np.linalg.LinAlgError:
+        chol = np.diag(np.sqrt(np.clip(np.diag(cov), 0.0, None)) + 1e-9)
+    gen = np.random.default_rng(seed)
+    z = gen.standard_normal((n_samples, d))
+    draws = mean[None, :] + z @ chol.T
     return torch.tensor(np.clip(draws, 1e-3, None), dtype=torch.float32)
+
+
+def _weighted_residual(windows: Tuple[Tensor, Tensor, Tensor, Tensor], theta: Tensor) -> Tensor:
+    """Channel-weighted multi-step residual tensor for a parameter vector."""
+    s0, acts, tgts, gr = windows
+    sw = _channel_weights(tgts).sqrt()
+    pred = simulate_rollout(s0, acts, theta, gr)
+    return (pred - tgts) * sw
+
+
+def log_posterior(
+    theta: Tensor,
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor],
+    noise_variance: float,
+    n_windows: int = 160,
+) -> float:
+    """Unnormalised log-posterior: Gaussian likelihood on the weighted
+    residuals with variance ``noise_variance`` and a hard positivity prior on
+    every constant (the softplus parameter domain).  ``-inf`` outside the
+    domain so a sampler never leaves the physically valid region."""
+    if not bool((theta > 0).all()):
+        return -float("inf")
+    s0 = windows[0]
+    m = min(n_windows, s0.shape[0])
+    sub = (windows[0][:m], windows[1][:m], windows[2][:m], windows[3][:m])
+    resid = _weighted_residual(sub, theta)
+    ssr = float((resid**2).sum())
+    return -0.5 * ssr / max(noise_variance, 1e-12)
+
+
+def mcmc_random_walk(
+    windows: Tuple[Tensor, Tensor, Tensor, Tensor],
+    theta_start: Tensor,
+    noise_variance: float,
+    n_samples: int = 3000,
+    burn: int = 1000,
+    thin: int = 5,
+    step: Optional[np.ndarray] = None,
+    step_frac: float = 0.05,
+    seed: int = 0,
+) -> dict:
+    """Random-walk Metropolis posterior sampler on the *true* likelihood.
+
+    Unlike the Laplace approximation this makes no Gaussian/curvature assumption
+    -- it targets the exact posterior implied by the simulator residuals -- so
+    its agreement with (or departure from) the Laplace summary is a direct probe
+    of posterior non-Gaussianity, the regime where the linearised uncertainty is
+    wrong.  The Gaussian proposal scale defaults to ``step_frac`` of each
+    coordinate but should be matched to the posterior width (pass the Laplace
+    standard errors as ``step``) -- on near-noiseless data the posterior is a
+    sharp ridge and an un-scaled step gives zero acceptance.  The chain runs
+    fully deterministically from a fixed seed.  Returns the retained samples,
+    the per-constant mean / standard error / 95% credible interval and the
+    acceptance rate (a good RW-Metropolis tune lies roughly in [0.15, 0.5]).
+    """
+    gen = np.random.default_rng(seed)
+    theta = theta_start.detach().double().clone()
+    step_vec = (
+        np.asarray(step, dtype=np.float64)
+        if step is not None
+        else step_frac * np.abs(theta.numpy()).clip(min=1e-3)
+    )
+    lp = log_posterior(theta, windows, noise_variance)
+    keep = n_samples
+    chain = np.zeros((keep, len(theta)))
+    accepted = 0
+    idx = 0
+    post_burn_iters = 0
+    for it in range(burn + n_samples * thin):
+        prop = theta + torch.tensor(gen.normal(0.0, step_vec), dtype=torch.float64)
+        lpp = log_posterior(prop, windows, noise_variance)
+        if it >= burn:
+            post_burn_iters += 1
+        if float(np.log(gen.random() + 1e-300)) < (lpp - lp):
+            theta, lp = prop, lpp
+            if it >= burn:
+                accepted += 1
+        if it >= burn and (it - burn) % thin == 0 and idx < keep:
+            chain[idx] = theta.numpy()
+            idx += 1
+    chain = chain[:idx]
+    mean = chain.mean(axis=0)
+    std = chain.std(axis=0, ddof=1) if idx > 1 else np.zeros(len(mean))
+    lo = np.percentile(chain, 2.5, axis=0)
+    hi = np.percentile(chain, 97.5, axis=0)
+    return {
+        "samples": torch.tensor(chain, dtype=torch.float32),
+        "mean": mean.tolist(),
+        "std_errors": std.tolist(),
+        "ci_low": lo.tolist(),
+        "ci_high": hi.tolist(),
+        "acceptance_rate": accepted / max(post_burn_iters, 1),
+        "n_samples": int(idx),
+    }
 
 
 def mpc_random_shooting(

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-23T01:45:30+00:00",
-    "git_sha": "9b78f36571dd1e391e262e2097c08ad76aa46b97",
+    "generated_utc": "2026-09-23T02:21:36+00:00",
+    "git_sha": "570a8d11a070b4cb5638d577a53cad749b967037",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -185,61 +185,61 @@
       },
       "walk_accel": {
         "wram_reference": 0.75,
-        "identified": 0.09076450765132904,
-        "abs_error": 0.659235492348671,
-        "rel_error_pct": 87.89806564648946
+        "identified": 0.11896418780088425,
+        "abs_error": 0.6310358121991158,
+        "rel_error_pct": 84.13810829321544
       },
       "run_accel": {
         "wram_reference": 1.5,
-        "identified": 0.5018061995506287,
-        "abs_error": 0.9981938004493713,
-        "rel_error_pct": 66.54625336329143
+        "identified": 0.5149073004722595,
+        "abs_error": 0.9850926995277405,
+        "rel_error_pct": 65.6728466351827
       },
       "subpixels_per_pixel": {
         "wram_reference": 16.0,
-        "identified": 21.40958023071289,
-        "abs_error": 5.409580230712891,
-        "rel_error_pct": 33.809876441955566
+        "identified": 21.409671783447266,
+        "abs_error": 5.409671783447266,
+        "rel_error_pct": 33.81044864654541
       },
       "held_gravity": {
         "wram_reference": 3.0,
-        "identified": 1.325053095817566,
-        "abs_error": 1.674946904182434,
-        "rel_error_pct": 55.8315634727478
+        "identified": 1.3250514268875122,
+        "abs_error": 1.6749485731124878,
+        "rel_error_pct": 55.831619103749595
       },
       "fall_gravity": {
         "wram_reference": 6.0,
-        "identified": 2.0437333583831787,
-        "abs_error": 3.9562666416168213,
-        "rel_error_pct": 65.93777736028035
+        "identified": 2.043733596801758,
+        "abs_error": 3.956266403198242,
+        "rel_error_pct": 65.93777338663737
       },
       "decel": {
         "wram_reference": 0.5,
-        "identified": 0.4434594511985779,
-        "abs_error": 0.05654054880142212,
-        "rel_error_pct": 11.308109760284424
+        "identified": 0.44465047121047974,
+        "abs_error": 0.055349528789520264,
+        "rel_error_pct": 11.069905757904053
       }
     },
     "train_windows": 6249,
     "test_windows": 1332,
-    "final_loss": 0.07842257618904114,
+    "final_loss": 0.07786925137042999,
     "test_rollout_mse_px2": {
       "prior": {
-        "x": 5.7419514656066895,
+        "x": 5.274644374847412,
         "y": 64.8803939819336,
-        "vx": 40.81182098388672,
+        "vx": 34.233642578125,
         "vy": 831.3878784179688,
-        "weighted_total": 0.16292493045330048
+        "weighted_total": 0.15785087645053864
       },
       "identified": {
-        "x": 4.581472396850586,
-        "y": 59.18463134765625,
-        "vx": 29.97139549255371,
+        "x": 4.4401984214782715,
+        "y": 59.18472671508789,
+        "vx": 25.51576042175293,
         "vy": 713.5880126953125,
-        "weighted_total": 0.13680237531661987
+        "weighted_total": 0.13336679339408875
       }
     },
-    "model_scope_note": "The analytic model now includes coast friction and a ground-contact velocity reset but still excludes collision response and wall checks, so real-data recovery is bounded by residual model misspecification; the honest result is how much identification lowers open-loop rollout error versus the prior."
+    "model_scope_note": "The analytic model now carries the full rigid collision response on all four terrain-contact channels (ground, ceiling, left/right walls) plus coast friction, but still has no tilemap so it cannot represent ramp slope geometry or sprite collisions; real-data recovery is bounded by that residual misspecification, and the honest result is how much identification lowers open-loop rollout error versus the prior."
   },
   "E3_zero_shot_transfer": {
     "metric": "held-out control battery: signed (predicted - achieved) final x per world model; |mean| is planner optimism, mean-abs is the transfer error",
@@ -264,10 +264,58 @@
       }
     },
     "posterior_predictive_identified": {
-      "mean_mae_px": 0.2766758846119046,
-      "ci_low_px": 0.22554492205381393,
-      "ci_high_px": 0.3260628320276737,
-      "n_samples": 16
+      "mean_mae_px": 0.2813415287528187,
+      "ci_low_px": 0.24269076399505138,
+      "ci_high_px": 0.3175122827291489,
+      "n_samples": 64
+    },
+    "posterior_predictive_identified_mcmc": {
+      "mean_mae_px": 0.1920444025658071,
+      "ci_low_px": 0.1520474676042795,
+      "ci_high_px": 0.2329753618687391,
+      "n_samples": 800
+    },
+    "mcmc_random_walk": {
+      "mean": {
+        "max_vx": 48.004414797537805,
+        "walk_accel": 0.997548882216054,
+        "run_accel": 1.8013436521722155,
+        "subpixels_per_pixel": 20.083702289436975,
+        "held_gravity": 2.3433358008926195,
+        "fall_gravity": 5.195444566629808,
+        "decel": 0.599839332558666
+      },
+      "std_errors": {
+        "max_vx": 0.03368222402145525,
+        "walk_accel": 0.009110261888878852,
+        "run_accel": 0.005895095165552011,
+        "subpixels_per_pixel": 0.005967457441259146,
+        "held_gravity": 0.0035669360665764246,
+        "fall_gravity": 0.0014141773780308674,
+        "decel": 0.005530015232050852
+      },
+      "ci_low": {
+        "max_vx": 47.93842844314401,
+        "walk_accel": 0.9789466412618104,
+        "run_accel": 1.7892471042847276,
+        "subpixels_per_pixel": 20.070174358782378,
+        "held_gravity": 2.336497603755398,
+        "fall_gravity": 5.192848773566147,
+        "decel": 0.5881118201746212
+      },
+      "ci_high": {
+        "max_vx": 48.07145358418871,
+        "walk_accel": 1.0147512441057178,
+        "run_accel": 1.8131212719096117,
+        "subpixels_per_pixel": 20.09382451000522,
+        "held_gravity": 2.350100937146475,
+        "fall_gravity": 5.198486321063907,
+        "decel": 0.6109293119549604
+      },
+      "acceptance_rate": 0.14125,
+      "n_samples": 800,
+      "laplace_mcmc_max_mean_gap_pct": 0.24863199889659882,
+      "note": "Random-walk Metropolis on the exact simulator likelihood; agreement with the Laplace/Gauss-Newton summary (small max mean gap, similar credible interval) shows the posterior is locally Gaussian where the data are strongly excited - MCMC would diverge from Laplace only in a curved or multi-modal posterior (e.g. real-data misspecification)."
     }
   }
 }

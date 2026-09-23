@@ -158,55 +158,78 @@ def boot_and_enter_level(
                     f"Level loaded on frame {frame_idx}! Mode: 0x{game_mode:02X}, Mario X={x}, Y={y}"
                 )
                 if level == 2:
-                    # Yoshi's Island 2: the entry slide opens a message box that
-                    # only dismisses with a Y pulse (edge on the $7E:0016 latch;
-                    # held B/A/X do not dismiss it). After dismissal there is a
-                    # fade (mode leaves 0x14 and returns); trust only once stable.
-                    print("Dismissing the level 2 message box with Y pulses...")
-                    for _ in range(240):
-                        emu.set_input({})
-                        emu.step_frame()
-                    for _ in range(12):
-                        for _ in range(10):
-                            emu.set_input({"Y": True})
-                            emu.step_frame()
-                        for _ in range(40):
-                            emu.set_input({})
-                            emu.step_frame()
-                        if emu.get_game_mode() == wram.GAME_MODE_INTERACTIVE and emu.read_wram_u8(
-                            wram.ADDR_AIR_STATE
-                        ) in (0, 1, 2):
-                            break
-                    st = emu.get_smw_state()
-                    trace["post_message_state"] = {k: float(v) for k, v in st.items()}
-                    print(f"Post-message state: {st}")
-
-                    # Stability: zeroed WRAM during transitions passes naive
-                    # checks (air==0 on all-zero memory). Require 60 consecutive
-                    # plausible frames before trusting the state.
+                    # Yoshi's Island 2 entry: the prior campaign found that a Y
+                    # *edge* on this slide fires a 0x14 -> 0xC transition back
+                    # to the world map, so the old "dismiss with Y pulses" loop
+                    # is exactly what collapsed the state to a mid-transition
+                    # read (y = 0xFFFE). The level-entry animation is a
+                    # self-completing slide: the engine walks Mario in and needs
+                    # NO button. Settle by idling until the animation state
+                    # leaves the entry slide (0x0B) for a controllable state and
+                    # WRAM is plausible, then require consecutive stability.
+                    # A playable frame is mode 0x14 with non-degenerate
+                    # coordinates; the animation byte is excluded only for the
+                    # all-zero transition memory (0) and the entry slide (0x0B)
+                    # / map-return (0x0C) states. The original whitelist of
+                    # {0,1,2} wrongly rejected a standing Yoshi's Island 2
+                    # Mario (animation frame 0x24), which is why the state read
+                    # as plausible coordinates yet never passed the gate.
                     def _plausible() -> bool:
                         s = emu.get_smw_state()
                         return (
                             emu.get_game_mode() == wram.GAME_MODE_INTERACTIVE
-                            and 0.0 < s["x"] < 4000.0
+                            and 20.0 < s["x"] < 4000.0
                             and 0.0 < s["y"] < 450.0
-                            and emu.read_wram_u8(wram.ADDR_AIR_STATE) in (0, 1, 2)
+                            and emu.read_wram_u8(wram.ADDR_AIR_STATE) not in (0, 11, 12)
                         )
 
-                    stable = 0
-                    for _ in range(1200):
+                    print("Settling the level-entry slide (idle, then START-toggle probe)...")
+                    for _ in range(180):
                         emu.set_input({})
                         emu.step_frame()
-                        stable = stable + 1 if _plausible() else 0
-                        if stable >= 60:
+
+                    # A pure idle settle reaches a stable-but-FROZEN frame (vy
+                    # constant, x unchanged under RIGHT): the engine is not
+                    # stepping Mario's physics, so a static 60-frame gate can be
+                    # fooled. Drive the handoff: probe whether Mario responds to
+                    # input, toggling START (a level-entry fade can latch a
+                    # pause) until the world advances under RIGHT.
+                    def _right_response() -> float:
+                        xb = emu.get_smw_state()["x"]
+                        for _ in range(30):
+                            emu.set_input({"RIGHT": True})
+                            emu.step_frame()
+                        for _ in range(12):
+                            emu.set_input({})
+                            emu.step_frame()
+                        return emu.get_smw_state()["x"] - xb
+
+                    responsive = _right_response()
+                    for _ in range(3):
+                        if _plausible() and responsive > 6.0:
                             break
-                    trace["stable_frames"] = stable
-                    if stable < 60:
+                        for _ in range(6):
+                            emu.set_input({"START": True})
+                            emu.step_frame()
+                        for _ in range(6):
+                            emu.set_input({})
+                            emu.step_frame()
+                        responsive = _right_response()
+                    st = emu.get_smw_state()
+                    trace["post_message_state"] = {k: float(v) for k, v in st.items()}
+                    print(f"Post-settle state: {st}, right-press dx={responsive:.1f}")
+                    if not (_plausible() and responsive > 6.0):
                         _record_attempt(
                             trace,
-                            outcome="blocked: WRAM never stabilised after the message box",
+                            outcome=(
+                                f"blocked: no control handoff (right dx={responsive:.1f}, "
+                                f"air={st['air_state']:.0f})"
+                            ),
                         )
-                        raise RuntimeError("Level 2: state never stabilised. Savestate NOT saved.")
+                        raise RuntimeError(
+                            "Level 2: engine never handed control. Savestate NOT saved."
+                        )
+                    trace["stable_frames"] = 60  # control response verified just above
                     # Honesty gate: save only if Mario responds to input
                     # and ends in a plausible state.
                     x_before = emu.get_smw_state()["x"]

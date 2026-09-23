@@ -31,12 +31,15 @@ numbers* - those are reported here and in README Section 12, never applied silen
 - **Physics parameter identification - the inverse problem** (README Section 10.40): the
   repository's first inverse-problem contribution, recovering the seven engine constants
   $\theta$ (traction budget, subpixel ratio, asymmetric gravity pair, plus coast friction and a
-  ground-contact velocity reset) from observed trajectories via a differentiable analytic
-  integrator and generalised (channel-variance-weighted) least squares. A Laplace /
-  Gauss-Newton posterior (`posterior_laplace`) turns the point estimate into per-constant
-  standard errors, a correlation matrix and a Fisher-eigenvalue identifiability diagnostic,
-  propagated through a held-out control battery to a credible interval on the transfer result;
-  a bootstrap cross-check and a data-range warm-start handle the inactive-constraint
+  full four-channel rigid collision response on the terrain-contact byte) from observed
+  trajectories via a differentiable analytic integrator and generalised
+  (channel-variance-weighted) least squares. A Laplace / Gauss-Newton posterior
+  (`posterior_laplace`) turns the point estimate into per-constant standard errors, a correlation
+  matrix and a Fisher-eigenvalue identifiability diagnostic; full-covariance (Cholesky) sampling
+  and a random-walk Metropolis sampler on the exact likelihood (`mcmc_random_walk`) propagate that
+  uncertainty to a credible interval on the transfer result (MCMC agrees with Laplace to 0.25% on
+  the strongly-excited synthetic case); a bootstrap cross-check and a data-range warm-start
+  handle the inactive-constraint
   (velocity-ceiling) gradient pathology. New modules `src/inverse/parameter_identification.py`,
   `src/evaluation/inverse_transfer_benchmark.py` (emulator-free, CI-safe), wired as the
   `inverse-transfer` CLI/Make target; results in `results/inverse_identification_metrics.json`
@@ -72,6 +75,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- `scripts/navigate_to_level.py` (Yoshi's Island 2 capture, README Section 10.36.2): the
+  level-2 branch pulsed Y to "dismiss a message box" even though a Y edge on that slide is
+  documented to fire a $0x14\to0x_{C}$ map return - the pulses themselves collapsed the read
+  into a wrapped $Y=65502$ transition state. Removed the Y-exit (idle-settle instead, which
+  reaches a plausible deep in-level state) and replaced the static 60-consecutive-plausible-frames
+  gate, which a frozen-but-stable frame can fool, with a control-response probe (Mario must move
+  under held RIGHT, with START toggles for a possible entry pause). The capture is still honestly
+  blocked - the player's physics do not step at this node (byte-identical $X,v_y$ under sustained
+  input) - and `results/yi2_capture_attempt.json` is refreshed to record `no control handoff`, so
+  the harness now fails loudly rather than saving a frozen frame.
 - The zero-shot cross-level control artifact (`cross_level_control_metrics.json`) was a
   single irreproducible draw: the CEM planners and the random baseline drew from an
   unseeded RNG. It is now reseeded per seed and aggregated over 5 seeds; the deterministic

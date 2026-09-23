@@ -21,7 +21,9 @@ from src.inverse.parameter_identification import (
     bootstrap_ci,
     generate_synthetic_windows,
     identify_params,
+    log_posterior,
     make_windows,
+    mcmc_random_walk,
     mpc_random_shooting,
     per_variable_mse,
     posterior_laplace,
@@ -75,14 +77,29 @@ def test_simulate_step_gravity_branches() -> None:
 def test_simulate_step_ground_reset_snaps_downward_velocity() -> None:
     p = theta_tensor(EngineParams(held_gravity=3.0, fall_gravity=6.0))
     state = torch.tensor([[0.0, 336.0, 0.0, 4.0]])  # moving down onto the floor
-    grounded = torch.tensor([1.0])
-    nxt = simulate_step(state, torch.zeros(1, 6), p, grounded)
-    # Contact snaps the downward (+vy) velocity to zero so Mario cannot sink.
+    contact = torch.tensor([[1.0, 0.0, 0.0, 0.0]])  # [ground, ceiling, left, right]
+    nxt = simulate_step(state, torch.zeros(1, 6), p, contact)
+    # Ground contact snaps the downward (+vy) velocity to zero so Mario cannot sink.
     assert float(nxt[0, 3]) == 0.0
     # An upward velocity is allowed to persist even while flagged grounded.
     state_up = torch.tensor([[0.0, 336.0, 0.0, -12.0]])
-    nxt_up = simulate_step(state_up, torch.zeros(1, 6), p, grounded)
+    nxt_up = simulate_step(state_up, torch.zeros(1, 6), p, contact)
     assert float(nxt_up[0, 3]) < 0.0
+
+
+def test_simulate_step_wall_and_ceiling_collision() -> None:
+    p = theta_tensor(EngineParams(held_gravity=3.0, fall_gravity=6.0))
+    # Right wall zeroes rightward velocity but would keep leftward motion.
+    state = torch.tensor([[0.0, 336.0, 20.0, 0.0]])
+    right = torch.tensor([[0.0, 0.0, 0, 0, 0, 1.0]])  # RIGHT held
+    wall = torch.tensor([[0.0, 0.0, 0.0, 1.0]])  # right_wall channel set
+    nxt = simulate_step(state, right, p, wall)
+    assert float(nxt[0, 2]) == 0.0  # stopped flush against the wall
+    # A ceiling zeroes upward velocity so a jump cannot rise through it.
+    up = torch.tensor([[0.0, 336.0, 0.0, -30.0]])
+    ceil = torch.tensor([[0.0, 1.0, 0.0, 0.0]])
+    nxt_c = simulate_step(up, torch.zeros(1, 6), p, ceil)
+    assert float(nxt_c[0, 3]) >= 0.0
 
 
 def test_simulate_step_clamps_velocity_ceiling() -> None:
@@ -99,12 +116,12 @@ def test_make_windows_respects_episode_boundaries() -> None:
     next_states = np.zeros((12, 8), dtype=np.float32)
     actions = np.zeros((12, 6), dtype=np.float32)
     episodes = np.array([0] * 6 + [1] * 6, dtype=np.int32)
-    s0, acts, tgts, gr = make_windows(states, actions, next_states, episodes, rollout_len=4)
+    s0, acts, tgts, ct = make_windows(states, actions, next_states, episodes, rollout_len=4)
     # Each 6-frame episode yields (6 - 4) = 2 windows -> 4 total; never 2*? across the seam.
     assert s0.shape[0] == 4
     assert acts.shape == (4, 4, 6)
     assert tgts.shape == (4, 4, 4)
-    assert gr.shape == (4, 4)
+    assert ct.shape == (4, 4, 4)
 
 
 def test_identify_recovers_hidden_world() -> None:
@@ -132,7 +149,7 @@ def test_identify_rejects_empty_windows() -> None:
     s0 = torch.zeros(0, 4)
     acts = torch.zeros(0, 6, 6)
     tgts = torch.zeros(0, 6, 4)
-    gr = torch.zeros(0, 6)
+    gr = torch.zeros(0, 6, 4)
     try:
         identify_params((s0, acts, tgts, gr), _params(), steps=2)
         raise AssertionError("expected ValueError for empty windows")
@@ -195,3 +212,45 @@ def test_rollout_matches_stepwise_composition() -> None:
     for t in range(3):
         state = simulate_step(state, acts[:, t, :], p)
     assert torch.allclose(state, roll[:, -1, :], atol=1e-5)
+
+
+def test_full_covariance_samples_match_reported_covariance() -> None:
+    hidden = theta_tensor(EngineParams())
+    windows = generate_synthetic_windows(hidden, 600, 12, seed=6)
+    theta_hat, _ = identify_params(windows, hidden, steps=150, lr=0.05, seed=6)
+    post = posterior_laplace(windows, theta_hat)
+    cov = np.asarray(post["cov"], dtype=np.float64)
+    samples = sample_posterior(theta_hat, post, 4000, seed=9).numpy()
+    emp = np.cov(samples.T)
+    # Diagonal variances must be reproduced to a loose tolerance (correlated draws).
+    assert np.allclose(np.sqrt(np.diag(emp)), np.sqrt(np.diag(cov)), rtol=0.35, atol=1e-4)
+
+
+def test_log_posterior_rejects_nonpositive_parameters() -> None:
+    windows = generate_synthetic_windows(_params(), 100, 8, seed=8)
+    assert np.isfinite(log_posterior(_params(), windows, noise_variance=1.0))
+    bad = _params().clone()
+    bad[2] = -1.0
+    assert log_posterior(bad, windows, noise_variance=1.0) == -float("inf")
+
+
+def test_mcmc_random_walk_recovers_laplace_mean() -> None:
+    hidden = theta_tensor(EngineParams())
+    windows = generate_synthetic_windows(hidden, 600, 12, seed=4)
+    theta_hat, _ = identify_params(windows, hidden, steps=250, lr=0.05, seed=4)
+    post = posterior_laplace(windows, theta_hat)
+    mc = mcmc_random_walk(
+        windows,
+        theta_hat,
+        post["noise_variance"],
+        n_samples=600,
+        burn=200,
+        thin=3,
+        step=np.asarray(post["std_errors"], dtype=np.float64),
+        seed=5,
+    )
+    # A well-tuned chain keeps the sample positive and the mean on the point estimate.
+    assert bool((mc["samples"] > 0).all())
+    assert 0.05 < mc["acceptance_rate"] < 0.95
+    gap = np.abs(np.asarray(mc["mean"]) - theta_hat.numpy()) / np.abs(theta_hat.numpy())
+    assert gap.max() < 0.15  # posterior is locally Gaussian -> MCMC mean ~= Laplace MAP

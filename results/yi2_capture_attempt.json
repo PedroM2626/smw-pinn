@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-22T18:06:40+00:00",
-    "git_sha": "7df6b8652c2eb204df89cbdd5d0ee07cff727661",
+    "generated_utc": "2026-09-23T02:29:12+00:00",
+    "git_sha": "570a8d11a070b4cb5638d577a53cad749b967037",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -12,7 +12,7 @@
     "numpy": "1.26.4",
     "command": "python -m scripts.navigate_to_level --level 2"
   },
-  "outcome": "blocked: WRAM never stabilised after the message box",
+  "outcome": "blocked: no control handoff (right dx=0.0, air=36)",
   "target_level": 2,
   "node_round": 4,
   "entry_frame": 0,
@@ -21,15 +21,15 @@
   "y_at_entry": 313,
   "air_state_at_entry": 11,
   "post_message_state": {
-    "x": 13.0,
-    "y": 65502.0,
-    "vx": 8.0,
-    "vy": 0.0,
+    "x": 137.6875,
+    "y": 301.8125,
+    "vx": 2.0,
+    "vy": 10.0,
     "c_ground": 0.0,
     "c_ceiling": 0.0,
     "c_left": 0.0,
     "c_right": 0.0,
-    "air_state": 0.0,
+    "air_state": 36.0,
     "powerup": 0.0
   },
   "stable_frames": 0,

@@ -55,6 +55,7 @@ from src.inverse.parameter_identification import (  # noqa: E402
     generate_synthetic_windows,
     identify_params,
     make_windows,
+    mcmc_random_walk,
     per_variable_mse,
     posterior_laplace,
     sample_posterior,
@@ -101,11 +102,11 @@ def run_e3_transfer(
     optimistic. Because the plans are fixed and held out, this metric is about the physics, not
     about search quality.
     """
-    s0, acts, targets, gr = generate_synthetic_windows(true_params, n_windows, horizon, seed=seed)
+    s0, acts, targets, ct = generate_synthetic_windows(true_params, n_windows, horizon, seed=seed)
     achieved = targets[:, -1, 0]  # true final x of each held-out control
     out: Dict[str, Dict[str, float]] = {}
     for name, mp in models.items():
-        pred = simulate_rollout(s0, acts, mp, gr)[:, -1, 0]
+        pred = simulate_rollout(s0, acts, mp, ct)[:, -1, 0]
         gap = pred - achieved
         out[name] = {
             "mean_optimism_px": float(gap.mean()),
@@ -116,38 +117,36 @@ def run_e3_transfer(
     return out
 
 
-def posterior_predictive_transfer(
-    synth,
-    theta_hat: torch.Tensor,
-    post: Dict[str, object],
+def transfer_credible_interval(
+    samples: torch.Tensor,
     ood_t: torch.Tensor,
-    n_samples: int = 16,
     seed: int = 101,
     n_windows: int = 200,
     horizon: int = 24,
 ) -> Dict[str, float]:
-    """Credible interval on the identified model's transfer error.
+    """Propagate a set of posterior samples into a credible interval on the
+    identified model's held-out transfer error.
 
-    Draws ``n_samples`` parameter vectors from the Laplace posterior and, for
-    each, evaluates the held-out control-battery transfer error against the
-    true world.  The spread is the posterior uncertainty propagated to the
-    control-relevant quantity - the Bayesian-inverse analogue of the Deep
-    Ensemble's predictive spread (README Section 10.9), here over *physics*
-    constants rather than network weights.
+    For each sampled parameter vector the final ``x`` of the held-out control
+    battery is predicted and compared to the true-world outcome; the spread of
+    the per-sample transfer MAE is the credible interval.  Shared by the
+    full-covariance Laplace samples and the MCMC samples, so the two
+    uncertainty models can be read off side by side - the Bayesian-inverse
+    analogue of the Deep Ensemble's predictive spread (README Section 10.9),
+    here over *physics* constants rather than network weights.
     """
-    samples = sample_posterior(theta_hat, post, n_samples, seed=7)
-    s0, acts, targets, gr = generate_synthetic_windows(ood_t, n_windows, horizon, seed=seed)
+    s0, acts, targets, ct = generate_synthetic_windows(ood_t, n_windows, horizon, seed=seed)
     achieved = targets[:, -1, 0]
     maes = []
     for theta in samples:
-        pred = simulate_rollout(s0, acts, theta, gr)[:, -1, 0]
+        pred = simulate_rollout(s0, acts, theta, ct)[:, -1, 0]
         maes.append(float((pred - achieved).abs().mean()))
     arr = np.asarray(maes)
     return {
         "mean_mae_px": float(arr.mean()),
         "ci_low_px": float(np.percentile(arr, 2.5)),
         "ci_high_px": float(np.percentile(arr, 97.5)),
-        "n_samples": int(n_samples),
+        "n_samples": int(len(maes)),
     }
 
 
@@ -245,7 +244,22 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 16) -> Dict[str, 
         {"prior_smw_constants": prior_t, "identified": theta_hat, "oracle_true_world": ood_t},
         ood_t,
     )
-    pp = posterior_predictive_transfer(synth, theta_hat, post, ood_t)
+    pp = transfer_credible_interval(sample_posterior(theta_hat, post, 64, seed=7), ood_t)
+    mc = mcmc_random_walk(
+        synth,
+        theta_hat,
+        post["noise_variance"],
+        n_samples=800,
+        burn=300,
+        thin=3,
+        step=np.asarray(post["std_errors"], dtype=np.float64),
+        seed=3,
+    )
+    mcmc_pp = transfer_credible_interval(mc["samples"], ood_t)
+    mc_mean = torch.tensor(mc["mean"], dtype=torch.float32)
+    lap_mcmc_agreement_pct = float(
+        (100.0 * (mc_mean - theta_hat).abs() / theta_hat.abs().clamp(min=1e-6)).max()
+    )
     for name, row in transfer.items():
         logger.info(
             "  %-20s transfer MAE = %.2f px (%.1f%% rel), optimism = %+.2f px",
@@ -255,10 +269,18 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 16) -> Dict[str, 
             row["mean_optimism_px"],
         )
     logger.info(
-        "  posterior-predictive identified MAE = %.2f px [%.2f, %.2f] (95%% credible)",
+        "  Laplace-predictive identified MAE = %.2f px [%.2f, %.2f] (95%% credible)",
         pp["mean_mae_px"],
         pp["ci_low_px"],
         pp["ci_high_px"],
+    )
+    logger.info(
+        "  MCMC-predictive identified MAE = %.2f px [%.2f, %.2f] (acc %.2f, max mean gap %.2f%%)",
+        mcmc_pp["mean_mae_px"],
+        mcmc_pp["ci_low_px"],
+        mcmc_pp["ci_high_px"],
+        mc["acceptance_rate"],
+        lap_mcmc_agreement_pct,
     )
 
     payload: Dict[str, object] = {
@@ -297,10 +319,12 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 16) -> Dict[str, 
             "final_loss": info2["final_loss"],
             "test_rollout_mse_px2": rollout_drift_px,
             "model_scope_note": (
-                "The analytic model now includes coast friction and a ground-contact velocity"
-                " reset but still excludes collision response and wall checks, so real-data"
-                " recovery is bounded by residual model misspecification; the honest result is"
-                " how much identification lowers open-loop rollout error versus the prior."
+                "The analytic model now carries the full rigid collision response on all four"
+                " terrain-contact channels (ground, ceiling, left/right walls) plus coast"
+                " friction, but still has no tilemap so it cannot represent ramp slope geometry"
+                " or sprite collisions; real-data recovery is bounded by that residual"
+                " misspecification, and the honest result is how much identification lowers"
+                " open-loop rollout error versus the prior."
             ),
         },
         "E3_zero_shot_transfer": {
@@ -310,6 +334,23 @@ def run_benchmark(output_dir: str = RESULTS_DIR, n_boot: int = 16) -> Dict[str, 
             ),
             "models": transfer,
             "posterior_predictive_identified": pp,
+            "posterior_predictive_identified_mcmc": mcmc_pp,
+            "mcmc_random_walk": {
+                "mean": dict(zip(PARAM_NAMES, mc["mean"])),
+                "std_errors": dict(zip(PARAM_NAMES, mc["std_errors"])),
+                "ci_low": dict(zip(PARAM_NAMES, mc["ci_low"])),
+                "ci_high": dict(zip(PARAM_NAMES, mc["ci_high"])),
+                "acceptance_rate": mc["acceptance_rate"],
+                "n_samples": mc["n_samples"],
+                "laplace_mcmc_max_mean_gap_pct": lap_mcmc_agreement_pct,
+                "note": (
+                    "Random-walk Metropolis on the exact simulator likelihood; agreement with"
+                    " the Laplace/Gauss-Newton summary (small max mean gap, similar credible"
+                    " interval) shows the posterior is locally Gaussian where the data are"
+                    " strongly excited - MCMC would diverge from Laplace only in a curved or"
+                    " multi-modal posterior (e.g. real-data misspecification)."
+                ),
+            },
         },
     }
 
