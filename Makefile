@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -28,6 +28,7 @@ help:
 	@echo "multiseed          K-seed significance study (configs/multiseed.yaml)"
 	@echo "piml-mfrl          Physics-Informed Model-Free RL on real SNES (configs/piml_mfrl.yaml)"
 	@echo "piml-mfrl-study    PIML-MFRL per-mechanism ablation (baseline/A/B/C/full, real SNES)"
+	@echo "inverse-transfer   Physics parameter identification + zero-shot transfer (inverse problem, emulator-free)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -84,6 +85,11 @@ piml-mfrl:
 # Per-mechanism ablation behind README 10.39.1 (baseline + A / B / C / A+B+C, 3 seeds).
 piml-mfrl-study:
 	$(PY) -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000
+
+# Physics parameter identification (inverse problem) + zero-shot control transfer (README 10.40).
+# Emulator-free: runs on CPU from the recorded dataset, so it is a CI-safe study.
+inverse-transfer:
+	$(PY) -m src.evaluation.inverse_transfer_benchmark
 
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in

@@ -1,0 +1,204 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-23T00:44:58+00:00",
+    "git_sha": "e0098578f66b0dcbf24d3552dad1ae1865abc227",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.inverse_transfer_benchmark",
+    "hidden_world": {
+      "max_vx": 48.0,
+      "walk_accel": 1.0,
+      "run_accel": 1.8,
+      "subpixels_per_pixel": 20.0,
+      "held_gravity": 2.4,
+      "fall_gravity": 5.2
+    },
+    "n_bootstrap": 12
+  },
+  "study": "inverse_physics_identification",
+  "hidden_world": {
+    "max_vx": 48.0,
+    "walk_accel": 1.0,
+    "run_accel": 1.7999999523162842,
+    "subpixels_per_pixel": 20.0,
+    "held_gravity": 2.4000000953674316,
+    "fall_gravity": 5.199999809265137
+  },
+  "prior": {
+    "max_vx": 72.0,
+    "walk_accel": 0.75,
+    "run_accel": 1.5,
+    "subpixels_per_pixel": 16.0,
+    "held_gravity": 3.0,
+    "fall_gravity": 6.0
+  },
+  "identifiability_note": "A constant is identifiable only if the observed data excite the term that uses it; the bootstrap width is the empirical identifiability measure (a very wide interval means the windows did not exercise that invariant).",
+  "E1_synthetic_recovery": {
+    "params": {
+      "max_vx": {
+        "true": 48.0,
+        "prior": 72.0,
+        "identified": 47.999996185302734,
+        "abs_error": 3.814697265625e-06,
+        "rel_error_pct": 7.947285970052084e-06,
+        "prior_rel_error_pct": 50.0,
+        "boot_ci_low": 47.99999341964722,
+        "boot_ci_high": 48.000002765655516,
+        "boot_std": 3.2531847864447627e-06,
+        "truth_in_ci": true
+      },
+      "walk_accel": {
+        "true": 1.0,
+        "prior": 0.75,
+        "identified": 1.0000001192092896,
+        "abs_error": 1.1920928955078125e-07,
+        "rel_error_pct": 1.1920928955078125e-05,
+        "prior_rel_error_pct": 25.0,
+        "boot_ci_low": 0.9999998807907104,
+        "boot_ci_high": 1.0,
+        "boot_std": 8.61881730429559e-08,
+        "truth_in_ci": true
+      },
+      "run_accel": {
+        "true": 1.7999999523162842,
+        "prior": 1.5,
+        "identified": 1.7999999523162842,
+        "abs_error": 0.0,
+        "rel_error_pct": 0.0,
+        "prior_rel_error_pct": 16.666664459087173,
+        "boot_ci_low": 1.7999999523162842,
+        "boot_ci_high": 1.7999999523162842,
+        "boot_std": 2.490200756710692e-07,
+        "truth_in_ci": true
+      },
+      "subpixels_per_pixel": {
+        "true": 20.0,
+        "prior": 16.0,
+        "identified": 19.999982833862305,
+        "abs_error": 1.71661376953125e-05,
+        "rel_error_pct": 8.58306884765625e-05,
+        "prior_rel_error_pct": 20.0,
+        "boot_ci_low": 19.999948501586914,
+        "boot_ci_high": 19.99995231628418,
+        "boot_std": 2.1517794266401324e-06,
+        "truth_in_ci": false
+      },
+      "held_gravity": {
+        "true": 2.4000000953674316,
+        "prior": 3.0,
+        "identified": 2.400003671646118,
+        "abs_error": 3.5762786865234375e-06,
+        "rel_error_pct": 0.00014901160601728732,
+        "prior_rel_error_pct": 24.999995032946465,
+        "boot_ci_low": 2.400008571147919,
+        "boot_ci_high": 2.40001123547554,
+        "boot_std": 9.455114877710002e-07,
+        "truth_in_ci": false
+      },
+      "fall_gravity": {
+        "true": 5.199999809265137,
+        "prior": 6.0,
+        "identified": 5.19999885559082,
+        "abs_error": 9.5367431640625e-07,
+        "rel_error_pct": 1.8339891372823397e-05,
+        "prior_rel_error_pct": 15.384619616898009,
+        "boot_ci_low": 5.1999945640563965,
+        "boot_ci_high": 5.199995040893555,
+        "boot_std": 4.0664809830559534e-07,
+        "truth_in_ci": false
+      }
+    },
+    "final_loss": 3.6594232960714124e-13,
+    "steps": 2000,
+    "bootstrap_n": 12,
+    "max_rel_error_pct": 0.00014901160601728732
+  },
+  "E2_real_data_identification": {
+    "params": {
+      "max_vx": {
+        "wram_reference": 72.0,
+        "identified": 72.0,
+        "abs_error": 0.0,
+        "rel_error_pct": 0.0
+      },
+      "walk_accel": {
+        "wram_reference": 0.75,
+        "identified": 0.007561735343188047,
+        "abs_error": 0.742438264656812,
+        "rel_error_pct": 98.99176862090826
+      },
+      "run_accel": {
+        "wram_reference": 1.5,
+        "identified": 0.49180248379707336,
+        "abs_error": 1.0081975162029266,
+        "rel_error_pct": 67.21316774686177
+      },
+      "subpixels_per_pixel": {
+        "wram_reference": 16.0,
+        "identified": 21.776641845703125,
+        "abs_error": 5.776641845703125,
+        "rel_error_pct": 36.10401153564453
+      },
+      "held_gravity": {
+        "wram_reference": 3.0,
+        "identified": 2.075350046157837,
+        "abs_error": 0.9246499538421631,
+        "rel_error_pct": 30.8216651280721
+      },
+      "fall_gravity": {
+        "wram_reference": 6.0,
+        "identified": 0.07561223208904266,
+        "abs_error": 5.924387767910957,
+        "rel_error_pct": 98.73979613184929
+      }
+    },
+    "train_windows": 6249,
+    "test_windows": 1332,
+    "final_loss": 0.08088728040456772,
+    "test_rollout_mse_px2": {
+      "prior": {
+        "x": 5.912817478179932,
+        "y": 89.10030364990234,
+        "vx": 41.286598205566406,
+        "vy": 1235.9156494140625
+      },
+      "identified": {
+        "x": 4.826805114746094,
+        "y": 35.9512939453125,
+        "vx": 30.505393981933594,
+        "vy": 457.1596374511719
+      }
+    },
+    "model_scope_note": "The analytic model excludes contact velocity-resets and drag, so real-data recovery is bounded by model misspecification; the honest result is how much identification still lowers open-loop rollout error versus the prior."
+  },
+  "E3_zero_shot_transfer": {
+    "metric": "held-out control battery: signed (predicted - achieved) final x per world model; |mean| is planner optimism, mean-abs is the transfer error",
+    "models": {
+      "prior_smw_constants": {
+        "mean_optimism_px": 1.6269505023956299,
+        "mae_transfer_px": 8.743758201599121,
+        "relative_mae_pct": 2.8431646823883057,
+        "n_controls": 400
+      },
+      "identified": {
+        "mean_optimism_px": 1.2977272490388714e-05,
+        "mae_transfer_px": 2.753481203399133e-05,
+        "relative_mae_pct": 8.953359611041378e-06,
+        "n_controls": 400
+      },
+      "oracle_true_world": {
+        "mean_optimism_px": 0.0,
+        "mae_transfer_px": 0.0,
+        "relative_mae_pct": 0.0,
+        "n_controls": 400
+      }
+    }
+  }
+}

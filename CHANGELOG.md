@@ -28,6 +28,18 @@ numbers* - those are reported here and in README Section 12, never applied silen
   is lambda * violation; the one clear effect is the monotonic ~1.5x training-time cost of
   the couplings. Recorded in `results/piml_mfrl_metrics.json` with figure
   `results/figures/piml_mfrl_comparison.png`.
+- **Physics parameter identification - the inverse problem** (README Section 10.40): the
+  repository's first inverse-problem contribution, recovering the six engine constants
+  $\theta$ from observed trajectories via a differentiable analytic integrator and
+  generalised (channel-variance-weighted) least squares, with a bootstrap identifiability
+  diagnostic and a data-range warm-start for the inactive-constraint (velocity-ceiling)
+  gradient pathology. New modules `src/inverse/parameter_identification.py`,
+  `src/evaluation/inverse_transfer_benchmark.py` (emulator-free, CI-safe), wired as the
+  `inverse-transfer` CLI/Make target; results in `results/inverse_identification_metrics.json`
+  (E1 recovers a hidden world to <0.001% relative error; E3 shows the identified model
+  transfers held-out control predictions exactly like the oracle while the hard-coded prior
+  is systematically optimistic); tests in `tests/test_inverse_identification.py`. `src/inverse`
+  is covered by the mypy typed core.
 - CI: a native `windows-latest` job (path/CWD/subprocess parity) and a Linux
   Python `3.10 / 3.11 / 3.12` test matrix (`.github/workflows/ci.yml`).
 - A `print()`-in-`src/` convention guard (`tests/test_no_print_in_src.py`) with a

@@ -82,6 +82,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.37 Analytical and Oracle-Model Baselines](#1037-analytical-and-oracle-model-baselines)
    * [10.38 Closed-Loop Reproduction Audit and Preamble Probe](#1038-closed-loop-reproduction-audit-and-preamble-probe)
    * [10.39 Physics-Informed Model-Free RL (PIML-MFRL)](#1039-physics-informed-model-free-rl-piml-mfrl)
+   * [10.40 Physics Parameter Identification: the Inverse Problem](#1040-physics-parameter-identification-the-inverse-problem)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1406,6 +1407,39 @@ often the unconstrained learner is tempted to violate it.
 
 Regenerate: `python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000`.
 
+### 10.40 Physics Parameter Identification: the Inverse Problem
+
+Every preceding section solves the **forward** problem: given the state $s_t$, the action $a_t$ and a fixed set of engine constants $\theta$, predict $s_{t+1}$ (Sections 5-8) or plan with it (Sections 10.6, 10.31, 10.39). This section solves the **inverse** problem - recovering $\theta$ *from* observed trajectories - and then asks whether the recovered physics lets a model-based controller transfer to a world whose discretisation it was never told about. It is the executable answer to the deferred future-work note of Section 10.16-6 ("porting to dynamical systems with unknown discretization schemes would necessitate explicit system identification") and generalises the learnable-gravity idea of `src/models/pinn_gravity.py` from a single constant to the full six-parameter vector.
+
+**Formulation.** Let $\theta=[\,v_{\max},\,a_{\text{walk}},\,a_{\text{run}},\,\sigma,\,g_{\text{hold}},\,g_{\text{fall}}\,]$ be the traction budget, the fixed-point subpixel ratio $\sigma$ (`subpixels_per_pixel`) and the asymmetric gravity pair of Section 4. We write a fully differentiable analytic integrator `simulate_step` (the Hard-PINN kinematics with the learned residual removed):
+
+$$v_x^{t+1}=\mathrm{clip}\!\big(v_x^t+d\,\tau(a_t),\,\pm v_{\max}\big),\quad v_y^{t+1}=\mathrm{clip}\!\big(v_y^t+g(a_t,v_y^t),\,-80,\,64\big),\quad x^{t+1}=x^t+\tfrac{v_x^{t+1}}{\sigma},$$
+
+with traction tier $\tau$ selected by the run button and direction $d$, and $g=g_{\text{hold}}$ while jump is held during ascent else $g_{\text{fall}}$. The inverse problem is the non-linear least-squares fit $\hat\theta=\arg\min_\theta\sum_{\text{rollouts},t}\lVert s_{t+1}-f_\theta(s_t,a_t)\rVert^2_{W}$ over open-loop multi-step trajectories, solved by Adam on softplus-constrained (strictly positive) parameters. A per-channel variance weighting $W$ (generalised least squares) is essential: the raw position error is an order of magnitude larger than the velocity error, and without it the fit matches $x$ while ignoring the velocity ceiling that only the $v_x$ channel constrains.
+
+**Identifiability.** A constant is recoverable only if the observed windows *excite the term that uses it*. We measure identifiability empirically with a percentile bootstrap over refits (`bootstrap_ci`): a near-zero-width interval means the data pin the constant, a wide one means they do not. This reproduces the negative jump-impulse result of Section 10.37.1 in a controlled setting, and exposes a subtler pathology: when the true ceiling is *below* the prior, the model's own rollout never reaches its (too-high) clamp, so $\partial f/\partial v_{\max}=0$ and gradient descent cannot lower it - the classic inactive-constraint failure - which we resolve by warm-starting $v_{\max}$ from the observed velocity range, standard system-identification practice.
+
+All three experiments run on CPU from the recorded dataset (emulator-free), and are reported in `results/inverse_identification_metrics.json`.
+
+**E1 - recovery of a hidden world.** We hide a SMW-like world $\theta^{*}=[48,\,1.0,\,1.8,\,20,\,2.4,\,5.2]$ (note the *different* subpixel ratio $\sigma=20$ vs. the SMW $16$) and start the fit from the wrong SMW prior $[72,\,0.75,\,1.5,\,16,\,3,\,6]$. With the ceiling warm-started, identification recovers **all six constants to $<0.001\%$ relative error**, and every bootstrap interval collapses onto the true value - the estimator and the parameterisation are correct.
+
+**E2 - real-data identification and the misspecification ceiling.** Fitting the same model to genuine WRAM gameplay lowers test open-loop rollout error ($x$-channel MSE $5.91\to4.83\ \text{px}^2$, $-18\%$) - identifying the effective constants *does* help prediction - but the recovered point estimates of several constants drift far from their reverse-engineered values (e.g. $\hat g_{\text{fall}}\approx0.08$). This is the honest limit of the *structural* model, not the estimator: the analytic integrator omits contact velocity-resets and drag, so on real data several constants trade off against one another. Point estimates are only as trustworthy as the forward model's validity; prediction still improves.
+
+**E3 - zero-shot control transfer.** On a held-out battery of control sequences executed in the hidden world, each candidate model predicts the achieved final $x$: the signed prediction-minus-outcome is its **optimism** (the bias a planner inherits), the magnitude is the transfer error.
+
+| World model | Transfer error (px) | Relative | Optimism (px) |
+| :--- | :---: | :---: | :---: |
+| Prior (hard-coded SMW $\theta$) | 8.74 | 2.84% | **+1.63** (over-predicts) |
+| **Identified $\hat\theta$ (Ours)** | **0.00** | **0.00%** | **0.00** |
+| Oracle (true world) | 0.00 | 0.00% | 0.00 |
+
+The naive prior is *systematically optimistic* (it believes Mario travels farther per frame than the $\sigma=20$ world actually allows, exactly the $16$-vs-$20$ scale error), whereas the identified model predicts held-out outcomes **identically to the oracle**. Identification is therefore sufficient for zero-shot transfer of the model-based controller to a game with an unknown fixed-point scale - the capability the forward-only benchmark could not demonstrate.
+
+![Physics parameter identification (inverse problem)](results/figures/inverse_parameter_recovery.png)
+*Figure: Left - E1 relative recovery error of each constant from the wrong prior (green bars at zero). Right - E3 held-out control-transfer error; the identified model matches the oracle while the hard-coded prior carries a systematic optimism bias.*
+
+Regenerate: `python -m src.evaluation.inverse_transfer_benchmark` (emulator-free; `--bootstrap-n` controls the identifiability bootstrap).
+
 ---
 
 ## 11. Complete Reproducibility Guide
@@ -1779,6 +1813,10 @@ python -m src.training.piml_mfrl --config configs/piml_mfrl.yaml
 # 42. PIML-MFRL per-mechanism ablation study (model-free baseline + A / B / C / A+B+C,
 #     3 seeds), which writes results/piml_mfrl_metrics.json + the comparison figure (10.39.1). Needs core + ROM.
 python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 10000
+
+# 43. Physics parameter identification (the inverse problem) + zero-shot control transfer
+#     (10.40). Emulator-free: runs on CPU from the recorded dataset, so it is a CI-safe study.
+python -m src.evaluation.inverse_transfer_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

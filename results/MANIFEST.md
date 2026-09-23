@@ -23,6 +23,7 @@ python -m src.training.train_pixel_estimator
 python -m src.training.train_terminal_value
 python -m src.evaluation.spatial_holdout_benchmark
 python -m src.evaluation.plot_learning_curves
+python -m src.evaluation.inverse_transfer_benchmark
 
 # Emulator-in-the-loop artifacts (need the Libretro core + your own ROM dump;
 # see README section 11.2 for the SHA-1 and the SMW_ROM override):
@@ -85,6 +86,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `yi2_capture_attempt.json` | `scripts/navigate_to_level.py` | yes | 10.36 |
 | `obstacle_1000_diagnosis.json` | `src/evaluation/diagnose_obstacle_1000.py` | yes | 10.24 (X~1000 plateau) |
 | `piml_mfrl_metrics.json` | `src/evaluation/piml_mfrl_study.py` | yes | 10.39.1 |
+| `inverse_identification_metrics.json` | `src/evaluation/inverse_transfer_benchmark.py` | no | 10.40 |
 
 ## Input freshness
 

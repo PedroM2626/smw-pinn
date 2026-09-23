@@ -71,6 +71,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "baselines": "src.evaluation.analytical_baselines",
     "piml-mfrl": "src.training.piml_mfrl",
     "piml-mfrl-study": "src.evaluation.piml_mfrl_study",
+    "inverse-transfer": "src.evaluation.inverse_transfer_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -110,6 +111,7 @@ CHECK_COMMANDS: dict[str, list[str]] = {
         "src/losses",
         "src/planning",
         "src/perception",
+        "src/inverse",
         "src/utils",
         "src/environment/wram.py",
         "src/environment/dataset_loader.py",
