@@ -125,6 +125,18 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- Typecheck gate on CI (mypy, exit 1/2 on the operator-learning commits): the reference
+  hardware runs torch 2.5.1, whose stubs resolve `nn.Module` buffer attributes directly,
+  while CI installs the newest torch inside the `>=2.5.1,<2.7` envelope, whose stubs type
+  the same `register_buffer` attribute read as the union `Tensor | Module`. Surfaced as
+  `"Tensor" not callable [operator]` (`fno.py`, sensor-grid line) and `Tensor | Module`
+  assignment errors on the canonical query-grid buffers of `src/models/fno.py` and
+  `src/models/deeponet.py` (both absent locally under torch 2.5.1 stubs). Fixed by
+  adopting the project's documented buffer-typing convention (class-level
+  `attr: torch.Tensor` annotations, cf. `src/models/cbf_projection.py`) for
+  `sensor_grid`, `canonical_query_coords` and `residual_query_coords`; behavior is
+  unchanged (annotation-only), and the gate is verified locally with a cacheless
+  `mypy --no-incremental` over the 44 core modules.
 - `scripts/navigate_to_level.py` (Yoshi's Island 2 capture, README Section 10.36.2): the
   level-2 branch pulsed Y to "dismiss a message box" even though a Y edge on that slide is
   documented to fire a $0x14\to0x_{C}$ map return - the pulses themselves collapsed the read

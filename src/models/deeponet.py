@@ -68,6 +68,11 @@ class DeepONetDynamics(nn.Module):
     queries the registered channel grid.
     """
 
+    # Class-level annotation so mypy resolves the register_buffer-assigned
+    # attribute as a Tensor instead of falling back to the nn.Module
+    # __getattr__ union on newer torch stubs (cf. cbf_projection.py).
+    canonical_query_coords: torch.Tensor
+
     def __init__(
         self,
         state_dim: int = 8,
@@ -168,6 +173,9 @@ class PhysicsConstrainedDeepONetDynamics(nn.Module):
     should preserve the Hard PINN's guarantees while changing the force
     estimator's inductive bias.
     """
+
+    # Class-level annotation: see DeepONetDynamics (buffer resolved as Tensor).
+    residual_query_coords: torch.Tensor
 
     def __init__(
         self,

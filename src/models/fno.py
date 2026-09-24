@@ -77,6 +77,13 @@ class FNODynamics(nn.Module):
     that may be queried anywhere in [0, 1], not a fixed-length vector map.
     """
 
+    # Class-level annotations so mypy resolves the register_buffer-assigned
+    # attributes as Tensor instead of falling back to the nn.Module
+    # __getattr__ union on newer torch stubs (project convention, cf.
+    # cbf_projection.py).
+    sensor_grid: torch.Tensor
+    canonical_query_coords: torch.Tensor
+
     def __init__(
         self,
         state_dim: int = 8,
