@@ -1,0 +1,7 @@
+# Seconds-scale version of the README 10.41 neural-operator study (`make smoke`).
+# Same DeepONet protocol path as the published artifact, at a tiny budget.
+epochs: 2
+latent_dim: 32
+seed: 42
+rollout_horizon: 20
+num_rollout_starts: 2

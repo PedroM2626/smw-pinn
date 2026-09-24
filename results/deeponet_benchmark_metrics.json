@@ -1,0 +1,184 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-24T16:27:50+00:00",
+    "git_sha": "7716cd14ff82e3466239fa3629f31a6661cec459",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.deeponet_benchmark"
+  },
+  "study": "DeepONet neural-operator baseline trained under the unified protocol of the canonical benchmark (README 10.41)",
+  "architectures": {
+    "DeepONet": {
+      "parameters": 52744,
+      "sensors": 14,
+      "latent_dim": 64,
+      "branch_hidden_dims": [
+        128,
+        128
+      ],
+      "trunk_hidden_dims": [
+        128,
+        128
+      ],
+      "test_loss_data": 7.879992593418468,
+      "test_kinematic_error": 273.15395788712937,
+      "training_time_seconds": 11.0839262008667,
+      "stop_epochs": 35,
+      "rollout": {
+        "mean_drift_pixels": 43.103580474853516,
+        "final_drift_pixels": 117.80091094970703,
+        "kinematic_violations": 118,
+        "velocity_violations": 0
+      },
+      "rollout_multistart": {
+        "starts": [
+          0,
+          123,
+          246,
+          369,
+          492,
+          615,
+          738,
+          861,
+          984,
+          1107
+        ],
+        "horizon": 120,
+        "num_starts": 10,
+        "kinematic_violation_rates": [
+          0.9833333333333333,
+          0.9916666666666667,
+          1.0,
+          1.0,
+          0.9916666666666667,
+          1.0,
+          1.0,
+          0.9916666666666667,
+          1.0,
+          1.0
+        ],
+        "velocity_violation_rates": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "mean_drift_mean": 149.4052806854248,
+        "mean_drift_std": 81.10108288492897,
+        "final_drift_mean": 191.31071357727052,
+        "final_drift_std": 116.8230811765658,
+        "kinematic_violation_rate_mean": 0.9958333333333333,
+        "velocity_violation_rate_mean": 0.0
+      },
+      "per_variable_metrics": {
+        "x": {
+          "mse": 274.0166015625,
+          "mae": 10.918864250183105,
+          "r2": 0.9924346038985334
+        },
+        "y": {
+          "mse": 744.265380859375,
+          "mae": 14.938777923583984,
+          "r2": 0.36056230473440076
+        },
+        "vx": {
+          "mse": 140.44313049316406,
+          "mae": 8.520503044128418,
+          "r2": 0.5626486458711003
+        },
+        "vy": {
+          "mse": 1772.23046875,
+          "mae": 26.064373016357422,
+          "r2": 0.022349444307424693
+        },
+        "c_ground": {
+          "accuracy": 0.20943952802359883,
+          "f1": 0.23209169054441262
+        },
+        "c_ceiling": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_left": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_right": {
+          "accuracy": 0.9284660766961652,
+          "f1": 0.0
+        }
+      }
+    }
+  },
+  "comparison_against_published": {
+    "source": "results/benchmark_metrics.json",
+    "single_step_results": {
+      "Statistical_MLP": {
+        "test_loss_data": 16.471670410849832,
+        "test_kinematic_error": 17561.24245817011
+      },
+      "Statistical_LSTM": {
+        "test_loss_data": 39.21941497109153,
+        "test_kinematic_error": 37361.15713778409
+      },
+      "Soft_PINN": {
+        "test_loss_data": 53.81669547341087,
+        "test_kinematic_error": 108520.98899147728
+      },
+      "Hard_Residual_PINN": {
+        "test_loss_data": 0.5783408392559398,
+        "test_kinematic_error": 0.0018963774465109136
+      }
+    },
+    "rollout_metrics": {
+      "Statistical_MLP": {
+        "mean_drift_pixels": 152.71719360351562,
+        "final_drift_pixels": 69.74825286865234,
+        "kinematic_violations": 118,
+        "velocity_violations": 40
+      },
+      "Statistical_LSTM": {
+        "mean_drift_pixels": 169.99270629882812,
+        "final_drift_pixels": 126.15921020507812,
+        "kinematic_violations": 120,
+        "velocity_violations": 0
+      },
+      "Soft_PINN": {
+        "mean_drift_pixels": 220.05397033691406,
+        "final_drift_pixels": 231.17874145507812,
+        "kinematic_violations": 120,
+        "velocity_violations": 0
+      },
+      "Hard_Residual_PINN": {
+        "mean_drift_pixels": 50.87055587768555,
+        "final_drift_pixels": 78.12864685058594,
+        "kinematic_violations": 0,
+        "velocity_violations": 0
+      }
+    }
+  },
+  "config": {
+    "dataset_path": "C:\\Users\\Acer\\Downloads\\mworld-experiment\\data\\raw\\smw_gameplay_dataset.npz",
+    "epochs": 35,
+    "batch_size": 128,
+    "seed": 42,
+    "patience": 8,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "rollout_horizon": 120,
+    "num_rollout_starts": 10
+  }
+}

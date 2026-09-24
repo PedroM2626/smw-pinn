@@ -83,6 +83,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.38 Closed-Loop Reproduction Audit and Preamble Probe](#1038-closed-loop-reproduction-audit-and-preamble-probe)
    * [10.39 Physics-Informed Model-Free RL (PIML-MFRL)](#1039-physics-informed-model-free-rl-piml-mfrl)
    * [10.40 Physics Parameter Identification: the Inverse Problem](#1040-physics-parameter-identification-the-inverse-problem)
+   * [10.41 Neural-Operator Baselines: DeepONet on Discrete Engine Dynamics](#1041-neural-operator-baselines-deeponet-on-discrete-engine-dynamics)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1472,6 +1473,59 @@ Regenerate: `python -m src.evaluation.inverse_transfer_benchmark` (emulator-free
 
 ---
 
+### 10.41 Neural-Operator Baselines: DeepONet on Discrete Engine Dynamics
+
+Sections 5-8 benchmarked two families of learners: **statistical black-boxes** (MLP, LSTM), which approximate a function $\mathbb{R}^{14} \to \mathbb{R}^8$, and **physics-informed networks** (Soft/Hard PINN), which embed the discrete kinematics of Section 4. This section adds a third, qualitatively different family: **neural operators**. A DeepONet (Lu et al., 2021, *Nature Machine Intelligence* 3: 218-229) does not approximate a finite-dimensional map; it approximates an **operator $G: \mathcal{U} \to \mathcal{V}$ between function spaces**, with a universal approximation guarantee at the operator level. Introducing one answers a sharper question: *is the Hard PINN's advantage merely "more sophisticated architecture", or is it specifically the embedded discrete kinematics?*
+
+**Formulation for the SMW engine map.** The one-step transition rule is recast as an operator between the *input function* $u$ (the instantaneous dynamic regime of the engine) and the *next-state field* $v$:
+
+$$v(y_q) = G(u)(y_q) = \sum_{k=1}^{p} \underbrace{b_k(u)}_{\text{branch}}\;\underbrace{\tau_k(y_q)}_{\text{trunk}} + b_0[q],\qquad G(u)(y_q) \approx \hat{s}_{t+1}[q]$$
+
+* **Branch net (sensors):** the input function is sampled at $m = 14$ fixed sensors - the combined state-action reading $u = [s_t, a_t] \in \mathbb{R}^{14}$ (each coordinate is one sensor of the current kinematic/contact/button regime). The branch MLP encodes it into $p = 64$ basis coefficients $b_k(u)$.
+* **Trunk net (queries):** the trunk MLP evaluates $p$ basis functions $\tau_k$ at a query coordinate $y_q \in [-1, 1]$ that identifies the predicted state channel (the canonical grid spaces the 8 channels evenly between $-1$ and $1$, stored as a module buffer). Because the trunk is a continuous function of $y$, the trained operator can also be queried at arbitrary intermediate coordinates.
+* **Output assembly:** $\hat{s}_{t+1}[q] = \langle b(u), \tau(y_q) \rangle + b_0[q]$. The inner product imposes a **rank-$p$ bilinear bottleneck**: the branch learns a dictionary of 64 global response patterns indexed by the input regime, the trunk learns how each pattern distributes over output channels - an inductive bias orthogonal to both the monolithic MLP (no factorization) and the Hard PINN (analytic integration).
+
+```
++---------------------------------------------------------------------------------------------------+
+|                        ARCHITECTURE 5: DEEPONET NEURAL OPERATOR BASELINE                          |
+|                                                                                                   |
+|  input function u = [s_t, a_t] (14 sensors)        query coordinate y_q (output channel)          |
+|           |                                              |                                        |
+|           v                                              v                                        |
+|     BRANCH MLP (128x128) ---> b(u) in R^64      TRUNK MLP (128x128) ---> tau(y_q) in R^64        |
+|           |                                              |                                        |
+|           +----------------> inner product <b, tau> + b0[q] = hat_s_{t+1}[q]                      |
+|                                                                                                   |
+|  No analytic kinematics embedded: a pure operator-learning middle point between the               |
+|  statistical MLP and the Hard Residual PINN.                                                      |
++---------------------------------------------------------------------------------------------------+
+```
+
+**Protocol.** Identical to the canonical benchmark (Section 7): the same 8,077-transition WRAM dataset, seed 42 episodic split (6,329 / 392 / 1,356), AdamW ($\eta = 10^{-3}$, weight decay $10^{-4}$), batch 128, Smooth L1 objective, `ReduceLROnPlateau`, early stopping (patience 8), 35 epochs maximum, 120-frame open-loop rollouts plus the 10-start multi-start variant. Implementation: `src/models/deeponet.py` (`DeepONetDynamics`, **52,744 trainable parameters** - 1.45x the MLP's 36,360), study orchestrator `src/evaluation/deeponet_benchmark.py`, metrics in `results/deeponet_benchmark_metrics.json`; comparison rows are read from the committed `results/benchmark_metrics.json`, not re-trained.
+
+#### 10.41.1 Empirical Results under the Unified Protocol
+
+| Architecture | Paradigm | Test Loss (Data MSE) | Kinematic Residual | Kinematic Violations (rollout) | Velocity Violations |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Statistical MLP | Black-box function approximator | 16.4717 | 17,561.24 | 118 / 120 (98.3%) | 40 / 120 |
+| Statistical LSTM | Recurrent black-box | 39.2194 | 37,361.16 | 120 / 120 (100%) | 0 / 120 |
+| Soft-Constrained PINN | Loss-penalty physics | 53.8167 | 108,520.99 | 120 / 120 (100%) | 0 / 120 |
+| **DeepONet** | **Neural operator (branch/trunk)** | **7.8800** | **273.15** | 118 / 120 (98.3%) | **0 / 120** |
+| Hard Residual PINN | Hard inductive bias | **0.5783** | **0.0019** | **0 / 120 (0.0%)** | 0 / 120 |
+
+Multi-start aggregate (10 starts x 120 frames): DeepONet mean drift $149.41 \pm 81.10$ px with a **99.58% kinematic-violation rate** and 0.0% velocity-violation rate; the published multi-start means are MLP 179.87 px (97.9% violations), LSTM 211.99 px (100%), Soft PINN 317.59 px (100%), Hard PINN 159.51 px (**0%** violations). On the single continuous 120-frame track DeepONet's mean drift was 43.10 px (final 117.80 px), against 50.87 px (final 78.13 px) for the Hard PINN - read with Section 10.4/10.6 caution: single-start drift is one draw, not an ordering guarantee.
+
+#### 10.41.2 What the Operator Prior Buys - and What It Cannot Buy
+
+1. **The operator factorization is the strongest physics-free architecture tested.** DeepONet's test loss of 7.8800 is **2.1x lower than the statistical MLP** (16.4717), 5.0x lower than the LSTM and 6.8x lower than the Soft PINN, at 1.45x the MLP's parameter count and 11.08 s of training. Generalizing from sensor readings through a learned basis dictionary, rather than memorizing a monolithic map, measurably helps on this discrete system.
+2. **But it does not discover the exact integration identity.** The kinematic residual drops from 17,561 (MLP) to 273 - a 64x improvement from inductive architecture alone - yet remains **143,000x above the Hard PINN's analytical zero** (0.0019), and autoregressive rollouts violate the discrete update identity on 99.6% of frames, statistically indistinguishable from the MLP's 98.3%. Universal approximation of the operator is not the same as satisfying $\Delta X = v_x/16.0$; that identity enters only through structure, not through architecture capacity or operator-level expressiveness.
+3. **Drift and physical consistency decouple.** DeepONet posts the lowest non-physics drift figures of the study (single-start 43.10 px; multi-start 149.41 px) while violating kinematics on nearly every frame - trajectory-level coincidence without step-level consistency is exactly the failure mode a physics formulation is designed to exclude, and the reason this benchmark reports violation rates beside drift rather than drift alone.
+4. **Position the family in the taxonomy.** DeepONet occupies the "structure-free but operator-aware" slot: meaningfully better than raw statistical learning, decisively below structural physics (13.6x the Hard PINN's error). The natural next step on this branch is a **physics-constrained neural operator** - a DeepONet whose trunk output is integrated through the Section 4 kinematics, or an FNO (Fourier Neural Operator) ablation over the same sensors - while Section 10.40 already resolves the constants such a hybrid would rely on.
+
+Regenerate: `python -m src.evaluation.deeponet_benchmark` (emulator-free; `--latent-dim` controls the basis width $p$).
+
+---
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -1483,7 +1537,7 @@ smw-pinn/
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
 │   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
-│   └── smoke_*.yaml                    # 5 fast real-hardware-study configs (`make smoke`)
+│   └── smoke_*.yaml                    # 6 fast emulator-free study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -1513,6 +1567,7 @@ smw-pinn/
 │   ├── tilemap_benchmark_metrics.json     # Tilemap contact prediction benchmark metrics
 │   ├── distilled_policy_metrics.json      # Distilled amortized MPC policy evaluation logs
 │   ├── extended_navigation_metrics.json   # Extended 1,016+ px hardware navigation logs
+│   ├── deeponet_benchmark_metrics.json    # DeepONet neural-operator study metrics (10.41)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
 │   └── figures/                           # High-resolution benchmark figures (.png) and .gif
@@ -1548,6 +1603,7 @@ smw-pinn/
 │   │   ├── pinn_set_multi_entity.py       # Permutation-Invariant Cross-Attention PINN (N Sprites)
 │   │   ├── pinn_unified_multimodal.py     # Unified kinematic + tilemap + hazard PINN
 │   │   ├── pinn_gravity.py                # Gravity-identified residual PINN (learnable g)
+│   │   ├── deeponet.py                    # DeepONet neural-operator baseline (branch/trunk)
 │   │   └── tilemap_pinn.py                # Tilemap-conditioned spatial PINN architecture
 │   ├── losses/
 │   │   └── physics_losses.py              # Analytical physics loss functions
@@ -1587,6 +1643,7 @@ smw-pinn/
 │       ├── rollout_evaluator.py           # Rollout evaluator (+ multi-start statistics)
 │       ├── per_variable_metrics.py        # Per-channel MSE/MAE/R² + contact accuracy/F1
 │       ├── sample_efficiency_benchmark.py # Sample efficiency Pareto benchmark script
+│       ├── deeponet_benchmark.py          # DeepONet neural-operator study (10.41, CI-safe)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -1643,6 +1700,7 @@ smw-pinn/
 │   ├── test_dependency_parity.py          # requirements.txt / pyproject / lockstep pins
 │   ├── test_analytical_baselines.py       # Closed-form kinematics + oracle MPC
 │   ├── test_results_manifest.py           # Artifact catalog, freshness, README headlines
+│   ├── test_deeponet.py                   # Unit tests for the DeepONet operator baseline
 │   ├── test_hardware_loops.py             # Emulator-guarded end-to-end hardware entry points
 │   ├── test_smoke_runs.py                 # Every configs/smoke_*.yaml is accepted + runs
 │   └── test_english_only.py               # Repo text stays English-only
@@ -1847,6 +1905,10 @@ python -m src.evaluation.piml_mfrl_study --seeds 42,43,44 --total-timesteps 1000
 # 43. Physics parameter identification (the inverse problem) + zero-shot control transfer
 #     (10.40). Emulator-free: runs on CPU from the recorded dataset, so it is a CI-safe study.
 python -m src.evaluation.inverse_transfer_benchmark
+
+# 44. DeepONet neural-operator baseline under the unified protocol (10.41).
+#     Emulator-free: writes results/deeponet_benchmark_metrics.json.
+python -m src.evaluation.deeponet_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1862,7 +1924,7 @@ make format-check # ruff format --check (what CI runs)
 make typecheck   # mypy on typed core modules
 make check-all   # lint + format-check + typecheck + test-cov (the full gate)
 make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
-make smoke-all   # seconds-scale runs of five slow studies -> results_smoke/ (ignored)
+make smoke-all   # seconds-scale runs of $10 studies -> results_smoke/ (ignored)
 make benchmark sample-efficiency multiseed
 smw-pinn check-all # the same gate on Windows, where `make` is usually unavailable
 ```
@@ -1880,7 +1942,7 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 * **Asset paths in one place (`src/utils/paths.py`):** the Libretro core, ROM, savestates, datasets and every `results/` output resolve through repo-root-anchored, `SMW_*`-overridable helpers (`require_rom`, `require_core`, `results_file`, `checkpoint_file`), so entry points behave identically from any working directory and a missing ROM produces an acquisition message instead of a traceback. The WRAM register map lives in `src/environment/wram.py`.
 * **Cross-platform runner (`src/cli.py`):** `pip install -e .` exposes `smw-pinn`, whose subcommands mirror the Makefile (`smw-pinn baselines`, `smw-pinn multiseed`, `smw-pinn check-all`) plus a generic `smw-pinn run <module> [args...]` for the ~40 documented entry points. The mypy typed-core list lives here, so `make`, CI and `smw-pinn` cannot drift apart.
 * **Provenance and artifact index:** every artifact written by these tools embeds a `_meta` block (git SHA and dirty flag, library/CUDA versions, seed, command, UTC timestamp) via `src/utils/provenance.py:write_metrics`, and `results/MANIFEST.md` maps artifact → writer → command → README section. `tests/test_results_manifest.py` fails CI on an ownerless artifact, a fictional writer, a dangling claim, a growing `_meta` exemption list, a checkpoint newer than the result that used it, or a §10 headline that no longer matches its artifact.
-* **Fast smoke tests for the §10 studies:** five emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings) are covered by `tests/test_hardware_loops.py` instead.
+* **Fast smoke tests for the §10 studies:** six emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings) are covered by `tests/test_hardware_loops.py` instead.
 * **Standardized episode preamble:** closed-loop episodes start with `SnesLibretroEmulator.start_episode()` (restore savestate → force gameplay mode `0x14` → warm-up frames → read state). Before it existed, ~15 scripts copy-pasted three different versions of that preamble and the difference was worth 3.4x progress (§10.38.1).
 
 ---

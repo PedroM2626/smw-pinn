@@ -72,6 +72,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "piml-mfrl": "src.training.piml_mfrl",
     "piml-mfrl-study": "src.evaluation.piml_mfrl_study",
     "inverse-transfer": "src.evaluation.inverse_transfer_benchmark",
+    "deeponet": "src.evaluation.deeponet_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -93,6 +94,7 @@ SMOKE_RUNS: tuple[tuple[str, str], ...] = (
     ("src.training.train_set_multi_entity", "configs/smoke_set_multi_entity.yaml"),
     ("src.evaluation.multiseed_benchmark", "configs/smoke_multiseed.yaml"),
     ("src.evaluation.sample_efficiency_benchmark", "configs/smoke_sample_efficiency.yaml"),
+    ("src.evaluation.deeponet_benchmark", "configs/smoke_deeponet.yaml"),
 )
 
 # Quality gates: the module plus the arguments this project standardizes on.

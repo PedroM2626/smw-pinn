@@ -9,6 +9,7 @@ from src.models.cbf_projection import (
     DiscreteCBFCategoricalFilter,
     smw_barrier_affine,
 )
+from src.models.deeponet import DeepONetDynamics
 from src.models.pinn_ensemble import DeepPINNEnsemble
 from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
@@ -38,6 +39,7 @@ __all__ = [
     "build_param_matched_mlp",
     "MATCHED_HIDDEN_DIMS",
     "StatisticalLSTMDynamics",
+    "DeepONetDynamics",
     "SoftPINNDynamics",
     "HardResidualPINNDynamics",
     "GravityIdentifiedPINNDynamics",

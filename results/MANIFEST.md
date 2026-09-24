@@ -87,6 +87,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `obstacle_1000_diagnosis.json` | `src/evaluation/diagnose_obstacle_1000.py` | yes | 10.24 (X~1000 plateau) |
 | `piml_mfrl_metrics.json` | `src/evaluation/piml_mfrl_study.py` | yes | 10.39.1 |
 | `inverse_identification_metrics.json` | `src/evaluation/inverse_transfer_benchmark.py` | no | 10.40 |
+| `deeponet_benchmark_metrics.json` | `src/evaluation/deeponet_benchmark.py` | no | 10.41 |
 
 ## Input freshness
 

@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -29,6 +29,7 @@ help:
 	@echo "piml-mfrl          Physics-Informed Model-Free RL on real SNES (configs/piml_mfrl.yaml)"
 	@echo "piml-mfrl-study    PIML-MFRL per-mechanism ablation (baseline/A/B/C/full, real SNES)"
 	@echo "inverse-transfer   Physics parameter identification + zero-shot transfer (inverse problem, emulator-free)"
+	@echo "deeponet           DeepONet neural-operator baseline (README 10.41, emulator-free)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -91,6 +92,11 @@ piml-mfrl-study:
 inverse-transfer:
 	$(PY) -m src.evaluation.inverse_transfer_benchmark
 
+# DeepONet neural-operator baseline under the unified protocol (README 10.41).
+# Emulator-free: published comparison rows are read from benchmark_metrics.json.
+deeponet:
+	$(PY) -m src.evaluation.deeponet_benchmark
+
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in
 # results/ can ever be overwritten by a smoke run; tests/test_smoke_runs.py asserts
@@ -101,6 +107,7 @@ smoke-all:
 	$(PY) -m src.training.train_set_multi_entity --config $(CONFIG_DIR)/smoke_set_multi_entity.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.multiseed_benchmark --config $(CONFIG_DIR)/smoke_multiseed.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.sample_efficiency_benchmark --config $(CONFIG_DIR)/smoke_sample_efficiency.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.deeponet_benchmark --config $(CONFIG_DIR)/smoke_deeponet.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

@@ -11,6 +11,37 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **DeepONet neural-operator baseline** (README Section 10.41): the repository's first
+  neural-operator contribution, adding the operator-learning family (Lu et al., 2021) to
+  the statistical-vs-physics-informed taxonomy. `src/models/deeponet.py`
+  (`DeepONetDynamics`: branch MLP encodes the 14-sensor state-action reading into a
+  p=64 basis; trunk MLP evaluates the basis at output-channel query coordinates in
+  [-1, 1]; per-channel constant term; arbitrary-coordinate querying supported) trained
+  under the exact unified protocol by `src/evaluation/deeponet_benchmark.py`
+  (emulator-free, CI-safe; published comparison rows are read from the committed
+  `benchmark_metrics.json`), writing `results/deeponet_benchmark_metrics.json` with
+  `_meta` provenance and indexed in `results/MANIFEST.md`. Empirical outcome on the
+  canonical split (seed 42): test MSE 7.8800 - 2.1x lower than the statistical MLP and
+  the best physics-free architecture in the study - yet a kinematic residual of 273.15
+  with a 99.58% multi-start violation rate (0% velocity violations), confirming at
+  operator level that structure-free learning does not recover the discrete integration
+  identity; unit tests in `tests/test_deeponet.py`.
+- **DeepONet neural-operator baseline** (README Section 10.41): the repository's first
+  neural-operator contribution, adding the operator-learning family (Lu et al., 2021) to
+  the statistical-vs-physics-informed taxonomy. `src/models/deeponet.py`
+  (`DeepONetDynamics`: the branch MLP encodes the 14-sensor state-action reading into a
+  p=64 basis, the trunk MLP evaluates the basis at output-channel query coordinates in
+  [-1, 1], plus a per-channel constant term; arbitrary-coordinate querying supported)
+  trained under the exact unified protocol by `src/evaluation/deeponet_benchmark.py`
+  (emulator-free, CI-safe; published comparison rows are read from the committed
+  `benchmark_metrics.json`), writing `results/deeponet_benchmark_metrics.json` with
+  `_meta` provenance and indexed in `results/MANIFEST.md`. Empirical outcome on the
+  canonical split (seed 42): test MSE 7.8800 - 2.1x lower than the statistical MLP and
+  the best physics-free architecture in the study - yet a kinematic residual of 273.15
+  with a 99.58% multi-start violation rate (0% velocity violations), confirming at the
+  operator level that structure-free learning does not recover the discrete integration
+  identity. Wired as the `deeponet` CLI/Make target with smoke config
+  `configs/smoke_deeponet.yaml`; unit tests in `tests/test_deeponet.py`.
 - **PIML-MFRL** (README Section 10.39): model-free PPO on the authentic SNES console with
   three independently switchable physics couplings - a Control-Lyapunov/HJB critic
   penalty (Approach A), a differentiable CBF-QP actor safety layer with a discrete
