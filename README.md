@@ -84,6 +84,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.39 Physics-Informed Model-Free RL (PIML-MFRL)](#1039-physics-informed-model-free-rl-piml-mfrl)
    * [10.40 Physics Parameter Identification: the Inverse Problem](#1040-physics-parameter-identification-the-inverse-problem)
    * [10.41 Neural-Operator Baselines: DeepONet on Discrete Engine Dynamics](#1041-neural-operator-baselines-deeponet-on-discrete-engine-dynamics)
+   * [10.42 Physics-Constrained DeepONet and the Fourier Neural Operator](#1042-physics-constrained-deeponet-and-the-fourier-neural-operator)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1526,6 +1527,59 @@ Regenerate: `python -m src.evaluation.deeponet_benchmark` (emulator-free; `--lat
 
 ---
 
+### 10.42 Physics-Constrained DeepONet and the Fourier Neural Operator
+
+Section 10.41 closed with two open branches: (a) a **physics-constrained neural operator** - a DeepONet whose branch/trunk factorization is confined to force and contact residuals while the Section 4 kinematics integrate them analytically - and (b) the **spectral branch of operator learning**, the Fourier Neural Operator (FNO; Li et al., 2021, ICLR), over the same sensor readings. This section closes both branches with genuine unified-protocol runs recorded in `results/operator_benchmark_metrics.json`.
+
+**Formulation A - Physics-Constrained DeepONet (`PhysicsConstrainedDeepONetDynamics`, 52,742 parameters).** The operator no longer predicts the next state directly; it predicts the same *residual space* the Hard Residual PINN learns - velocity increments and contact flags - through a basis expansion over the residual-output query grid:
+
+$$[\delta v_x,\; \delta v_y,\; \hat{c}_{\text{aux}}](q) = \langle b([s_t, a_t]),\; \tau(y_q) \rangle + b_0[q],\qquad q \in \{0, \dots, 5\}$$
+
+and the engine's discrete integration is applied analytically in the computation graph, exactly as in Section 5.4: $\hat{v}_x = \mathrm{clamp}(v_x + \delta v_x, \pm 72)$, $\hat{v}_y = \mathrm{clamp}(v_y + \delta v_y, -80, 64)$, $\hat{X}_{t+1} = X_t + \hat{v}_x / 16.0$, $\hat{Y}_{t+1} = Y_t + \hat{v}_y / 16.0$. The operator learns forces; the engine rule integrates them. The kinematic consistency residual is identically zero **by construction**, so this hybrid cannot violate the discrete update identity regardless of what the branch/trunk nets learn.
+
+**Formulation B - FNO (`FNODynamics`, 14,537 parameters: width 32, 6 Fourier modes, 2 spectral layers).** The state-action reading $u = [s_t, a_t]$ is collocated on the uniform 14-sensor lattice $x_i = i/13 \in [0,1]$; each pair $[u(x_i), x_i]$ is lifted to a 32-channel latent field, two spectral convolution blocks act on it (FFT $\to$ learned complex weights on the 6 lowest modes $\to$ inverse FFT $+$ pointwise bypass, GELU), and the resulting scalar field $f$ on $[0,1]$ is decoded at the canonical output-channel queries $y_q$ by linear interpolation - the FNO's continuous, grid-independent evaluation mode applied to discrete channel coordinates:
+
+$$\hat{s}_{t+1}[q] = f\!\left(y_q\right) + b_0[q],\qquad f = \mathcal{F}^{-1}\Big[\sum_{|k| \le k_{\max}} R_k \cdot \mathcal{F}\{V_L\}_k\Big]$$
+
+```
++---------------------------------------------------------------------------------------------------+
+| 10.42A PHYSICS-CONSTRAINED DEEPONET          | 10.42B FOURIER NEURAL OPERATOR (width 32, k=6)     |
+|                                              |                                                    |
+| [s_t, a_t] --> BRANCH MLP --+                | [s_t, a_t] on 14-sensor lattice x_i                |
+|                             +-> <b, tau(y)>  |        | lift([u_i, x_i] -> 32ch)                  |
+| aux grid y_q --> TRUNK MLP -+   + b0         |        v                                          |
+|                             | = [dvx, dvy,   |  FFT -> keep 6 modes -> complex R_k -> IFFT       |
+|                             v    contacts]   |    (+ pointwise bypass, GELU) x 2 blocks          |
+|              HARD KINEMATIC SHELL (Section 4)|        | project -> scalar field f on [0, 1]      |
+|              clamp v, X += vx/16, Y += vy/16 |        v                                          |
+|              => zero residual BY CONSTRUCTION|  f(y_q) + b0[q] = hat_s_{t+1}[q]                  |
++---------------------------------------------------------------------------------------------------+
+```
+
+**Protocol.** Identical to Section 7 and Section 10.41: canonical 8,077-transition dataset, seed-42 episodic split, AdamW ($10^{-3}$ / $10^{-4}$), batch 128, Smooth L1, 35 epochs, identical 120-frame single-track and 10-start rollout evaluations. Each architecture's data pipeline is re-seeded and rebuilt inside its own loop iteration, so every row reproduces standalone under the canonical seed (the DeepONet reference row indeed re-produced the exact Section 10.41 numbers). Published comparison rows come from the committed `benchmark_metrics.json`.
+
+#### 10.42.1 Empirical Results (seed 42, canonical split)
+
+| Architecture | Paradigm | Parameters | Test Loss (Data MSE) | Kinematic Residual | Kin. Violations (single track) | Vel. Violations |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| DeepONet (10.41 re-run) | Operator, unconstrained | 52,744 | 7.8800 | 273.15 | 118 / 120 (98.3%) | 0 / 120 |
+| **Physics-Constrained DeepONet** | **Operator + hard kinematics** | 52,742 | **0.5766** | **0.0025** (analytical zero) | **0 / 120 (0.0%)** | **0 / 120** |
+| **FNO (6 modes, width 32)** | **Spectral operator, unconstrained** | **14,537** | **0.4025** | 0.6579 | 80 / 120 (66.7%) | 36 / 120 (30.0%) |
+| Hard Residual PINN (published) | Hard inductive bias | 41,862 | 0.5783 | 0.0019 | 0 / 120 (0.0%) | 0 / 120 |
+| Statistical MLP (published) | Black-box | 36,360 | 16.4717 | 17,561.24 | 118 / 120 | 40 / 120 |
+
+Multi-start aggregate (10 starts x 120 frames): Physics-Constrained DeepONet mean drift $164.12 \pm 142.52$ px with **0.0%** kinematic and velocity violation rates; FNO mean drift $210.79 \pm 175.50$ px with **88.4%** kinematic and **28.8%** velocity violation rates; DeepONet re-run $149.41 \pm 81.10$ px (99.6% kinematic violations). Single-track drifts were $102.84$ px (PC-DeepONet, final 287.15 px) and $133.86$ px (FNO, final 352.61 px), against the published Hard PINN's $50.87$ px (final 78.13 px).
+
+#### 10.42.2 What the Operator Family Study Establishes
+
+1. **The hybrid works exactly as designed.** The Physics-Constrained DeepONet matches the Hard Residual PINN within 0.3% on single-step loss (0.5766 vs. 0.5783), with a kinematic residual at float32 zero (0.0025) and 0 violations on every rollout frame in the study. The Section 10.41 conclusion holds in both directions: the branch/trunk factorization is a viable force estimator, and hard kinematics transfer their guarantees to it unchanged. For planning under constraint-sensitivity (Sections 10.6, 10.19), the hybrid is a drop-in substitute class for the Hard PINN.
+2. **FNO is the strongest physics-free single-step model in the repository - and still not a safe dynamics model.** With only 14,537 parameters (65% fewer than the 128x128 Hard PINN) the spectral operator reaches a test loss of 0.4025, **30% below the Hard PINN** and 41x below the MLP: the globally smooth Fourier kernels fit the fixed-point position/velocity warps exceptionally well. Yet its residual (0.6579, 347x the analytical zero) is not structural: it violates the discrete identity on 88.4% of multi-start rollout frames and the engine's velocity bounds on 28.8%. This is the sharpest illustration yet of the benchmark's thesis - *single-step regression accuracy and discrete physical consistency are different objectives*, and only hard inductive bias delivers the second.
+3. **Precision without guarantees is a planning hazard, not a planning asset.** FNO's rollout behavior (80/120 violated frames, 36 velocity violations on the single track, drift variability $\sigma = 175.50$ px) shows a model that is locally excellent but globally unconstrained: an MPC planner rolling it forward would trust sub-pixel-accurate steps that silently leave the engine's reachable set. Within the operator family the ordering for *world-model duty* is therefore PC-DeepONet $\gg$ DeepONet $>$ FNO, exactly perpendicular to the single-step ordering FNO $>$ PC-DeepONet $>$ DeepONet - the benchmark's central trade-off, now measured inside one architecture family.
+
+Regenerate: `python -m src.evaluation.operator_benchmark` (emulator-free; `--fno-width`, `--fno-modes`, `--fno-layers` and `--latent-dim` control the architecture knobs; each row re-seeds independently).
+
+---
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -1537,7 +1591,7 @@ smw-pinn/
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
 │   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
-│   └── smoke_*.yaml                    # 6 fast emulator-free study configs (`make smoke`)
+│   └── smoke_*.yaml                    # 7 fast emulator-free study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -1568,6 +1622,7 @@ smw-pinn/
 │   ├── distilled_policy_metrics.json      # Distilled amortized MPC policy evaluation logs
 │   ├── extended_navigation_metrics.json   # Extended 1,016+ px hardware navigation logs
 │   ├── deeponet_benchmark_metrics.json    # DeepONet neural-operator study metrics (10.41)
+│   ├── operator_benchmark_metrics.json    # Operator family study metrics (10.42)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
 │   └── figures/                           # High-resolution benchmark figures (.png) and .gif
@@ -1603,7 +1658,8 @@ smw-pinn/
 │   │   ├── pinn_set_multi_entity.py       # Permutation-Invariant Cross-Attention PINN (N Sprites)
 │   │   ├── pinn_unified_multimodal.py     # Unified kinematic + tilemap + hazard PINN
 │   │   ├── pinn_gravity.py                # Gravity-identified residual PINN (learnable g)
-│   │   ├── deeponet.py                    # DeepONet neural-operator baseline (branch/trunk)
+│   │   ├── deeponet.py                    # DeepONet + Physics-Constrained DeepONet operators
+│   │   ├── fno.py                         # Fourier Neural Operator (spectral conv baseline)
 │   │   └── tilemap_pinn.py                # Tilemap-conditioned spatial PINN architecture
 │   ├── losses/
 │   │   └── physics_losses.py              # Analytical physics loss functions
@@ -1644,6 +1700,7 @@ smw-pinn/
 │       ├── per_variable_metrics.py        # Per-channel MSE/MAE/R² + contact accuracy/F1
 │       ├── sample_efficiency_benchmark.py # Sample efficiency Pareto benchmark script
 │       ├── deeponet_benchmark.py          # DeepONet neural-operator study (10.41, CI-safe)
+│       ├── operator_benchmark.py          # Operator family: PC-DeepONet + FNO (10.42, CI-safe)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -1700,7 +1757,8 @@ smw-pinn/
 │   ├── test_dependency_parity.py          # requirements.txt / pyproject / lockstep pins
 │   ├── test_analytical_baselines.py       # Closed-form kinematics + oracle MPC
 │   ├── test_results_manifest.py           # Artifact catalog, freshness, README headlines
-│   ├── test_deeponet.py                   # Unit tests for the DeepONet operator baseline
+│   ├── test_deeponet.py                   # Unit tests for the DeepONet operator baselines
+│   ├── test_fno.py                        # Unit tests for the Fourier Neural Operator
 │   ├── test_hardware_loops.py             # Emulator-guarded end-to-end hardware entry points
 │   ├── test_smoke_runs.py                 # Every configs/smoke_*.yaml is accepted + runs
 │   └── test_english_only.py               # Repo text stays English-only
@@ -1909,6 +1967,10 @@ python -m src.evaluation.inverse_transfer_benchmark
 # 44. DeepONet neural-operator baseline under the unified protocol (10.41).
 #     Emulator-free: writes results/deeponet_benchmark_metrics.json.
 python -m src.evaluation.deeponet_benchmark
+
+# 45. Neural-operator family study: DeepONet + Physics-Constrained DeepONet + FNO
+#     (10.42). Emulator-free: writes results/operator_benchmark_metrics.json.
+python -m src.evaluation.operator_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1942,7 +2004,7 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 * **Asset paths in one place (`src/utils/paths.py`):** the Libretro core, ROM, savestates, datasets and every `results/` output resolve through repo-root-anchored, `SMW_*`-overridable helpers (`require_rom`, `require_core`, `results_file`, `checkpoint_file`), so entry points behave identically from any working directory and a missing ROM produces an acquisition message instead of a traceback. The WRAM register map lives in `src/environment/wram.py`.
 * **Cross-platform runner (`src/cli.py`):** `pip install -e .` exposes `smw-pinn`, whose subcommands mirror the Makefile (`smw-pinn baselines`, `smw-pinn multiseed`, `smw-pinn check-all`) plus a generic `smw-pinn run <module> [args...]` for the ~40 documented entry points. The mypy typed-core list lives here, so `make`, CI and `smw-pinn` cannot drift apart.
 * **Provenance and artifact index:** every artifact written by these tools embeds a `_meta` block (git SHA and dirty flag, library/CUDA versions, seed, command, UTC timestamp) via `src/utils/provenance.py:write_metrics`, and `results/MANIFEST.md` maps artifact → writer → command → README section. `tests/test_results_manifest.py` fails CI on an ownerless artifact, a fictional writer, a dangling claim, a growing `_meta` exemption list, a checkpoint newer than the result that used it, or a §10 headline that no longer matches its artifact.
-* **Fast smoke tests for the §10 studies:** six emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings) are covered by `tests/test_hardware_loops.py` instead.
+* **Fast smoke tests for the §10 studies:** seven emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`, `smoke_operators.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings) are covered by `tests/test_hardware_loops.py` instead.
 * **Standardized episode preamble:** closed-loop episodes start with `SnesLibretroEmulator.start_episode()` (restore savestate → force gameplay mode `0x14` → warm-up frames → read state). Before it existed, ~15 scripts copy-pasted three different versions of that preamble and the difference was worth 3.4x progress (§10.38.1).
 
 ---

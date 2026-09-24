@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from src.environment.dataset_loader import create_dataloaders
-from src.models import DeepONetDynamics
+from src.models import DeepONetDynamics, PhysicsConstrainedDeepONetDynamics
 from src.models.deeponet import _build_mlp
 from src.training.trainer import DynamicsTrainer
 
@@ -96,6 +96,51 @@ def test_build_mlp_structure():
     assert isinstance(net, torch.nn.Sequential)
     x = torch.randn(2, 5)
     assert net(x).shape == (2, 3)
+
+
+def test_physics_constrained_deeponet_exact_kinematic_guarantee():
+    """
+    Physics-constrained DeepONet must STRICTLY satisfy the Section 4 identity:
+        hat_X = X_t + hat_vx / 16.0
+        hat_Y = Y_t + hat_vy / 16.0
+    The operator learns only forces/contacts; integration is analytical, so the
+    kinematic residual is identically zero as in the Hard Residual PINN.
+    """
+    B, state_dim, action_dim = 16, 8, 6
+    model = PhysicsConstrainedDeepONetDynamics(
+        state_dim=state_dim, action_dim=action_dim, latent_dim=24
+    )
+
+    state = torch.randn(B, state_dim)
+    action = torch.randn(B, action_dim)
+
+    pred = model(state, action)
+    assert pred.shape == (B, state_dim)
+
+    expected_x = state[:, 0] + (pred[:, 2] / 16.0)
+    expected_y = state[:, 1] + (pred[:, 3] / 16.0)
+    assert torch.allclose(pred[:, 0], expected_x, atol=1e-6)
+    assert torch.allclose(pred[:, 1], expected_y, atol=1e-6)
+
+    # Physical saturation clamping limits (Section 4 engine bounds).
+    assert (pred[:, 2] <= 72.0 + 1e-5).all() and (pred[:, 2] >= -72.0 - 1e-5).all()
+    assert (pred[:, 3] <= 64.0 + 1e-5).all() and (pred[:, 3] >= -80.0 - 1e-5).all()
+
+    # Gradients flow through the clamp into both operator subnets.
+    pred.sum().backward()
+    assert model.output_bias.grad is not None
+    for name, p in model.named_parameters():
+        if "branch" in name or "trunk" in name:
+            assert p.grad is not None
+            assert not torch.isnan(p.grad).any()
+
+
+def test_physics_constrained_deeponet_aux_layout():
+    state_dim, action_dim = 8, 6
+    model = PhysicsConstrainedDeepONetDynamics(state_dim=state_dim, action_dim=action_dim)
+    # Residual outputs = 2 velocity increments + (state_dim - 4) contact flags.
+    assert model.aux_dim == state_dim - 2
+    assert model.residual_query_coords.shape == (state_dim - 2, 1)
 
 
 def test_deeponet_integrates_with_dynamics_trainer(tmp_path):

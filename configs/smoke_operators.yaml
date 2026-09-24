@@ -1,0 +1,9 @@
+# Seconds-scale version of the README 10.42 operator-family study (`make smoke`).
+# Same three-architecture protocol path at a tiny budget.
+epochs: 2
+latent_dim: 32
+fno_width: 16
+fno_modes: 4
+seed: 42
+rollout_horizon: 20
+num_rollout_starts: 2

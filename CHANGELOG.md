@@ -42,6 +42,25 @@ numbers* - those are reported here and in README Section 12, never applied silen
   operator level that structure-free learning does not recover the discrete integration
   identity. Wired as the `deeponet` CLI/Make target with smoke config
   `configs/smoke_deeponet.yaml`; unit tests in `tests/test_deeponet.py`.
+- **Neural-operator family study: Physics-Constrained DeepONet + FNO** (README Section
+  10.42): the two follow-up branches announced in 10.41.2, now measured.
+  `PhysicsConstrainedDeepONetDynamics` (in `src/models/deeponet.py`) confines the
+  branch/trunk operator to force/contact residuals and integrates them through the
+  Section 4 hard kinematic shell, so its kinematic residual is identically zero by
+  construction (52,742 params). `FNODynamics` (`src/models/fno.py`) is a Fourier Neural
+  Operator (Li et al., 2021): 14-sensor lattice collocation, 2 spectral convolution
+  blocks (6 Fourier modes, width 32), interpolated field decoding at output-channel
+  queries (14,537 params). `src/evaluation/operator_benchmark.py` trains all three
+  operators under the unified protocol with per-model reseeding (each row reproduces
+  standalone; the DeepONet reference row re-produced 10.41 exactly) and writes
+  `results/operator_benchmark_metrics.json` with `_meta`, indexed in
+  `results/MANIFEST.md`. Genuine outcomes (seed 42): PC-DeepONet 0.5766 test MSE with
+  0 violations on every rollout frame (matches the Hard PINN's 0.5783 / analytical
+  zero); FNO 0.4025 test MSE - the repository's best single-step, 30% below the Hard
+  PINN - but 88.4% multi-start kinematic-violation and 28.8% velocity-violation rates,
+  the sharpest instance yet of the accuracy-vs-guarantees trade-off. Wired as the
+  `operators` CLI/Make target with smoke config `configs/smoke_operators.yaml`; tests
+  in `tests/test_deeponet.py` (exact-kinematics guarantee) and `tests/test_fno.py`.
 - **PIML-MFRL** (README Section 10.39): model-free PPO on the authentic SNES console with
   three independently switchable physics couplings - a Control-Lyapunov/HJB critic
   penalty (Approach A), a differentiable CBF-QP actor safety layer with a discrete

@@ -78,7 +78,7 @@ def test_smoke_config_sets_a_real_parameter(module: str, config: str) -> None:
 
 
 # This file costs about half a minute in total (each smoke run is a subprocess with
-# a torch import), which is the price of covering six pipelines that no other test
+# a torch import), which is the price of covering seven pipelines that no other test
 # reaches. Keep the budgets inside configs/smoke_*.yaml, not here.
 @pytest.mark.parametrize("module,config", SMOKE_RUNS)
 def test_smoke_runs_execute_and_record_provenance(module: str, config: str, tmp_path) -> None:

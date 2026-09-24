@@ -143,3 +143,106 @@ class DeepONetDynamics(nn.Module):
         if canonical:
             out = out + self.output_bias.unsqueeze(0)
         return out
+
+
+class PhysicsConstrainedDeepONetDynamics(nn.Module):
+    """
+    Physics-constrained neural operator (hybrid of DeepONet and the Hard
+    Residual PINN, README 10.42).
+
+    The operator branch/trunk predicts only the unmodeled *forces and contacts*
+    - [delta_vx, delta_vy, c_ground, c_ceiling, c_left, c_right] as a basis
+    expansion over the residual-output grid - while the Section 4 discrete
+    kinematics are applied analytically in the computation graph, exactly as in
+    HardResidualPINNDynamics:
+
+        hat_vx = clamp(vx_t + delta_vx, -max_vx, max_vx)
+        hat_vy = clamp(vy_t + delta_vy, min_vy, terminal_vy)
+        hat_X  = X_t + hat_vx / 16.0
+        hat_Y  = Y_t + hat_vy / 16.0
+
+    The discrete kinematic consistency residual is therefore identically zero
+    by construction: the operator learns forces, the engine rule integrates
+    them. This isolates the contribution of the Section 10.41 finding - if the
+    DeepONet basis prior helps, embedding it inside the hard kinematic shell
+    should preserve the Hard PINN's guarantees while changing the force
+    estimator's inductive bias.
+    """
+
+    def __init__(
+        self,
+        state_dim: int = 8,
+        action_dim: int = 6,
+        branch_hidden_dims: Optional[List[int]] = None,
+        trunk_hidden_dims: Optional[List[int]] = None,
+        latent_dim: int = 64,
+        max_vx: float = 72.0,
+        terminal_vy: float = 64.0,
+        min_vy: float = -80.0,
+        subpixels_per_pixel: float = 16.0,
+    ):
+        super().__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.latent_dim = latent_dim
+        self.max_vx = max_vx
+        self.terminal_vy = terminal_vy
+        self.min_vy = min_vy
+        self.subpixels_per_pixel = subpixels_per_pixel
+
+        if branch_hidden_dims is None:
+            branch_hidden_dims = [128, 128]
+        if trunk_hidden_dims is None:
+            trunk_hidden_dims = [128, 128]
+
+        # The operator predicts velocities-and-contacts only: aux_dim residual
+        # channels (2 velocity residuals + state_dim - 4 contact flags).
+        self.aux_dim = state_dim - 2
+        self.num_sensors = state_dim + action_dim
+        self.branch = _build_mlp(self.num_sensors, branch_hidden_dims, latent_dim)
+        self.trunk = _build_mlp(1, trunk_hidden_dims, latent_dim)
+        self.output_bias = nn.Parameter(torch.zeros(self.aux_dim))
+        self.register_buffer(
+            "residual_query_coords",
+            torch.linspace(-1.0, 1.0, self.aux_dim).unsqueeze(-1),
+        )
+
+    def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            state: [B, state_dim] -> [X_t, Y_t, vx_t, vy_t, c_ground, ...]
+            action: [B, action_dim]
+
+        Returns:
+            next_state: [B, state_dim] with exact discrete-kinematic consistency.
+        """
+        x_t = state[:, 0]
+        y_t = state[:, 1]
+        vx_t = state[:, 2]
+        vy_t = state[:, 3]
+
+        sensors = torch.cat([state, action], dim=-1)
+        coefficients = self.branch(sensors)  # [B, p]
+        basis = self.trunk(self.residual_query_coords)  # [aux_dim, p]
+        residuals = torch.einsum("bp,qp->bq", coefficients, basis) + self.output_bias
+
+        delta_vx = residuals[:, 0]
+        delta_vy = residuals[:, 1]
+        aux_pred = residuals[:, 2:]  # contact-flag logits
+
+        # Hard Section-4 kinematics: physical saturation, exact integration.
+        hat_vx_next = torch.clamp(vx_t + delta_vx, -self.max_vx, self.max_vx)
+        hat_vy_next = torch.clamp(vy_t + delta_vy, self.min_vy, self.terminal_vy)
+        hat_x_next = x_t + (hat_vx_next / self.subpixels_per_pixel)
+        hat_y_next = y_t + (hat_vy_next / self.subpixels_per_pixel)
+
+        return torch.cat(
+            [
+                hat_x_next.unsqueeze(-1),
+                hat_y_next.unsqueeze(-1),
+                hat_vx_next.unsqueeze(-1),
+                hat_vy_next.unsqueeze(-1),
+                aux_pred,
+            ],
+            dim=-1,
+        )

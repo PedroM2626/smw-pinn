@@ -88,6 +88,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `piml_mfrl_metrics.json` | `src/evaluation/piml_mfrl_study.py` | yes | 10.39.1 |
 | `inverse_identification_metrics.json` | `src/evaluation/inverse_transfer_benchmark.py` | no | 10.40 |
 | `deeponet_benchmark_metrics.json` | `src/evaluation/deeponet_benchmark.py` | no | 10.41 |
+| `operator_benchmark_metrics.json` | `src/evaluation/operator_benchmark.py` | no | 10.42 |
 
 ## Input freshness
 
