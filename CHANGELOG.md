@@ -11,6 +11,64 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Closed-loop control with inverse-problem world models** (README Section 10.44): the
+  inverse answers of 10.40 and 10.43 are driven on the real console for the first time.
+  `src/models/inverse_world_models.py` wraps the identified seven-constant map and the
+  bagged genetic-program laws as `nn.Module`s on the planner's
+  `(state, action) -> next_state` contract (contact bytes propagated from the current
+  frame, the same convention as the 10.37 baseline), and
+  `src/evaluation/inverse_model_mpc_benchmark.py` runs one CEM-MPC controller - horizon
+  15, 256 candidates, 3 refinement iterations, the published 10.6 objective, the
+  interactive Yoshi's Island 1 savestate, 300 frames, `set_global_seed` before every row -
+  against four dynamics models: the established WRAM engine rules, the 10.40 identified
+  constants, the 10.43 discovered laws and the published Hard Residual PINN. Emulator and
+  ROM required; without them the entry point exits with a diagnostic and writes nothing.
+  Writes `results/inverse_model_mpc_metrics.json` and
+  `results/figures/inverse_model_mpc_progress.png`, wired as the `inverse-mpc` Make/CLI
+  target and tested in `tests/test_inverse_world_models.py` (wrapper/integrator parity,
+  action-agreement metric, figure emission, the no-hardware refusal).
+  Outcome: the identified constants match the hand-measured ones (599.75 vs 605.00 px)
+  while reproducing only 49.7% of the reference controller's actions, and `max_vx` never
+  leaves its 72.0 warm start; the discovered laws reach 60.31 px and die in a pit at frame
+  282 because their horizontal program is the bare contact terminal `ceiling` - a
+  persistence model, indistinguishable from 10.43.5's null on the one-step metric, which
+  cannot plan a run. 605.00 px and the PINN's 573.94 px reproduce the published 10.37.2 and
+  10.6 rows, so the harness is the published one.
+- **Three-engine discovery ablation** (README Section 10.43.9): the caveat Section 10.43
+  attached to its own negative result - that the undiscovered velocity ceiling was a
+  statement about *one* representation - is now measured instead of stated.
+  `src/inverse/structure_selection.py` adds a nested-template engine: twelve structures
+  (`H1_constant` through `H6_contact`, `V1_constant` through `V6_ground_reset`), each fitted
+  with active-set clamping on the rows where a constraint binds, scored by BIC on the fit
+  rows, by held-out RMSE, and by held-out RMSE restricted to frames at >=90% of the observed
+  speed support, with an agreement flag whenever the three criteria disagree.
+  `src/evaluation/symbolic_engine_ablation_benchmark.py` runs that engine, the published
+  gplearn estimator, and PySR (unbounded numerically-optimised constants, `min`/`max`
+  available, serial and deterministic; an optional `symbolic` extra, recorded as unavailable
+  rather than skipped) on identical design matrices, row budgets, held-out banks and probes,
+  on the hidden world (3 replicates x 3 seeds) and again on genuine WRAM telemetry, and
+  assembles its verdict from the measured rates so no clause of the conclusion is asserted
+  ahead of the number. Emulator-free, ~25 min CPU; writes
+  `results/symbolic_engine_ablation_metrics.json` and
+  `results/figures/symbolic_engine_ablation.png`, indexed in `results/MANIFEST.md`, wired as
+  the `symbolic-engines` Make/CLI target with smoke config
+  `configs/smoke_symbolic_engines.yaml`, tested in `tests/test_structure_selection.py` and
+  `tests/test_symbolic_engine_ablation.py` (including tests that the reading refuses to claim
+  an accuracy advantage it did not measure).
+  Outcome, reported as a self-correction in README Section 12: the ceiling is *identifiable*
+  from these windows - as a candidate structure it is recovered at 48.000 against a true 48.0
+  and preferred by BIC and both held-out criteria in 3/3 replicates, with constants within
+  1.4e-4% of truth - but free tree search still misses it identically for both engines
+  (0/3 bagged gplearn replicates, 0/3 PySR fits) even though PySR fits the same law far better
+  ($R^2$ 0.988 vs 0.805), so the bound was a fitness failure, not a representation failure. The
+  gravity gate is the opposite case: gplearn's drawn constants recover it in 1/3 replicates
+  (tier separation -1.35 of a true -2.80) and PySR's optimised constants in 3/3 (-2.80),
+  which is a representation limit. On telemetry the ordering survives (template 0.989, PySR
+  0.430, gplearn -1.7e-4, reproducing 10.43.5 to the digit) and a new trap appears: PySR
+  reports a fixed point at 34.193 that the recording itself violates at 49.0, so a
+  turnover-finding probe can accept a bound the data contradicts. Section 10.43.7's item 1
+  and limitation (i) carry the narrowed wording.
+
 - **Terrain-conditioned residual discovery** (README Section 10.43.8): the counterfactual
   that Section 10.43.5 only inferred is now measured.
   `src/evaluation/symbolic_tilemap_residual_benchmark.py` re-runs the grey-box residual

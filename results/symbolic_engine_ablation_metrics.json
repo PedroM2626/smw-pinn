@@ -1,0 +1,1616 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-26T18:15:22+00:00",
+    "git_sha": "79ed37821f819d719461c99897e964bd54c30b8c",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.symbolic_engine_ablation_benchmark",
+    "engines": [
+      "gplearn",
+      "pysr",
+      "templates"
+    ],
+    "replicates": 3
+  },
+  "study": "Three engines on the same inverse problem: bounded-terminal tree GP, PySR with numerically-optimised unbounded constants, and nested-template model selection in which every structure of interest is an explicit candidate. The question is whether the structures 10.43 failed to discover are missing from the representation, from the fitness, or from the data.",
+  "hidden_world": {
+    "max_vx": 48.0,
+    "walk_accel": 1.0,
+    "run_accel": 1.7999999523162842,
+    "subpixels_per_pixel": 20.0,
+    "held_gravity": 2.4000000953674316,
+    "fall_gravity": 5.199999809265137,
+    "decel": 0.6000000238418579
+  },
+  "protocol": {
+    "replicates": 3,
+    "gp_seeds": 3,
+    "population_size": 500,
+    "generations": 25,
+    "max_train_transitions": 4000,
+    "fit_windows": 800,
+    "eval_windows": 300,
+    "rollout_len": 12,
+    "pysr_iterations": 40,
+    "template_selection": "BIC on fit rows, held-out RMSE, and held-out RMSE restricted to frames at >=90% of the observed speed support",
+    "shared_accuracy_metric": "R^2 of the horizontal increment law on the shared held-out transition bank; gplearn scores its seed-bagged law, PySR its selected model, the template engine its tail-selected structure",
+    "feature_design": {
+      "hidden_world": "synthetic (vx, dir, run | vy, jump, ground)",
+      "real_telemetry": "real (vx, dir, run, ground, ceiling, left, right | vy, jump, ground, ceiling, left, right)"
+    },
+    "seed": 42
+  },
+  "binding_frames": {
+    "definition": "held-out frames at or above 90% of the observed speed support, i.e. the only frames a rigid clamp can be identified from",
+    "hidden_world": 0.2711111111111111,
+    "real_telemetry": 0.0
+  },
+  "structure_matrix": {
+    "gplearn": {
+      "available": true,
+      "n_replicates": 3,
+      "dvx_heldout_r2_mean": 0.8046032244855302,
+      "rigid_bound_discovered_rate": 0.0,
+      "gravity_gate_discovered_rate": 0.3333333333333333,
+      "bound_selected_by_bic_rate": 0.0,
+      "bound_value_mean": null,
+      "bound_overshoot_px_per_frame_mean": 1.712638605833322,
+      "tier_separation_mean": -1.3539854938175555,
+      "true_tier_separation": -2.799999713897705
+    },
+    "pysr": {
+      "available": true,
+      "n_replicates": 3,
+      "dvx_heldout_r2_mean": 0.9880892682814392,
+      "rigid_bound_discovered_rate": 0.0,
+      "gravity_gate_discovered_rate": 1.0,
+      "bound_selected_by_bic_rate": 0.0,
+      "bound_value_mean": null,
+      "bound_overshoot_px_per_frame_mean": 0.2127716293193321,
+      "tier_separation_mean": -2.7999999,
+      "true_tier_separation": -2.799999713897705
+    },
+    "templates": {
+      "available": true,
+      "n_replicates": 3,
+      "dvx_heldout_r2_mean": 0.9999999999999997,
+      "rigid_bound_discovered_rate": 1.0,
+      "gravity_gate_discovered_rate": 1.0,
+      "bound_selected_by_bic_rate": 1.0,
+      "bound_value_mean": 48.0,
+      "bound_overshoot_px_per_frame_mean": null,
+      "tier_separation_mean": -2.7999996136675573,
+      "true_tier_separation": -2.799999713897705
+    }
+  },
+  "hidden_world_runs": {
+    "replicate_0": {
+      "gplearn": {
+        "preset": "synthetic",
+        "dvx_eval_r2": 0.787636463385651,
+        "constants": {
+          "max_vx": {
+            "value": null,
+            "std": 0.0,
+            "rel_error_pct": null
+          },
+          "walk_accel": {
+            "value": 0.7856229837731565,
+            "std": 0.0,
+            "rel_error_pct": 21.437701622684347
+          },
+          "run_accel": {
+            "value": 1.8000011444091797,
+            "std": 0.0,
+            "rel_error_pct": 6.622738483819392e-05
+          },
+          "subpixels_per_pixel": {
+            "value": 19.99979655154875,
+            "std": 0.0,
+            "rel_error_pct": 0.0010172422562426675
+          },
+          "held_gravity": {
+            "value": 3.53724459951951,
+            "std": 0.0,
+            "rel_error_pct": 47.38518579008515
+          },
+          "fall_gravity": {
+            "value": 5.1147860865777055,
+            "std": 0.0,
+            "rel_error_pct": 1.6387254964048472
+          },
+          "decel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 1.8000011444091797,
+          "gravity_gate_discovered": true,
+          "tier_separation": -1.5742052033598912,
+          "true_tier_separation": -2.799999713897705
+        },
+        "per_law": {
+          "dvx": {
+            "expression": "min(max(-0.702, dir), mul(max(vx, run), mul(max(vx, run), dir)))",
+            "nodes": 13,
+            "hold_r2": 0.8022842061215512,
+            "hold_mae": 0.37867889957559114
+          },
+          "dvy": {
+            "expression": "div(div(div(vy, neg(ground)), 2.322), 2.322)",
+            "nodes": 8,
+            "hold_r2": 0.6483926693537267,
+            "hold_mae": 0.4043439509453916
+          },
+          "dx": {
+            "expression": "vx_next",
+            "nodes": 1,
+            "hold_r2": 0.9999999998710979,
+            "hold_mae": 1.891371899277245e-05
+          },
+          "dy": {
+            "expression": "vy_next",
+            "nodes": 1,
+            "hold_r2": 0.9901419207276172,
+            "hold_mae": 0.006102708487161677
+          }
+        },
+        "mean_nodes": 5.75,
+        "gp_seconds": 15.056216716766357
+      },
+      "templates": {
+        "dvx_eval_r2": 0.9999999999999997,
+        "dvx_selected": "H5_coast",
+        "tail_frame_fraction": 0.2722222222222222,
+        "horizontal": {
+          "templates": {
+            "H1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 37.09490009736118,
+              "train_r2": 0.0,
+              "train_tail_rmse": 46.20396759150878,
+              "test_rmse": 37.31540476022134,
+              "test_r2": -0.0004976859657896959,
+              "test_tail_rmse": 46.6927529611638,
+              "bic": 69387.97585082042,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": 1.7274113849798838
+            },
+            "H2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 1.0930842199798114,
+              "train_r2": 0.9991316819319569,
+              "train_tail_rmse": 1.0102511627418564,
+              "test_rmse": 1.1041924586316387,
+              "test_r2": 0.9991239491237999,
+              "test_tail_rmse": 1.0247361941282844,
+              "bic": 1727.2016323510463,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain, no input term",
+              "a0": -0.037274639721864955,
+              "a1": 1.015252293154035
+            },
+            "H3_drive": {
+              "n_parameters": 2,
+              "train_rmse": 0.5137974346930602,
+              "train_r2": 0.9998081528059687,
+              "train_tail_rmse": 0.7258902402709557,
+              "test_rmse": 0.5037895163016862,
+              "test_r2": 0.9998176364548066,
+              "test_tail_rmse": 0.7062350749783899,
+              "bic": -12767.443756161809,
+              "structure_present": false,
+              "structure_note": "two traction tiers, unbounded",
+              "walk": 0.9209618554534733,
+              "run_increment": 0.6922873611506577
+            },
+            "H4_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 0.3806568344793069,
+              "train_r2": 0.9998946974588067,
+              "train_tail_rmse": 0.34360208326975894,
+              "test_rmse": 0.3749661651614864,
+              "test_r2": 0.9998989761448858,
+              "test_tail_rmse": 0.35340815485867266,
+              "bic": -18516.945972189147,
+              "structure_present": true,
+              "structure_note": "rigid symmetric velocity bound",
+              "walk": 0.999999991307639,
+              "run_increment": 0.799999320680521,
+              "max_vx": 48.0
+            },
+            "H5_coast": {
+              "n_parameters": 4,
+              "train_rmse": 6.462005342308129e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.3171907733781484e-07,
+              "test_rmse": 6.344414078518971e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 4.4391409180141093e-07,
+              "bic": -273604.716297619,
+              "structure_present": true,
+              "structure_note": "rigid bound plus Coulomb coast deadband",
+              "walk": 0.9999999913076256,
+              "run_increment": 0.7999993206805386,
+              "max_vx": 48.0,
+              "decel": 0.5999992249174888
+            },
+            "H6_contact": {
+              "n_parameters": 4,
+              "train_rmse": 6.462005342308129e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.3171907733781484e-07,
+              "test_rmse": 6.344414078518971e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 4.4391409180141093e-07,
+              "bic": -273604.716297619,
+              "structure_present": true,
+              "structure_note": "bound, deadband and facing-wall stop",
+              "walk": 0.9999999913076256,
+              "run_increment": 0.7999993206805386,
+              "max_vx": 48.0,
+              "decel": 0.5999992249174888
+            }
+          },
+          "bic_selected": "H5_coast",
+          "test_rmse_selected": "H5_coast",
+          "tail_rmse_selected": "H5_coast",
+          "selected_structure_by_bic": "rigid bound plus Coulomb coast deadband",
+          "selected_structure_by_tail": "rigid bound plus Coulomb coast deadband",
+          "tail_selected_parameters": {
+            "walk": 0.9999999913076256,
+            "run_increment": 0.7999993206805386,
+            "max_vx": 48.0,
+            "decel": 0.5999992249174888
+          },
+          "criteria_agree": true
+        },
+        "vertical": {
+          "templates": {
+            "V1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 12.590479293721396,
+              "train_r2": 0.0,
+              "train_tail_rmse": 18.434377071367628,
+              "test_rmse": 13.449070046990107,
+              "test_r2": -0.0064200228040078855,
+              "test_tail_rmse": null,
+              "bic": 48641.63511958732,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": -3.683537829791506
+            },
+            "V2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 3.0402451552412093,
+              "train_r2": 0.9416913906206541,
+              "train_tail_rmse": 3.434321202814176,
+              "test_rmse": 2.728261326080206,
+              "test_r2": 0.9585841393188812,
+              "test_tail_rmse": null,
+              "bic": 21367.551619246336,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain",
+              "a0": 0.9978032481464405,
+              "a1": 0.8945845973447598
+            },
+            "V3_single_gravity": {
+              "n_parameters": 1,
+              "train_rmse": 4.6400194394647345,
+              "train_r2": 0.864182705863901,
+              "train_tail_rmse": 1.0326184288994489,
+              "test_rmse": 4.4103214778664,
+              "test_r2": 0.8917730917482677,
+              "test_tail_rmse": null,
+              "bic": 29475.765789146124,
+              "structure_present": false,
+              "structure_note": "one gravity tier, free-flight fit",
+              "gravity": 4.745356581181091
+            },
+            "V4_held_gate": {
+              "n_parameters": 2,
+              "train_rmse": 4.901340581701438,
+              "train_r2": 0.8484537351128613,
+              "train_tail_rmse": 5.802038221584004e-07,
+              "test_rmse": 4.683388358029168,
+              "test_r2": 0.8779563742342389,
+              "test_tail_rmse": null,
+              "bic": 30536.9071481248,
+              "structure_present": true,
+              "structure_note": "discontinuous held-jump gravity gate",
+              "fall_gravity": 5.20000002346666,
+              "held_increment": -2.799999650090752,
+              "g_hold": 2.400000373375908
+            },
+            "V5_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 4.901372118225594,
+              "train_r2": 0.8484517849289313,
+              "train_tail_rmse": 5.802038221584004e-07,
+              "test_rmse": 4.683429732314129,
+              "test_r2": 0.8779542178937143,
+              "test_tail_rmse": null,
+              "bic": 30546.200203992812,
+              "structure_present": true,
+              "structure_note": "held gate plus terminal-velocity clamp",
+              "fall_gravity": 5.20000002346666,
+              "held_increment": -2.799999650090752,
+              "g_hold": 2.400000373375908,
+              "terminal_vy": 56.05490646362304
+            },
+            "V6_ground_reset": {
+              "n_parameters": 3,
+              "train_rmse": 0.017582476674164713,
+              "train_r2": 0.9999980498160691,
+              "train_tail_rmse": 5.802038221584004e-07,
+              "test_rmse": 0.019686172837687324,
+              "test_r2": 0.9999978436594746,
+              "test_tail_rmse": null,
+              "bic": -77556.8597603936,
+              "structure_present": true,
+              "structure_note": "gate, clamp and ground-contact downward reset",
+              "fall_gravity": 5.20000002346666,
+              "held_increment": -2.799999650090752,
+              "g_hold": 2.400000373375908,
+              "terminal_vy": 56.05490646362304
+            }
+          },
+          "bic_selected": "V6_ground_reset",
+          "test_rmse_selected": "V6_ground_reset",
+          "tail_rmse_selected": "V6_ground_reset",
+          "selected_structure_by_bic": "gate, clamp and ground-contact downward reset",
+          "selected_structure_by_tail": "gate, clamp and ground-contact downward reset",
+          "tail_selected_parameters": {
+            "fall_gravity": 5.20000002346666,
+            "held_increment": -2.799999650090752,
+            "g_hold": 2.400000373375908,
+            "terminal_vy": 56.05490646362304
+          },
+          "criteria_agree": true
+        },
+        "constants": {
+          "max_vx": {
+            "value": 48.0,
+            "rel_error_pct": 0.0
+          },
+          "walk_accel": {
+            "value": 0.9999999913076256,
+            "rel_error_pct": 8.692374375840473e-07
+          },
+          "run_accel": {
+            "value": 1.7999993119881643,
+            "rel_error_pct": 3.557378537909522e-05
+          },
+          "decel": {
+            "value": 0.5999992249174888,
+            "rel_error_pct": 0.0001331540562264892
+          },
+          "held_gravity": {
+            "value": 2.400000373375908,
+            "rel_error_pct": 1.1583686049702866e-05
+          },
+          "fall_gravity": {
+            "value": 5.20000002346666,
+            "rel_error_pct": 4.119260212351427e-06
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 48.0,
+          "bound_selected_by_bic": true,
+          "bound_selected_by_tail": true,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.799999650090752,
+          "true_tier_separation": -2.799999713897705,
+          "criteria_agree_horizontal": true,
+          "criteria_agree_vertical": true
+        }
+      },
+      "pysr": {
+        "available": true,
+        "niterations": 40,
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "min",
+          "max"
+        ],
+        "fit_rows": 4000,
+        "preset": "synthetic",
+        "per_law": {
+          "dvx": {
+            "expression": "min(max(x2 * x1, (x0 * x1) + -47.150406) + 0.5855251, (abs(min(x1, x0)) * min((x0 + -47.1305) * -0.95367014, max(x2, 0.16949353))) + -0.62548095) + (x1 * 1.4560853)",
+            "nodes": 32.0,
+            "eval_r2": 0.9983488577403676,
+            "eval_mae": 0.0378744283672025,
+            "eval_rmse": 0.05059547564371545
+          },
+          "dvy": {
+            "expression": "5.2000003 + min(min(-4.7683716e-7 - min(x2 * x1, min(x0, -5.2000003 - x0) + 20.800001), min(x1, x0 * -32.240067) * -2.8), (-5.2000003 - x0) * max(x2, x2))",
+            "nodes": 31.0,
+            "eval_r2": 0.999999999999981,
+            "eval_mae": 2.2201337433975293e-07,
+            "eval_rmse": 4.252523540696983e-07
+          }
+        },
+        "dvx_eval_r2": 0.9983488577403676,
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 0.0013881632700005753,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.8000004,
+          "true_tier_separation": -2.799999713897705
+        },
+        "pysr_seconds": 323.737057600003
+      }
+    },
+    "replicate_1": {
+      "gplearn": {
+        "preset": "synthetic",
+        "dvx_eval_r2": 0.7941333320242152,
+        "constants": {
+          "max_vx": {
+            "value": null,
+            "std": 0.0,
+            "rel_error_pct": null
+          },
+          "walk_accel": {
+            "value": 1.1027783469282002,
+            "std": 0.0,
+            "rel_error_pct": 10.27783469282002
+          },
+          "run_accel": {
+            "value": 1.8000011444091797,
+            "std": 0.0,
+            "rel_error_pct": 6.622738483819392e-05
+          },
+          "subpixels_per_pixel": {
+            "value": 19.99979655154875,
+            "std": 0.0,
+            "rel_error_pct": 0.0010172422562426675
+          },
+          "held_gravity": {
+            "value": 4.35727226523538,
+            "std": 0.0,
+            "rel_error_pct": 81.55300383720598
+          },
+          "fall_gravity": {
+            "value": 5.5284230835480015,
+            "std": 0.0,
+            "rel_error_pct": 6.315832429410753
+          },
+          "decel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 1.8000011444091797,
+          "gravity_gate_discovered": false,
+          "tier_separation": -1.2544503225294399,
+          "true_tier_separation": -2.799999713897705
+        },
+        "per_law": {
+          "dvx": {
+            "expression": "min(max(-0.702, dir), mul(max(vx, run), dir))",
+            "nodes": 9,
+            "hold_r2": 0.781288450331975,
+            "hold_mae": 0.3963460017912434
+          },
+          "dvy": {
+            "expression": "abs(mul(min(div(abs(mul(min(div(vy, ground), 0.439), 0.439)), ground), 0.439), 0.439))",
+            "nodes": 15,
+            "hold_r2": 0.41781550464437966,
+            "hold_mae": 0.5385594501122359
+          },
+          "dx": {
+            "expression": "vx_next",
+            "nodes": 1,
+            "hold_r2": 0.9999999998676685,
+            "hold_mae": 1.9064356899808653e-05
+          },
+          "dy": {
+            "expression": "vy_next",
+            "nodes": 1,
+            "hold_r2": 0.9831729444356883,
+            "hold_mae": 0.008769299339207483
+          }
+        },
+        "mean_nodes": 6.5,
+        "gp_seconds": 15.655823945999146
+      },
+      "templates": {
+        "dvx_eval_r2": 0.9999999999999997,
+        "dvx_selected": "H5_coast",
+        "tail_frame_fraction": 0.2722222222222222,
+        "horizontal": {
+          "templates": {
+            "H1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 37.27749909090448,
+              "train_r2": 0.0,
+              "train_tail_rmse": 46.37541660835922,
+              "test_rmse": 37.38834923710473,
+              "test_r2": -0.001000047743160648,
+              "test_tail_rmse": 46.47310917408257,
+              "bic": 69482.25565781452,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": -0.5381702407201131
+            },
+            "H2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 1.095432397614725,
+              "train_r2": 0.9991364696110318,
+              "train_tail_rmse": 1.015565962549225,
+              "test_rmse": 1.0946237286456753,
+              "test_r2": 0.9991419922050419,
+              "test_tail_rmse": 0.999570036222374,
+              "bic": 1768.4030813407148,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain, no input term",
+              "a0": -0.020986504995570653,
+              "a1": 1.0155299598878549
+            },
+            "H3_drive": {
+              "n_parameters": 2,
+              "train_rmse": 0.5045748477796534,
+              "train_r2": 0.999816786420753,
+              "train_tail_rmse": 0.705559808297912,
+              "test_rmse": 0.5164628028098176,
+              "test_r2": 0.9998089972534003,
+              "test_tail_rmse": 0.7351682730631799,
+              "bic": -13115.21148887039,
+              "structure_present": false,
+              "structure_note": "two traction tiers, unbounded",
+              "walk": 0.9199343774046397,
+              "run_increment": 0.7104289269796694
+            },
+            "H4_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 0.3780371838586006,
+              "train_r2": 0.9998971568188045,
+              "train_tail_rmse": 0.3416794604650286,
+              "test_rmse": 0.3742988385841258,
+              "test_r2": 0.9998996774700156,
+              "test_tail_rmse": 0.3308607425575192,
+              "bic": -18649.53563438947,
+              "structure_present": true,
+              "structure_note": "rigid symmetric velocity bound",
+              "walk": 1.0000000120870909,
+              "run_increment": 0.7999993063912698,
+              "max_vx": 48.0
+            },
+            "H5_coast": {
+              "n_parameters": 4,
+              "train_rmse": 6.359405213471574e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.078373723225499e-07,
+              "test_rmse": 6.244388428445874e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 3.9498117915121534e-07,
+              "bic": -273912.00924567005,
+              "structure_present": true,
+              "structure_note": "rigid bound plus Coulomb coast deadband",
+              "walk": 1.0000000120871384,
+              "run_increment": 0.7999993063912414,
+              "max_vx": 48.0,
+              "decel": 0.59999918631136
+            },
+            "H6_contact": {
+              "n_parameters": 4,
+              "train_rmse": 6.359405213471574e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.078373723225499e-07,
+              "test_rmse": 6.244388428445874e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 3.9498117915121534e-07,
+              "bic": -273912.00924567005,
+              "structure_present": true,
+              "structure_note": "bound, deadband and facing-wall stop",
+              "walk": 1.0000000120871384,
+              "run_increment": 0.7999993063912414,
+              "max_vx": 48.0,
+              "decel": 0.59999918631136
+            }
+          },
+          "bic_selected": "H5_coast",
+          "test_rmse_selected": "H5_coast",
+          "tail_rmse_selected": "H5_coast",
+          "selected_structure_by_bic": "rigid bound plus Coulomb coast deadband",
+          "selected_structure_by_tail": "rigid bound plus Coulomb coast deadband",
+          "tail_selected_parameters": {
+            "walk": 1.0000000120871384,
+            "run_increment": 0.7999993063912414,
+            "max_vx": 48.0,
+            "decel": 0.59999918631136
+          },
+          "criteria_agree": true
+        },
+        "vertical": {
+          "templates": {
+            "V1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 13.05929724734184,
+              "train_r2": 0.0,
+              "train_tail_rmse": 18.766888919761808,
+              "test_rmse": 12.329741421513377,
+              "test_r2": -0.0028942928509787524,
+              "test_tail_rmse": null,
+              "bic": 49343.575525202374,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": -3.9709923017024993
+            },
+            "V2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 3.0980103127006906,
+              "train_r2": 0.9437236264170026,
+              "train_tail_rmse": 3.3990637171425897,
+              "test_rmse": 3.1111079534748063,
+              "test_r2": 0.9361475766044638,
+              "test_tail_rmse": null,
+              "bic": 21728.932396391538,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain",
+              "a0": 1.0378314835457982,
+              "a1": 0.8963726788125569
+            },
+            "V3_single_gravity": {
+              "n_parameters": 1,
+              "train_rmse": 4.658468268381763,
+              "train_r2": 0.872753258766451,
+              "train_tail_rmse": 1.007907102915686,
+              "test_rmse": 4.734704365589549,
+              "test_r2": 0.8521119929934031,
+              "test_tail_rmse": null,
+              "bic": 29551.954087960443,
+              "structure_present": false,
+              "structure_note": "one gravity tier, free-flight fit",
+              "gravity": 4.771660026682119
+            },
+            "V4_held_gate": {
+              "n_parameters": 2,
+              "train_rmse": 4.896968022078273,
+              "train_r2": 0.8593904165062813,
+              "train_tail_rmse": 5.85742651145667e-07,
+              "test_rmse": 4.982766064869826,
+              "test_r2": 0.8362096848493129,
+              "test_tail_rmse": null,
+              "bic": 30519.77089456664,
+              "structure_present": true,
+              "structure_note": "discontinuous held-jump gravity gate",
+              "fall_gravity": 5.200000049962835,
+              "held_increment": -2.7999996228826336,
+              "g_hold": 2.4000004270802013
+            },
+            "V5_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 4.897050654253876,
+              "train_r2": 0.8593856711316856,
+              "train_tail_rmse": 5.85742651145667e-07,
+              "test_rmse": 4.983132970632985,
+              "test_r2": 0.8361855625757143,
+              "test_tail_rmse": null,
+              "bic": 30529.26439390106,
+              "structure_present": true,
+              "structure_note": "held gate plus terminal-velocity clamp",
+              "fall_gravity": 5.200000049962835,
+              "held_increment": -2.7999996228826336,
+              "g_hold": 2.4000004270802013,
+              "terminal_vy": 55.324174022674555
+            },
+            "V6_ground_reset": {
+              "n_parameters": 3,
+              "train_rmse": 0.02844821736542851,
+              "train_r2": 0.9999952546254034,
+              "train_tail_rmse": 5.85742651145667e-07,
+              "test_rmse": 0.0604693789560045,
+              "test_r2": 0.9999758777264005,
+              "test_tail_rmse": null,
+              "bic": -68318.15119939411,
+              "structure_present": true,
+              "structure_note": "gate, clamp and ground-contact downward reset",
+              "fall_gravity": 5.200000049962835,
+              "held_increment": -2.7999996228826336,
+              "g_hold": 2.4000004270802013,
+              "terminal_vy": 55.324174022674555
+            }
+          },
+          "bic_selected": "V6_ground_reset",
+          "test_rmse_selected": "V6_ground_reset",
+          "tail_rmse_selected": "V6_ground_reset",
+          "selected_structure_by_bic": "gate, clamp and ground-contact downward reset",
+          "selected_structure_by_tail": "gate, clamp and ground-contact downward reset",
+          "tail_selected_parameters": {
+            "fall_gravity": 5.200000049962835,
+            "held_increment": -2.7999996228826336,
+            "g_hold": 2.4000004270802013,
+            "terminal_vy": 55.324174022674555
+          },
+          "criteria_agree": true
+        },
+        "constants": {
+          "max_vx": {
+            "value": 48.0,
+            "rel_error_pct": 0.0
+          },
+          "walk_accel": {
+            "value": 1.0000000120871384,
+            "rel_error_pct": 1.2087138401284392e-06
+          },
+          "run_accel": {
+            "value": 1.7999993184783798,
+            "rel_error_pct": 3.521321784308997e-05
+          },
+          "decel": {
+            "value": 0.59999918631136,
+            "rel_error_pct": 0.00013958841077903037
+          },
+          "held_gravity": {
+            "value": 2.4000004270802013,
+            "rel_error_pct": 1.3821364854816608e-05
+          },
+          "fall_gravity": {
+            "value": 5.200000049962835,
+            "rel_error_pct": 4.628802058576105e-06
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 48.0,
+          "bound_selected_by_bic": true,
+          "bound_selected_by_tail": true,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.7999996228826336,
+          "true_tier_separation": -2.799999713897705,
+          "criteria_agree_horizontal": true,
+          "criteria_agree_vertical": true
+        }
+      },
+      "pysr": {
+        "available": true,
+        "niterations": 40,
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "min",
+          "max"
+        ],
+        "fit_rows": 4000,
+        "preset": "synthetic",
+        "per_law": {
+          "dvx": {
+            "expression": "(x1 * (min(max(0.19223279, x2) + 0.22547598, 47.432426 - abs(x0)) + 1.1793146)) + min((min(x0, 15.336545) * -0.054112773) - -0.2290066, 0.6018782)",
+            "nodes": 24.0,
+            "eval_r2": 0.9999886216431736,
+            "eval_mae": 0.0033595139057877046,
+            "eval_rmse": 0.0041585052072229765
+          },
+          "dvy": {
+            "expression": "(x0 + (5.2 - max(x1 * min(2.7999997, x0 * -384.21497), x2 * (x0 + 5.2)))) - x0",
+            "nodes": 19.0,
+            "eval_r2": 0.9999999999999883,
+            "eval_mae": 1.8404296793499913e-07,
+            "eval_rmse": 3.708779918012812e-07
+          }
+        },
+        "dvx_eval_r2": 0.9999886216431736,
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 0.010844221810714316,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.7999997,
+          "true_tier_separation": -2.799999713897705
+        },
+        "pysr_seconds": 308.55733060000057
+      }
+    },
+    "replicate_2": {
+      "gplearn": {
+        "preset": "synthetic",
+        "dvx_eval_r2": 0.8320398780467242,
+        "constants": {
+          "max_vx": {
+            "value": null,
+            "std": 0.0,
+            "rel_error_pct": null
+          },
+          "walk_accel": {
+            "value": 1.4890678383364109,
+            "std": 0.0,
+            "rel_error_pct": 48.906783833641086
+          },
+          "run_accel": {
+            "value": 1.7350298447120078,
+            "std": 0.0,
+            "rel_error_pct": 3.609450518077582
+          },
+          "subpixels_per_pixel": {
+            "value": 19.99979655154875,
+            "std": 0.0,
+            "rel_error_pct": 0.0010172422562426675
+          },
+          "held_gravity": {
+            "value": 4.2393575306106275,
+            "std": 0.0,
+            "rel_error_pct": 76.63989008973753
+          },
+          "fall_gravity": {
+            "value": 5.390493201625304,
+            "std": 0.0,
+            "rel_error_pct": 3.663334602835072
+          },
+          "decel": {
+            "value": 0.06497129969717201,
+            "std": 0.0,
+            "rel_error_pct": 89.17145048075923
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 1.5379135286816066,
+          "gravity_gate_discovered": false,
+          "tier_separation": -1.2333009555633359,
+          "true_tier_separation": -2.799999713897705
+        },
+        "per_law": {
+          "dvx": {
+            "expression": "min(sub(dir, div(vx, 2.289)), div(dir, run))",
+            "nodes": 9,
+            "hold_r2": 0.8520086341904971,
+            "hold_mae": 0.330261350659846
+          },
+          "dvy": {
+            "expression": "div(div(div(vy, neg(ground)), 2.322), 2.322)",
+            "nodes": 8,
+            "hold_r2": 0.6287001634341292,
+            "hold_mae": 0.47301661638708525
+          },
+          "dx": {
+            "expression": "vx_next",
+            "nodes": 1,
+            "hold_r2": 0.9999999998705699,
+            "hold_mae": 1.9174102353983633e-05
+          },
+          "dy": {
+            "expression": "vy_next",
+            "nodes": 1,
+            "hold_r2": 0.9890033931631778,
+            "hold_mae": 0.006458883783891724
+          }
+        },
+        "mean_nodes": 4.75,
+        "gp_seconds": 15.483311176300049
+      },
+      "templates": {
+        "dvx_eval_r2": 0.9999999999999997,
+        "dvx_selected": "H5_coast",
+        "tail_frame_fraction": 0.2688888888888889,
+        "horizontal": {
+          "templates": {
+            "H1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 37.15924417892174,
+              "train_r2": 0.0,
+              "train_tail_rmse": 46.202593565174666,
+              "test_rmse": 37.41977962302084,
+              "test_r2": -2.0591049131546413e-05,
+              "test_tail_rmse": 46.33875840924602,
+              "bic": 69421.25094104526,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": 0.9244373621543248
+            },
+            "H2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 1.100687950040185,
+              "train_r2": 0.9991226059593441,
+              "train_tail_rmse": 1.0306052443048035,
+              "test_rmse": 1.0926004477485087,
+              "test_r2": 0.9991474315840329,
+              "test_tail_rmse": 1.0151070916223848,
+              "bic": 1860.298590898514,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain, no input term",
+              "a0": -0.012139055068106194,
+              "a1": 1.0160493208365418
+            },
+            "H3_drive": {
+              "n_parameters": 2,
+              "train_rmse": 0.5007394353838853,
+              "train_r2": 0.9998184108704117,
+              "train_tail_rmse": 0.7141558273575653,
+              "test_rmse": 0.5180077092717756,
+              "test_r2": 0.9998083631877981,
+              "test_tail_rmse": 0.7379813818160644,
+              "bic": -13261.713486341736,
+              "structure_present": false,
+              "structure_note": "two traction tiers, unbounded",
+              "walk": 0.9356052164143334,
+              "run_increment": 0.6998355289359399
+            },
+            "H4_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 0.377491207652877,
+              "train_r2": 0.9998967999428662,
+              "train_tail_rmse": 0.3393227228372259,
+              "test_rmse": 0.3786814131717321,
+              "test_r2": 0.99989758714581,
+              "test_tail_rmse": 0.33290521562338865,
+              "bic": -18677.28507462865,
+              "structure_present": true,
+              "structure_note": "rigid symmetric velocity bound",
+              "walk": 1.0000000037620036,
+              "run_increment": 0.7999993132976952,
+              "max_vx": 48.0
+            },
+            "H5_coast": {
+              "n_parameters": 4,
+              "train_rmse": 6.403212690219054e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.032310688838396e-07,
+              "test_rmse": 6.384452390130263e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 3.9555825721737725e-07,
+              "bic": -273780.20135747653,
+              "structure_present": true,
+              "structure_note": "rigid bound plus Coulomb coast deadband",
+              "walk": 1.000000003762084,
+              "run_increment": 0.7999993132976589,
+              "max_vx": 48.0,
+              "decel": 0.599999182851691
+            },
+            "H6_contact": {
+              "n_parameters": 4,
+              "train_rmse": 6.403212690219054e-07,
+              "train_r2": 0.9999999999999997,
+              "train_tail_rmse": 4.032310688838396e-07,
+              "test_rmse": 6.384452390130263e-07,
+              "test_r2": 0.9999999999999997,
+              "test_tail_rmse": 3.9555825721737725e-07,
+              "bic": -273780.20135747653,
+              "structure_present": true,
+              "structure_note": "bound, deadband and facing-wall stop",
+              "walk": 1.000000003762084,
+              "run_increment": 0.7999993132976589,
+              "max_vx": 48.0,
+              "decel": 0.599999182851691
+            }
+          },
+          "bic_selected": "H5_coast",
+          "test_rmse_selected": "H5_coast",
+          "tail_rmse_selected": "H5_coast",
+          "selected_structure_by_bic": "rigid bound plus Coulomb coast deadband",
+          "selected_structure_by_tail": "rigid bound plus Coulomb coast deadband",
+          "tail_selected_parameters": {
+            "walk": 1.000000003762084,
+            "run_increment": 0.7999993132976589,
+            "max_vx": 48.0,
+            "decel": 0.599999182851691
+          },
+          "criteria_agree": true
+        },
+        "vertical": {
+          "templates": {
+            "V1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 13.230772933774434,
+              "train_r2": 0.0,
+              "train_tail_rmse": 19.21788148167711,
+              "test_rmse": 12.797507734127647,
+              "test_r2": -0.0006869020113249302,
+              "test_tail_rmse": null,
+              "bic": 49594.04118359686,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": -4.324152403374513
+            },
+            "V2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 2.8920629731829735,
+              "train_r2": 0.9522201196093361,
+              "train_tail_rmse": 3.33769639738743,
+              "test_rmse": 2.8292208705300115,
+              "test_r2": 0.951091862985183,
+              "test_tail_rmse": null,
+              "bic": 20408.16455391936,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain",
+              "a0": 1.0045898275255787,
+              "a1": 0.9009473648876489
+            },
+            "V3_single_gravity": {
+              "n_parameters": 1,
+              "train_rmse": 4.511561747989477,
+              "train_r2": 0.8837257948851278,
+              "train_tail_rmse": 1.0294376745603686,
+              "test_rmse": 4.449405028804893,
+              "test_r2": 0.8790373488839749,
+              "test_tail_rmse": null,
+              "bic": 28936.72239818843,
+              "structure_present": false,
+              "structure_note": "one gravity tier, free-flight fit",
+              "gravity": 4.748819280062734
+            },
+            "V4_held_gate": {
+              "n_parameters": 2,
+              "train_rmse": 4.77490041210138,
+              "train_r2": 0.8697558565452698,
+              "train_tail_rmse": 5.922522259455898e-07,
+              "test_rmse": 4.709845520158661,
+              "test_r2": 0.8644621040348965,
+              "test_tail_rmse": null,
+              "bic": 30035.102894881868,
+              "structure_present": true,
+              "structure_note": "discontinuous held-jump gravity gate",
+              "fall_gravity": 5.2000000774223425,
+              "held_increment": -2.799999568029286,
+              "g_hold": 2.4000005093930565
+            },
+            "V5_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 4.774935704543273,
+              "train_r2": 0.8697539312063285,
+              "train_tail_rmse": 5.922522259455898e-07,
+              "test_rmse": 4.709855825306076,
+              "test_r2": 0.8644615109201031,
+              "test_tail_rmse": null,
+              "bic": 30044.414324570906,
+              "structure_present": true,
+              "structure_note": "held gate plus terminal-velocity clamp",
+              "fall_gravity": 5.2000000774223425,
+              "held_increment": -2.799999568029286,
+              "g_hold": 2.4000005093930565,
+              "terminal_vy": 56.525748634338385
+            },
+            "V6_ground_reset": {
+              "n_parameters": 3,
+              "train_rmse": 0.018358568473015778,
+              "train_r2": 0.9999980746610578,
+              "train_tail_rmse": 5.922522259455898e-07,
+              "test_rmse": 0.009852482485347645,
+              "test_r2": 0.9999994068852057,
+              "test_tail_rmse": null,
+              "bic": -76727.54168567882,
+              "structure_present": true,
+              "structure_note": "gate, clamp and ground-contact downward reset",
+              "fall_gravity": 5.2000000774223425,
+              "held_increment": -2.799999568029286,
+              "g_hold": 2.4000005093930565,
+              "terminal_vy": 56.525748634338385
+            }
+          },
+          "bic_selected": "V6_ground_reset",
+          "test_rmse_selected": "V6_ground_reset",
+          "tail_rmse_selected": "V6_ground_reset",
+          "selected_structure_by_bic": "gate, clamp and ground-contact downward reset",
+          "selected_structure_by_tail": "gate, clamp and ground-contact downward reset",
+          "tail_selected_parameters": {
+            "fall_gravity": 5.2000000774223425,
+            "held_increment": -2.799999568029286,
+            "g_hold": 2.4000005093930565,
+            "terminal_vy": 56.525748634338385
+          },
+          "criteria_agree": true
+        },
+        "constants": {
+          "max_vx": {
+            "value": 48.0,
+            "rel_error_pct": 0.0
+          },
+          "walk_accel": {
+            "value": 1.000000003762084,
+            "rel_error_pct": 3.7620839776764115e-07
+          },
+          "run_accel": {
+            "value": 1.799999317059743,
+            "rel_error_pct": 3.529203099871209e-05
+          },
+          "decel": {
+            "value": 0.599999182851691,
+            "rel_error_pct": 0.0001401650222554064
+          },
+          "held_gravity": {
+            "value": 2.4000005093930565,
+            "rel_error_pct": 1.7251067018472153e-05
+          },
+          "fall_gravity": {
+            "value": 5.2000000774223425,
+            "rel_error_pct": 5.156869530958405e-06
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 48.0,
+          "bound_selected_by_bic": true,
+          "bound_selected_by_tail": true,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.799999568029286,
+          "true_tier_separation": -2.799999713897705,
+          "criteria_agree_horizontal": true,
+          "criteria_agree_vertical": true
+        }
+      },
+      "pysr": {
+        "available": true,
+        "niterations": 40,
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "min",
+          "max"
+        ],
+        "fit_rows": 4000,
+        "preset": "synthetic",
+        "per_law": {
+          "dvx": {
+            "expression": "((x0 * -0.011146354) + (x1 + (x1 * min(x2, 0.6633465 - (abs((x0 * ((x0 * -0.027157344) + x1)) * (x0 * ((x0 * -0.027157607) + x1))) * 0.0038837476))))) * 1.5483963",
+            "nodes": 32.0,
+            "eval_r2": 0.9659303254607762,
+            "eval_mae": 0.15195518950842474,
+            "eval_rmse": 0.226806744339512
+          },
+          "dvy": {
+            "expression": "(5.2000003 - x1) - max(min(1.7999996, (x1 * x0) * -54.019203), max(abs(((x0 + 5.2000003) - x0) - (x0 + (5.2000003 - x0))), (x0 + 5.2000003) * x2) - x1)",
+            "nodes": 32.0,
+            "eval_r2": 0.9999999999999822,
+            "eval_mae": 2.3611627453753077e-07,
+            "eval_rmse": 4.148156937832655e-07
+          }
+        },
+        "dvx_eval_r2": 0.9659303254607762,
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 0.6260825028772814,
+          "gravity_gate_discovered": true,
+          "tier_separation": -2.7999996,
+          "true_tier_separation": -2.799999713897705
+        },
+        "pysr_seconds": 285.07772580000164
+      }
+    }
+  },
+  "real_telemetry": {
+    "gplearn": {
+      "preset": "real",
+      "dvx_eval_r2": -0.00016870819145387017,
+      "constants": {
+        "max_vx": {
+          "value": null,
+          "std": 0.0,
+          "rel_error_pct": null
+        },
+        "walk_accel": {
+          "value": 0.0,
+          "std": 0.0,
+          "rel_error_pct": 100.0
+        },
+        "run_accel": {
+          "value": 0.0,
+          "std": 0.0,
+          "rel_error_pct": 100.0
+        },
+        "subpixels_per_pixel": {
+          "value": 16.0,
+          "std": 0.0,
+          "rel_error_pct": 0.0
+        },
+        "held_gravity": {
+          "value": 0.0,
+          "std": 0.0,
+          "rel_error_pct": 100.0
+        },
+        "fall_gravity": {
+          "value": 0.0,
+          "std": 0.0,
+          "rel_error_pct": 100.0
+        },
+        "decel": {
+          "value": 0.0,
+          "std": 0.0,
+          "rel_error_pct": 100.0
+        }
+      },
+      "structure": {
+        "rigid_bound_discovered": false,
+        "bound_value": null,
+        "bound_overshoot": 0.0,
+        "gravity_gate_discovered": false,
+        "tier_separation": 0.0,
+        "true_tier_separation": -3.0
+      },
+      "per_law": {
+        "dvx": {
+          "expression": "ceiling",
+          "nodes": 1,
+          "hold_r2": -0.00016870819145387017,
+          "hold_mae": 1.1017699115044248
+        },
+        "dvy": {
+          "expression": "ceiling",
+          "nodes": 1,
+          "hold_r2": -3.493372069729439e-05,
+          "hold_mae": 1.8443952802359882
+        },
+        "dx": {
+          "expression": "vx_next",
+          "nodes": 1,
+          "hold_r2": 0.8917096415424974,
+          "hold_mae": 0.15081120943952803
+        },
+        "dy": {
+          "expression": "max(sub(-1.043, vy_next), vy_next)",
+          "nodes": 5,
+          "hold_r2": 0.8516033349478986,
+          "hold_mae": 0.40893049063508835
+        }
+      },
+      "mean_nodes": 2.0,
+      "gp_seconds": 14.998794555664062
+    },
+    "pysr": {
+      "available": true,
+      "niterations": 40,
+      "operators": [
+        "+",
+        "-",
+        "*",
+        "min",
+        "max"
+      ],
+      "fit_rows": 4000,
+      "preset": "real",
+      "per_law": {
+        "dvx": {
+          "expression": "(min(abs(x0 + x0), x2 + 0.7444743) * x1) + (((-0.039011143 - max(x6, x5)) * x0) + -0.039011143)",
+          "nodes": 20.0,
+          "eval_r2": 0.4295902812017578,
+          "eval_mae": 0.9795156743510325,
+          "eval_rmse": 1.4579566155607258
+        },
+        "dvy": {
+          "expression": "min((x1 + min(6.1597977, x2)) * -2.2218957, min((((x2 * (abs(6.1597977 - x0) - x1)) * 109.288155) + 6.1597977) + x2, min(x0 + x2, x2) * -4.8593307)) - -4.122022",
+          "nodes": 32.0,
+          "eval_r2": 0.03514975969491274,
+          "eval_mae": 1.8052384698880297,
+          "eval_rmse": 8.701741787418493
+        }
+      },
+      "dvx_eval_r2": 0.4295902812017578,
+      "structure": {
+        "rigid_bound_discovered": true,
+        "bound_value": 34.192702420208335,
+        "bound_overshoot": 0.0,
+        "gravity_gate_discovered": false,
+        "tier_separation": 0.0,
+        "true_tier_separation": -3.0
+      },
+      "pysr_seconds": 273.3537340000039
+    },
+    "templates": {
+      "dvx_eval_r2": 0.9891645494857858,
+      "dvx_selected": "H5_coast",
+      "tail_frame_fraction": 0.0,
+      "horizontal": {
+        "templates": {
+          "H1_constant": {
+            "n_parameters": 1,
+            "train_rmse": 17.591471792390557,
+            "train_r2": 0.0,
+            "train_tail_rmse": 28.81211555820601,
+            "test_rmse": 19.37775570545366,
+            "test_r2": -0.16932962808888852,
+            "test_tail_rmse": null,
+            "bic": 36304.482187419395,
+            "structure_present": false,
+            "structure_note": "no structure",
+            "c": 18.839311107599936
+          },
+          "H2_affine": {
+            "n_parameters": 2,
+            "train_rmse": 1.8344363937403505,
+            "train_r2": 0.9891257086876347,
+            "train_tail_rmse": 1.3167765831109293,
+            "test_rmse": 1.928130291498174,
+            "test_r2": 0.9884228207899999,
+            "test_tail_rmse": null,
+            "bic": 7697.586436588381,
+            "structure_present": false,
+            "structure_note": "velocity-dependent gain, no input term",
+            "a0": 0.10865938463224317,
+            "a1": 0.9945242389169585
+          },
+          "H3_drive": {
+            "n_parameters": 2,
+            "train_rmse": 1.7866120175550988,
+            "train_r2": 0.9896853107320295,
+            "train_tail_rmse": 1.3694886543070637,
+            "test_rmse": 1.8687420540327102,
+            "test_r2": 0.9891250136889598,
+            "test_tail_rmse": null,
+            "bic": 7363.210263121896,
+            "structure_present": false,
+            "structure_note": "two traction tiers, unbounded",
+            "walk": -0.008182601205868494,
+            "run_increment": 0.6052804709187367
+          },
+          "H4_clamped": {
+            "n_parameters": 3,
+            "train_rmse": 1.785474575871113,
+            "train_r2": 0.9896984401890451,
+            "train_tail_rmse": 0.8408039564979245,
+            "test_rmse": 1.8685490192316319,
+            "test_r2": 0.9891272602723146,
+            "test_tail_rmse": null,
+            "bic": 7363.901912999986,
+            "structure_present": true,
+            "structure_note": "rigid symmetric velocity bound",
+            "walk": -0.008182601205853242,
+            "run_increment": 0.6112194775616092,
+            "max_vx": 47.775000000000006
+          },
+          "H5_coast": {
+            "n_parameters": 4,
+            "train_rmse": 1.7778599386419385,
+            "train_r2": 0.9897861203745016,
+            "train_tail_rmse": 0.8408039564979245,
+            "test_rmse": 1.8653420737607829,
+            "test_r2": 0.9891645494857858,
+            "test_tail_rmse": null,
+            "bic": 7318.555918393808,
+            "structure_present": true,
+            "structure_note": "rigid bound plus Coulomb coast deadband",
+            "walk": -0.008182601205853386,
+            "run_increment": 0.6112194775616098,
+            "max_vx": 47.775000000000006,
+            "decel": 0.52421875
+          },
+          "H6_contact": {
+            "n_parameters": 4,
+            "train_rmse": 1.7500532046573354,
+            "train_r2": 0.9901031234779502,
+            "train_tail_rmse": 0.8408039564979245,
+            "test_rmse": 1.8653420737607829,
+            "test_r2": 0.9891645494857858,
+            "test_tail_rmse": null,
+            "bic": 7119.013064822939,
+            "structure_present": true,
+            "structure_note": "bound, deadband and facing-wall stop",
+            "walk": -0.008182601205853386,
+            "run_increment": 0.6112194775616098,
+            "max_vx": 47.775000000000006,
+            "decel": 0.52421875
+          }
+        },
+        "bic_selected": "H6_contact",
+        "test_rmse_selected": "H5_coast",
+        "tail_rmse_selected": "H5_coast",
+        "selected_structure_by_bic": "bound, deadband and facing-wall stop",
+        "selected_structure_by_tail": "rigid bound plus Coulomb coast deadband",
+        "tail_selected_parameters": {
+          "walk": -0.008182601205853386,
+          "run_increment": 0.6112194775616098,
+          "max_vx": 47.775000000000006,
+          "decel": 0.52421875
+        },
+        "criteria_agree": false
+      },
+      "vertical": {
+        "templates": {
+          "V1_constant": {
+            "n_parameters": 1,
+            "train_rmse": 46.79582572175604,
+            "train_r2": 0.0,
+            "train_tail_rmse": 52.490518652024136,
+            "test_rmse": 42.581588280839775,
+            "test_r2": -0.0002468031997566733,
+            "test_tail_rmse": null,
+            "bic": 48688.81341238452,
+            "structure_present": false,
+            "structure_note": "no structure",
+            "c": 0.2949913098435772
+          },
+          "V2_affine": {
+            "n_parameters": 2,
+            "train_rmse": 10.72692414564853,
+            "train_r2": 0.947454420098785,
+            "train_tail_rmse": 4.87131132512434,
+            "test_rmse": 8.824274867380794,
+            "test_r2": 0.9570442294326227,
+            "test_tail_rmse": null,
+            "bic": 30051.862081362717,
+            "structure_present": false,
+            "structure_note": "velocity-dependent gain",
+            "a0": 0.10595417430584916,
+            "a1": 0.9750741897459471
+          },
+          "V3_single_gravity": {
+            "n_parameters": 1,
+            "train_rmse": 11.100692486176992,
+            "train_r2": 0.9437288340378575,
+            "train_tail_rmse": 4.05815243205064,
+            "test_rmse": 9.248688133995433,
+            "test_r2": 0.9528128519602673,
+            "test_tail_rmse": null,
+            "bic": 30476.653737772373,
+            "structure_present": false,
+            "structure_note": "one gravity tier, free-flight fit",
+            "gravity": 2.709314969191736
+          },
+          "V4_held_gate": {
+            "n_parameters": 2,
+            "train_rmse": 11.111022040357101,
+            "train_r2": 0.9436240610253432,
+            "train_tail_rmse": 4.057608370042595,
+            "test_rmse": 9.262104717168299,
+            "test_r2": 0.95267584885615,
+            "test_tail_rmse": null,
+            "bic": 30497.17983777385,
+            "structure_present": true,
+            "structure_note": "discontinuous held-jump gravity gate",
+            "fall_gravity": 2.7538057742781974,
+            "held_increment": -0.14373551666697595,
+            "g_hold": 2.6100702576112216
+          },
+          "V5_clamped": {
+            "n_parameters": 3,
+            "train_rmse": 11.111022040357101,
+            "train_r2": 0.9436240610253432,
+            "train_tail_rmse": 4.057608370042595,
+            "test_rmse": 9.262104717168299,
+            "test_r2": 0.95267584885615,
+            "test_tail_rmse": null,
+            "bic": 30505.932735298626,
+            "structure_present": true,
+            "structure_note": "held gate plus terminal-velocity clamp",
+            "fall_gravity": 2.7538057742781974,
+            "held_increment": -0.14373551666697595,
+            "g_hold": 2.6100702576112216,
+            "terminal_vy": 110.6
+          },
+          "V6_ground_reset": {
+            "n_parameters": 3,
+            "train_rmse": 18.75906006810392,
+            "train_r2": 0.8393029448015876,
+            "train_tail_rmse": 4.057608370042595,
+            "test_rmse": 21.463265839856067,
+            "test_r2": 0.7458705078921886,
+            "test_tail_rmse": null,
+            "bic": 37135.42412498241,
+            "structure_present": true,
+            "structure_note": "gate, clamp and ground-contact downward reset",
+            "fall_gravity": 2.7538057742781974,
+            "held_increment": -0.14373551666697595,
+            "g_hold": 2.6100702576112216,
+            "terminal_vy": 110.6
+          }
+        },
+        "bic_selected": "V2_affine",
+        "test_rmse_selected": "V2_affine",
+        "tail_rmse_selected": "V2_affine",
+        "selected_structure_by_bic": "velocity-dependent gain",
+        "selected_structure_by_tail": "velocity-dependent gain",
+        "tail_selected_parameters": {
+          "a0": 0.10595417430584916,
+          "a1": 0.9750741897459471
+        },
+        "criteria_agree": true
+      },
+      "constants": {
+        "max_vx": {
+          "value": 47.775000000000006,
+          "rel_error_pct": 33.64583333333333
+        },
+        "walk_accel": {
+          "value": -0.008182601205853386,
+          "rel_error_pct": 101.09101349411378
+        },
+        "run_accel": {
+          "value": 0.6030368763557564,
+          "rel_error_pct": 59.7975415762829
+        },
+        "decel": {
+          "value": 0.52421875,
+          "rel_error_pct": 4.843749999999991
+        },
+        "held_gravity": {
+          "value": null,
+          "rel_error_pct": null
+        },
+        "fall_gravity": {
+          "value": null,
+          "rel_error_pct": null
+        }
+      },
+      "structure": {
+        "rigid_bound_discovered": true,
+        "bound_value": 47.775000000000006,
+        "bound_selected_by_bic": true,
+        "bound_selected_by_tail": true,
+        "gravity_gate_discovered": false,
+        "tier_separation": null,
+        "true_tier_separation": -3.0,
+        "criteria_agree_horizontal": false,
+        "criteria_agree_vertical": true
+      }
+    }
+  },
+  "verdict": {
+    "rigid_bound": {
+      "discovery_rate_by_searcher": {
+        "gplearn": 0.0,
+        "pysr": 0.0
+      },
+      "discovery_rate_when_a_candidate_template": 1.0,
+      "selected_by_bic_rate": 1.0,
+      "bound_recovered_by_templates": 48.0,
+      "true_bound": 48.0,
+      "heldout_r2_on_shared_eval_bank": {
+        "gplearn": 0.8046032244855302,
+        "pysr": 0.9880892682814392,
+        "templates": 0.9999999999999997
+      },
+      "reading": "The bound is recoverable: with the clamp as an explicit candidate the template engine returns 48.000 against a true 48.0, and BIC selects it in 100% of replicates. Free tree search finds it in 0% of replicates (gplearn) and 0% (PySR). PySR's constants are unbounded and numerically optimised, and on the shared eval bank it fits the horizontal increment law better than gplearn (0.988 vs 0.805) while missing the same structure, so neither the terminal range nor the accuracy of the fit explains the miss.  Its driven map stays within 0.213 px/frame of the observed velocity support without ever turning over inside it, so it has no fixed point and the probe registers no bound. What the three engines separate on is the criterion, not the repertoire: the constraint binds on 27.1% of held-out synthetic frames and on 0.0% of the telemetry test split, and an aggregate error metric prices it at essentially nothing on either - the template engine is the only one of the three that scores any structure on the binding frames separately."
+    },
+    "gravity_gate": {
+      "discovery_rate_by_engine": {
+        "gplearn": 0.3333333333333333,
+        "pysr": 1.0,
+        "templates": 1.0
+      },
+      "true_tier_separation": -2.799999713897705,
+      "tier_separation_by_engine": {
+        "gplearn": -1.3539854938175555,
+        "pysr": -2.7999999,
+        "templates": -2.7999996136675573
+      },
+      "reading": "The held-jump gate is a step in the velocity increment, so a tree without a conditional has to approximate a jump of -2.80 px/frame. Measured separations and recovery rates: gplearn separates by -1.35 and recovers the gate in 0.33 of replicates; pysr separates by -2.80 and recovers the gate in 1.00 of replicates; templates separates by -2.80 and recovers the gate in 1.00 of replicates."
+    },
+    "real_telemetry": {
+      "bound_value_by_engine": {
+        "gplearn": null,
+        "pysr": 34.192702420208335,
+        "templates": 47.775000000000006
+      },
+      "heldout_r2_by_engine": {
+        "gplearn": -0.00016870819145387017,
+        "pysr": 0.4295902812017578,
+        "templates": 0.9891645494857858
+      },
+      "gate_by_engine": {
+        "gplearn": false,
+        "pysr": false,
+        "templates": false
+      },
+      "horizontal_template_by_criterion": {
+        "bic": "H6_contact",
+        "test_rmse": "H5_coast",
+        "tail_rmse": "H5_coast"
+      },
+      "reading": "On genuine telemetry: gplearn fits the horizontal law with held-out R^2 -0.000 and reports no bound; pysr fits the horizontal law with held-out R^2 0.430 and reports a bound at 34.193 (52.5% from the WRAM reference 72.0); templates fits the horizontal law with held-out R^2 0.989 and reports a bound at 47.775 (33.6% from the WRAM reference 72.0). Inside the template engine the BIC and tail criteria pick H6_contact and H5_coast, different structures, so the selection criterion still decides the reported law on real data even where every candidate carries the constraint."
+    }
+  }
+}

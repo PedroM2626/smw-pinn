@@ -11,6 +11,10 @@ from src.models.cbf_projection import (
 )
 from src.models.deeponet import DeepONetDynamics, PhysicsConstrainedDeepONetDynamics
 from src.models.fno import FNODynamics
+from src.models.inverse_world_models import (
+    IdentifiedKinematicsDynamics,
+    SymbolicKinematicsDynamics,
+)
 from src.models.pinn_ensemble import DeepPINNEnsemble
 from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
@@ -41,6 +45,8 @@ __all__ = [
     "MATCHED_HIDDEN_DIMS",
     "StatisticalLSTMDynamics",
     "DeepONetDynamics",
+    "IdentifiedKinematicsDynamics",
+    "SymbolicKinematicsDynamics",
     "PhysicsConstrainedDeepONetDynamics",
     "FNODynamics",
     "SoftPINNDynamics",

@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -33,6 +33,8 @@ help:
 	@echo "operators          PC-DeepONet + FNO operator family study (README 10.42, emulator-free)"
 	@echo "symbolic-inverse   Symbolic-regression inverse study: GP law discovery + probes (README 10.43, emulator-free)"
 	@echo "symbolic-tilemap   Tilemap-conditioned residual discovery, the 10.43.5 counterfactual (README 10.43.8)"
+	@echo "symbolic-engines   Three-engine discovery ablation: gplearn vs PySR vs template/BIC (README 10.43.9)"
+	@echo "inverse-mpc        Closed-loop MPC with the inverse-problem world models (README 10.44, needs core + ROM)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -116,6 +118,17 @@ symbolic-inverse:
 symbolic-tilemap:
 	$(PY) -m src.evaluation.symbolic_tilemap_residual_benchmark
 
+# Three-engine discovery ablation: bounded-terminal gplearn, PySR with numerically
+# optimised constants, and nested-template BIC selection (README 10.43.9).
+symbolic-engines:
+	$(PY) -m src.evaluation.symbolic_engine_ablation_benchmark
+
+# Closed-loop control on the real console with the world models recovered by the inverse
+# problem: established WRAM rules vs 10.40 identified constants vs 10.43 discovered laws
+# vs the published Hard PINN (README 10.44). Needs the Libretro core and a ROM dump.
+inverse-mpc:
+	$(PY) -m src.evaluation.inverse_model_mpc_benchmark
+
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in
 # results/ can ever be overwritten by a smoke run; tests/test_smoke_runs.py asserts
@@ -130,6 +143,7 @@ smoke-all:
 	$(PY) -m src.evaluation.operator_benchmark --config $(CONFIG_DIR)/smoke_operators.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.symbolic_inverse_benchmark --config $(CONFIG_DIR)/smoke_symbolic_inverse.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.symbolic_tilemap_residual_benchmark --config $(CONFIG_DIR)/smoke_symbolic_tilemap.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.symbolic_engine_ablation_benchmark --config $(CONFIG_DIR)/smoke_symbolic_engines.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

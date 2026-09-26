@@ -76,6 +76,65 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
         ["comparison_against_published", "Hard_Residual_PINN"],
         "| **{:.4f}** |",
     ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["per_controller", "established_wram_engine_rules", "progress_px"],
+        "**{:.2f}**",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["per_controller", "parametrically_identified_10_40", "progress_px"],
+        "{:.2f} px against",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["per_controller", "symbolically_discovered_10_43", "progress_px"],
+        "{:.2f} px and dies",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["per_controller", "learned_hard_residual_pinn", "progress_px"],
+        "PINN's {:.2f} px",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        [
+            "agreement_with_established_physics",
+            "parametrically_identified_10_40",
+            "sequence_agreement",
+        ],
+        "on only {:.1%} of frames",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["structure_matrix", "templates", "bound_value_mean"],
+        "recovered at {:.3f}",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["structure_matrix", "pysr", "dvx_heldout_r2_mean"],
+        "$R^2$ on the shared bank is {:.3f}",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["real_telemetry", "templates", "structure", "bound_value"],
+        "a clamp at {:.3f}",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["real_telemetry", "pysr", "structure", "bound_value"],
+        "a bound at {:.3f}",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["binding_frames", "hidden_world"],
+        "binds on {:.1%} of held-out synthetic frames",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["binding_frames", "real_telemetry"],
+        "and on {:.1%} of the telemetry test split",
+    ),
 ]
 
 

@@ -45,6 +45,12 @@ dev = [
 wandb = [
   "wandb>=0.17.0",
 ]
+# The PySR leg of the 10.43.9 engine ablation. Optional by design: pysr pulls in a Julia
+# runtime through juliacall, so the study records the leg as unavailable rather than
+# forcing every install (and every CI runner) to download it.
+symbolic = [
+  "pysr>=2.5,<3",
+]
 all = [
   "pytest>=7.0.0",
   "pytest-cov>=5.0.0",

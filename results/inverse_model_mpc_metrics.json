@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-26T18:21:16+00:00",
+    "git_sha": "79ed37821f819d719461c99897e964bd54c30b8c",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.inverse_model_mpc_benchmark",
+    "controllers": [
+      "established_wram_engine_rules",
+      "parametrically_identified_10_40",
+      "symbolically_discovered_10_43",
+      "learned_hard_residual_pinn"
+    ]
+  },
+  "study": "Closed-loop control on the real console with world models obtained from the inverse problem: established WRAM engine rules, the parametrically identified constants of 10.40, the symbolically discovered laws of 10.43, and the published Hard Residual PINN - all driven by the same CEM-MPC planner, objective, budget and savestate.",
+  "configuration": {
+    "frames_budget": 300,
+    "horizon": 15,
+    "num_candidates": 256,
+    "cem_iterations": 3,
+    "objective_weights": {
+      "weight_progress": 2.0,
+      "weight_velocity": 0.5,
+      "pit_penalty": 1000.0,
+      "death_y": 450.0
+    },
+    "protocol_source": "mbrl_mpc_benchmark.py (README 10.6) / analytical_baselines.py (10.37)",
+    "seed": 42,
+    "parametric_id_steps": 900,
+    "gp_seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "per_controller": {
+    "established_wram_engine_rules": {
+      "progress_px": 605.0,
+      "frames_survived": 300,
+      "control_fps": 14.75,
+      "termination": "timeout",
+      "action_sequence": "LRjrwwwjwjrjrRrRrRRRrRrRrRrRrRrrrrrRrjrRRrRRRRrRrrRRrrrrRrrRrRrRrrRRRRRRrwRRRRRRRRRRrRrRRRRrRRRrRrrRrrRRRrrrrrrRrRRrRrRrRRrRwrRrRrrRRrRRrrrRRrRRRrRRrrrRRrRrRRRrRRRRrRRrRRrRrrrRrRRrrrRrrrrRrRRrRRRRrrrRRRrrRRrRRrRjRRwrRwRjrRrwRRrrRrrrrRRRRRRRRRRrRRrrRrrrrrRrRRRRrrrrrRrRrRrrRrrrRRRRRrrrRRRRrrrRRRRrrrrr"
+    },
+    "parametrically_identified_10_40": {
+      "progress_px": 599.75,
+      "frames_survived": 300,
+      "control_fps": 26.51,
+      "termination": "timeout",
+      "action_sequence": "RRRRrrrRrRrRRrrRrrRrrrrrRRRRRRRrRrrrRRRrRRRRrRrrrrRRRrrRrRRrrrRRRrrRRrrrrrrrrrrRRrrRrrrRrRRRrrrrRrRrrRRRRrRRrRRRrRRRrrRrRRrrRRRRRrRRRrrRRrrrrrRrRrrRrRrRRRrrRrRRRrRRRRRRrRRrRRrRRrrrrRrRRRrrrRrrRrRrRRrRRRrRrrRR.rwrrrlRRRrRRrRRRrRrrRrrRRRRrRrRRRrrRRRrRRRRRrrrRrRRRrrrrRrRRRRrrRRrrRrRRrrrrRRRrrRrrRRRrrRR"
+    },
+    "symbolically_discovered_10_43": {
+      "progress_px": 60.31,
+      "frames_survived": 282,
+      "control_fps": 24.47,
+      "termination": "pit/death",
+      "action_sequence": "wrjjw.wjuLuLRjrujulrlrLjjRwjuwwR.LwLRljRRwRwrlw..wlLl.LRrjRrRuRwlluwuulwjlLurjjur.LluruLj.L..R.j.jRr.wlRuLwurwLuLluuLrujluj.rulLlrrjjlLLwrRLRulR...rRLrw.lwRLRjrwwrRwu.rwur.jRLLR.Rluu.LllLjLr..jLLl.LwuLRjLuuluujR.wjllLl.lrlwRu.rLLwwlL..R.L..Rjlr..Rj.jljRjluLLLLljwRRrwj.r.lj.rjLLRLlw"
+    },
+    "learned_hard_residual_pinn": {
+      "progress_px": 573.94,
+      "frames_survived": 300,
+      "control_fps": 36.7,
+      "termination": "timeout",
+      "action_sequence": "RRrwwrrrRwr.RrjrrRRrrrrrrrrrrrrrrrrrRrrrrrr.rwrrrrrrRRRRrrLrrrrrrrrrLLrrrrrrrjRRRrrrrrrrRrrrLr.wLrrrrwrrRRrrrrrrrrrrrrrrrjrrLrLLrw.wRrrrRRRRRrrrrrrrrrrRrrrrRrrLLrwrLrRrrrrRrrrrrrrrrrrrrrrRrRrr..rrLrrw.rrLRRrrrrrrrrrrrRrRrrRRRrRRRrRRRrrrrRRRRRrrRRRrrrrrrrrrrrrrrrjrrrrrrLrLrrrrrrrrrrrrrrrRrrrrrrRRrrrr"
+    }
+  },
+  "agreement_with_established_physics": {
+    "established_wram_engine_rules": {
+      "first_action_agreement": 1.0,
+      "sequence_agreement": 1.0
+    },
+    "parametrically_identified_10_40": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4967
+    },
+    "symbolically_discovered_10_43": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.1206
+    },
+    "learned_hard_residual_pinn": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4333
+    }
+  },
+  "model_diagnostics": {
+    "identified_theta": {
+      "max_vx": 72.0,
+      "walk_accel": 0.11896464973688126,
+      "run_accel": 0.51490718126297,
+      "subpixels_per_pixel": 21.409671783447266,
+      "held_gravity": 1.3250516653060913,
+      "fall_gravity": 2.043733596801758,
+      "decel": 0.4446457624435425
+    },
+    "discovered_expressions": {
+      "dvx": "ceiling",
+      "dvy": "ceiling",
+      "dx": "vx_next",
+      "dy": "max(sub(-1.043, vy_next), vy_next)"
+    },
+    "discovered_expressions_per_seed": {
+      "dvx": [
+        "ceiling",
+        "ceiling",
+        "ceiling"
+      ],
+      "dvy": [
+        "ceiling",
+        "min(jump, mul(max(vy, min(ground, ground)), div(ceiling, jump)))",
+        "ceiling"
+      ],
+      "dx": [
+        "vx_next",
+        "vx_next",
+        "vx_next"
+      ],
+      "dy": [
+        "max(sub(-1.043, vy_next), vy_next)",
+        "max(max(sub(sub(-1.668, vy_next), sub(vy_next, -0.378)), vy_next), vy_next)",
+        "min(abs(vy_next), max(vy_next, add(sub(-2.026, vy_next), mul(vy_next, vy_next))))"
+      ]
+    },
+    "discovered_nodes_mean": 2.0,
+    "discovered_gp_seconds": 14.119133949279785
+  },
+  "interpretation": "Planner, objective, savestate, CEM seed and frame budget are identical across rows, so the progress gap is attributable to the dynamics model alone. The action-agreement column is the operational reading of 'the physics differs': a model can be accurate on recorded transitions and still refuse to command the console the way the engine rules do."
+}

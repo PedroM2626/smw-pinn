@@ -40,6 +40,9 @@ roms/
 # Ad-hoc run logs from manual hardware captures (not part of the published results)
 /*.log
 
+# PySR writes a scratch run directory next to the CWD unless told otherwise.
+outputs/
+
 # Coverage & smoke-test artifacts (produced by `make test-cov` / `make reproduce`)
 .coverage
 coverage.xml

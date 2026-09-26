@@ -41,6 +41,10 @@ tensorboard>=2.15.0
 # resolves 1.6.x on the Python 3.10 leg and every gplearn fit raises AttributeError.
 gplearn>=0.4.2,<0.5
 scikit-learn>=1.0.2,<1.6
+# Optional third engine for README 10.43.9 (PySR). Deliberately NOT installed here: pysr
+# pulls a Julia runtime through juliacall, so the study records that leg as unavailable
+# instead of adding hundreds of MB to every environment. Opt in with
+#   pip install -e ".[symbolic]"
 
 # --- Testing & static analysis (mirrors pyproject [dev]) ---
 pytest>=7.0.0

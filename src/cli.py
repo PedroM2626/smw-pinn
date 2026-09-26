@@ -76,6 +76,8 @@ MODULE_COMMANDS: dict[str, str] = {
     "operators": "src.evaluation.operator_benchmark",
     "symbolic-inverse": "src.evaluation.symbolic_inverse_benchmark",
     "symbolic-tilemap": "src.evaluation.symbolic_tilemap_residual_benchmark",
+    "symbolic-engines": "src.evaluation.symbolic_engine_ablation_benchmark",
+    "inverse-mpc": "src.evaluation.inverse_model_mpc_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -101,6 +103,7 @@ SMOKE_RUNS: tuple[tuple[str, str], ...] = (
     ("src.evaluation.operator_benchmark", "configs/smoke_operators.yaml"),
     ("src.evaluation.symbolic_inverse_benchmark", "configs/smoke_symbolic_inverse.yaml"),
     ("src.evaluation.symbolic_tilemap_residual_benchmark", "configs/smoke_symbolic_tilemap.yaml"),
+    ("src.evaluation.symbolic_engine_ablation_benchmark", "configs/smoke_symbolic_engines.yaml"),
 )
 
 # Quality gates: the module plus the arguments this project standardizes on.

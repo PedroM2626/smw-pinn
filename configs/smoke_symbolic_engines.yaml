@@ -1,0 +1,12 @@
+# Seconds-scale version of the README 10.43.9 engine ablation (`make smoke`).
+# Same three engines and the same structural read-outs; the PySR leg runs at a token
+# iteration count so the contract test stays cheap.
+replicates: 1
+gp_seeds: 1
+population_size: 120
+generations: 5
+max_train: 500
+fit_windows: 120
+eval_windows: 60
+pysr_iterations: 3
+seed: 42
