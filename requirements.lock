@@ -3,7 +3,9 @@
 # This pins the CUDA reference hardware (RTX 4070 + cu12x). For CPU installs use
 # requirements.txt / pyproject ranges; regenerate this file from the target env.
 # It is an AUDIT record, not a cross-platform install manifest.
-
+# 2026-09-26: gplearn + its scikit-learn/joblib/threadpoolctl closure added for the
+# README 10.43 symbolic-regression inverse study (versions as installed in the
+# reference environment).
 absl-py==2.5.0
 ast_serialize==0.11.2
 cffi==1.17.1
@@ -19,6 +21,7 @@ fonttools==4.63.0
 fsspec==2026.7.0
 glcontext==3.0.0
 glfw==1.12.0
+gplearn==0.4.2
 grpcio==1.83.0
 gym==0.26.2
 gym-notices==0.1.0
@@ -31,6 +34,7 @@ jax==0.6.2
 # Editable Git install with no remote (jax-boxing-arena==0.1.0)
 jaxlib==0.6.2
 Jinja2==3.1.6
+joblib==1.6.0
 kiwisolver==1.5.0
 librt==0.15.0
 Markdown==3.10.3
@@ -64,12 +68,14 @@ pytz==2026.3.post1
 PyYAML==6.0.3
 ruff==0.16.6
 sb3_contrib==2.9.0
+scikit-learn==1.5.2
 scipy==1.15.3
 seaborn==0.13.2
 six==1.17.0
 stable_baselines3==2.9.0
 sympy==1.13.1
 tensorboard==2.21.0
+threadpoolctl==3.7.0
 tensorboard-data-server==0.7.2
 tomli==2.4.1
 torch==2.5.1+cu121

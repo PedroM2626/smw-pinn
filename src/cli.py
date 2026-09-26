@@ -74,6 +74,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "inverse-transfer": "src.evaluation.inverse_transfer_benchmark",
     "deeponet": "src.evaluation.deeponet_benchmark",
     "operators": "src.evaluation.operator_benchmark",
+    "symbolic-inverse": "src.evaluation.symbolic_inverse_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -97,6 +98,7 @@ SMOKE_RUNS: tuple[tuple[str, str], ...] = (
     ("src.evaluation.sample_efficiency_benchmark", "configs/smoke_sample_efficiency.yaml"),
     ("src.evaluation.deeponet_benchmark", "configs/smoke_deeponet.yaml"),
     ("src.evaluation.operator_benchmark", "configs/smoke_operators.yaml"),
+    ("src.evaluation.symbolic_inverse_benchmark", "configs/smoke_symbolic_inverse.yaml"),
 )
 
 # Quality gates: the module plus the arguments this project standardizes on.

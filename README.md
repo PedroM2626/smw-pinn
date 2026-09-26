@@ -85,6 +85,7 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.40 Physics Parameter Identification: the Inverse Problem](#1040-physics-parameter-identification-the-inverse-problem)
    * [10.41 Neural-Operator Baselines: DeepONet on Discrete Engine Dynamics](#1041-neural-operator-baselines-deeponet-on-discrete-engine-dynamics)
    * [10.42 Physics-Constrained DeepONet and the Fourier Neural Operator](#1042-physics-constrained-deeponet-and-the-fourier-neural-operator)
+   * [10.43 Symbolic Regression as an Inverse-Problem Method: Discovering the Law](#1043-symbolic-regression-as-an-inverse-problem-method-discovering-the-law)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1470,7 +1471,7 @@ The naive prior is *systematically optimistic* (it believes Mario travels farthe
 ![Physics parameter identification (inverse problem)](results/figures/inverse_parameter_recovery.png)
 *Figure: Left - E1 relative recovery error of each of the seven constants from the wrong prior (green bars near zero, against the large red prior error). Right - E3 held-out control-transfer error; the identified model matches the oracle while the hard-coded prior carries a systematic optimism bias.*
 
-Regenerate: `python -m src.evaluation.inverse_transfer_benchmark` (emulator-free; `--bootstrap-n` controls the identifiability bootstrap).
+Regenerate: `python -m src.evaluation.inverse_transfer_benchmark` (emulator-free; `--bootstrap-n` controls the identifiability bootstrap). The structure-free follow-up - discovering the update laws with symbolic regression instead of fitting constants inside a posited one - is Section 10.43.
 
 ---
 
@@ -1580,6 +1581,180 @@ Regenerate: `python -m src.evaluation.operator_benchmark` (emulator-free; `--fno
 
 ---
 
+### 10.43 Symbolic Regression as an Inverse-Problem Method: Discovering the Law
+
+Section 10.40 solves the inverse problem *parametrically*: the traction / friction / asymmetric-gravity map of Section 4 is posited in full, only its seven constants are unknown, and Adam plus a Laplace posterior recovers them. That answer is bounded by the quality of the posited structure - if the assumed law is wrong, the posterior is a precise statement about the wrong model. This section removes the structure from the assumptions and asks the harder question: **can the engine's law be discovered from transitions alone, with nothing posited?**
+
+The tool is tree genetic programming (`gplearn` 0.4.2; subtree crossover and mutation over the piecewise-affine primitive set $\{$`add`, `sub`, `mul`, `div`, `neg`, `abs`, `min`, `max`$\}$, with gplearn's protected division), applied to four one-step laws rather than to the next state directly:
+
+$$\Delta v_x = f_1(v_x, d, \rho),\qquad \Delta v_y = f_2(v_y, \jmath, c_{\text{ground}}),\qquad \Delta x = f_3(v_x^{t+1}),\qquad \Delta y = f_4(v_y^{t+1})$$
+
+Velocity channels are fitted as *increments*, because their physical magnitude *is* an acceleration ($\sim$1 sub-pixel/frame), which keeps the constants the search must evolve at $O(1)$; position channels are fitted against the **post-step** velocity, the form in which the discrete integration identity $\hat{X}_{t+1} = X_t + \hat{v}_x/\sigma$ becomes a univariate fit that either is or is not discovered. Composing the four laws reproduces `simulate_step`'s bookkeeping exactly (`symbolic_step` / `model_rollout` in `src/inverse/symbolic_regression.py`), so the discovered model and the parametric model of 10.40 are rolled out, probed and scored by identical code - and `tests/test_symbolic_regression.py` asserts that the analytic constants driven through that same interface reproduce `simulate_rollout` to float tolerance.
+
+**Excitation normalisation (not optional).** GP terminals are drawn uniformly from a bounded `const_range` ($[-4,4]$ here). The horizontal law mixes a per-frame increment of $\sim$1 sub-pixel with a rigid ceiling of 48 sub-pixels - two constants a factor of 48 apart, so *no* single terminal range expresses both. Every law is therefore fitted with each feature and its target divided by the maximum its own **fit rows** reach (the evaluation rows never touch the scale), which puts the accelerations, the friction decrement and the integration slope inside the searchable range. The consequence is measured, not argued: the ceiling can then only appear as a *fixed point* of the discovered map, so the probe stage searches for one and reports "no fixed point" rather than substituting the data maximum.
+
+**The probe stage: from expression to physics.** A symbolic law is not a parameter vector, and GP's evolved terminal values are notoriously poor estimates of one. Every constant is therefore defined as a *response* of the discovered map at designed probes: $\tau_{\text{walk}}$ / $\tau_{\text{run}}$ are the median driven increment over the lower half of the observed speed range with and without the run button; $\mu$ the median coasting decrement; $g_{\text{hold}}$ / $g_{\text{fall}}$ the median increment on ascending probes with and without jump held, plus a descending consistency probe; $\sigma$ the reciprocal slope of the $f_3$ fit, reported with its worst residual from that straight line; and $\max_{v_x}$ the fixed point of the driven map - accepted **only if the map actually accelerates below it**, because a degenerate zero-drive law satisfies $\hat{v} \le v$ everywhere and would otherwise be misread as a bound at the bottom of the probe range.
+
+**Protocol.** 6 independent replicates (a fresh hidden-world data draw per replicate, never a resplit of one bank), 3 GP seeds per law, population 500, 25 generations, $\leq 4000$ fit transitions per law, parsimony coefficient $10^{-3}$; the parametric comparison is refit by Adam (900 steps) on *exactly* the same thinned windows, so the pairing controls the data and varies only the estimator. Symbolic vs parametric is tested per replicate with paired Wilcoxon, paired $t$ and Cohen's $d_z$ (the 10.39.1 protocol). Emulator-free, CPU-only, deterministic: 270 GP fits (72 in S1, 18 in the budget control, 108 in the reweighting control, 36 in S2, 24 in S3, 12 in S4), ~20 min wall-clock, artifact `results/symbolic_inverse_metrics.json`, figure `results/figures/symbolic_inverse_recovery.png`.
+
+#### 10.43.1 The Discovered Expressions
+
+The three seeds of replicate 0, verbatim (`dir` $\equiv$ signed direction, `run` $\equiv \rho$, `jump` $\equiv \jmath$, `gnd` $\equiv$ ground contact):
+
+```
+dvx[0]  min(max(0.491, run), sub(dir, div(vx, 2.289)))
+dvx[1]  mul(max(run, 0.590), dir)
+dvx[2]  dir
+dvy[0]  div(div(div(vy, neg(ground)), 2.322), 2.322)
+dvy[1]  div(abs(vy), div(3.850, div(0.197, div(abs(sub(vy, jump)), 3.649))))
+dvy[2]  abs(div(max(-0.355, vy), -1.654))
+dx[*]   vx_next            (identical in all 3 seeds and all 6 replicates)
+dy[*]   vy_next            (identical in all 3 seeds and all 6 replicates)
+```
+
+The horizontal law is found in a genuinely readable form: `mul(max(run, 0.590), dir)` *is* $\Delta v_x = d\,(\tau_{\text{walk}} + \rho\,(\tau_{\text{run}} - \tau_{\text{walk}}))$, with the traction tiers probed at 1.062 and 1.800 sub-pixel/frame against the hidden world's 1.000 and 1.800. The vertical law is where the search flounders: two of the three expressions above never reference `jump` at all, and the third buries it inside a ratio tower.
+
+Mean over the 6 replicates (min/max columns are means of the per-replicate extremes; "null $R^2$" is the fit-mean predictor on the same held-out rollouts):
+
+| Law | Held-out MAE (sub-px or px) | Held-out $R^2$ (mean / best seed) | Null $R^2$ | Beats null | Nodes (mean / min / max) | Seconds per fit | Clamp used | Input gate used |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $\Delta v_x$ traction + friction | 0.357 $\pm$ 0.069 | 0.820 / 0.875 | $-9\times 10^{-4}$ | 100% | 6.8 / 3 / 11 | 4.0 | 83% | 100% |
+| $\Delta v_y$ gravity + floor | 0.897 $\pm$ 0.405 | 0.249 / 0.446 | $-3\times 10^{-3}$ | 100% | 7.7 / 5 / 11 | 4.3 | 28% | 22% |
+| $\Delta x$ integration | $1.9\times 10^{-5}$ | **1.0000** / 1.0000 | $-1\times 10^{-3}$ | 100% | **1.0 / 1 / 1** | 3.8 | 0% | - |
+| $\Delta y$ integration | 0.00736 | 0.9865 / 0.9865 | $-3\times 10^{-3}$ | 100% | **1.0 / 1 / 1** | 3.7 | 0% | - |
+
+"Input gate used" is the fraction of GP draws whose expression references the discrete switch at all (`dir`/`run` horizontally, `jump` vertically). On the synthetic world every law beats the mean predictor, and the horizontal input dependence is recovered in 100% of draws - while **the held-jump gravity gate is absent from 78% of the discovered vertical laws**. That asymmetry is the seed of the whole result: one branch is an affine response the fitness rewards immediately, the other is a discontinuous conditional whose payoff is small in the error metric and expensive in the search.
+
+#### 10.43.2 Constant Recovery: Structural Search vs Posited Structure (S1)
+
+Median relative error over the 6 replicates (per replicate: bagged over the 3 GP seeds), against the Section 10.40 estimator refit on the same windows:
+
+| Constant | Hidden world | Prior (SMW) | **Symbolic GP + probe** | Single-seed GP | Parametric ID (10.40) | GP recovery rate |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| $\max_{v_x}$ velocity ceiling | 48.0 | 50.0% | **no fixed point (0/6)** | 0/6 | 0.0006% | 0% |
+| $\tau_{\text{walk}}$ | 1.000 | 25.0% | 22.2% $\pm$ 16.0 | 60.5% | 0.003% | 100% |
+| $\tau_{\text{run}}$ | 1.800 | 16.7% | **3.6%** | 10.8% | 0.002% | 100% |
+| $\sigma$ sub-pixels per pixel | 20.0 | 20.0% | **0.001%** | 0.001% | 0.589% | 100% |
+| $g_{\text{hold}}$ | 2.400 | 25.0% | 78.8% $\pm$ 19.3 | 96.7% | 2.385% | 100% |
+| $g_{\text{fall}}$ | 5.200 | 15.4% | **3.5%** $\pm$ 4.8 | 9.2% | 0.231% | 100% |
+| $\mu$ coast friction | 0.600 | 16.7% | 89.2% (probed 0.065) | 67.5% | 0.004% | 100% |
+
+Aggregate accuracy: bagged symbolic $1.15\times 10^{-2}$ vs parametric $8.12\times 10^{-5}$ on the channel-variance-weighted one-step metric, over 6 paired replicates - **paired Wilcoxon $p = 0.03125$ (the exact-sample floor at $n = 6$), paired $t$-test $p = 5.6\times 10^{-4}$, Cohen's $d_z = 3.18$**; selecting the best GP seed per replicate instead of bagging gives $9.52\times 10^{-3}$, $d_z = 2.33$. The same pairing against the *kinematic-persistence* null (no force law, exact integration) gives $1.15\times 10^{-2}$ vs $2.08\times 10^{-2}$, Wilcoxon $p = 0.03125$, $d_z = -4.97$: the discovered dynamics is a real, significant improvement over doing nothing, and still two to three orders of magnitude behind the estimator that was handed the law.
+
+Three conclusions, each of which is a *discovery* result rather than a failure:
+
+1. **The discrete integration identity is rediscovered exactly, in every replicate and every seed.** $R^2 = 1.0000$, a 1-node program, probed $\sigma = 19.9998$ ($0.001\%$ from the hidden world's $\sigma = 20$) with a worst-case non-linearity of $4.4\times 10^{-16}$ px, and the independent $y$-channel probe agrees: 19.999996. Here the symbolic estimator is *better* than the parametric one (0.589% error - the published 10.40-E1 behaviour, where $\sigma$ is partly identify-then-compensate against the velocity channels over a multi-step rollout) because $f_3$ is a univariate regression with nothing to trade off. The kinematics of Section 4 is therefore the one ingredient that needs no physics prior; the structure-free baselines of Section 8 fail at it not because the identity is unknown to them but because they never regress the right variable.
+2. **The rigid bound is not expressible by the searched representation.** 83% of $\Delta v_x$ programs use `min`/`max`, yet none of the 18 single-seed horizontal laws of S1, nor any of the 9 in the budget sweep, nor any of the 6 bagged replicates produces a map with a fixed point inside the explored range, and the rolled-out model overshoots the true ceiling by 1.54 sub-pixel/frame on average (up to 49.5 on the worst single draw, S2). A clamp at $\pm 48$ needs a terminal of magnitude 48 under a $[-4,4]$ `const_range` *and* must be applied at the right place in the tree, while the mean-error fitness and the parsimony term give no reason to try. This is the structural-level analogue of Section 10.40's inactive-constraint pathology: there, gradient descent could not lower a ceiling its rollout never reached; here, the search cannot represent a ceiling its terminals cannot reach. The remedies differ, and that is the point - 10.40 fixes it with a warm start from the observed velocity range, whereas the symbolic estimator needs the one-sided constraint *positured as a primitive*, which is exactly what Section 5.4's hard-residual shell does.
+3. **The discontinuous gravity gate is the hardest term to discover.** $g_{\text{fall}}$ comes out at 3.5% error, $g_{\text{hold}}$ at 78.8% (single-seed 96.7%), and the bagged vertical law separates the two tiers by $0.00$ / $-1.17$ / $0.00$ sub-pixel/frame at the small / medium / large budgets against a true separation of $-2.80$. With 78% of programs never referencing `jump`, the correct reading is that the observables are insufficient *for the fitness*, not that the optimiser underperformed: fitting the 5.2 sub-pixel falling branch everywhere already captures most of the squared error. The descending consistency probe (5.56 $\pm$ 0.60 vs the ascending 5.05 $\pm$ 0.37) shows the same single-tier collapse from the other side.
+
+#### 10.43.3 Two Controls: Search Effort and Experimental Design
+
+"Representation cannot express it" and "the search was unlucky" look identical in a single accuracy number, so S1 runs two controls.
+
+**S1b - budget sweep.** Population $\times$ generations over a $7.5\times$ range, reporting held-out $R^2$ *and* the two structural read-outs:
+
+| Budget (pop $\times$ gens) | $\Delta v_x$ $R^2$ | $\Delta v_x$ nodes | fixed-point rate | $\Delta v_y$ $R^2$ | gravity-tier separation (true $-2.80$) | seconds/fit |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| $300 \times 15$ | 0.802 $\pm$ 0.077 | 9.0 | **0.00** | 0.133 $\pm$ 0.181 | $0.00$ | 1.5 |
+| $500 \times 25$ | 0.809 $\pm$ 0.080 | 5.0 | **0.00** | 0.379 $\pm$ 0.250 | $-1.17$ | 4.0 |
+| $1000 \times 60$ | 0.873 $\pm$ 0.056 | 23.3 | **0.00** | 0.624 $\pm$ 0.459 | $0.00$ | 22.6 |
+
+Accuracy climbs monotonically (the vertical law's $R^2$ goes $0.13 \to 0.62$), so the search is not starved. Structure does not follow: the fixed-point rate stays at 0 of 18 draws across a $15\times$ budget increase, and the tier separation moves $0.00 \to -1.17 \to 0.00$ with no trend and a seed scatter ($\pm 0.46$) larger than its mean. This is the cleanest available separation of the two hypotheses - the ceiling is a *representation* limit and the gate a *fitness-landscape* limit, and neither is solved by more compute.
+
+**S1c - excitation-reweighted fitting.** Section 10.40's identifiability lesson is that a constant is recoverable only if the data excite the term that uses it. Weighting coast frames (where friction acts) and simultaneously ascending + jump-held frames (where $g_{\text{hold}}$ acts) inside the GP fitness tests the same claim for *functional form*:
+
+| Weight strength | coast-friction error | $g_{\text{hold}}$ error | $\Delta v_x$ hold MAE | $\Delta v_y$ hold MAE |
+| :---: | :---: | :---: | :---: | :---: |
+| 0 (passive observation) | 89.2% | 81.3% | 0.362 | 0.968 |
+| 3 | 86.5% | 45.3% | 0.366 | 0.726 |
+| 10 | **59.0%** | **11.6%** | 0.453 | 1.539 |
+
+Experiment design buys structure: an $8\times$ cut in $g_{\text{hold}}$ error and a $1.5\times$ cut in friction error, paid for with a 25-59% degradation in aggregate held-out accuracy. That is the optimal-experiment-design trade-off in its pure form, and it extends Section 10.40's identifiability argument from *constants* to *functional form* - with the active-excitation programme of Section 10.12 as the RL-side counterpart.
+
+#### 10.43.4 Long-Horizon Behaviour of a Discovered Model (S2)
+
+120-frame open-loop rollouts in the hidden world (3 replicates $\times$ 40 starts), scored against the *true* ceiling and the *true* fixed-point scale:
+
+| World model | Mean drift (px) | Final drift (px) | Frames above the velocity cap | Max cap overshoot (sub-px/frame) | Integration residual (px) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Oracle true world | 0.45 $\pm$ 0.14 | 0.54 | 0.0% | 0.000 | $2\times 10^{-14}$ |
+| Parametric ID (10.40) | 0.93 $\pm$ 0.15 | 1.69 | **0.0%** | 0.000 | 0.0130 |
+| Prior SMW constants | 63.63 $\pm$ 3.70 | 166.82 | 74.0% | 24.000 | 0.7318 |
+| **Symbolic GP (single seed)** | **24.20 $\pm$ 1.33** | **64.98** | **68.7%** | 49.501 | $2.8\times 10^{-5}$ |
+| **Symbolic GP (bagged, 3 seeds)** | 101848.84 | 2461555.52 | 83.4% | 93.849 | $3.9\times 10^{-5}$ |
+
+Two things read cleanly off this table. First, the discovered model's *integration* is essentially exact ($2.8\times 10^{-5}$ px residual, versus 0.0130 px for the parametric model, whose $\sigma$ is slightly mis-identified): the kinematic identity is not the problem. Second, its *reachable set* is unbounded - 68.7% of rollout frames sit above the engine's real velocity ceiling, with a worst-case overshoot of 49.5 sub-pixel/frame. And bagging, which helps accuracy everywhere else, makes this dramatically worse: the mean of three non-saturating laws is still non-saturating, its per-step drive sits nearer the linear-regime slope, and the 120-frame drift blows up by four orders of magnitude. **Averaging models that all violate a constraint does not restore the constraint.** Paired across the 3 replicates, symbolic drift exceeds parametric drift with Cohen's $d_z = 0.586$ but only Wilcoxon $p = 0.25$ (the heavy tail dominates the mean and $n = 3$ caps the rank statistic); on cap violations the separation is unambiguous - $d_z = 65.4$, paired $t$-test $p = 7.8\times 10^{-5}$ - because the parametric estimator's violations are exactly 0 in every replicate. The honest summary is that the drift comparison is *not* statistically resolved at this replicate count, while the constraint comparison is.
+
+This is Section 8's central thesis reproduced for a *discovered* model instead of a learned one: predictive accuracy and constraint adherence are separate axes, ensembling is not a substitute for structure, and a world model that cannot represent a rigid bound will eventually walk through it.
+
+#### 10.43.5 Genuine WRAM Telemetry (S3)
+
+The same four laws, re-discovered on the canonical training split (2,110 fit transitions after a stride of 3, 1,356 test transitions; the "real" feature preset adds all four terrain-contact channels) and scored per channel on the canonical test split with the Section 7 protocol's metric. The contact byte is supplied to both inverse models as an exogenous input, exactly as in 10.40-E2; the learned baselines must instead infer it, which is why their $x$/$y$ numbers are not directly comparable to the two rows above it.
+
+| Model | Paradigm | Test MSE $x$ (px$^2$) | Test MSE $y$ | Test MSE $v_x$ | Test MSE $v_y$ | Weighted MSE |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Symbolic GP (bagged, Ours)** | Discovered law, structure-free | 0.1367 | **0.4603** | 3.727 | **78.48** | **0.01383** |
+| Kinematic persistence (null: no forces, exact $\sigma$) | Floor for the comparison | **0.1348** | 3.156 | 3.727 | 78.48 | 0.01440 |
+| Parametric ID (10.40-E2) | Posited structure, fitted constants | 0.1723 | 2.665 | **2.345** | 523.69 | 0.07462 |
+| Analytic prior (WRAM constants) | Posited structure, no fit | 0.1401 | 3.139 | 2.616 | 523.81 | 0.07495 |
+| Hard Residual PINN (10.27, published) | Hard inductive bias, learned | 0.1341 | 1.779 | 3.419 | 138.30 | - |
+| Statistical MLP (10.27, published) | Black-box learned | 18225.28 | 3622.22 | 9.04 | 104.21 | - |
+| DeepONet (10.41, published) | Learned operator | 274.02 | 744.27 | 140.44 | 1772.23 | - |
+| FNO (10.42, published) | Learned spectral operator | 0.63 | 1.62 | 4.03 | 77.73 | - |
+
+The null row is what makes this table readable rather than triumphant. On real telemetry the discovered *velocity* laws do not beat the mean predictor ($R^2$ of $-1.7\times 10^{-4}$ against a null of $-1.4\times 10^{-4}$ for $\Delta v_x$; only 33% of seeds beat it at all) and they degenerate to bare contact terminals - `left`, `ceiling` - i.e. the search found the collision byte, not the traction or gravity law. The discovered *position* laws do beat it decisively ($\Delta x$: $R^2 = 0.890$ against a null of $-0.157$, again the 1-node identity; $\Delta y$: $0.868$ against $-0.0004$, this time a 9.3-node clamping law `max(sub(-1.043, vy_next), vy_next)` that encodes the floor). Consequences, all four of which the artifact records:
+
+1. **GP's composed model beats the posited-but-misspecified analytic map on 3 of 4 channels** ($x$ 0.137 vs 0.172, $y$ 0.460 vs 2.665, $v_y$ 78.5 vs 523.7) and by $5.4\times$ on the weighted metric - but the null row shows most of that is the identity plus the contact byte, not discovered dynamics: on $v_x$/$v_y$ the two rows are *identical* because the discovered velocity law is a zero increment. The correct claim is the uncomfortable one: **on real gameplay, "no force law at all, exact integration, given collision flags" out-predicts the 10.40-E2 analytic map**, whose own constants sit up to 84% from the reverse-engineered values (10.40-E2: $	au_{	ext{walk}}$ 84.1%, $	au_{	ext{run}}$ 65.7%, $g_{	ext{hold}}$ 55.8%, $g_{	ext{fall}}$ 65.9%, $\sigma$ 33.8%) (10.40's own honest conclusion). Model-form error costs more than the absence of dynamics.
+2. **The one genuinely new physical constant GP recovers on real data is the fixed-point scale**: probing the discovered $\Delta x$ law gives $\sigma = 15.89$ sub-pixels/pixel against the reverse-engineered 16.00 - a **0.69%** error, obtained from gameplay telemetry with the WRAM value never told to the estimator, and *better* than 10.40-E2's multi-step parametric fit of the same constant (33.8% from the reference, because the rollout fit trades $\sigma$ against the mis-identified accelerations).
+3. **The $\Delta y$ floor clamp is a real discovery**: `max(-1.043 - v_y^{t+1},\; v_y^{t+1})` is a one-sided reset of downward velocity expressed in the *post-step* velocity, and it is the reason GP's $y$ error (0.460) is below both the analytic prior (3.139) and the published Hard PINN (1.779) on that channel - the learned model must infer ground contact from the state, GP was handed the contact byte and symbolically compressed it into a clamp.
+4. **Nothing here contradicts Section 8's ordering.** On the channels that require learning a force law from data, the published Hard PINN remains the reference; the symbolic row is competitive only where the increment is either exactly linear (position) or nearly zero (velocity, given the contact flags).
+
+The grey-box control (`hybrid_residual_control`) asks the sharpest version of the same question: fit GP to the *residuals of the identified analytic model*, offering it all eleven observable channels. If the analytic model's remaining error had a closed form in the observation, this is where it would appear.
+
+| Residual channel | Train $R^2$ | Test $R^2$ | Best test $R^2$ | Verdict |
+| :--- | :---: | :---: | :---: | :--- |
+| $x$ | $+0.101$ | $+0.228$ | $+0.256$ | partly closed-form |
+| $y$ | $+0.388$ | $+0.449$ | $+0.734$ | partly closed-form |
+| $v_x$ | $-0.018$ | $-0.003$ | $-0.003$ | **not closed-form** |
+| $v_y$ | $+0.336$ | $+0.409$ | $+0.702$ | partly closed-form |
+
+Vertical position, vertical velocity and horizontal position residuals are partially predictable out-of-sample ($R^2 > 0.2$, up to 0.73 for the best seed on $y$) - these are the collision-response and floor-contact effects the analytic model approximates crudely. The **horizontal velocity residual is not**: its train $R^2$ is already negative, so the identified model's horizontal error is not a learnable function of state, buttons and contact flags at all - it is tile geometry and slope acceleration that never enter the observation. That is a *negative* discovery result and the correct one to report: symbolic search distinguishes the part of the model-form error that is physics-from-observation from the part that is missing-sensor, and it is the third time in this repository (after Section 10.20's $\eta = 10^{-6}$ degeneracy and Section 10.34's tilemap analysis) that the honest ceiling on real-data accuracy turns out to be the observation rather than the estimator.
+
+#### 10.43.6 Zero-Shot Control Transfer of a Discovered Law (S4)
+
+The Section 10.40-E3 held-out battery (400 control sequences executed in the hidden world; signed predicted-minus-achieved final $x$), with the symbolic models added and the 10.40 rows recomputed as a comparability check:
+
+| World model | Transfer MAE (px) | Relative MAE | Optimism (px) | 10.40 published MAE |
+| :--- | :---: | :---: | :---: | :---: |
+| Oracle true world | $6	imes 10^{-5}$ | 0.0% | $+2	imes 10^{-6}$ | 0.00 (matches to float32 noise) |
+| Parametric ID (this study, 900 steps) | 0.32 | 0.09% | $-0.01$ | 0.28 (2000 steps) |
+| **Symbolic GP (single seed)** | **2.15** | **0.62%** | $-0.62$ | - |
+| **Symbolic GP (bagged, 3 seeds)** | **3.47** | **1.00%** | $-0.15$ | - |
+| Prior SMW constants | 11.17 | 3.24% | $+0.26$ | 11.17 (matches to $8	imes 10^{-6}$ px) |
+
+The prior remains the only systematically *optimistic* model ($+0.26$ px), exactly as 10.40 reported, and its transfer error is $3.2$-$5.2\times$ the symbolic model's. The symbolic rows are *pessimistic* ($-0.62$, $-0.15$ px): a non-saturating law under-predicts how quickly Mario is pinned against the ceiling, so the planner it feeds is conservative. A discovered model therefore inherits the opposite bias from the one Section 10.40 measured - in a hazard-evasion task (Section 10.8) the safe direction, but a bias nonetheless, and one that bagging does not remove: averaging cuts optimism by $4\times$ yet *raises* transfer MAE from 2.15 to 3.47 px.
+
+#### 10.43.7 What the Symbolic Inverse Establishes
+
+1. **The kinematics is discoverable; the constraints are not.** The discrete integration identity is recovered exactly by every GP draw of every replicate (1 node, $R^2 = 1.0000$, $\sigma$ to $0.001\%$ on synthetic and $0.69\%$ on real telemetry), while the rigid velocity bound yields zero fixed-point discoveries in 18 draws across a $15\times$ budget range. What Section 5.4's hard shell contributes is precisely the part that data alone does not supply.
+2. **Knowing the structure buys two to three orders of magnitude.** On identical data the posited-structure estimator beats the discovered-structure estimator on the weighted one-step metric ($8.1\times 10^{-5}$ vs $1.15\times 10^{-2}$; Wilcoxon $p = 0.03125$, $d_z = 3.18$) and on six of the seven constants. The Bayesian machinery of 10.40 (Laplace covariance, Fisher spectrum, Metropolis cross-check) additionally has no symbolic analogue at this budget: a tree is not a differentiable parameterisation, so "how uncertain is this discovered law?" cannot be answered with $J^{\top}J$. The seed-to-seed spread of the probed constants ($\pm 19.3\%$ on $g_{\text{hold}}$, $\pm 16.0\%$ on $\tau_{\text{walk}}$) is the honest substitute, and it is wide.
+3. **Search effort buys accuracy, not structure.** $R^2$ rises from 0.13 to 0.62 on the vertical law while its tier separation stays statistically at zero. Anyone citing "symbolic regression discovers the laws of a system" should cite the accuracy and structure columns separately, as done here.
+4. **Excitation is a binding constraint on discovery, not only on identifiability.** Over-weighting coast and ascending-jump-held frames cuts $g_{\text{hold}}$ error from 81.3% to 11.6% and friction error from 89.2% to 59.0%, at a measurable cost in aggregate accuracy.
+5. **A null baseline is not optional in equation discovery.** Every per-law row in this section is reported against the fit-mean predictor, and the composed model against kinematic persistence. Without them the real-data table would appear to show symbolic regression beating the Hard Residual PINN; with them it shows the far less exciting and far more useful truth - that on real gameplay most of the accuracy is the identity plus the contact byte, and that the discovered *dynamics* is where the method stops.
+6. **On real telemetry the limit is the observation, not the estimator.** The horizontal-velocity residual of the identified analytic model has negative train $R^2$ even with all eleven observable channels offered to the search: no closed form in what WRAM reports explains it. Symbolic regression earns its place in this repository as the *diagnostic* that proves the claim, not as the model to plan with.
+
+**Limitations.** (i) One GP implementation and one primitive set: transcendental primitives, an ephemeral-constant range matched to the ceiling, or a template admitting a clamp as a first-class node would change conclusions (1) and (2) - what is measured here is what *this* representation discovers. (ii) Bagging over 3 seeds is variance reduction, not a posterior; no uncertainty statement about a discovered expression is claimed. (iii) The synthetic hidden world is the repository's own analytic generator, so its laws are piecewise-affine by construction - favourable to this search, unlike a table-driven console acceleration curve. (iv) GP seeds are fixed, but the search is not order-invariant: 3 seeds per law is the minimum honest sample, not a converged distribution, which is why every structural claim in this section is reported as a *rate*. (v) The S1/S2 comparison refits the parametric estimator at 900 steps against 10.40-E1's published 2000, so the "Parametric ID" column here is a slightly weaker version of the published one (S4: 0.32 vs 0.28 px); the ordering is unaffected. (vi) The real-data rows give both inverse models the terrain-contact byte as input, as 10.40-E2 does; the learned baselines do not get that favour and are therefore not comparable on $x$/$y$.
+
+![Symbolic regression for the inverse problem](results/figures/symbolic_inverse_recovery.png)
+
+*Left: per-constant recovery error (symlog) for the prior, the symbolic GP + probe estimator and the 10.40 parametric identification - the $\max_{v_x}$ bar is absent for GP because no fixed point was discovered. Centre: held-out $R^2$ of the two velocity laws against the GP budget, the control that separates representation limits from search effort. Right: per-channel test MSE on genuine WRAM telemetry.*
+
+Regenerate: `python -m src.evaluation.symbolic_inverse_benchmark` (emulator-free, ~20 min on CPU; `--replicates`, `--gp-seeds`, `--population-size`, `--generations`, `--max-train`, `--weight-strengths` and `--no-budget-sweep` control the search budget; `make symbolic-inverse` / `smw-pinn symbolic-inverse`, smoke config `configs/smoke_symbolic_inverse.yaml`).
+
+---
+
+---
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -1591,7 +1766,7 @@ smw-pinn/
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
 │   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
-│   └── smoke_*.yaml                    # 7 fast emulator-free study configs (`make smoke`)
+│   └── smoke_*.yaml                    # 8 fast emulator-free study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -1623,6 +1798,8 @@ smw-pinn/
 │   ├── extended_navigation_metrics.json   # Extended 1,016+ px hardware navigation logs
 │   ├── deeponet_benchmark_metrics.json    # DeepONet neural-operator study metrics (10.41)
 │   ├── operator_benchmark_metrics.json    # Operator family study metrics (10.42)
+│   ├── inverse_identification_metrics.json # Physics parameter identification + transfer (10.40)
+│   ├── symbolic_inverse_metrics.json      # Symbolic-regression inverse study metrics (10.43)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
 │   └── figures/                           # High-resolution benchmark figures (.png) and .gif
@@ -1692,6 +1869,9 @@ smw-pinn/
 │   │   ├── terminal_value.py              # TD-MPC terminal value net + objective
 │   │   ├── tilemap_mpc.py                 # TilemapPINN→MPC adapter (static-map approx)
 │   │   └── differentiable_pinn_planner.py # First-order gradient control through Hard PINN
+│   ├── inverse/
+│   │   ├── parameter_identification.py    # 7-constant inverse problem + Laplace/MCMC posterior (§10.40)
+│   │   └── symbolic_regression.py         # GP law discovery, excitation normalisation, constant probes (§10.43)
 │   └── evaluation/
 │       ├── analytical_baselines.py        # No-NN baseline + oracle-MPC upper bound (§10.37)
 │       ├── ablation_benchmark.py          # PINN constraint ablation (soft vs hard vs MLP)
@@ -1701,6 +1881,8 @@ smw-pinn/
 │       ├── sample_efficiency_benchmark.py # Sample efficiency Pareto benchmark script
 │       ├── deeponet_benchmark.py          # DeepONet neural-operator study (10.41, CI-safe)
 │       ├── operator_benchmark.py          # Operator family: PC-DeepONet + FNO (10.42, CI-safe)
+│       ├── inverse_transfer_benchmark.py  # Parameter identification + zero-shot transfer (10.40, CI-safe)
+│       ├── symbolic_inverse_benchmark.py  # Symbolic-regression inverse study (10.43, CI-safe)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -1759,6 +1941,7 @@ smw-pinn/
 │   ├── test_results_manifest.py           # Artifact catalog, freshness, README headlines
 │   ├── test_deeponet.py                   # Unit tests for the DeepONet operator baselines
 │   ├── test_fno.py                        # Unit tests for the Fourier Neural Operator
+│   ├── test_symbolic_regression.py        # GP law banks, probes, analytic-law parity (§10.43)
 │   ├── test_hardware_loops.py             # Emulator-guarded end-to-end hardware entry points
 │   ├── test_smoke_runs.py                 # Every configs/smoke_*.yaml is accepted + runs
 │   └── test_english_only.py               # Repo text stays English-only
@@ -1971,6 +2154,13 @@ python -m src.evaluation.deeponet_benchmark
 # 45. Neural-operator family study: DeepONet + Physics-Constrained DeepONet + FNO
 #     (10.42). Emulator-free: writes results/operator_benchmark_metrics.json.
 python -m src.evaluation.operator_benchmark
+
+# 46. Symbolic regression as an inverse-problem method (10.43): genetic programming
+#     discovers the one-step laws, a probe stage reads the constants back out, and the
+#     result is compared against the 10.40 parametric identification, the 8.2 guarantee
+#     metrics and the published learned models. Emulator-free CPU study (~15 min):
+#     writes results/symbolic_inverse_metrics.json.
+python -m src.evaluation.symbolic_inverse_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -1986,8 +2176,9 @@ make format-check # ruff format --check (what CI runs)
 make typecheck   # mypy on typed core modules
 make check-all   # lint + format-check + typecheck + test-cov (the full gate)
 make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
-make smoke-all   # seconds-scale runs of $10 studies -> results_smoke/ (ignored)
+make smoke-all   # seconds-scale runs of $11 studies -> results_smoke/ (ignored)
 make benchmark sample-efficiency multiseed
+make inverse-transfer symbolic-inverse   # The inverse-problem studies (10.40 parametric, 10.43 symbolic)
 smw-pinn check-all # the same gate on Windows, where `make` is usually unavailable
 ```
 
@@ -2014,4 +2205,4 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 1. **No Data Fabrication:** All reported metrics and figures derive from verified empirical executions saved under `results/` and indexed by `results/MANIFEST.md`; the §8 tables come from `results/benchmark_metrics.json`, `results/sample_efficiency_metrics.json` and `results/multiseed_benchmark_metrics.json`, the §10 study tables from the artifact named in their section.
 2. **Authentic Emulation Data:** All 8,077 samples were extracted directly from 65816 CPU WRAM during real-time interactive gameplay in Game Mode `$14`.
 3. **Open Reproducibility:** The full codebase, pretrained weights, and reproduction scripts are maintained in the repository for peer audit.
-4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35). §10.28 was likewise re-recorded from a single unseeded closed-loop draw into a 5-seed mean $\pm$ std protocol under `set_global_seed`, which corrected its MPC rows (Statistical MLP 576.8 -> 44.4 px, Soft 394.1 -> 88.1 px, Hard 755.6 -> 522.9 px, Random 143.4 -> 183.4 px) and showed the earlier "MLP beats Soft" ordering was single-draw noise - the re-measured ordering is monotonic in physical fidelity.
+4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35). §10.43 is reported as the predominantly negative result it is: the rigid velocity bound was discovered in 0 of 27 genetic-programming draws and is shown as "no fixed point" rather than as the data maximum, and every symbolic accuracy row is published against a fit-mean and kinematic-persistence null, because without them the real-telemetry table would read as beating the Hard Residual PINN. §10.28 was likewise re-recorded from a single unseeded closed-loop draw into a 5-seed mean $\pm$ std protocol under `set_global_seed`, which corrected its MPC rows (Statistical MLP 576.8 -> 44.4 px, Soft 394.1 -> 88.1 px, Hard 755.6 -> 522.9 px, Random 143.4 -> 183.4 px) and showed the earlier "MLP beats Soft" ordering was single-draw noise - the re-measured ordering is monotonic in physical fidelity.

@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -31,6 +31,7 @@ help:
 	@echo "inverse-transfer   Physics parameter identification + zero-shot transfer (inverse problem, emulator-free)"
 	@echo "deeponet           DeepONet neural-operator baseline (README 10.41, emulator-free)"
 	@echo "operators          PC-DeepONet + FNO operator family study (README 10.42, emulator-free)"
+	@echo "symbolic-inverse   Symbolic-regression inverse study: GP law discovery + probes (README 10.43, emulator-free)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -103,6 +104,12 @@ deeponet:
 operators:
 	$(PY) -m src.evaluation.operator_benchmark
 
+# Symbolic regression on the inverse problem: discover the update laws with genetic
+# programming, probe the constants back out, compare against 10.40 (README 10.43).
+# Emulator-free CPU study; writes results/symbolic_inverse_metrics.json.
+symbolic-inverse:
+	$(PY) -m src.evaluation.symbolic_inverse_benchmark
+
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in
 # results/ can ever be overwritten by a smoke run; tests/test_smoke_runs.py asserts
@@ -115,6 +122,7 @@ smoke-all:
 	$(PY) -m src.evaluation.sample_efficiency_benchmark --config $(CONFIG_DIR)/smoke_sample_efficiency.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.deeponet_benchmark --config $(CONFIG_DIR)/smoke_deeponet.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.operator_benchmark --config $(CONFIG_DIR)/smoke_operators.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.symbolic_inverse_benchmark --config $(CONFIG_DIR)/smoke_symbolic_inverse.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

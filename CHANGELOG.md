@@ -11,6 +11,48 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Symbolic regression as an inverse-problem method** (README Section 10.43): the
+  inverse line of Section 10.40 extended from *fitting constants inside a posited law*
+  to *discovering the law*, with genetic programming (`gplearn`, piecewise-affine
+  primitive set) on four one-step update channels. `src/inverse/symbolic_regression.py`
+  adds the transition-bank plumbing, excitation-normalised fitting (GP's bounded
+  terminal constants cannot otherwise express a 48-sub-pixel ceiling and a 1-sub-pixel
+  increment at once), the seed-bagged `BaggedLaw`, the `AnalyticLaw` wrapper that puts
+  the 10.40 parametric map behind the same `increment()` contract (so both models are
+  composed, probed and rolled out by identical code), and the **probe stage** that
+  defines each of the seven constants as a response of the discovered map - the velocity
+  ceiling as its fixed point, rejected when the map never accelerates, so a degenerate
+  zero-drive law cannot masquerade as a discovered bound.
+  `src/evaluation/symbolic_inverse_benchmark.py` runs S1 (6 replicates x 3 GP seeds,
+  paired Wilcoxon/t/Cohen's d_z against the parametric estimator refit on the same
+  windows), S1b (budget control over a 13x search range, reporting accuracy *and*
+  structure), S1c (excitation-reweighting control), S2 (120-frame rollouts: drift, cap
+  overshoot, integration residual), S3 (real WRAM telemetry plus a grey-box control that
+  fits GP to the identified model's residuals over all eleven observable channels) and
+  S4 (the 10.40-E3 control battery, with a reproduction check against the published
+  rows). Emulator-free and deterministic; writes `results/symbolic_inverse_metrics.json`
+  with `_meta`, indexed in `results/MANIFEST.md`, wired as the `symbolic-inverse`
+  Make/CLI target with smoke config `configs/smoke_symbolic_inverse.yaml`, tested in
+  `tests/test_symbolic_regression.py`.
+  Empirical outcome - a mostly *negative* result, reported as such: the discrete
+  integration identity is rediscovered exactly (1-node program, `R^2 = 1.0000`, probed
+  scale 0.001% off on synthetic and 0.69% off on real telemetry, beating the parametric
+  fit of the same constant), but the rigid velocity ceiling is never discovered (0 fixed
+  points in 27 draws over a 13x budget range; 68.7% of rollout frames above the true cap,
+  and bagging *worsens* it to 83.4% because averaging non-saturating laws does not restore
+  a constraint), the held-jump gravity gate is absent from 78% of vertical laws, and
+  aggregate accuracy stays 2-3 orders behind the posited structure (weighted one-step MSE
+  1.15e-2 vs 8.12e-5, Wilcoxon p = 0.03125, d_z = 3.18). Growing the budget lifts held-out
+  `R^2` from 0.13 to 0.62 without moving either structural read-out, while over-weighting
+  the under-excited frames cuts `g_hold` error from 81.3% to 11.6% at a measurable cost in
+  aggregate accuracy - excitation limits discovery, not just identifiability. On genuine
+  telemetry the discovered velocity laws do not beat the fit-mean predictor at all, which
+  is why every per-law row is published against a null baseline: the honest reading is
+  that "no force law + exact integration + the contact byte" (weighted 0.0144) out-predicts
+  the posited-but-misspecified 10.40-E2 analytic map (0.0746), and the residual control
+  localises the remaining gap to `v_x`, whose analytic-model residual has negative *train*
+  `R^2` - unobserved tile geometry, not a better estimator. `gplearn` added to the runtime
+  dependencies (manifest parity + `requirements.lock` audit lines).
 - **DeepONet neural-operator baseline** (README Section 10.41): the repository's first
   neural-operator contribution, adding the operator-learning family (Lu et al., 2021) to
   the statistical-vs-physics-informed taxonomy. `src/models/deeponet.py`

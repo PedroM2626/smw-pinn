@@ -1,0 +1,17 @@
+# Seconds-scale version of the README 10.43 symbolic-regression inverse study (`make smoke`).
+# Same four-experiment pipeline (S1 discovery + probes, S2 rollouts, S3 real telemetry,
+# S4 control transfer) at a tiny genetic-programming budget, minus the budget sweep.
+replicates: 2
+gp_seeds: 1
+population_size: 150
+generations: 6
+max_train: 600
+fit_windows: 120
+eval_windows: 60
+rollout_horizon: 20
+rollout_starts: 5
+id_steps: 60
+real_stride: 12
+weight_strengths: "0"
+budget_sweep: false
+seed: 42
