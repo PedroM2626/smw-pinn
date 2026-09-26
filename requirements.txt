@@ -35,9 +35,12 @@ imageio-ffmpeg>=0.4.9
 tensorboard>=2.15.0
 
 # --- Symbolic regression / genetic programming (README 10.43 inverse study) ---
-# Pulls scikit-learn as its own dependency; the band matches the version the published
-# 10.43 artifact was recorded with (see requirements.lock).
+# gplearn 0.4.2 calls BaseEstimator._validate_data, which scikit-learn 1.6 removed, so
+# the transitive dependency is declared explicitly and capped to the band the published
+# 10.43 artifact was recorded with (1.5.2, see requirements.lock). Without the cap, CI
+# resolves 1.6.x on the Python 3.10 leg and every gplearn fit raises AttributeError.
 gplearn>=0.4.2,<0.5
+scikit-learn>=1.0.2,<1.6
 
 # --- Testing & static analysis (mirrors pyproject [dev]) ---
 pytest>=7.0.0

@@ -152,6 +152,19 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- CI legs `Lint + tests (ubuntu, py 3.10)` and `Native tests (windows)`: the four
+  fitting tests of `tests/test_symbolic_regression.py` raised
+  `AttributeError: 'SymbolicRegressor' object has no attribute '_validate_data'`.
+  Root cause is a transitive dependency, not this repository's code: `gplearn` 0.4.2
+  calls `BaseEstimator._validate_data`, which the scikit-learn release resolved on the
+  Python 3.10 leg had removed, while the 3.11/3.12 legs resolved a working version - so
+  the same commit passed two matrix legs and failed two. `scikit-learn` is therefore
+  declared explicitly and capped to the validated band `>=1.0.2,<1.6` in
+  `pyproject.toml` and `requirements.txt` (parity preserved, `requirements.lock` already
+  recorded 1.5.2), pinning every environment to the version the published 10.43 artifact
+  was actually generated with. The fitting tests are the guard: an incompatible
+  scikit-learn fails them at once instead of surfacing as a broken study.
+
 - Typecheck gate on CI (mypy, exit 1/2 on the operator-learning commits): the reference
   hardware runs torch 2.5.1, whose stubs resolve `nn.Module` buffer attributes directly,
   while CI installs the newest torch inside the `>=2.5.1,<2.7` envelope, whose stubs type
