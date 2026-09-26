@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-26T18:15:22+00:00",
-    "git_sha": "79ed37821f819d719461c99897e964bd54c30b8c",
+    "generated_utc": "2026-09-26T23:17:39+00:00",
+    "git_sha": "0827efb09e0ebbcbd361bf118eadfc3dd97ff68f",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -39,6 +39,20 @@
     "eval_windows": 300,
     "rollout_len": 12,
     "pysr_iterations": 40,
+    "pysr_budget_sweep": [
+      40,
+      120
+    ],
+    "specificity_control": {
+      "rows_per_world": 4000,
+      "noise_fraction_of_level": 0.01,
+      "mechanisms": [
+        "rigid clip",
+        "quadratic drag",
+        "exponential relaxation"
+      ],
+      "purpose": "test whether the template selector can name a plateau mechanism it was not authored from"
+    },
     "template_selection": "BIC on fit rows, held-out RMSE, and held-out RMSE restricted to frames at >=90% of the observed speed support",
     "shared_accuracy_metric": "R^2 of the horizontal increment law on the shared held-out transition bank; gplearn scores its seed-bagged law, PySR its selected model, the template engine its tail-selected structure",
     "feature_design": {
@@ -167,7 +181,7 @@
           }
         },
         "mean_nodes": 5.75,
-        "gp_seconds": 15.056216716766357
+        "gp_seconds": 33.17112445831299
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -455,7 +469,7 @@
           "tier_separation": -2.8000004,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 323.737057600003
+        "pysr_seconds": 629.0818330000038
       }
     },
     "replicate_1": {
@@ -534,7 +548,7 @@
           }
         },
         "mean_nodes": 6.5,
-        "gp_seconds": 15.655823945999146
+        "gp_seconds": 30.35661554336548
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -822,7 +836,7 @@
           "tier_separation": -2.7999997,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 308.55733060000057
+        "pysr_seconds": 602.7592132999998
       }
     },
     "replicate_2": {
@@ -901,7 +915,7 @@
           }
         },
         "mean_nodes": 4.75,
-        "gp_seconds": 15.483311176300049
+        "gp_seconds": 31.67819333076477
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -1189,7 +1203,7 @@
           "tier_separation": -2.7999996,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 285.07772580000164
+        "pysr_seconds": 556.1477729000035
       }
     }
   },
@@ -1269,7 +1283,7 @@
         }
       },
       "mean_nodes": 2.0,
-      "gp_seconds": 14.998794555664062
+      "gp_seconds": 30.82975172996521
     },
     "pysr": {
       "available": true,
@@ -1308,7 +1322,7 @@
         "tier_separation": 0.0,
         "true_tier_separation": -3.0
       },
-      "pysr_seconds": 273.3537340000039
+      "pysr_seconds": 540.421391099997
     },
     "templates": {
       "dvx_eval_r2": 0.9891645494857858,
@@ -1557,6 +1571,163 @@
         "criteria_agree_vertical": true
       }
     }
+  },
+  "structure_specificity_control": {
+    "protocol": {
+      "rows_per_world": 4000,
+      "noise_fraction_of_level": 0.01
+    },
+    "rigid": {
+      "true_mechanism": "rigid",
+      "expected_family": "F1_rigid_clamp",
+      "selected": {
+        "bic": "F1_rigid_clamp",
+        "test_rmse": "F1_rigid_clamp",
+        "tail_rmse": "F1_rigid_clamp"
+      },
+      "all_criteria_correct": true,
+      "criteria_agree": true,
+      "heldout_r2_by_family": {
+        "F0_unbounded_drive": 0.9996636473467049,
+        "F1_rigid_clamp": 0.9996843507327842,
+        "F2_quadratic_drag": 0.9996650011581636,
+        "F3_exponential": 0.9990281634257502
+      },
+      "bic_by_family": {
+        "F0_unbounded_drive": -5578.173142412738,
+        "F1_rigid_clamp": -5761.584297441921,
+        "F2_quadratic_drag": -5582.574279242645,
+        "F3_exponential": -1218.5003791749152
+      },
+      "recovered_level_by_family": {
+        "F0_unbounded_drive": null,
+        "F1_rigid_clamp": 48.016249117234906,
+        "F2_quadratic_drag": null,
+        "F3_exponential": 65.25285136444742
+      }
+    },
+    "drag": {
+      "true_mechanism": "drag",
+      "expected_family": "F2_quadratic_drag",
+      "selected": {
+        "bic": "F2_quadratic_drag",
+        "test_rmse": "F2_quadratic_drag",
+        "tail_rmse": "F2_quadratic_drag"
+      },
+      "all_criteria_correct": true,
+      "criteria_agree": true,
+      "heldout_r2_by_family": {
+        "F0_unbounded_drive": 0.9994334228845596,
+        "F1_rigid_clamp": 0.9994386786958004,
+        "F2_quadratic_drag": 0.9997139791919845,
+        "F3_exponential": 0.9994655589645466
+      },
+      "bic_by_family": {
+        "F0_unbounded_drive": -3501.2697091850187,
+        "F1_rigid_clamp": -3564.7184528617872,
+        "F2_quadratic_drag": -5793.012197088056,
+        "F3_exponential": -3322.9258364968
+      },
+      "recovered_level_by_family": {
+        "F0_unbounded_drive": null,
+        "F1_rigid_clamp": 47.32926928831225,
+        "F2_quadratic_drag": null,
+        "F3_exponential": 64.7663684997957
+      }
+    },
+    "exponential": {
+      "true_mechanism": "exponential",
+      "expected_family": "F3_exponential",
+      "selected": {
+        "bic": "F3_exponential",
+        "test_rmse": "F3_exponential",
+        "tail_rmse": "F3_exponential"
+      },
+      "all_criteria_correct": true,
+      "criteria_agree": true,
+      "heldout_r2_by_family": {
+        "F0_unbounded_drive": 0.9875315271023194,
+        "F1_rigid_clamp": 0.9901839022634612,
+        "F2_quadratic_drag": 0.9988378480780167,
+        "F3_exponential": 0.9995942101290527
+      },
+      "bic_by_family": {
+        "F0_unbounded_drive": 8342.25065843794,
+        "F1_rigid_clamp": 7499.88107564089,
+        "F2_quadratic_drag": -1430.317815922406,
+        "F3_exponential": -5758.783364707081
+      },
+      "recovered_level_by_family": {
+        "F0_unbounded_drive": null,
+        "F1_rigid_clamp": 44.07205911565754,
+        "F2_quadratic_drag": null,
+        "F3_exponential": 46.520506844305174
+      }
+    },
+    "verdict": {
+      "families_named_correctly": 3,
+      "of": 3,
+      "reading": "The selector names the true plateau mechanism in 3 of 3 controls, and every criterion agrees on it: the template engine discriminates between competing structures rather than confirming the one the engine rules happen to use, so the authorship of the dictionary does not by itself explain what 10.43.9 reports."
+    }
+  },
+  "pysr_budget_sensitivity": {
+    "available": true,
+    "pysr_iterations": [
+      40,
+      120
+    ],
+    "by_budget": {
+      "40": {
+        "dvx_heldout_r2": 0.9983488577403676,
+        "rigid_bound_discovered": false,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 0.0013881632700005753,
+        "tier_separation": -2.8000004,
+        "seconds": 599.300811699999,
+        "per_law": {
+          "dvx": {
+            "expression": "min(max(x2 * x1, (x0 * x1) + -47.150406) + 0.5855251, (abs(min(x1, x0)) * min((x0 + -47.1305) * -0.95367014, max(x2, 0.16949353))) + -0.62548095) + (x1 * 1.4560853)",
+            "nodes": 32.0,
+            "eval_r2": 0.9983488577403676,
+            "eval_mae": 0.0378744283672025,
+            "eval_rmse": 0.05059547564371545
+          },
+          "dvy": {
+            "expression": "5.2000003 + min(min(-4.7683716e-7 - min(x2 * x1, min(x0, -5.2000003 - x0) + 20.800001), min(x1, x0 * -32.240067) * -2.8), (-5.2000003 - x0) * max(x2, x2))",
+            "nodes": 31.0,
+            "eval_r2": 0.999999999999981,
+            "eval_mae": 2.2201337433975293e-07,
+            "eval_rmse": 4.252523540696983e-07
+          }
+        }
+      },
+      "120": {
+        "dvx_heldout_r2": 0.9999999999996991,
+        "rigid_bound_discovered": true,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 9.299999987888441e-07,
+        "tier_separation": -2.7999997,
+        "seconds": 1778.8938185999868,
+        "per_law": {
+          "dvx": {
+            "expression": "min(x0 + 48.6, min((abs(x0) - x0) - 0.5999992, 0.5999992) + (x1 * min(max(x2 - -1.3999988, 1.5999992), max(abs(abs(x0) + -48.6), 0.5999992))))",
+            "nodes": 28.0,
+            "eval_r2": 0.9999999999996991,
+            "eval_mae": 4.81090937082756e-07,
+            "eval_rmse": 6.829903788601863e-07
+          },
+          "dvy": {
+            "expression": "((min(min(x2 * (-5.2000003 - x0), min(x1, min(x0 * -32.240067, -32.240067) * x0) * (-2.8 + -4.7683716e-7)), -4.7683716e-7) + 5.2000003) + x0) - x0",
+            "nodes": 27.0,
+            "eval_r2": 0.9999999999999843,
+            "eval_mae": 1.9557385509960669e-07,
+            "eval_rmse": 3.8586493773722895e-07
+          }
+        }
+      }
+    },
+    "bound_found_at_any_budget": true,
+    "reading": "Across 2 search budgets the bound was found in 1 of 2 runs while the held-out $R^2$ moved from 0.998 to 1.000: a larger budget does change the structural answer, so the criterion-only reading of 10.43.9 is budget-dependent."
   },
   "verdict": {
     "rigid_bound": {

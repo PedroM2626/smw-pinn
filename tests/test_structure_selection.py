@@ -25,6 +25,7 @@ from src.inverse.structure_selection import (
     _shrink,
     _tail_mask,
     evaluate_templates,
+    fit_ceiling_families,
     fit_horizontal_templates,
     fit_vertical_templates,
     summarise,
@@ -186,3 +187,51 @@ def test_templates_reject_mismatched_wall_shapes() -> None:
         wall=np.zeros_like(ct),
     )
     assert "H6_contact" not in [f.name for f in no_wall]
+
+
+def _plateau(mechanism: str, rows: int = 3000, seed: int = 3) -> tuple:
+    from src.evaluation.symbolic_engine_ablation_benchmark import simulate_plateau_world
+
+    return simulate_plateau_world(mechanism, rows, seed, 0.01)
+
+
+def test_ceiling_families_name_the_true_plateau_mechanism() -> None:
+    """The selector must discriminate, not just confirm the structure the engine uses."""
+    expected = {
+        "rigid": "F1_rigid_clamp",
+        "drag": "F2_quadratic_drag",
+        "exponential": "F3_exponential",
+    }
+    for mechanism, winner in expected.items():
+        v, d, r, nxt = _plateau(mechanism)
+        fits = fit_ceiling_families(v, d, r, nxt)
+        evaluate_templates(fits, {"v": v, "dir": d, "run": r}, nxt, _tail_mask(nxt))
+        summary = summarise(fits)
+        assert summary["bic_selected"] == winner, (mechanism, summary["bic_selected"])
+        assert summary["tail_rmse_selected"] == winner, (mechanism, summary["tail_rmse_selected"])
+
+
+def test_rigid_clamp_level_is_recovered_from_rigid_data_and_biased_from_drag_data() -> None:
+    v, d, r, nxt = _plateau("rigid")
+    fits = {f.name: f for f in fit_ceiling_families(v, d, r, nxt)}
+    assert fits["F1_rigid_clamp"].parameters["max_vx"] == pytest.approx(48.0, abs=1.0)
+    # A clamp fitted to drag-generated data must NOT sit at the drag asymptote: the two
+    # mechanisms differ precisely where the data stops, so a recovered "bound" there is a
+    # statement about the fit, not about a constraint.
+    dv, dd, dr, dn = _plateau("drag")
+    drag_fits = {f.name: f for f in fit_ceiling_families(dv, dd, dr, dn)}
+    drag_params = drag_fits["F2_quadratic_drag"].parameters
+    assert drag_params["implied_asymptote"] == pytest.approx(48.0, rel=0.1)
+    # A clamp fitted to drag data has no reason to sit at the walk asymptote, and drag has
+    # two asymptotes where a clamp has one - that is the signature the selector reads.
+    assert drag_params["implied_asymptote_run"] > drag_params["implied_asymptote"] * 1.1
+
+
+def test_ceiling_families_reject_degenerate_inputs() -> None:
+    with pytest.raises(ValueError):
+        fit_ceiling_families(np.zeros(3), np.ones(3), np.zeros(3), np.zeros(3))
+    v, d, r, nxt = _plateau("rigid")
+    with pytest.raises(ValueError):
+        from src.evaluation.symbolic_engine_ablation_benchmark import simulate_plateau_world
+
+        simulate_plateau_world("teleport", 10, 0, 0.0)

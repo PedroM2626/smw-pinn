@@ -225,12 +225,67 @@ def _render_figure(outcomes: Dict[str, Any], agreement: Dict[str, Any], path: st
     return path
 
 
+def _paired(a: Sequence[float], b: Sequence[float]) -> Dict[str, Any]:
+    """Paired-across-seeds comparison of two controllers' closed-loop progress."""
+    from scipy import stats
+
+    x = np.asarray(a, dtype=np.float64)
+    y = np.asarray(b, dtype=np.float64)
+    diff = x - y
+    out: Dict[str, Any] = {
+        "n_pairs": int(x.size),
+        "mean_difference_px": float(diff.mean()),
+        "difference_std_px": float(diff.std(ddof=1)) if x.size > 1 else float("nan"),
+    }
+    if x.size < 3 or np.allclose(x, y):
+        out.update({"wilcoxon_p": float("nan"), "ttest_p": float("nan"), "cohen_dz": float("nan")})
+        return out
+    try:
+        out["wilcoxon_p"] = float(stats.wilcoxon(x, y).pvalue)
+    except ValueError:
+        out["wilcoxon_p"] = float("nan")
+    out["ttest_p"] = float(stats.ttest_rel(x, y).pvalue)
+    sd = float(diff.std(ddof=1))
+    out["cohen_dz"] = float(diff.mean() / sd) if sd > 1e-18 else float("nan")
+    out["note"] = (
+        "Paired by CEM seed, so the proposal stream is controlled and only the world model "
+        "varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size "
+        "is the load-bearing statistic, not the p-value."
+    )
+    return out
+
+
+def _multi_seed_summary(
+    runs: Dict[int, Dict[str, Any]], reference: str, frames_budget: int
+) -> Dict[str, Any]:
+    """Mean +/- std per controller, survival counts, and the paired test against the rules."""
+    draws = list(runs)
+    names = list(runs[draws[0]])
+    base = [float(runs[d][reference]["progress_px"]) for d in draws]
+    out: Dict[str, Any] = {"seeds": list(draws), "per_model": {}}
+    for name in names:
+        progress = [float(runs[d][name]["progress_px"]) for d in draws]
+        survived = [int(runs[d][name]["frames_survived"]) for d in draws]
+        out["per_model"][name] = {
+            "progress_px_mean": float(np.mean(progress)),
+            "progress_px_std": float(np.std(progress, ddof=1)) if len(progress) > 1 else 0.0,
+            "progress_px_min": float(np.min(progress)),
+            "progress_px_max": float(np.max(progress)),
+            "frames_survived_mean": float(np.mean(survived)),
+            "budget_reached_rate": float(np.mean([s >= frames_budget for s in survived])),
+            "pit_or_death": int(sum(runs[d][name]["termination"] != "timeout" for d in draws)),
+            "paired_vs_established_rules": None if name == reference else _paired(progress, base),
+        }
+    return out
+
+
 def run_closed_loop(
     frames: int = 300,
     horizon: int = 15,
     num_candidates: int = 256,
     cem_iterations: int = 3,
     seed: int = 42,
+    seeds: Optional[Sequence[int]] = None,
     rom_path: str = ROM_PATH,
     state_path: str = STATE_YOSHI_ISLAND_1,
     pinn_ckpt: str = PINN_HARD_CKPT,
@@ -259,6 +314,7 @@ def run_closed_loop(
         pinn_ckpt,
     )
     models: Dict[str, Any] = built["models"]
+    draws = list(seeds) if seeds else [seed]
 
     def make_controller(model: Any) -> ModelPredictiveController:
         return ModelPredictiveController(
@@ -275,44 +331,47 @@ def run_closed_loop(
 
     emu = SnesLibretroEmulator()
     emu.load_rom(rom_path)
-    outcomes: Dict[str, Any] = {}
+    runs: Dict[int, Dict[str, Any]] = {}
     try:
-        for name, model in models.items():
-            set_global_seed(seed)  # identical CEM sampling for every controller
-            controller = make_controller(model)
-            start = emu.start_episode(initial_savestate)
-            x0 = start["x"]
-            survived = 0
-            t0 = time.time()
-            chosen: List[str] = []
-            snapshot = start
-            state = _extract_8d(snapshot)
-            for _ in range(frames):
-                action, _info = controller.plan(state)
-                chosen.append(_primitive_letter(_nearest_primitive(action)))
-                emu.set_input(action_vector_to_joypad(action))
-                emu.step_frame()
-                snapshot = emu.get_smw_state()
+        for draw in seeds:
+            runs[draw] = {}
+            for name, model in models.items():
+                set_global_seed(draw)  # identical CEM sampling for every controller
+                controller = make_controller(model)
+                start = emu.start_episode(initial_savestate)
+                x0 = start["x"]
+                survived = 0
+                t0 = time.time()
+                chosen: List[str] = []
+                snapshot = start
                 state = _extract_8d(snapshot)
-                survived += 1
-                if snapshot["y"] > 450.0 or snapshot["y"] < 0.0:
-                    break
-            elapsed = max(time.time() - t0, 1e-9)
-            fell = snapshot["y"] > 450.0 or snapshot["y"] < 0.0
-            outcomes[name] = {
-                "progress_px": round(float(snapshot["x"] - x0), 2),
-                "frames_survived": survived,
-                "control_fps": round(survived / elapsed, 2),
-                "termination": "pit/death" if fell else "timeout",
-                "action_sequence": "".join(chosen),
-            }
-            logger.info(
-                "  %-32s -> %.2f px in %d frames (%.1f FPS)",
-                name,
-                outcomes[name]["progress_px"],
-                survived,
-                outcomes[name]["control_fps"],
-            )
+                for _ in range(frames):
+                    action, _info = controller.plan(state)
+                    chosen.append(_primitive_letter(_nearest_primitive(action)))
+                    emu.set_input(action_vector_to_joypad(action))
+                    emu.step_frame()
+                    snapshot = emu.get_smw_state()
+                    state = _extract_8d(snapshot)
+                    survived += 1
+                    if snapshot["y"] > 450.0 or snapshot["y"] < 0.0:
+                        break
+                elapsed = max(time.time() - t0, 1e-9)
+                fell = snapshot["y"] > 450.0 or snapshot["y"] < 0.0
+                runs[draw][name] = {
+                    "progress_px": round(float(snapshot["x"] - x0), 2),
+                    "frames_survived": survived,
+                    "control_fps": round(survived / elapsed, 2),
+                    "termination": "pit/death" if fell else "timeout",
+                    "action_sequence": "".join(chosen),
+                }
+                logger.info(
+                    "  seed %d | %-32s -> %.2f px in %d frames (%.1f FPS)",
+                    draw,
+                    name,
+                    runs[draw][name]["progress_px"],
+                    survived,
+                    runs[draw][name]["control_fps"],
+                )
     finally:
         emu.close()
 
@@ -333,20 +392,31 @@ def run_closed_loop(
             "objective_weights": OBJECTIVE_WEIGHTS,
             "protocol_source": "mbrl_mpc_benchmark.py (README 10.6) / analytical_baselines.py (10.37)",
             "seed": seed,
+            "cem_seeds": list(draws),
             "parametric_id_steps": id_steps,
             "gp_seeds": list(gp_seeds),
         },
-        "per_controller": outcomes,
-        "agreement_with_established_physics": _agreement(outcomes, reference),
+        "per_controller": runs[draws[0]],
+        "agreement_with_established_physics": _agreement(runs[draws[0]], reference),
+        "multi_seed": _multi_seed_summary(runs, reference, frames)
+        if len(draws) > 1
+        else {
+            "available": False,
+            "reason": "a single CEM seed was run, so no spread is measurable - "
+            "pass --seeds to repeat the protocol",
+        },
         "model_diagnostics": built["diagnostics"],
         "interpretation": (
             "Planner, objective, savestate, CEM seed and frame budget are identical across "
             "rows, so the progress gap is attributable to the dynamics model alone. The "
             "action-agreement column is the operational reading of 'the physics differs': a "
             "model can be accurate on recorded transitions and still refuse to command the "
-            "console the way the engine rules do."
+            "console the way the engine rules do. The multi_seed block repeats the whole "
+            "protocol over CEM seeds with the world models fitted once, so what varies there "
+            "is the planner's sampling, not the identification."
         ),
     }
+    outcomes = runs[draws[0]]
     os.makedirs(output_dir, exist_ok=True)
     artifact = os.path.join(output_dir, ARTIFACT_NAME)
     write_metrics(
@@ -375,6 +445,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--horizon", type=int, default=15)
     parser.add_argument("--num-candidates", dest="num_candidates", type=int, default=256)
     parser.add_argument("--cem-iterations", dest="cem_iterations", type=int, default=3)
+    parser.add_argument(
+        "--seeds",
+        default="42",
+        help="comma-separated CEM seeds; the published 10.44.1 protocol uses 42-46",
+    )
     parser.add_argument("--gp-seeds", dest="gp_seeds", default="0,1,2")
     parser.add_argument("--population-size", dest="population_size", type=int, default=500)
     parser.add_argument("--generations", type=int, default=25)
@@ -393,12 +468,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         return 1
     seeds = tuple(int(s) for s in str(args.gp_seeds).split(",") if s.strip())
+    cem_seeds = tuple(int(s) for s in str(args.seeds).split(",") if s.strip())
     run_closed_loop(
         frames=args.frames,
         horizon=args.horizon,
         num_candidates=args.num_candidates,
         cem_iterations=args.cem_iterations,
         seed=args.seed,
+        seeds=cem_seeds,
         gp_seeds=seeds,
         id_steps=args.id_steps,
         budget={

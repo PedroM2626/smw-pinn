@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-26T18:21:16+00:00",
-    "git_sha": "79ed37821f819d719461c99897e964bd54c30b8c",
+    "generated_utc": "2026-09-26T19:11:29+00:00",
+    "git_sha": "0827efb09e0ebbcbd361bf118eadfc3dd97ff68f",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -33,6 +33,13 @@
     },
     "protocol_source": "mbrl_mpc_benchmark.py (README 10.6) / analytical_baselines.py (10.37)",
     "seed": 42,
+    "cem_seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
     "parametric_id_steps": 900,
     "gp_seeds": [
       0,
@@ -44,28 +51,28 @@
     "established_wram_engine_rules": {
       "progress_px": 605.0,
       "frames_survived": 300,
-      "control_fps": 14.75,
+      "control_fps": 7.73,
       "termination": "timeout",
       "action_sequence": "LRjrwwwjwjrjrRrRrRRRrRrRrRrRrRrrrrrRrjrRRrRRRRrRrrRRrrrrRrrRrRrRrrRRRRRRrwRRRRRRRRRRrRrRRRRrRRRrRrrRrrRRRrrrrrrRrRRrRrRrRRrRwrRrRrrRRrRRrrrRRrRRRrRRrrrRRrRrRRRrRRRRrRRrRRrRrrrRrRRrrrRrrrrRrRRrRRRRrrrRRRrrRRrRRrRjRRwrRwRjrRrwRRrrRrrrrRRRRRRRRRRrRRrrRrrrrrRrRRRRrrrrrRrRrRrrRrrrRRRRRrrrRRRRrrrRRRRrrrrr"
     },
     "parametrically_identified_10_40": {
       "progress_px": 599.75,
       "frames_survived": 300,
-      "control_fps": 26.51,
+      "control_fps": 13.71,
       "termination": "timeout",
       "action_sequence": "RRRRrrrRrRrRRrrRrrRrrrrrRRRRRRRrRrrrRRRrRRRRrRrrrrRRRrrRrRRrrrRRRrrRRrrrrrrrrrrRRrrRrrrRrRRRrrrrRrRrrRRRRrRRrRRRrRRRrrRrRRrrRRRRRrRRRrrRRrrrrrRrRrrRrRrRRRrrRrRRRrRRRRRRrRRrRRrRRrrrrRrRRRrrrRrrRrRrRRrRRRrRrrRR.rwrrrlRRRrRRrRRRrRrrRrrRRRRrRrRRRrrRRRrRRRRRrrrRrRRRrrrrRrRRRRrrRRrrRrRRrrrrRRRrrRrrRRRrrRR"
     },
     "symbolically_discovered_10_43": {
       "progress_px": 60.31,
       "frames_survived": 282,
-      "control_fps": 24.47,
+      "control_fps": 14.0,
       "termination": "pit/death",
       "action_sequence": "wrjjw.wjuLuLRjrujulrlrLjjRwjuwwR.LwLRljRRwRwrlw..wlLl.LRrjRrRuRwlluwuulwjlLurjjur.LluruLj.L..R.j.jRr.wlRuLwurwLuLluuLrujluj.rulLlrrjjlLLwrRLRulR...rRLrw.lwRLRjrwwrRwu.rwur.jRLLR.Rluu.LllLjLr..jLLl.LwuLRjLuuluujR.wjllLl.lrlwRu.rLLwwlL..R.L..Rjlr..Rj.jljRjluLLLLljwRRrwj.r.lj.rjLLRLlw"
     },
     "learned_hard_residual_pinn": {
       "progress_px": 573.94,
       "frames_survived": 300,
-      "control_fps": 36.7,
+      "control_fps": 19.73,
       "termination": "timeout",
       "action_sequence": "RRrwwrrrRwr.RrjrrRRrrrrrrrrrrrrrrrrrRrrrrrr.rwrrrrrrRRRRrrLrrrrrrrrrLLrrrrrrrjRRRrrrrrrrRrrrLr.wLrrrrwrrRRrrrrrrrrrrrrrrrjrrLrLLrw.wRrrrRRRRRrrrrrrrrrrRrrrrRrrLLrwrLrRrrrrRrrrrrrrrrrrrrrrRrRrr..rrLrrw.rrLRRrrrrrrrrrrrRrRrrRRRrRRRrRRRrrrrRRRRRrrRRRrrrrrrrrrrrrrrrjrrrrrrLrLrrrrrrrrrrrrrrrRrrrrrrRRrrrr"
     }
@@ -86,6 +93,81 @@
     "learned_hard_residual_pinn": {
       "first_action_agreement": 0.0,
       "sequence_agreement": 0.4333
+    }
+  },
+  "multi_seed": {
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "per_model": {
+      "established_wram_engine_rules": {
+        "progress_px_mean": 619.902,
+        "progress_px_std": 20.017030748839854,
+        "progress_px_min": 601.5,
+        "progress_px_max": 643.38,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": null
+      },
+      "parametrically_identified_10_40": {
+        "progress_px_mean": 627.9979999999999,
+        "progress_px_std": 21.008551116152663,
+        "progress_px_min": 599.75,
+        "progress_px_max": 643.06,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 8.095999999999936,
+          "difference_std_px": 14.996864005517923,
+          "wilcoxon_p": 0.4375,
+          "ttest_p": 0.2938810068937212,
+          "cohen_dz": 0.5398461969796556,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "symbolically_discovered_10_43": {
+        "progress_px_mean": 116.03600000000002,
+        "progress_px_std": 61.735096825063785,
+        "progress_px_min": 60.31,
+        "progress_px_max": 204.81,
+        "frames_survived_mean": 296.4,
+        "budget_reached_rate": 0.8,
+        "pit_or_death": 1,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -503.8660000000001,
+          "difference_std_px": 59.87367393103584,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 4.696368224081496e-05,
+          "cohen_dz": -8.415484918803662,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "learned_hard_residual_pinn": {
+        "progress_px_mean": 299.2,
+        "progress_px_std": 253.32054515968503,
+        "progress_px_min": 113.56,
+        "progress_px_max": 579.44,
+        "frames_survived_mean": 224.6,
+        "budget_reached_rate": 0.4,
+        "pit_or_death": 3,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -320.70200000000006,
+          "difference_std_px": 265.14329827472545,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.05383622727361548,
+          "cohen_dz": -1.2095421686566938,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      }
     }
   },
   "model_diagnostics": {
@@ -127,7 +209,7 @@
       ]
     },
     "discovered_nodes_mean": 2.0,
-    "discovered_gp_seconds": 14.119133949279785
+    "discovered_gp_seconds": 27.132712602615356
   },
-  "interpretation": "Planner, objective, savestate, CEM seed and frame budget are identical across rows, so the progress gap is attributable to the dynamics model alone. The action-agreement column is the operational reading of 'the physics differs': a model can be accurate on recorded transitions and still refuse to command the console the way the engine rules do."
+  "interpretation": "Planner, objective, savestate, CEM seed and frame budget are identical across rows, so the progress gap is attributable to the dynamics model alone. The action-agreement column is the operational reading of 'the physics differs': a model can be accurate on recorded transitions and still refuse to command the console the way the engine rules do. The multi_seed block repeats the whole protocol over CEM seeds with the world models fitted once, so what varies there is the planner's sampling, not the identification."
 }

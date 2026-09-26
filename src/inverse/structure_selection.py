@@ -99,6 +99,146 @@ def _tail_mask(v_next: np.ndarray, frac: float = 0.9) -> np.ndarray:
     return np.abs(v_next) >= frac * cap
 
 
+def fit_ceiling_families(
+    v: np.ndarray,
+    direction: np.ndarray,
+    run: np.ndarray,
+    v_next: np.ndarray,
+    clamp_grid: Optional[np.ndarray] = None,
+    rate_grid: Optional[np.ndarray] = None,
+) -> List[TemplateFit]:
+    """Competing *mechanisms* for "the speed stops growing", scored against each other.
+
+    The nested templates above answer "which of these structures does the data prefer",
+    and the dictionary was written by someone who had already read the engine rules. This
+    function is the control that tests whether the selection machinery can actually
+    discriminate rather than confirm: four mutually exclusive explanations of a velocity
+    plateau are fitted to the same driven rows, including two in which no rigid bound
+    exists at all, and the criteria report which mechanism the data supports.
+
+    * ``F0_unbounded_drive``  v' = v + d (g0 + g1 rho)                 - no ceiling
+    * ``F1_rigid_clamp``      v' = clip(v + d (g0 + g1 rho), +/-M)     - hard bound
+    * ``F2_quadratic_drag``   v' = v + d (g0 + g1 rho) - k |v| v       - asymptotic
+    * ``F3_exponential``      v' = M + (v - M) lambda                  - relaxes to M
+
+    Fitted and scored on the *driven* rows only, so the coast branch cannot leak into a
+    comparison about the ceiling.
+    """
+    v = np.asarray(v, dtype=np.float64)
+    direction = np.asarray(direction, dtype=np.float64)
+    run = np.asarray(run, dtype=np.float64)
+    v_next = np.asarray(v_next, dtype=np.float64)
+    driven = direction != 0
+    vd, dd, rd = v[driven], direction[driven], run[driven]
+    yd = v_next[driven]
+    n = int(vd.shape[0])
+    if n < 4:
+        raise ValueError("fit_ceiling_families needs at least four driven transitions")
+    cap = float(np.abs(yd).max())
+    grid = (
+        np.linspace(0.5 * cap, min(1.5 * cap, 4.0 * cap), _CLAMP_GRID)
+        if clamp_grid is None
+        else np.asarray(clamp_grid, dtype=np.float64)
+    )
+    rates = np.linspace(0.2, 0.999, 40) if rate_grid is None else np.asarray(rate_grid)
+    A = np.stack([dd, dd * rd], axis=1)
+    fits: List[TemplateFit] = []
+
+    def register(
+        name: str,
+        k: int,
+        params: Dict[str, float],
+        predictor: Callable[[Dict[str, np.ndarray]], np.ndarray],
+        present: bool,
+        note: str,
+    ) -> None:
+        batch = {"v": vd, "dir": dd, "run": rd}
+        pred = predictor(batch)
+        tail = _tail_mask(yd)
+        fits.append(
+            TemplateFit(
+                name=name,
+                n_parameters=k,
+                parameters=params,
+                structure_present=present,
+                structure_note=note,
+                predict=predictor,
+                train_rmse=float(np.sqrt(np.mean((yd - pred) ** 2))),
+                train_r2=_r2(yd, pred),
+                train_tail_rmse=float(np.sqrt(np.mean((yd[tail] - pred[tail]) ** 2))),
+                bic=_bic(yd, pred, k),
+            )
+        )
+
+    c0 = _lsq(A, yd - vd)
+    register(
+        "F0_unbounded_drive",
+        2,
+        {"walk": float(c0[0]), "run_increment": float(c0[1])},
+        lambda b: b["v"] + b["dir"] * (c0[0] + c0[1] * b["run"]),
+        False,
+        "no ceiling at all",
+    )
+
+    _, c1, m1 = _fit_clamped(vd, A, yd, grid)
+    register(
+        "F1_rigid_clamp",
+        3,
+        {"walk": float(c1[0]), "run_increment": float(c1[1]), "max_vx": m1},
+        lambda b: np.clip(b["v"] + b["dir"] * (c1[0] + c1[1] * b["run"]), -m1, m1),
+        True,
+        "rigid symmetric velocity bound",
+    )
+
+    A2 = np.stack([dd, dd * rd, np.abs(vd) * vd], axis=1)
+    c2 = _lsq(A2, yd - vd)
+    k_drag = float(c2[2])
+    # A negative coefficient on |v|v is drag; balancing it against each traction tier gives
+    # the speed that tier approaches, with no bound ever being reached. The two tiers have
+    # two different asymptotes, which is precisely how drag differs from a clamp.
+    walk_asym = (
+        float(np.sqrt(float(c2[0]) / -k_drag)) if k_drag < 0.0 and c2[0] > 0 else float("nan")
+    )
+    run_asym = (
+        float(np.sqrt((c2[0] + c2[1]) / -k_drag))
+        if k_drag < 0.0 and (c2[0] + c2[1]) > 0
+        else float("nan")
+    )
+    register(
+        "F2_quadratic_drag",
+        3,
+        {
+            "walk": float(c2[0]),
+            "run_increment": float(c2[1]),
+            "drag_coefficient": k_drag,
+            "implied_asymptote": walk_asym,
+            "implied_asymptote_run": run_asym,
+        },
+        lambda b: b["v"] + b["dir"] * (c2[0] + c2[1] * b["run"]) + c2[2] * np.abs(b["v"]) * b["v"],
+        False,
+        "smooth quadratic drag, asymptotic speed but no bound",
+    )
+
+    best: Optional[Tuple[float, float, float]] = None
+    for m in grid:
+        for lam in rates:
+            pred = m + (vd - m) * lam
+            sse = float(np.sum((yd - pred) ** 2))
+            if best is None or sse < best[0]:
+                best = (sse, float(m), float(lam))
+    assert best is not None
+    _, m3, lam3 = best
+    register(
+        "F3_exponential",
+        2,
+        {"max_vx": m3, "approach_rate": lam3},
+        lambda b: m3 + (b["v"] - m3) * lam3,
+        True,
+        "exponential relaxation toward a level, no clipping",
+    )
+    return fits
+
+
 def fit_horizontal_templates(
     v: np.ndarray,
     direction: np.ndarray,
@@ -512,6 +652,7 @@ def summarise(fits: Sequence[TemplateFit]) -> Dict[str, object]:
 __all__ = [
     "TemplateFit",
     "evaluate_templates",
+    "fit_ceiling_families",
     "fit_horizontal_templates",
     "fit_vertical_templates",
     "summarise",

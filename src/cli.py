@@ -78,6 +78,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "symbolic-tilemap": "src.evaluation.symbolic_tilemap_residual_benchmark",
     "symbolic-engines": "src.evaluation.symbolic_engine_ablation_benchmark",
     "inverse-mpc": "src.evaluation.inverse_model_mpc_benchmark",
+    "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.

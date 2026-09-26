@@ -9,4 +9,7 @@ max_train: 500
 fit_windows: 120
 eval_windows: 60
 pysr_iterations: 3
+# The budget sensitivity sweep is the expensive part of the published run, so the smoke
+# config pins it to token budgets as well.
+pysr_budgets: "1,2"
 seed: 42

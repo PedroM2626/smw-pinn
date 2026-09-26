@@ -135,6 +135,51 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
         ["binding_frames", "real_telemetry"],
         "and on {:.1%} of the telemetry test split",
     ),
+    (
+        "sprint_excitation_metrics.json",
+        ["verdict", "heldout_binding_fraction", "sprint_targeted"],
+        "**{:.2%}**",
+    ),
+    (
+        "sprint_excitation_metrics.json",
+        ["datasets", "sprint_targeted", "templates", "structure", "bound_value"],
+        "clamp template returns {:.3f}",
+    ),
+    (
+        "sprint_excitation_metrics.json",
+        ["datasets", "sprint_targeted", "pysr", "structure", "bound_value"],
+        "probe returns {:.3f}",
+    ),
+    (
+        "sprint_excitation_metrics.json",
+        ["datasets", "published_gameplay", "templates", "structure", "bound_value"],
+        "the published recording's {:.3f}",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["pysr_budget_sensitivity", "by_budget", "40", "dvx_heldout_r2"],
+        "held-out $R^2$ goes ${:.4f} \\to",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["pysr_budget_sensitivity", "by_budget", "40", "bound_overshoot_px_per_frame"],
+        "overshoot of the velocity support goes ${:.4f} \\to",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["pysr_budget_sensitivity", "by_budget", "120", "seconds"],
+        "the search takes {:.0f} s",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["pysr_budget_sensitivity", "by_budget", "40", "seconds"],
+        "instead of {:.0f} s",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["structure_specificity_control", "verdict", "families_named_correctly"],
+        "names the true mechanism in {} of 3 controls",
+    ),
 ]
 
 

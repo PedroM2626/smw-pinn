@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation record-sprint smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -35,6 +35,8 @@ help:
 	@echo "symbolic-tilemap   Tilemap-conditioned residual discovery, the 10.43.5 counterfactual (README 10.43.8)"
 	@echo "symbolic-engines   Three-engine discovery ablation: gplearn vs PySR vs template/BIC (README 10.43.9)"
 	@echo "inverse-mpc        Closed-loop MPC with the inverse-problem world models (README 10.44, needs core + ROM)"
+	@echo "record-sprint      Excitation-targeted WRAM recording that saturates the speed bound (README 10.45, needs core + ROM)"
+	@echo "sprint-excitation  The velocity ceiling measured on both recordings (README 10.45)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -128,6 +130,14 @@ symbolic-engines:
 # vs the published Hard PINN (README 10.44). Needs the Libretro core and a ROM dump.
 inverse-mpc:
 	$(PY) -m src.evaluation.inverse_model_mpc_benchmark
+
+# The recording step is separate from the analysis because it is the only part that
+# needs the console: the study then compares the two recordings.
+record-sprint:
+	$(PY) scripts/record_sprint_gameplay.py
+
+sprint-excitation:
+	$(PY) -m src.evaluation.sprint_excitation_benchmark
 
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in

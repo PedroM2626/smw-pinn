@@ -1,0 +1,834 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-26T19:58:50+00:00",
+    "git_sha": "0827efb09e0ebbcbd361bf118eadfc3dd97ff68f",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.sprint_excitation_benchmark",
+    "datasets": [
+      "published_gameplay",
+      "sprint_targeted"
+    ]
+  },
+  "study": "The velocity ceiling measured twice: on the published gameplay recording, whose held-out frames never approach the speed support, and on a recording made for the purpose of saturating it. The question is whether 10.43.9's 'the ceiling is not identifiable here' is a statement about the console or about the collection policy.",
+  "protocol": {
+    "split": "the canonical seeded episodic split of each file (seed 42)",
+    "feature_design": "real (vx, dir, run, ground, ceiling, left, right | vy, jump, ground, ...)",
+    "gp_seeds": [
+      0,
+      1,
+      2
+    ],
+    "max_train_transitions": 4000,
+    "pysr_iterations": 40,
+    "recording_policy_for_sprint_dataset": "the 10.37 established-rules MPC, so coverage is competent but every recorded transition is read back from WRAM after the frame",
+    "seed": 42
+  },
+  "wram_reference": {
+    "max_vx": 72.0,
+    "walk_accel": 0.75,
+    "run_accel": 1.5,
+    "subpixels_per_pixel": 16.0,
+    "held_gravity": 3.0,
+    "fall_gravity": 6.0,
+    "decel": 0.5
+  },
+  "datasets": {
+    "published_gameplay": {
+      "dataset": "smw_gameplay_dataset.npz",
+      "profile": {
+        "max_abs_vx": 49.0,
+        "fraction_at_90pct_of_support": 0.003476062569126244,
+        "fraction_at_95pct_of_support": 0.003318059725075051,
+        "fraction_at_99pct_of_support": 0.0006320113762047717,
+        "p99_abs_vx": 37.0,
+        "support_used": 49.0,
+        "train_transitions": 6329
+      },
+      "heldout_profile": {
+        "max_abs_vx": 37.0,
+        "fraction_at_90pct_of_support": 0.0,
+        "fraction_at_95pct_of_support": 0.0,
+        "fraction_at_99pct_of_support": 0.0,
+        "p99_abs_vx": 37.0,
+        "support_used": 49.0,
+        "train_transitions": 1356
+      },
+      "templates": {
+        "dvx_eval_r2": 0.9891645494857858,
+        "dvx_selected": "H5_coast",
+        "tail_frame_fraction": 0.0,
+        "horizontal": {
+          "templates": {
+            "H1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 17.591471792390557,
+              "train_r2": 0.0,
+              "train_tail_rmse": 28.81211555820601,
+              "test_rmse": 19.37775570545366,
+              "test_r2": -0.16932962808888852,
+              "test_tail_rmse": null,
+              "bic": 36304.482187419395,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": 18.839311107599936
+            },
+            "H2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 1.8344363937403505,
+              "train_r2": 0.9891257086876347,
+              "train_tail_rmse": 1.3167765831109293,
+              "test_rmse": 1.928130291498174,
+              "test_r2": 0.9884228207899999,
+              "test_tail_rmse": null,
+              "bic": 7697.586436588381,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain, no input term",
+              "a0": 0.10865938463224317,
+              "a1": 0.9945242389169585
+            },
+            "H3_drive": {
+              "n_parameters": 2,
+              "train_rmse": 1.7866120175550988,
+              "train_r2": 0.9896853107320295,
+              "train_tail_rmse": 1.3694886543070637,
+              "test_rmse": 1.8687420540327102,
+              "test_r2": 0.9891250136889598,
+              "test_tail_rmse": null,
+              "bic": 7363.210263121896,
+              "structure_present": false,
+              "structure_note": "two traction tiers, unbounded",
+              "walk": -0.008182601205868494,
+              "run_increment": 0.6052804709187367
+            },
+            "H4_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 1.785474575871113,
+              "train_r2": 0.9896984401890451,
+              "train_tail_rmse": 0.8408039564979245,
+              "test_rmse": 1.8685490192316319,
+              "test_r2": 0.9891272602723146,
+              "test_tail_rmse": null,
+              "bic": 7363.901912999986,
+              "structure_present": true,
+              "structure_note": "rigid symmetric velocity bound",
+              "walk": -0.008182601205853242,
+              "run_increment": 0.6112194775616092,
+              "max_vx": 47.775000000000006
+            },
+            "H5_coast": {
+              "n_parameters": 4,
+              "train_rmse": 1.7778599386419385,
+              "train_r2": 0.9897861203745016,
+              "train_tail_rmse": 0.8408039564979245,
+              "test_rmse": 1.8653420737607829,
+              "test_r2": 0.9891645494857858,
+              "test_tail_rmse": null,
+              "bic": 7318.555918393808,
+              "structure_present": true,
+              "structure_note": "rigid bound plus Coulomb coast deadband",
+              "walk": -0.008182601205853386,
+              "run_increment": 0.6112194775616098,
+              "max_vx": 47.775000000000006,
+              "decel": 0.52421875
+            },
+            "H6_contact": {
+              "n_parameters": 4,
+              "train_rmse": 1.7500532046573354,
+              "train_r2": 0.9901031234779502,
+              "train_tail_rmse": 0.8408039564979245,
+              "test_rmse": 1.8653420737607829,
+              "test_r2": 0.9891645494857858,
+              "test_tail_rmse": null,
+              "bic": 7119.013064822939,
+              "structure_present": true,
+              "structure_note": "bound, deadband and facing-wall stop",
+              "walk": -0.008182601205853386,
+              "run_increment": 0.6112194775616098,
+              "max_vx": 47.775000000000006,
+              "decel": 0.52421875
+            }
+          },
+          "bic_selected": "H6_contact",
+          "test_rmse_selected": "H5_coast",
+          "tail_rmse_selected": "H5_coast",
+          "selected_structure_by_bic": "bound, deadband and facing-wall stop",
+          "selected_structure_by_tail": "rigid bound plus Coulomb coast deadband",
+          "tail_selected_parameters": {
+            "walk": -0.008182601205853386,
+            "run_increment": 0.6112194775616098,
+            "max_vx": 47.775000000000006,
+            "decel": 0.52421875
+          },
+          "criteria_agree": false
+        },
+        "vertical": {
+          "templates": {
+            "V1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 46.79582572175604,
+              "train_r2": 0.0,
+              "train_tail_rmse": 52.490518652024136,
+              "test_rmse": 42.581588280839775,
+              "test_r2": -0.0002468031997566733,
+              "test_tail_rmse": null,
+              "bic": 48688.81341238452,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": 0.2949913098435772
+            },
+            "V2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 10.72692414564853,
+              "train_r2": 0.947454420098785,
+              "train_tail_rmse": 4.87131132512434,
+              "test_rmse": 8.824274867380794,
+              "test_r2": 0.9570442294326227,
+              "test_tail_rmse": null,
+              "bic": 30051.862081362717,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain",
+              "a0": 0.10595417430584916,
+              "a1": 0.9750741897459471
+            },
+            "V3_single_gravity": {
+              "n_parameters": 1,
+              "train_rmse": 11.100692486176992,
+              "train_r2": 0.9437288340378575,
+              "train_tail_rmse": 4.05815243205064,
+              "test_rmse": 9.248688133995433,
+              "test_r2": 0.9528128519602673,
+              "test_tail_rmse": null,
+              "bic": 30476.653737772373,
+              "structure_present": false,
+              "structure_note": "one gravity tier, free-flight fit",
+              "gravity": 2.709314969191736
+            },
+            "V4_held_gate": {
+              "n_parameters": 2,
+              "train_rmse": 11.111022040357101,
+              "train_r2": 0.9436240610253432,
+              "train_tail_rmse": 4.057608370042595,
+              "test_rmse": 9.262104717168299,
+              "test_r2": 0.95267584885615,
+              "test_tail_rmse": null,
+              "bic": 30497.17983777385,
+              "structure_present": true,
+              "structure_note": "discontinuous held-jump gravity gate",
+              "fall_gravity": 2.7538057742781974,
+              "held_increment": -0.14373551666697595,
+              "g_hold": 2.6100702576112216
+            },
+            "V5_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 11.111022040357101,
+              "train_r2": 0.9436240610253432,
+              "train_tail_rmse": 4.057608370042595,
+              "test_rmse": 9.262104717168299,
+              "test_r2": 0.95267584885615,
+              "test_tail_rmse": null,
+              "bic": 30505.932735298626,
+              "structure_present": true,
+              "structure_note": "held gate plus terminal-velocity clamp",
+              "fall_gravity": 2.7538057742781974,
+              "held_increment": -0.14373551666697595,
+              "g_hold": 2.6100702576112216,
+              "terminal_vy": 110.6
+            },
+            "V6_ground_reset": {
+              "n_parameters": 3,
+              "train_rmse": 18.75906006810392,
+              "train_r2": 0.8393029448015876,
+              "train_tail_rmse": 4.057608370042595,
+              "test_rmse": 21.463265839856067,
+              "test_r2": 0.7458705078921886,
+              "test_tail_rmse": null,
+              "bic": 37135.42412498241,
+              "structure_present": true,
+              "structure_note": "gate, clamp and ground-contact downward reset",
+              "fall_gravity": 2.7538057742781974,
+              "held_increment": -0.14373551666697595,
+              "g_hold": 2.6100702576112216,
+              "terminal_vy": 110.6
+            }
+          },
+          "bic_selected": "V2_affine",
+          "test_rmse_selected": "V2_affine",
+          "tail_rmse_selected": "V2_affine",
+          "selected_structure_by_bic": "velocity-dependent gain",
+          "selected_structure_by_tail": "velocity-dependent gain",
+          "tail_selected_parameters": {
+            "a0": 0.10595417430584916,
+            "a1": 0.9750741897459471
+          },
+          "criteria_agree": true
+        },
+        "constants": {
+          "max_vx": {
+            "value": 47.775000000000006,
+            "rel_error_pct": 33.64583333333333
+          },
+          "walk_accel": {
+            "value": -0.008182601205853386,
+            "rel_error_pct": 101.09101349411378
+          },
+          "run_accel": {
+            "value": 0.6030368763557564,
+            "rel_error_pct": 59.7975415762829
+          },
+          "decel": {
+            "value": 0.52421875,
+            "rel_error_pct": 4.843749999999991
+          },
+          "held_gravity": {
+            "value": null,
+            "rel_error_pct": null
+          },
+          "fall_gravity": {
+            "value": null,
+            "rel_error_pct": null
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 47.775000000000006,
+          "bound_selected_by_bic": true,
+          "bound_selected_by_tail": true,
+          "gravity_gate_discovered": false,
+          "tier_separation": null,
+          "true_tier_separation": -3.0,
+          "criteria_agree_horizontal": false,
+          "criteria_agree_vertical": true
+        }
+      },
+      "gplearn": {
+        "preset": "real",
+        "dvx_eval_r2": -0.00016870819145387017,
+        "constants": {
+          "max_vx": {
+            "value": null,
+            "std": 0.0,
+            "rel_error_pct": null
+          },
+          "walk_accel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "run_accel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "subpixels_per_pixel": {
+            "value": 16.0,
+            "std": 0.0,
+            "rel_error_pct": 0.0
+          },
+          "held_gravity": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "fall_gravity": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "decel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 0.0,
+          "gravity_gate_discovered": false,
+          "tier_separation": 0.0,
+          "true_tier_separation": -3.0
+        },
+        "per_law": {
+          "dvx": {
+            "expression": "ceiling",
+            "nodes": 1,
+            "hold_r2": -0.00016870819145387017,
+            "hold_mae": 1.1017699115044248
+          },
+          "dvy": {
+            "expression": "ceiling",
+            "nodes": 1,
+            "hold_r2": -3.493372069729439e-05,
+            "hold_mae": 1.8443952802359882
+          },
+          "dx": {
+            "expression": "vx_next",
+            "nodes": 1,
+            "hold_r2": 0.8917096415424974,
+            "hold_mae": 0.15081120943952803
+          },
+          "dy": {
+            "expression": "max(sub(-1.043, vy_next), vy_next)",
+            "nodes": 5,
+            "hold_r2": 0.8516033349478986,
+            "hold_mae": 0.40893049063508835
+          }
+        },
+        "mean_nodes": 2.0,
+        "gp_seconds": 27.55972671508789
+      },
+      "pysr": {
+        "available": true,
+        "niterations": 40,
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "min",
+          "max"
+        ],
+        "fit_rows": 4000,
+        "preset": "real",
+        "per_law": {
+          "dvx": {
+            "expression": "(min(abs(x0 + x0), x2 + 0.7444743) * x1) + (((-0.039011143 - max(x6, x5)) * x0) + -0.039011143)",
+            "nodes": 20.0,
+            "eval_r2": 0.4295902812017578,
+            "eval_mae": 0.9795156743510325,
+            "eval_rmse": 1.4579566155607258
+          },
+          "dvy": {
+            "expression": "min((x1 + min(6.1597977, x2)) * -2.2218957, min((((x2 * (abs(6.1597977 - x0) - x1)) * 109.288155) + 6.1597977) + x2, min(x0 + x2, x2) * -4.8593307)) - -4.122022",
+            "nodes": 32.0,
+            "eval_r2": 0.03514975969491274,
+            "eval_mae": 1.8052384698880297,
+            "eval_rmse": 8.701741787418493
+          }
+        },
+        "dvx_eval_r2": 0.4295902812017578,
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 34.192702420208335,
+          "bound_overshoot": 0.0,
+          "gravity_gate_discovered": false,
+          "tier_separation": 0.0,
+          "true_tier_separation": -3.0
+        },
+        "pysr_seconds": 580.1975976000031
+      },
+      "dataset_file": "C:\\Users\\Acer\\Downloads\\mworld-experiment\\data\\raw\\smw_gameplay_dataset.npz"
+    },
+    "sprint_targeted": {
+      "dataset": "smw_sprint_dataset.npz",
+      "profile": {
+        "max_abs_vx": 37.0,
+        "fraction_at_90pct_of_support": 0.8298845567414507,
+        "fraction_at_95pct_of_support": 0.49117839250707906,
+        "fraction_at_99pct_of_support": 0.16597691134829012,
+        "p99_abs_vx": 37.0,
+        "support_used": 37.0,
+        "train_transitions": 4591
+      },
+      "heldout_profile": {
+        "max_abs_vx": 37.0,
+        "fraction_at_90pct_of_support": 0.8587540279269602,
+        "fraction_at_95pct_of_support": 0.5102040816326531,
+        "fraction_at_99pct_of_support": 0.1552094522019334,
+        "p99_abs_vx": 37.0,
+        "support_used": 37.0,
+        "train_transitions": 1862
+      },
+      "templates": {
+        "dvx_eval_r2": 0.9696322639849371,
+        "dvx_selected": "H4_clamped",
+        "tail_frame_fraction": 0.8587540279269602,
+        "horizontal": {
+          "templates": {
+            "H1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 11.966080087436527,
+              "train_r2": 0.0,
+              "train_tail_rmse": 5.133433724440229,
+              "test_rmse": 10.816238178284545,
+              "test_r2": -0.009088513013325139,
+              "test_tail_rmse": 5.111732470382288,
+              "bic": 22798.85357369083,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": 30.705510781964712
+            },
+            "H2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 2.154181811891703,
+              "train_r2": 0.9675913530983474,
+              "train_tail_rmse": 1.2066007922017608,
+              "test_rmse": 2.0259038771929174,
+              "test_r2": 0.9645990880819749,
+              "test_tail_rmse": 1.214845551926574,
+              "bic": 7063.231341241445,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain, no input term",
+              "a0": 0.501660035349278,
+              "a1": 0.983662214938827
+            },
+            "H3_drive": {
+              "n_parameters": 2,
+              "train_rmse": 2.162412863102932,
+              "train_r2": 0.967343215391722,
+              "train_tail_rmse": 1.2155577281427046,
+              "test_rmse": 2.0346579834712992,
+              "test_r2": 0.9642924862649899,
+              "test_tail_rmse": 1.224429784018775,
+              "bic": 7098.248575664841,
+              "structure_present": false,
+              "structure_note": "two traction tiers, unbounded",
+              "walk": 0.17424242424241865,
+              "run_increment": -0.18306244808031807
+            },
+            "H4_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 2.016815227396759,
+              "train_r2": 0.9715928010404413,
+              "train_tail_rmse": 0.8679728576911931,
+              "test_rmse": 1.8763671393926347,
+              "test_r2": 0.9696322639849371,
+              "test_tail_rmse": 0.8609730902153795,
+              "bic": 6466.648959464244,
+              "structure_present": true,
+              "structure_note": "rigid symmetric velocity bound",
+              "walk": 0.2439678284182298,
+              "run_increment": 0.531289903540535,
+              "max_vx": 36.075
+            },
+            "H5_coast": {
+              "n_parameters": 4,
+              "train_rmse": 2.016815227396759,
+              "train_r2": 0.9715928010404413,
+              "train_tail_rmse": 0.8679728576911931,
+              "test_rmse": 1.8763671393926347,
+              "test_r2": 0.9696322639849371,
+              "test_tail_rmse": 0.8609730902153795,
+              "bic": 6475.080812608494,
+              "structure_present": true,
+              "structure_note": "rigid bound plus Coulomb coast deadband",
+              "walk": 0.2439678284182298,
+              "run_increment": 0.531289903540535,
+              "max_vx": 36.075,
+              "decel": 0.0
+            },
+            "H6_contact": {
+              "n_parameters": 4,
+              "train_rmse": 2.016815227396759,
+              "train_r2": 0.9715928010404413,
+              "train_tail_rmse": 0.8679728576911931,
+              "test_rmse": 1.8763671393926347,
+              "test_r2": 0.9696322639849371,
+              "test_tail_rmse": 0.8609730902153795,
+              "bic": 6475.080812608494,
+              "structure_present": true,
+              "structure_note": "bound, deadband and facing-wall stop",
+              "walk": 0.2439678284182298,
+              "run_increment": 0.531289903540535,
+              "max_vx": 36.075,
+              "decel": 0.0
+            }
+          },
+          "bic_selected": "H4_clamped",
+          "test_rmse_selected": "H4_clamped",
+          "tail_rmse_selected": "H4_clamped",
+          "selected_structure_by_bic": "rigid symmetric velocity bound",
+          "selected_structure_by_tail": "rigid symmetric velocity bound",
+          "tail_selected_parameters": {
+            "walk": 0.2439678284182298,
+            "run_increment": 0.531289903540535,
+            "max_vx": 36.075
+          },
+          "criteria_agree": true
+        },
+        "vertical": {
+          "templates": {
+            "V1_constant": {
+              "n_parameters": 1,
+              "train_rmse": 57.62151763883042,
+              "train_r2": 0.0,
+              "train_tail_rmse": 57.15996303270349,
+              "test_rmse": 56.3219328119534,
+              "test_r2": -6.7477234149126986e-06,
+              "test_tail_rmse": null,
+              "bic": 37231.30555007562,
+              "structure_present": false,
+              "structure_note": "no structure",
+              "c": -5.054018732302331
+            },
+            "V2_affine": {
+              "n_parameters": 2,
+              "train_rmse": 18.279899109060384,
+              "train_r2": 0.8993582444673703,
+              "train_tail_rmse": 7.5972005263930695,
+              "test_rmse": 18.997529332981248,
+              "test_r2": 0.886226248710192,
+              "test_tail_rmse": null,
+              "bic": 26697.938100123294,
+              "structure_present": false,
+              "structure_note": "velocity-dependent gain",
+              "a0": -0.14819468334330443,
+              "a1": 0.9497211979241363
+            },
+            "V3_single_gravity": {
+              "n_parameters": 1,
+              "train_rmse": 18.75444932272069,
+              "train_r2": 0.8940650543085986,
+              "train_tail_rmse": 6.639322132677598,
+              "test_rmse": 19.514991625840587,
+              "test_r2": 0.8799438067317586,
+              "test_tail_rmse": null,
+              "bic": 26924.83149235212,
+              "structure_present": false,
+              "structure_note": "one gravity tier, free-flight fit",
+              "gravity": 3.1455858374097367
+            },
+            "V4_held_gate": {
+              "n_parameters": 2,
+              "train_rmse": 18.783110245670848,
+              "train_r2": 0.8937410231147789,
+              "train_tail_rmse": 6.63014726086403,
+              "test_rmse": 19.54528317411911,
+              "test_r2": 0.879570810369466,
+              "test_tail_rmse": null,
+              "bic": 26947.284749588354,
+              "structure_present": true,
+              "structure_note": "discontinuous held-jump gravity gate",
+              "fall_gravity": 3.3441258094356883,
+              "held_increment": -0.8117448570547469,
+              "g_hold": 2.5323809523809415
+            },
+            "V5_clamped": {
+              "n_parameters": 3,
+              "train_rmse": 18.783110245670848,
+              "train_r2": 0.8937410231147789,
+              "train_tail_rmse": 6.63014726086403,
+              "test_rmse": 19.54528317411911,
+              "test_r2": 0.879570810369466,
+              "test_tail_rmse": null,
+              "bic": 26955.716602732602,
+              "structure_present": true,
+              "structure_note": "held gate plus terminal-velocity clamp",
+              "fall_gravity": 3.3441258094356883,
+              "held_increment": -0.8117448570547469,
+              "g_hold": 2.5323809523809415,
+              "terminal_vy": 110.6
+            },
+            "V6_ground_reset": {
+              "n_parameters": 3,
+              "train_rmse": 14.127913750914669,
+              "train_r2": 0.9398844693954022,
+              "train_tail_rmse": 6.63014726086403,
+              "test_rmse": 17.564827319286444,
+              "test_r2": 0.9027397012336115,
+              "test_tail_rmse": null,
+              "bic": 24340.63217261923,
+              "structure_present": true,
+              "structure_note": "gate, clamp and ground-contact downward reset",
+              "fall_gravity": 3.3441258094356883,
+              "held_increment": -0.8117448570547469,
+              "g_hold": 2.5323809523809415,
+              "terminal_vy": 110.6
+            }
+          },
+          "bic_selected": "V6_ground_reset",
+          "test_rmse_selected": "V6_ground_reset",
+          "tail_rmse_selected": "V6_ground_reset",
+          "selected_structure_by_bic": "gate, clamp and ground-contact downward reset",
+          "selected_structure_by_tail": "gate, clamp and ground-contact downward reset",
+          "tail_selected_parameters": {
+            "fall_gravity": 3.3441258094356883,
+            "held_increment": -0.8117448570547469,
+            "g_hold": 2.5323809523809415,
+            "terminal_vy": 110.6
+          },
+          "criteria_agree": true
+        },
+        "constants": {
+          "max_vx": {
+            "value": 36.075,
+            "rel_error_pct": 49.89583333333333
+          },
+          "walk_accel": {
+            "value": 0.2439678284182298,
+            "rel_error_pct": 67.47095621090268
+          },
+          "run_accel": {
+            "value": 0.7752577319587648,
+            "rel_error_pct": 48.31615120274901
+          },
+          "decel": {
+            "value": null,
+            "rel_error_pct": null
+          },
+          "held_gravity": {
+            "value": 2.5323809523809415,
+            "rel_error_pct": 15.58730158730195
+          },
+          "fall_gravity": {
+            "value": 3.3441258094356883,
+            "rel_error_pct": 44.264569842738524
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 36.075,
+          "bound_selected_by_bic": true,
+          "bound_selected_by_tail": true,
+          "gravity_gate_discovered": true,
+          "tier_separation": -0.8117448570547469,
+          "true_tier_separation": -3.0,
+          "criteria_agree_horizontal": true,
+          "criteria_agree_vertical": true
+        }
+      },
+      "gplearn": {
+        "preset": "real",
+        "dvx_eval_r2": 0.0,
+        "constants": {
+          "max_vx": {
+            "value": null,
+            "std": 0.0,
+            "rel_error_pct": null
+          },
+          "walk_accel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "run_accel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          },
+          "subpixels_per_pixel": {
+            "value": 16.0,
+            "std": 0.0,
+            "rel_error_pct": 0.0
+          },
+          "held_gravity": {
+            "value": 1.127951195436708,
+            "std": 0.0,
+            "rel_error_pct": 62.4016268187764
+          },
+          "fall_gravity": {
+            "value": 1.127951195436708,
+            "std": 0.0,
+            "rel_error_pct": 81.2008134093882
+          },
+          "decel": {
+            "value": 0.0,
+            "std": 0.0,
+            "rel_error_pct": 100.0
+          }
+        },
+        "structure": {
+          "rigid_bound_discovered": false,
+          "bound_value": null,
+          "bound_overshoot": 0.0,
+          "gravity_gate_discovered": false,
+          "tier_separation": 0.0,
+          "true_tier_separation": -3.0
+        },
+        "per_law": {
+          "dvx": {
+            "expression": "left",
+            "nodes": 1,
+            "hold_r2": 0.0,
+            "hold_mae": 1.129967776584318
+          },
+          "dvy": {
+            "expression": "ceiling",
+            "nodes": 1,
+            "hold_r2": -6.8647347857275776e-06,
+            "hold_mae": 6.801288936627283
+          },
+          "dx": {
+            "expression": "vx_next",
+            "nodes": 1,
+            "hold_r2": 0.5219374383213446,
+            "hold_mae": 0.21364795918367346
+          },
+          "dy": {
+            "expression": "max(sub(-1.043, vy_next), vy_next)",
+            "nodes": 5,
+            "hold_r2": 0.8744362955211162,
+            "hold_mae": 0.570167352995257
+          }
+        },
+        "mean_nodes": 2.0,
+        "gp_seconds": 28.477257013320923
+      },
+      "pysr": {
+        "available": true,
+        "niterations": 40,
+        "operators": [
+          "+",
+          "-",
+          "*",
+          "min",
+          "max"
+        ],
+        "fit_rows": 4000,
+        "preset": "real",
+        "per_law": {
+          "dvx": {
+            "expression": "min(max(-0.64397323, min(min((x0 * 5.333237) * ((x0 * -1.435142) + (x2 + 50.13973)), 2.9882503), x2)) * 1.4941251, ((x6 + 1.2154211) * ((-1.1807777 * x0) + 5.333237)) + 44.80649)",
+            "nodes": 31.0,
+            "eval_r2": 0.3604307858685444,
+            "eval_mae": 0.6841193959183661,
+            "eval_rmse": 1.6273505912391475
+          },
+          "dvy": {
+            "expression": "(min((min(x1, ((x1 + x2) * (x2 * x0)) - 6.2082453) * -78.31591) - abs((x2 * x0) - 18.483486), 3.9760404) - x1) - x1",
+            "nodes": 26.0,
+            "eval_r2": 0.35590800348998053,
+            "eval_mae": 6.6795102846401715,
+            "eval_rmse": 15.46358716293247
+          }
+        },
+        "dvx_eval_r2": 0.3604307858685444,
+        "structure": {
+          "rigid_bound_discovered": true,
+          "bound_value": 35.756733846875,
+          "bound_overshoot": 0.0,
+          "gravity_gate_discovered": false,
+          "tier_separation": 0.0,
+          "true_tier_separation": -3.0
+        },
+        "pysr_seconds": 551.8119611000002
+      },
+      "dataset_file": "C:\\Users\\Acer\\Downloads\\mworld-experiment\\data\\raw\\smw_sprint_dataset.npz"
+    }
+  },
+  "verdict": {
+    "heldout_binding_fraction": {
+      "published_gameplay": 0.0,
+      "sprint_targeted": 0.8587540279269602
+    },
+    "observed_support": {
+      "published_gameplay": 49.0,
+      "sprint_targeted": 37.0
+    },
+    "template_clamp_estimate": {
+      "published_gameplay": 47.775000000000006,
+      "sprint_targeted": 36.075
+    },
+    "wram_reference_max_vx": 72.0,
+    "best_excited_dataset": "sprint_targeted",
+    "ceiling_became_measurable": true,
+    "reading": "Held-out frames at or above 90% of the speed support: published_gameplay 0.00%, sprint_targeted 85.88%. The clamp estimate moves from 47.775 to 36.075 between the two recordings, against a WRAM reference of 72.0. More excitation does not move the estimate toward the WRAM reference, so the disagreement with the 72.0 constant is not explained by coverage."
+  }
+}

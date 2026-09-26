@@ -12,6 +12,7 @@ meaningful if the model the planner rolls out is the model the study measured.
 from __future__ import annotations
 
 import os
+from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -192,3 +193,42 @@ def test_the_study_refuses_to_run_without_the_emulator(monkeypatch) -> None:
     """A missing core must produce a diagnostic and a non-zero exit, never a fabricated row."""
     monkeypatch.setattr(mpc, "hardware_present", lambda: False)
     assert mpc.main([]) == 1
+
+
+def _run(progress: float, survived: int, fell: bool) -> Dict[str, Any]:
+    return {
+        "progress_px": progress,
+        "frames_survived": survived,
+        "termination": "pit/death" if fell else "timeout",
+    }
+
+
+def test_multi_seed_summary_aggregates_and_pairs_by_seed() -> None:
+    runs = {
+        42: {"ref": _run(600.0, 300, False), "alt": _run(500.0, 300, False)},
+        43: {"ref": _run(610.0, 300, False), "alt": _run(520.0, 280, True)},
+        44: {"ref": _run(590.0, 300, False), "alt": _run(510.0, 300, False)},
+    }
+    out = mpc._multi_seed_summary(runs, "ref", frames_budget=300)
+    ref = out["per_model"]["ref"]
+    alt = out["per_model"]["alt"]
+    assert ref["progress_px_mean"] == pytest.approx(600.0)
+    assert ref["paired_vs_established_rules"] is None  # the reference is not tested against itself
+    assert alt["pit_or_death"] == 1
+    assert alt["budget_reached_rate"] == pytest.approx(2 / 3)
+    paired = alt["paired_vs_established_rules"]
+    assert paired["n_pairs"] == 3
+    assert paired["mean_difference_px"] == pytest.approx(-90.0)
+    # Paired differences are constant-ish here, so the effect size must be reported and
+    # finite rather than silently dropped.
+    assert paired["cohen_dz"] < 0
+
+
+def test_paired_tests_decline_to_infer_significance_from_two_seeds() -> None:
+    """Two draws cannot support a Wilcoxon; the gate has to say so instead of crashing."""
+    out = mpc._paired([1.0, 2.0], [3.0, 4.0])
+    assert out["wilcoxon_p"] != out["wilcoxon_p"]  # NaN, and written as null in the artifact
+    assert out["n_pairs"] == 2
+    identical = mpc._paired([5.0, 5.0, 5.0], [5.0, 5.0, 5.0])
+    assert identical["mean_difference_px"] == 0.0
+    assert identical["wilcoxon_p"] != identical["wilcoxon_p"]

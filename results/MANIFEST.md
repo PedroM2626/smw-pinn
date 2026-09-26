@@ -27,6 +27,7 @@ python -m src.evaluation.inverse_transfer_benchmark
 python -m src.evaluation.symbolic_inverse_benchmark
 python -m src.evaluation.symbolic_tilemap_residual_benchmark
 python -m src.evaluation.symbolic_engine_ablation_benchmark
+python -m src.evaluation.sprint_excitation_benchmark
 
 # Emulator-in-the-loop artifacts (need the Libretro core + your own ROM dump;
 # see README section 11.2 for the SHA-1 and the SMW_ROM override):
@@ -96,7 +97,8 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `symbolic_inverse_metrics.json` | `src/evaluation/symbolic_inverse_benchmark.py` | no | 10.43 |
 | `symbolic_tilemap_residual_metrics.json` | `src/evaluation/symbolic_tilemap_residual_benchmark.py` | no | 10.43.8 |
 | `symbolic_engine_ablation_metrics.json` | `src/evaluation/symbolic_engine_ablation_benchmark.py` | no | 10.43.9 |
-| `inverse_model_mpc_metrics.json` | `src/evaluation/inverse_model_mpc_benchmark.py` | yes | 10.44 |
+| `inverse_model_mpc_metrics.json` | `src/evaluation/inverse_model_mpc_benchmark.py` | yes | 10.44, 10.44.1 |
+| `sprint_excitation_metrics.json` | `src/evaluation/sprint_excitation_benchmark.py` | no | 10.45 |
 
 ## Input freshness
 

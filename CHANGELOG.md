@@ -11,6 +11,51 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Multi-seed closed-loop comparison** (README Section 10.44.1):
+  `src/evaluation/inverse_model_mpc_benchmark.py` now accepts `--seeds` and, over CEM seeds
+  42-46 with the world models fitted once, reports mean $\pm$ std per controller, the
+  budget-reached and pit-death counts, and a paired test against the established-rules
+  controller (`_paired`, with the Wilcoxon floor at $2/2^5$ stated rather than glossed).
+  Outcome, recorded as a self-correction in README Section 12: the 10.44 table's ordering of
+  the two closed-form models was single-draw noise and reverses - the identified constants
+  are 8.10 px *ahead* on the mean ($d_z = +0.54$, $p = 0.29$, indistinguishable), the
+  symbolic failure is robust and enormous ($d_z = -8.42$, no overlap in five pairs) but its
+  seed-42 pit death is not (1 death in 5), and the published PINN row is bimodal - three
+  seeds die near 114 px, two reach ~576 - so $299.20 \pm 253.32$ px is the number to quote,
+  matching the shape of the independent 10.38 reproduction ($420.9 \pm 266.2$ px).
+- **Structure-specificity control for the template engine** (README Section 10.43.9): the
+  authorship objection - the nested-template dictionary was written by someone who had
+  already read the 10.37 engine rules - is now tested rather than conceded.
+  `fit_ceiling_families` in `src/inverse/structure_selection.py` fits four *mutually
+  exclusive* explanations of a velocity plateau to the same driven rows (no ceiling, rigid
+  clamp, quadratic drag with an asymptote, exponential relaxation) and the study generates
+  data from each of three of them. The selector names the true mechanism in 3 of 3 controls
+  with BIC, held-out RMSE and the tail criterion agreeing every time, so the machinery
+  discriminates between structures instead of confirming the one the console happens to
+  use. Unit-tested per mechanism, including the signature that distinguishes drag from a
+  clamp (two asymptotes, one per traction tier).
+- **PySR search-budget sensitivity** (README Section 10.43.9): the published ablation now
+  also re-runs the PySR leg at `--pysr-budgets 40,120` iterations on the same replicate and
+  reports whether the structural answer moves with the budget. It does, and the entry records
+  that as a correction to the section it belongs to: at 40 iterations the bound is missed
+  (held-out $R^2$ 0.9983, driven map overshooting the velocity support by 0.0014 px/frame with
+  no fixed point, 599 s), at 120 iterations the same search returns the whole law
+  ($R^2$ 1.0000, overshoot 0.0, 1779 s) - the stored expression evaluates to
+  $\hat v = \min(v + 1.8, 48.0)$ on the driven branch, with the walk tier at 1.0, the run tier
+  at 1.8 and the Coulomb deadband at 0.5999992 against a true 0.6. Discovery is therefore
+  budget-limited here, not blocked by the representation or by the fitness, and §10.43.9's
+  criterion-only reading is explicitly narrowed to the budget at which it was measured.
+- **Excitation-targeted recording and ceiling re-measurement** (README Section 10.45):
+  `scripts/record_sprint_gameplay.py` records a second WRAM dataset whose only purpose is to
+  saturate the speed bound - the 10.37 established-rules MPC drives Mario with a
+  speed-weighted objective, and every transition is read back from WRAM after the frame, so
+  the policy chooses which states are visited and never what those states were.
+  `src/evaluation/sprint_excitation_benchmark.py` then runs the excitation profile and all
+  three engines of 10.43.9 over both recordings under the identical protocol, and its verdict
+  reports the *direction* the clamp estimate moved against the WRAM reference rather than the
+  direction that would be convenient. Emulator required for the recording, not for the
+  analysis; the published datasets are never overwritten.
+
 - **Closed-loop control with inverse-problem world models** (README Section 10.44): the
   inverse answers of 10.40 and 10.43 are driven on the real console for the first time.
   `src/models/inverse_world_models.py` wraps the identified seven-constant map and the
@@ -48,7 +93,7 @@ numbers* - those are reported here and in README Section 12, never applied silen
   rather than skipped) on identical design matrices, row budgets, held-out banks and probes,
   on the hidden world (3 replicates x 3 seeds) and again on genuine WRAM telemetry, and
   assembles its verdict from the measured rates so no clause of the conclusion is asserted
-  ahead of the number. Emulator-free, ~25 min CPU; writes
+  ahead of the number. Emulator-free, ~75 min CPU with the PySR legs and the budget sweep; writes
   `results/symbolic_engine_ablation_metrics.json` and
   `results/figures/symbolic_engine_ablation.png`, indexed in `results/MANIFEST.md`, wired as
   the `symbolic-engines` Make/CLI target with smoke config
@@ -58,9 +103,12 @@ numbers* - those are reported here and in README Section 12, never applied silen
   Outcome, reported as a self-correction in README Section 12: the ceiling is *identifiable*
   from these windows - as a candidate structure it is recovered at 48.000 against a true 48.0
   and preferred by BIC and both held-out criteria in 3/3 replicates, with constants within
-  1.4e-4% of truth - but free tree search still misses it identically for both engines
-  (0/3 bagged gplearn replicates, 0/3 PySR fits) even though PySR fits the same law far better
-  ($R^2$ 0.988 vs 0.805), so the bound was a fitness failure, not a representation failure. The
+  1.4e-4% of truth - but free tree search misses it identically for both engines at the
+  published budget (0/3 bagged gplearn replicates, 0/3 PySR fits) even though PySR fits the
+  same law far better ($R^2$ 0.988 vs 0.805), which rules out the terminal range and the fit
+  accuracy as the explanation at that budget. The budget itself is not ruled out: the same
+  search at 120 iterations discovers the law outright (see the entry above), so this section's
+  conclusion is stated as budget-limited rather than as a property of the fitness. The
   gravity gate is the opposite case: gplearn's drawn constants recover it in 1/3 replicates
   (tier separation -1.35 of a true -2.80) and PySR's optimised constants in 3/3 (-2.80),
   which is a representation limit. On telemetry the ordering survives (template 0.989, PySR
