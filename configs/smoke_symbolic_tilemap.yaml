@@ -1,0 +1,9 @@
+# Seconds-scale version of the README 10.43.8 tilemap-residual control (`make smoke`).
+# Same five conditioning conditions and placebo; tiny GP budget and a thin fit bank.
+gp_seeds: 0,1
+population_size: 120
+generations: 5
+max_train: 400
+id_steps: 120
+stride: 12
+seed: 42

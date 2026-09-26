@@ -11,6 +11,27 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Terrain-conditioned residual discovery** (README Section 10.43.8): the counterfactual
+  that Section 10.43.5 only inferred is now measured.
+  `src/evaluation/symbolic_tilemap_residual_benchmark.py` re-runs the grey-box residual
+  control on `smw_tilemap_dataset.npz`, where the recorded 7x7 local block buffer is
+  available to the search, under five conditioning conditions (`state`, `state+geom`,
+  `state+geom+inter`, `state+full`, and a shuffled-geometry placebo), each scored by
+  genetic programming (median over 3 seeds, best and worst reported) and by least squares
+  on the identical design matrix. Support requires the geometry condition to predict out of
+  sample, to beat the state-only fit, *and* to beat the placebo - "less catastrophic" is
+  explicitly not "explained" (`build_verdict`, unit-tested against both failure modes).
+  Emulator-free, deterministic, ~6 min CPU; writes
+  `results/symbolic_tilemap_residual_metrics.json` with `_meta`, indexed in
+  `results/MANIFEST.md`, wired as the `symbolic-tilemap` Make/CLI target with smoke config
+  `configs/smoke_symbolic_tilemap.yaml`, tested in
+  `tests/test_symbolic_tilemap_residual.py`.
+  Outcome: terrain occupancy explains the identified model's *vertical* velocity residual
+  (held-out R^2 0.311 -> 0.365, placebo -0.007, best expression a ground-gated downward
+  reset `mul(max(mul(patch_fill, vy_x_below), vy), ground)`) and does not explain the
+  horizontal one (gain exactly +0.000, no terrain descriptor correlating above 0.068); the
+  placebo additionally caught a +0.077 apparent gain in the y channel as overfitting, and
+  least squares beats genetic programming on the horizontal residual (+0.081 vs -0.011).
 - **Symbolic regression as an inverse-problem method** (README Section 10.43): the
   inverse line of Section 10.40 extended from *fitting constants inside a posited law*
   to *discovering the law*, with genetic programming (`gplearn`, piecewise-affine
@@ -151,6 +172,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
   flagged (README 10.28). This cleared the last `STALE` row in `results/MANIFEST.md`.
 
 ### Fixed
+
+- README Section 10.43.5 (self-correction, also recorded in Section 12): the identified
+  model's horizontal-velocity residual was said to be "tile geometry and slope acceleration
+  that never enter the observation". Section 10.43.8 tested that claim against the
+  repository's own terrain recording and it failed - the horizontal residual did not move
+  when the patch was handed to the search, while the vertical residual did. The sentence now
+  states what the experiment establishes (the search separates the part of a model's form
+  error that is a closed form of the observation from the part that is not) and names the one
+  candidate this recording still cannot test: the slope tile class, which never occurs in
+  this stage's patches. No number changed; the interpretation was stronger than the evidence.
 
 - CI legs `Lint + tests (ubuntu, py 3.10)` and `Native tests (windows)`: the four
   fitting tests of `tests/test_symbolic_regression.py` raised

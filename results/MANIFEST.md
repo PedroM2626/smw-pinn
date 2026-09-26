@@ -25,6 +25,7 @@ python -m src.evaluation.spatial_holdout_benchmark
 python -m src.evaluation.plot_learning_curves
 python -m src.evaluation.inverse_transfer_benchmark
 python -m src.evaluation.symbolic_inverse_benchmark
+python -m src.evaluation.symbolic_tilemap_residual_benchmark
 
 # Emulator-in-the-loop artifacts (need the Libretro core + your own ROM dump;
 # see README section 11.2 for the SHA-1 and the SMW_ROM override):
@@ -91,6 +92,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `deeponet_benchmark_metrics.json` | `src/evaluation/deeponet_benchmark.py` | no | 10.41 |
 | `operator_benchmark_metrics.json` | `src/evaluation/operator_benchmark.py` | no | 10.42 |
 | `symbolic_inverse_metrics.json` | `src/evaluation/symbolic_inverse_benchmark.py` | no | 10.43 |
+| `symbolic_tilemap_residual_metrics.json` | `src/evaluation/symbolic_tilemap_residual_benchmark.py` | no | 10.43.8 |
 
 ## Input freshness
 

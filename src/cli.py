@@ -75,6 +75,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "deeponet": "src.evaluation.deeponet_benchmark",
     "operators": "src.evaluation.operator_benchmark",
     "symbolic-inverse": "src.evaluation.symbolic_inverse_benchmark",
+    "symbolic-tilemap": "src.evaluation.symbolic_tilemap_residual_benchmark",
 }
 
 # Config file injected for the workflows that accept --config.
@@ -99,6 +100,7 @@ SMOKE_RUNS: tuple[tuple[str, str], ...] = (
     ("src.evaluation.deeponet_benchmark", "configs/smoke_deeponet.yaml"),
     ("src.evaluation.operator_benchmark", "configs/smoke_operators.yaml"),
     ("src.evaluation.symbolic_inverse_benchmark", "configs/smoke_symbolic_inverse.yaml"),
+    ("src.evaluation.symbolic_tilemap_residual_benchmark", "configs/smoke_symbolic_tilemap.yaml"),
 )
 
 # Quality gates: the module plus the arguments this project standardizes on.

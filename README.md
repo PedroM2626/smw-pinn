@@ -1718,7 +1718,7 @@ The grey-box control (`hybrid_residual_control`) asks the sharpest version of th
 | $v_x$ | $-0.018$ | $-0.003$ | $-0.003$ | **not closed-form** |
 | $v_y$ | $+0.336$ | $+0.409$ | $+0.702$ | partly closed-form |
 
-Vertical position, vertical velocity and horizontal position residuals are partially predictable out-of-sample ($R^2 > 0.2$, up to 0.73 for the best seed on $y$) - these are the collision-response and floor-contact effects the analytic model approximates crudely. The **horizontal velocity residual is not**: its train $R^2$ is already negative, so the identified model's horizontal error is not a learnable function of state, buttons and contact flags at all - it is tile geometry and slope acceleration that never enter the observation. That is a *negative* discovery result and the correct one to report: symbolic search distinguishes the part of the model-form error that is physics-from-observation from the part that is missing-sensor, and it is the third time in this repository (after Section 10.20's $\eta = 10^{-6}$ degeneracy and Section 10.34's tilemap analysis) that the honest ceiling on real-data accuracy turns out to be the observation rather than the estimator.
+Vertical position, vertical velocity and horizontal position residuals are partially predictable out-of-sample ($R^2 > 0.2$, up to 0.73 for the best seed on $y$) - these are the collision-response and floor-contact effects the analytic model approximates crudely. The **horizontal velocity residual is not**: its train $R^2$ is already negative, so the identified model's horizontal error is not a learnable function of state, buttons and contact flags at all. The reading offered in this section's first draft was that the missing variable is tile geometry - and Section 10.43.8 now tests exactly that against the repository's own terrain recording, which refutes it for $v_x$ and confirms it for $v_y$. What survives is the estimator-side statement, which is what the experiment actually establishes: symbolic search separates the part of a model's form error that is a closed form of the observation from the part that is not, and this is the third time in this repository (after Section 10.20's $\eta = 10^{-6}$ degeneracy and Section 10.34's tilemap analysis) that the honest ceiling on real-data accuracy turns out to be what is measured rather than how it is fitted.
 
 #### 10.43.6 Zero-Shot Control Transfer of a Discovered Law (S4)
 
@@ -1741,7 +1741,7 @@ The prior remains the only systematically *optimistic* model ($+0.26$ px), exact
 3. **Search effort buys accuracy, not structure.** $R^2$ rises from 0.13 to 0.62 on the vertical law while its tier separation stays statistically at zero. Anyone citing "symbolic regression discovers the laws of a system" should cite the accuracy and structure columns separately, as done here.
 4. **Excitation is a binding constraint on discovery, not only on identifiability.** Over-weighting coast and ascending-jump-held frames cuts $g_{\text{hold}}$ error from 81.3% to 11.6% and friction error from 89.2% to 59.0%, at a measurable cost in aggregate accuracy.
 5. **A null baseline is not optional in equation discovery.** Every per-law row in this section is reported against the fit-mean predictor, and the composed model against kinematic persistence. Without them the real-data table would appear to show symbolic regression beating the Hard Residual PINN; with them it shows the far less exciting and far more useful truth - that on real gameplay most of the accuracy is the identity plus the contact byte, and that the discovered *dynamics* is where the method stops.
-6. **On real telemetry the limit is the observation, not the estimator.** The horizontal-velocity residual of the identified analytic model has negative train $R^2$ even with all eleven observable channels offered to the search: no closed form in what WRAM reports explains it. Symbolic regression earns its place in this repository as the *diagnostic* that proves the claim, not as the model to plan with.
+6. **On real telemetry the limit is what is measured, not how it is fitted - and the specific missing variable is testable.** The horizontal-velocity residual of the identified analytic model has negative train $R^2$ even with all eleven observable channels offered to the search; Section 10.43.8 then hands the same search the terrain and finds that occupancy explains the *vertical* residual (gain $+0.054$ against a placebo at $-0.007$) and not the horizontal one (gain exactly $+0.000$). Symbolic regression earns its place here as the diagnostic that makes both statements checkable - and, in the $y$ channel, as the design that catches a $+0.077$ apparent gain as overfitting.
 
 **Limitations.** (i) One GP implementation and one primitive set: transcendental primitives, an ephemeral-constant range matched to the ceiling, or a template admitting a clamp as a first-class node would change conclusions (1) and (2) - what is measured here is what *this* representation discovers. (ii) Bagging over 3 seeds is variance reduction, not a posterior; no uncertainty statement about a discovered expression is claimed. (iii) The synthetic hidden world is the repository's own analytic generator, so its laws are piecewise-affine by construction - favourable to this search, unlike a table-driven console acceleration curve. (iv) GP seeds are fixed, but the search is not order-invariant: 3 seeds per law is the minimum honest sample, not a converged distribution, which is why every structural claim in this section is reported as a *rate*. (v) The S1/S2 comparison refits the parametric estimator at 900 steps against 10.40-E1's published 2000, so the "Parametric ID" column here is a slightly weaker version of the published one (S4: 0.32 vs 0.28 px); the ordering is unaffected. (vi) The real-data rows give both inverse models the terrain-contact byte as input, as 10.40-E2 does; the learned baselines do not get that favour and are therefore not comparable on $x$/$y$.
 
@@ -1752,6 +1752,47 @@ The prior remains the only systematically *optimistic* model ($+0.26$ px), exact
 Regenerate: `python -m src.evaluation.symbolic_inverse_benchmark` (emulator-free, ~20 min on CPU; `--replicates`, `--gp-seeds`, `--population-size`, `--generations`, `--max-train`, `--weight-strengths` and `--no-budget-sweep` control the search budget; `make symbolic-inverse` / `smw-pinn symbolic-inverse`, smoke config `configs/smoke_symbolic_inverse.yaml`).
 
 ---
+
+---
+
+#### 10.43.8 The Counterfactual: Hand the Same Search the Terrain It Was Missing
+
+Section 10.43.5 ended on an attribution: the identified analytic model's horizontal-velocity residual has negative *train* $R^2$ even with all eleven observable channels, so it "is tile geometry and slope acceleration that never enter the observation". That is an inference from an absence of evidence - the state vector does not carry terrain, and the residual does not yield. The repository, however, already holds the counterfactual recording: `smw_tilemap_dataset.npz` (Section 10.20) records the $7 \times 7$ local WRAM block buffer around Mario, tile by tile, for every transition of the same stage. So the claim is testable, and testing it is the difference between a diagnosis and a guess.
+
+**Design.** The analytic map is re-identified on the tilemap recording's own training split (3,489 fit transitions at a stride of 2, 2,004 test transitions; its constants land $0.0$-$74.3\%$ from the reverse-engineered values, with $\sigma$ at $39.4\%$), its per-channel residual becomes the regression target, and genetic programming is asked to explain that residual under five conditioning conditions that differ *only* in what the search may see:
+
+| Condition | Features | What is added |
+| :--- | :---: | :--- |
+| `state` | 11 | the 10.43.5 replication on this recording |
+| `state+geom` | 18 | seven occupancy descriptors of the patch (below, ahead-right, ahead-left, ceiling, center, slope fraction, fill) |
+| `state+geom+inter` | 22 | plus four terrain $\times$ input products (`dir` facing-side, `vx` into the faced wall, `vy` into the floor) |
+| `state+full` | 60 | all 49 raw patch cells, row 0 above Mario and column 0 to his left |
+| `state+geom-shuffled` | 22 | the descriptors **permuted across frames** - a placebo that must not help |
+
+Every GP row is reported as the median over 3 seeds (with best and worst), and beside it an ordinary least-squares fit on the identical design matrix, so a GP failure can be told apart from "there is nothing linear here". Support is granted only when the geometry condition predicts out of sample ($R^2 > 0.05$), beats the state-only fit by more than $0.05$, *and* beats the placebo by more than $0.02$ - "less catastrophic" is not "explained".
+
+**Result: the terrain explains the vertical residual and not the horizontal one.**
+
+| Residual | `state` median | best geometry condition | median there | gain | placebo gain | max $\lvert$corr with terrain$\rvert$ | terrain explains it |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $x$ | $+0.667$ | `state+geom+inter` | $+0.677$ | $+0.010$ | $+0.010$ | 0.138 | **no** |
+| $y$ | $+0.657$ | `state+geom+inter` | $+0.735$ | $+0.077$ | $+0.092$ | 0.181 | **no** (placebo wins) |
+| $v_x$ | $-0.011$ | `state+geom` | $-0.011$ | $+0.000$ | $+0.000$ | 0.068 | **no** |
+| $v_y$ | $+0.311$ | `state+geom+inter` | $+0.365$ | $+0.054$ | $-0.007$ | 0.243 | **yes** |
+
+Three findings, one of them a correction of this section's own predecessor:
+
+1. **The $v_y$ residual really is terrain.** Handing the search occupancy raises held-out $R^2$ from $+0.311$ to $+0.365$ while the shuffled placebo *lowers* it ($-0.007$), and the strongest single terrain correlation in the whole table is ceiling-above versus the vertical-velocity residual ($0.243$). The best discovered expression is itself a physical statement - `mul(max(mul(patch_fill, vy_x_below), vy), ground)` - a ground-gated reset of downward velocity built from the floor occupancy rather than from the contact byte. The analytic model's vertical error is therefore not merely "crudely approximated collision response" (10.40-E2's wording): it is a function of terrain the state vector omits but the block buffer carries.
+2. **The $v_x$ attribution in 10.43.5 was unsupported, and is retracted.** The horizontal residual does not move at all: gain exactly $+0.000$ in every condition, placebo identical, and no terrain descriptor correlating above $0.068$ with it. Local block occupancy is *not* the missing variable for horizontal velocity. What the test can say positively is narrower and less comfortable: within this recording, the horizontal residual is explained by neither the state nor the terrain around Mario. One candidate survives only because the recording cannot express it - the slope class (tile code 3) never occurs in this stage's patches, so slope acceleration is untestable here by construction - and the others (sub-tile collision resolution, sprite interactions, telemetry quantisation) are outside both observation sets. Section 10.43.5's sentence has been corrected accordingly, and this is recorded as a self-correction in Section 12.
+3. **The placebo earned its keep.** The $y$ residual shows a $+0.077$ gain that would have been reported as terrain-explained by any design without the shuffled condition - and the placebo scores higher still ($+0.092$), which identifies it as overfitting to the 22-feature design rather than as physics. Two of the four apparent "explanations" in this table exist only because the control was run.
+
+A secondary observation, unfavourable to the method and worth stating: on the $v_x$ residual, plain least squares on the eleven state features reaches $+0.081$ out of sample while genetic programming sits at $-0.011$ (and one of its three seeds collapses to $-8.07$ by extrapolating an unbounded expression). Symbolic search is not uniformly better than a linear fit on noisy telemetry; it buys interpretability and structure, and on this channel it pays for them with accuracy.
+
+![Tilemap-conditioned residual discovery](results/figures/symbolic_tilemap_residual_gain.png)
+
+*Held-out $R^2$ on the identified analytic model's residuals, per channel, for each conditioning condition: genetic programming (median over seeds, with best/worst whiskers) against least squares on the same design. The rightmost group in each panel is the shuffled-geometry placebo.*
+
+Regenerate: `python -m src.evaluation.symbolic_tilemap_residual_benchmark` (emulator-free, ~6 min CPU; `make symbolic-tilemap`, smoke config `configs/smoke_symbolic_tilemap.yaml`; `--stride`, `--gp-seeds`, `--population-size`, `--generations` and `--id-steps` control the budget).
 
 ---
 
@@ -1766,7 +1807,7 @@ smw-pinn/
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
 │   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
-│   └── smoke_*.yaml                    # 8 fast emulator-free study configs (`make smoke`)
+│   └── smoke_*.yaml                    # 9 fast emulator-free study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -1800,6 +1841,7 @@ smw-pinn/
 │   ├── operator_benchmark_metrics.json    # Operator family study metrics (10.42)
 │   ├── inverse_identification_metrics.json # Physics parameter identification + transfer (10.40)
 │   ├── symbolic_inverse_metrics.json      # Symbolic-regression inverse study metrics (10.43)
+│   ├── symbolic_tilemap_residual_metrics.json # Terrain-conditioned residual control (10.43.8)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
 │   └── figures/                           # High-resolution benchmark figures (.png) and .gif
@@ -1883,6 +1925,7 @@ smw-pinn/
 │       ├── operator_benchmark.py          # Operator family: PC-DeepONet + FNO (10.42, CI-safe)
 │       ├── inverse_transfer_benchmark.py  # Parameter identification + zero-shot transfer (10.40, CI-safe)
 │       ├── symbolic_inverse_benchmark.py  # Symbolic-regression inverse study (10.43, CI-safe)
+│       ├── symbolic_tilemap_residual_benchmark.py # Terrain-conditioned residual control (10.43.8)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -1942,6 +1985,7 @@ smw-pinn/
 │   ├── test_deeponet.py                   # Unit tests for the DeepONet operator baselines
 │   ├── test_fno.py                        # Unit tests for the Fourier Neural Operator
 │   ├── test_symbolic_regression.py        # GP law banks, probes, analytic-law parity (§10.43)
+│   ├── test_symbolic_tilemap_residual.py  # Terrain descriptors, placebo, verdict rule (§10.43.8)
 │   ├── test_hardware_loops.py             # Emulator-guarded end-to-end hardware entry points
 │   ├── test_smoke_runs.py                 # Every configs/smoke_*.yaml is accepted + runs
 │   └── test_english_only.py               # Repo text stays English-only
@@ -2161,6 +2205,11 @@ python -m src.evaluation.operator_benchmark
 #     metrics and the published learned models. Emulator-free CPU study (~15 min):
 #     writes results/symbolic_inverse_metrics.json.
 python -m src.evaluation.symbolic_inverse_benchmark
+
+# 47. Terrain-conditioned residual discovery (10.43.8): the 10.43.5 grey-box control with the
+#     recorded 7x7 block buffer available to the search, against a shuffled-geometry placebo.
+#     Emulator-free: writes results/symbolic_tilemap_residual_metrics.json.
+python -m src.evaluation.symbolic_tilemap_residual_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -2176,9 +2225,9 @@ make format-check # ruff format --check (what CI runs)
 make typecheck   # mypy on typed core modules
 make check-all   # lint + format-check + typecheck + test-cov (the full gate)
 make reproduce   # fast CPU smoke benchmark (configs/reproduce.yaml)
-make smoke-all   # seconds-scale runs of $11 studies -> results_smoke/ (ignored)
+make smoke-all   # seconds-scale runs of $12 studies -> results_smoke/ (ignored)
 make benchmark sample-efficiency multiseed
-make inverse-transfer symbolic-inverse   # The inverse-problem studies (10.40 parametric, 10.43 symbolic)
+make inverse-transfer symbolic-inverse symbolic-tilemap   # The inverse-problem studies (10.40, 10.43, 10.43.8)
 smw-pinn check-all # the same gate on Windows, where `make` is usually unavailable
 ```
 
@@ -2205,4 +2254,4 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 1. **No Data Fabrication:** All reported metrics and figures derive from verified empirical executions saved under `results/` and indexed by `results/MANIFEST.md`; the §8 tables come from `results/benchmark_metrics.json`, `results/sample_efficiency_metrics.json` and `results/multiseed_benchmark_metrics.json`, the §10 study tables from the artifact named in their section.
 2. **Authentic Emulation Data:** All 8,077 samples were extracted directly from 65816 CPU WRAM during real-time interactive gameplay in Game Mode `$14`.
 3. **Open Reproducibility:** The full codebase, pretrained weights, and reproduction scripts are maintained in the repository for peer audit.
-4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35). §10.43 is reported as the predominantly negative result it is: the rigid velocity bound was discovered in 0 of 27 genetic-programming draws and is shown as "no fixed point" rather than as the data maximum, and every symbolic accuracy row is published against a fit-mean and kinematic-persistence null, because without them the real-telemetry table would read as beating the Hard Residual PINN. §10.28 was likewise re-recorded from a single unseeded closed-loop draw into a 5-seed mean $\pm$ std protocol under `set_global_seed`, which corrected its MPC rows (Statistical MLP 576.8 -> 44.4 px, Soft 394.1 -> 88.1 px, Hard 755.6 -> 522.9 px, Random 143.4 -> 183.4 px) and showed the earlier "MLP beats Soft" ordering was single-draw noise - the re-measured ordering is monotonic in physical fidelity.
+4. **Audited Self-Corrections:** Where a published number turned out to be measurable-but-wrong, the correction is reported instead of quietly applied. §10.6 was re-recorded after the preamble probe (§10.38.1) showed its harness had been planning against a savestate that restores into engine mode `0x08`; the negative identifiability result for the jump impulse is reported in §10.37.1; the blocked Yoshi's Island 2 capture keeps its diagnostics artifact rather than a fabricated state (§10.36); and Dyna's learning curve is shown as an annotated operating band, never as an invented per-step trace (§10.35). §10.43 is reported as the predominantly negative result it is: the rigid velocity bound was discovered in 0 of 27 genetic-programming draws and is shown as "no fixed point" rather than as the data maximum, and every symbolic accuracy row is published against a fit-mean and kinematic-persistence null, because without them the real-telemetry table would read as beating the Hard Residual PINN. §10.43.5's attribution of the identified model's horizontal-velocity residual to unobserved tile geometry was published as a diagnosis and is now retracted on the strength of its own counterfactual test: §10.43.8 re-ran the residual discovery with the recorded $7 \times 7$ block buffer available and the horizontal residual did not move (gain exactly $+0.000$, no terrain descriptor correlating above $0.068$), while the vertical one did ($+0.311 \to +0.365$ against a placebo at $-0.007$). The shuffled-geometry placebo also caught a $+0.077$ apparent gain in the $y$ channel as overfitting, which is why every claim in that section is stated against its control. §10.28 was likewise re-recorded from a single unseeded closed-loop draw into a 5-seed mean $\pm$ std protocol under `set_global_seed`, which corrected its MPC rows (Statistical MLP 576.8 -> 44.4 px, Soft 394.1 -> 88.1 px, Hard 755.6 -> 522.9 px, Random 143.4 -> 183.4 px) and showed the earlier "MLP beats Soft" ordering was single-draw noise - the re-measured ordering is monotonic in physical fidelity.
