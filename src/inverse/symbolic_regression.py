@@ -506,6 +506,7 @@ def fit_law(
     est.fit(X[fit_idx] / x_scale, y[fit_idx] / y_scale, sample_weight=weight)
     fit_seconds = time.time() - t0
 
+    # gplearn 0.4.2 exposes the winning program only through this attribute.
     program = est._program
     law = SymbolicLaw(
         name=name,
@@ -719,7 +720,10 @@ def probe_constants(
     """
     vx_sup, vy_sup = bank.velocity_support
     step_x, step_y = bank.step_support
-    has = lambda law_name: law_name in model  # noqa: E731
+
+    def has(law_name: str) -> bool:
+        return law_name in model
+
     rows = max(probe_rows, 8)
     drive = np.linspace(0.0, max(vx_sup * velocity_probe_scale, 1e-6), rows)
     mid = drive[drive <= 0.5 * max(vx_sup, 1e-6)]

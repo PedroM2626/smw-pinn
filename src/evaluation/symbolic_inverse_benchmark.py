@@ -705,8 +705,12 @@ class _ConstantLaw:
 
 
 def _null_velocity_model(scale: float, preset: str) -> Dict[str, Any]:
-    zero = lambda X: np.zeros(X.shape[0])  # noqa: E731
-    over_scale = lambda X: X[:, 0] / scale  # noqa: E731
+    def zero(X: np.ndarray) -> np.ndarray:
+        return np.zeros(X.shape[0])
+
+    def over_scale(X: np.ndarray) -> np.ndarray:
+        return X[:, 0] / scale
+
     return {
         "dvx": _ConstantLaw("dvx", preset, zero),
         "dvy": _ConstantLaw("dvy", preset, zero),
