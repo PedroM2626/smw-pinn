@@ -9,7 +9,8 @@ max_train: 500
 fit_windows: 120
 eval_windows: 60
 pysr_iterations: 3
-# The budget sensitivity sweep is the expensive part of the published run, so the smoke
-# config pins it to token budgets as well.
+# The two sensitivity sweeps are the expensive part of the published run, so the smoke
+# config pins both to token budgets as well.
 pysr_budgets: "1,2"
+gplearn_effort_grid: "60x4,120x8"
 seed: 42

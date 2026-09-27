@@ -167,13 +167,18 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
     ),
     (
         "symbolic_engine_ablation_metrics.json",
-        ["pysr_budget_sensitivity", "by_budget", "120", "seconds"],
-        "the search takes {:.0f} s",
+        ["gplearn_effort_sensitivity", "by_budget", "1000x150", "dvx_heldout_r2"],
+        "**{:.3f}** | no |",
     ),
     (
         "symbolic_engine_ablation_metrics.json",
-        ["pysr_budget_sensitivity", "by_budget", "40", "seconds"],
-        "instead of {:.0f} s",
+        ["gplearn_effort_sensitivity", "by_budget", "2000x300", "dvx_heldout_r2"],
+        "| {:.3f} | **yes** |",
+    ),
+    (
+        "symbolic_engine_ablation_metrics.json",
+        ["gplearn_effort_sensitivity", "effort_range"],
+        "{} increase in evaluations",
     ),
     (
         "symbolic_engine_ablation_metrics.json",

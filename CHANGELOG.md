@@ -34,13 +34,27 @@ numbers* - those are reported here and in README Section 12, never applied silen
   discriminates between structures instead of confirming the one the console happens to
   use. Unit-tested per mechanism, including the signature that distinguishes drag from a
   clamp (two asymptotes, one per traction tier).
+- **gplearn search-effort sensitivity** (README Section 10.43.9): the published limitations of
+  10.43.9 named this measurement as the obvious missing one, so it is now run instead of
+  deferred. `run_gplearn_effort_sweep` sweeps population x generations over
+  $500\times25 \to 2000\times300$ - a 48x increase in evaluations, starting where 10.43's S1b
+  left off and reaching far past it - with the row budget pinned so only effort varies. The
+  fixed point is absent at the first three budgets and appears at $2000\times300$, and held-out
+  $R^2$ *falls* from 0.926 to 0.907 at exactly that step: under a mean-error fitness the
+  constraint is available to gplearn too but is paid for in accuracy, which is the mechanism
+  10.43.9 hypothesised and had not measured. Together with the PySR flip at 3x iterations this
+  makes the section's claim quantitative rather than qualitative - both tree engines are
+  budget-limited, and what distinguishes them is the price of the structure ($3\times$ versus
+  $48\times$), not whether one is blocked. Finding 7, the limitations of 10.43.9, 10.43.7's
+  limitation (i) and README Section 12 carry the corrected wording; the sentence that created
+  the debt ("gplearn was not swept, which is the obvious next measurement") is gone.
 - **PySR search-budget sensitivity** (README Section 10.43.9): the published ablation now
   also re-runs the PySR leg at `--pysr-budgets 40,120` iterations on the same replicate and
   reports whether the structural answer moves with the budget. It does, and the entry records
   that as a correction to the section it belongs to: at 40 iterations the bound is missed
   (held-out $R^2$ 0.9983, driven map overshooting the velocity support by 0.0014 px/frame with
-  no fixed point, 599 s), at 120 iterations the same search returns the whole law
-  ($R^2$ 1.0000, overshoot 0.0, 1779 s) - the stored expression evaluates to
+  no fixed point, 633 s of serial search), at 120 iterations the same search returns the whole
+  law ($R^2$ 1.0000, overshoot 0.0, 1030 s) - the stored expression evaluates to
   $\hat v = \min(v + 1.8, 48.0)$ on the driven branch, with the walk tier at 1.0, the run tier
   at 1.8 and the Coulomb deadband at 0.5999992 against a true 0.6. Discovery is therefore
   budget-limited here, not blocked by the representation or by the fitness, and §10.43.9's
@@ -93,7 +107,7 @@ numbers* - those are reported here and in README Section 12, never applied silen
   rather than skipped) on identical design matrices, row budgets, held-out banks and probes,
   on the hidden world (3 replicates x 3 seeds) and again on genuine WRAM telemetry, and
   assembles its verdict from the measured rates so no clause of the conclusion is asserted
-  ahead of the number. Emulator-free, ~75 min CPU with the PySR legs and the budget sweep; writes
+  ahead of the number. Emulator-free, ~2 h CPU with the PySR legs and both budget sweeps; writes
   `results/symbolic_engine_ablation_metrics.json` and
   `results/figures/symbolic_engine_ablation.png`, indexed in `results/MANIFEST.md`, wired as
   the `symbolic-engines` Make/CLI target with smoke config

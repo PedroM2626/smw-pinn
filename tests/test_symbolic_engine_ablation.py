@@ -176,3 +176,62 @@ def test_real_reading_reports_each_engine_and_the_criterion_split() -> None:
 
 def test_pysr_availability_is_a_plain_bool() -> None:
     assert isinstance(study.pysr_available(), bool)
+
+
+def _fake_gplearn_block(r2: float, found: bool, gate: bool, nodes: float) -> dict:
+    return {
+        "dvx_eval_r2": r2,
+        "mean_nodes": nodes,
+        "gp_seconds": 1.0,
+        "structure": {
+            "rigid_bound_discovered": found,
+            "bound_overshoot": 0.0 if found else 1.5,
+            "gravity_gate_discovered": gate,
+            "tier_separation": -2.8 if gate else 0.0,
+        },
+    }
+
+
+def test_gplearn_effort_sweep_reports_no_flip_across_the_swept_range(monkeypatch) -> None:
+    """A negative must say how wide the range was, since that is what makes it informative."""
+    calls: list = []
+    blocks = [_fake_gplearn_block(0.80, False, False, 5.0)] * 3
+
+    def fake(fit_states, fit_actions, fit_next, fit_contact, eval_bank, truth, seeds, budget):
+        calls.append((budget["population_size"], budget["generations"]))
+        return blocks[len(calls) - 1]
+
+    monkeypatch.setattr(study, "run_gplearn", fake)
+    out = study.run_gplearn_effort_sweep(
+        _tiny_bank(),
+        _tiny_bank(),
+        np.zeros(7),
+        3,
+        {"population_size": 500, "generations": 25, "max_train": 4000},
+        ((500, 25), (500, 75), (1000, 150)),
+    )
+    assert calls == [(500, 25), (500, 75), (1000, 150)]  # effort varies, data does not
+    assert out["effort_range"] == "12x"  # 1000x150 over 500x25
+    assert out["bound_found_at_any_budget"] is False
+    assert "past the 15x range 10.43's S1b already swept" in out["reading"]
+    assert "in any of 9 draws" in out["reading"]  # 3 budgets x 3 seeds
+    assert "PySR's structural answer flipped at 3x" in out["reading"]
+
+
+def test_gplearn_effort_sweep_names_the_budget_where_a_bound_appears(monkeypatch) -> None:
+    monkeypatch.setattr(
+        study,
+        "run_gplearn",
+        lambda *a, **k: _fake_gplearn_block(0.94, True, True, 21.0),
+    )
+    out = study.run_gplearn_effort_sweep(
+        _tiny_bank(),
+        _tiny_bank(),
+        np.zeros(7),
+        1,
+        {"population_size": 500, "generations": 25, "max_train": 4000},
+        ((500, 25), (2000, 300)),
+    )
+    assert out["bound_found_at_any_budget"] is True
+    assert "first appears at 500x25" in out["reading"]
+    assert "budget-limited for both tree engines" in out["reading"]

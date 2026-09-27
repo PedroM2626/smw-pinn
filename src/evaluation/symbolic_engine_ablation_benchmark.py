@@ -88,6 +88,12 @@ ARTIFACT_NAME = "symbolic_engine_ablation_metrics.json"
 FIGURE_NAME = "symbolic_engine_ablation.png"
 ENGINES: Tuple[str, ...] = ("gplearn", "pysr", "templates")
 
+# The gplearn effort grid. It starts at the published budget and deliberately overshoots
+# the 300x15 - 1000x60 range that 10.43's S1b already swept, because the question raised by
+# PySR's flip at 3x its budget is whether gplearn has *any* budget at which the structure
+# appears - which needs a range wide enough that a negative is informative.
+GP_EFFORT_GRID: Tuple[Tuple[int, int], ...] = ((500, 25), (500, 75), (1000, 150), (2000, 300))
+
 
 def pysr_available() -> bool:
     return importlib.util.find_spec("pysr") is not None
@@ -525,6 +531,91 @@ def run_specificity_control(seed: int, rows: int, noise: float) -> Dict[str, Any
     return out
 
 
+def run_gplearn_effort_sweep(
+    fit_bank: TransitionBank,
+    eval_bank: TransitionBank,
+    truth: np.ndarray,
+    gp_seeds: int,
+    base_budget: Dict[str, Any],
+    grid: Sequence[Tuple[int, int]],
+) -> Dict[str, Any]:
+    """Does gplearn's structural answer move with search effort, the way PySR's did?
+
+    Section 10.43's S1b already swept ``300x15`` to ``1000x60`` and found no fixed point in
+    18 draws, so a repeat of that range would re-measure a control that exists instead of
+    testing the objection PySR's reversal raised. This grid therefore starts at the
+    published budget and goes far past S1b's top; the row budget stays fixed at
+    ``max_train``, so only effort varies, never data.
+    """
+    keys: List[str] = []
+    by_budget: Dict[str, Any] = {}
+    for pop, gens in grid:
+        key = f"{pop}x{gens}"
+        keys.append(key)
+        block = run_gplearn(
+            fit_bank.states,
+            fit_bank.actions,
+            fit_bank.next_states,
+            fit_bank.contact,
+            eval_bank,
+            truth,
+            tuple(range(gp_seeds)),
+            dict(base_budget, population_size=pop, generations=gens),
+        )
+        structure = block["structure"]
+        by_budget[key] = {
+            "evaluations": int(pop * gens),
+            "dvx_heldout_r2": block["dvx_eval_r2"],
+            "rigid_bound_discovered": structure["rigid_bound_discovered"],
+            "gravity_gate_discovered": structure["gravity_gate_discovered"],
+            "bound_overshoot_px_per_frame": structure["bound_overshoot"],
+            "tier_separation": structure["tier_separation"],
+            "mean_nodes": block["mean_nodes"],
+            "seconds": block["gp_seconds"],
+        }
+        logger.info(
+            "  %-10s | %7.1f s | bound %s gate %s | dvx held-out R2 %.4f | %d draws",
+            key,
+            block["gp_seconds"],
+            structure["rigid_bound_discovered"],
+            structure["gravity_gate_discovered"],
+            block["dvx_eval_r2"],
+            gp_seeds,
+        )
+    base = float(by_budget[keys[0]]["evaluations"])
+    top = float(by_budget[keys[-1]]["evaluations"])
+    found = [bool(by_budget[k]["rigid_bound_discovered"]) for k in keys]
+    r2s = [float(by_budget[k]["dvx_heldout_r2"]) for k in keys]
+    first_hit = next((k for k, hit in zip(keys, found) if hit), None)
+    effort = f"{top / base:.0f}x"
+    if first_hit is not None:
+        reading = (
+            f"gplearn's structural answer moves with effort too: a fixed point first appears "
+            f"at {first_hit}, after a {effort} increase in population x generations, while "
+            f"held-out R^2 went {min(r2s):.3f} to {max(r2s):.3f}. The 10.43 negative result is "
+            "therefore budget-limited for both tree engines, not only for the one that was "
+            "swept first."
+        )
+    else:
+        reading = (
+            f"Across a {effort} increase in evaluations - past the 15x range 10.43's S1b "
+            f"already swept - gplearn returns no fixed point in any of {len(keys) * gp_seeds} "
+            f"draws, while its held-out R^2 climbs {min(r2s):.3f} to {max(r2s):.3f}. The two "
+            "tree engines thus differ in how effort acts on them: PySR's structural answer "
+            f"flipped at 3x its budget, gplearn's did not flip at {effort}."
+        )
+    return {
+        "available": True,
+        "grid": keys,
+        "published_budget": keys[0],
+        "effort_range": effort,
+        "gp_seeds_per_budget": int(gp_seeds),
+        "by_budget": by_budget,
+        "bound_found_at_any_budget": bool(any(found)),
+        "reading": reading,
+    }
+
+
 def _r2(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """Held-out R^2 of one engine's horizontal increment law, on the shared eval bank."""
     yt = np.asarray(y_true, dtype=np.float64)
@@ -556,6 +647,7 @@ def run_study(
     rollout_len: int = 12,
     pysr_iterations: int = 40,
     pysr_budgets: Sequence[int] = (40, 160),
+    gplearn_effort_grid: Sequence[Tuple[int, int]] = GP_EFFORT_GRID,
     specificity_rows: int = 4000,
     specificity_noise: float = 0.01,
     seed: int = 42,
@@ -689,6 +781,16 @@ def run_study(
             ),
         }
 
+    logger.info("=== gplearn search-effort sensitivity ===")
+    gp_sweep: Dict[str, Any] = {
+        "available": False,
+        "reason": "no hidden-world replicate banks were available to sweep",
+    }
+    if first_banks is not None:
+        gp_sweep = run_gplearn_effort_sweep(
+            first_banks[0], first_banks[1], truth, gp_seeds, budget, gplearn_effort_grid
+        )
+
     logger.info("=== Engine ablation on genuine WRAM telemetry ===")
     data = load_and_preprocess_data(seed=seed)
     train_bank = bank_from_transitions(
@@ -813,6 +915,8 @@ def run_study(
             "rollout_len": rollout_len,
             "pysr_iterations": pysr_iterations,
             "pysr_budget_sweep": list(pysr_budgets),
+            "gplearn_effort_grid": [f"{p}x{g}" for p, g in gplearn_effort_grid],
+            "gplearn_effort_note": "population x generations only; the row budget stays fixed at max_train_transitions",
             "specificity_control": {
                 "rows_per_world": specificity_rows,
                 "noise_fraction_of_level": specificity_noise,
@@ -833,6 +937,7 @@ def run_study(
         "real_telemetry": real,
         "structure_specificity_control": specificity,
         "pysr_budget_sensitivity": budget_sweep,
+        "gplearn_effort_sensitivity": gp_sweep,
         "verdict": _verdict(structure_matrix, truth, real, prior, binding),
     }
     artifact = os.path.join(output_dir, ARTIFACT_NAME)
@@ -1078,6 +1183,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="40,160",
         help="comma-separated iteration counts for the search-budget sensitivity",
     )
+    parser.add_argument(
+        "--gplearn-effort-grid",
+        dest="gplearn_effort_grid",
+        default="500x25,500x75,1000x150,2000x300",
+        help="comma-separated population x generations pairs for the search-effort sweep",
+    )
     parser.add_argument("--specificity-rows", dest="specificity_rows", type=int, default=4000)
     parser.add_argument("--specificity-noise", dest="specificity_noise", type=float, default=0.01)
     parser.add_argument("--seed", type=int, default=42)
@@ -1087,6 +1198,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args_with_config(build_parser(), argv)
     budgets = tuple(int(b) for b in str(args.pysr_budgets).split(",") if b.strip())
+    grid = tuple(
+        (int(part.split("x")[0]), int(part.split("x")[1]))
+        for part in str(args.gplearn_effort_grid).split(",")
+        if part.strip() and "x" in part
+    )
     run_study(
         output_dir=args.output_dir,
         replicates=args.replicates,
@@ -1099,6 +1215,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         rollout_len=args.rollout_len,
         pysr_iterations=args.pysr_iterations,
         pysr_budgets=budgets or (args.pysr_iterations,),
+        gplearn_effort_grid=grid or GP_EFFORT_GRID,
         specificity_rows=args.specificity_rows,
         specificity_noise=args.specificity_noise,
         seed=args.seed,

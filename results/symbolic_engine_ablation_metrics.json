@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-26T23:17:39+00:00",
-    "git_sha": "0827efb09e0ebbcbd361bf118eadfc3dd97ff68f",
+    "generated_utc": "2026-09-27T06:22:51+00:00",
+    "git_sha": "3b84938b8f419705a663cc1a369a6c04d346aa99",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -43,6 +43,13 @@
       40,
       120
     ],
+    "gplearn_effort_grid": [
+      "500x25",
+      "500x75",
+      "1000x150",
+      "2000x300"
+    ],
+    "gplearn_effort_note": "population x generations only; the row budget stays fixed at max_train_transitions",
     "specificity_control": {
       "rows_per_world": 4000,
       "noise_fraction_of_level": 0.01,
@@ -181,7 +188,7 @@
           }
         },
         "mean_nodes": 5.75,
-        "gp_seconds": 33.17112445831299
+        "gp_seconds": 23.371249198913574
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -469,7 +476,7 @@
           "tier_separation": -2.8000004,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 629.0818330000038
+        "pysr_seconds": 492.9924936000025
       }
     },
     "replicate_1": {
@@ -548,7 +555,7 @@
           }
         },
         "mean_nodes": 6.5,
-        "gp_seconds": 30.35661554336548
+        "gp_seconds": 24.551440954208374
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -836,7 +843,7 @@
           "tier_separation": -2.7999997,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 602.7592132999998
+        "pysr_seconds": 587.8511651000008
       }
     },
     "replicate_2": {
@@ -915,7 +922,7 @@
           }
         },
         "mean_nodes": 4.75,
-        "gp_seconds": 31.67819333076477
+        "gp_seconds": 42.35048699378967
       },
       "templates": {
         "dvx_eval_r2": 0.9999999999999997,
@@ -1203,7 +1210,7 @@
           "tier_separation": -2.7999996,
           "true_tier_separation": -2.799999713897705
         },
-        "pysr_seconds": 556.1477729000035
+        "pysr_seconds": 731.9943250999931
       }
     }
   },
@@ -1283,7 +1290,7 @@
         }
       },
       "mean_nodes": 2.0,
-      "gp_seconds": 30.82975172996521
+      "gp_seconds": 15.508624792098999
     },
     "pysr": {
       "available": true,
@@ -1322,7 +1329,7 @@
         "tier_separation": 0.0,
         "true_tier_separation": -3.0
       },
-      "pysr_seconds": 540.421391099997
+      "pysr_seconds": 276.49549719999777
     },
     "templates": {
       "dvx_eval_r2": 0.9891645494857858,
@@ -1683,7 +1690,7 @@
         "gravity_gate_discovered": true,
         "bound_overshoot_px_per_frame": 0.0013881632700005753,
         "tier_separation": -2.8000004,
-        "seconds": 599.300811699999,
+        "seconds": 633.2199975999974,
         "per_law": {
           "dvx": {
             "expression": "min(max(x2 * x1, (x0 * x1) + -47.150406) + 0.5855251, (abs(min(x1, x0)) * min((x0 + -47.1305) * -0.95367014, max(x2, 0.16949353))) + -0.62548095) + (x1 * 1.4560853)",
@@ -1707,7 +1714,7 @@
         "gravity_gate_discovered": true,
         "bound_overshoot_px_per_frame": 9.299999987888441e-07,
         "tier_separation": -2.7999997,
-        "seconds": 1778.8938185999868,
+        "seconds": 1030.3818753000087,
         "per_law": {
           "dvx": {
             "expression": "min(x0 + 48.6, min((abs(x0) - x0) - 0.5999992, 0.5999992) + (x1 * min(max(x2 - -1.3999988, 1.5999992), max(abs(abs(x0) + -48.6), 0.5999992))))",
@@ -1728,6 +1735,62 @@
     },
     "bound_found_at_any_budget": true,
     "reading": "Across 2 search budgets the bound was found in 1 of 2 runs while the held-out $R^2$ moved from 0.998 to 1.000: a larger budget does change the structural answer, so the criterion-only reading of 10.43.9 is budget-dependent."
+  },
+  "gplearn_effort_sensitivity": {
+    "available": true,
+    "grid": [
+      "500x25",
+      "500x75",
+      "1000x150",
+      "2000x300"
+    ],
+    "published_budget": "500x25",
+    "effort_range": "48x",
+    "gp_seeds_per_budget": 3,
+    "by_budget": {
+      "500x25": {
+        "evaluations": 12500,
+        "dvx_heldout_r2": 0.787636463385651,
+        "rigid_bound_discovered": false,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 1.8000011444091797,
+        "tier_separation": -1.5742052033598912,
+        "mean_nodes": 5.75,
+        "seconds": 16.465874671936035
+      },
+      "500x75": {
+        "evaluations": 37500,
+        "dvx_heldout_r2": 0.8815158789129396,
+        "rigid_bound_discovered": false,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 1.8000011444091797,
+        "tier_separation": -2.2768528682531737,
+        "mean_nodes": 5.5,
+        "seconds": 50.746915102005005
+      },
+      "1000x150": {
+        "evaluations": 150000,
+        "dvx_heldout_r2": 0.9260802430118354,
+        "rigid_bound_discovered": false,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 1.7116674380189139,
+        "tier_separation": -1.9645799368716808,
+        "mean_nodes": 10.75,
+        "seconds": 215.70767307281494
+      },
+      "2000x300": {
+        "evaluations": 600000,
+        "dvx_heldout_r2": 0.9067701300283604,
+        "rigid_bound_discovered": true,
+        "gravity_gate_discovered": true,
+        "bound_overshoot_px_per_frame": 1.7921676305338892,
+        "tier_separation": -1.5603378911089392,
+        "mean_nodes": 10.75,
+        "seconds": 959.3462030887604
+      }
+    },
+    "bound_found_at_any_budget": true,
+    "reading": "gplearn's structural answer moves with effort too: a fixed point first appears at 2000x300, after a 48x increase in population x generations, while held-out R^2 went 0.788 to 0.926. The 10.43 negative result is therefore budget-limited for both tree engines, not only for the one that was swept first."
   },
   "verdict": {
     "rigid_bound": {
