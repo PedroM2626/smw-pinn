@@ -11,6 +11,46 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Physics-injection grid** (README Section 10.47): `src/models/residual_dynamics.py`
+  factors the two things the published shell models always changed together - the
+  *target* the network predicts and the *kinematics the graph enforces* - into one
+  switchable shell, and `src/evaluation/operator_physics_injection_benchmark.py`
+  crosses it with family: 3 architectures x {state, residual} x {none, soft, hard}
+  = 15 cells plus the two published shell classes re-fitted as references, five seeds
+  each under the 10.42 protocol (~27 min, emulator-free). A hard FNO did not exist
+  before this section: `hard` had exactly one instance in the repository. Outcome:
+  the kinematic-consistency property credited to the shell in 10.27 and 10.42 belongs
+  to the increment parameterisation (violation $0.0000$-$0.0210$ for every residual
+  cell trained on its data term or behind the shell, versus $0.8470$-$0.9987$ for every
+  state cell); the clamp buys
+  boundedness and $-26.7$ to $-34.0$ px of drift; the soft penalty costs the
+  horizontal channel a factor of 5-12 at the state target and beats the shell on drift
+  at the residual target for two of three families. The shared shell reproduces the
+  published classes bit-for-bit (`MLP/residual/hard` = the re-fitted Hard PINN at test
+  loss $0.621353$ and drift $137.062939$ px), and `tests/test_residual_dynamics.py`
+  pins that equality and the exclusion of the ill-defined `state x hard` cell.
+- **The same arms flown on the console** (README Section 10.47):
+  `src/evaluation/physics_injection_mpc_benchmark.py` drives nine controllers with the
+  published 10.44 planner and reproduces its three reference rows exactly, then
+  measures that the sign of the shell's contribution is not a property of physics:
+  a DeepONet predicting increments with *no* constraint is statistically
+  indistinguishable from the hand reverse-engineered engine rules
+  ($623.06 \pm 17.55$ px, $d_z = +0.09$, $p = 0.84$), the same FNO with the shell is
+  the third-best controller in the repository ($554.74 \pm 28.61$ px) while without it
+  it walks backwards ($-4.25 \pm 2.98$ px, $d_z = -35.66$), and for the MLP the shell
+  costs $199.64$ px and two extra deaths. A matched pair also closes the
+  accuracy-versus-control gap quantitatively: the soft penalty improves the FNO's
+  rollout drift by $58.0$ px ($p = 0.024$) and its closed-loop progress by $0.38$ px.
+- **The 10.46 structural probes applied to the grid** (`--registry grid`, a separate
+  artifact so the published 10.46 file is never rewritten): five of the nine residual
+  cells keep a plausible-traction plateau at $18.89$-$26.02$ px/frame, every
+  `residual/soft` cell and the hard FNO have no fixed point at all, no cell of any
+  family or mechanism recovers the gravity gate, and identification through a
+  surrogate becomes survivable when the target is an increment and the arm is trained
+  on its data term ($98.3$-$99.4\%$ worst-case error for every `none`/`hard` residual
+  arm against $87.2$-$1646.6\%$ for the state arms, with the `residual/soft` DeepONet and
+  FNO back at $688.8\%$ and $539.6\%$).
+
 - **Learned operators driven as controllers on the real console** (README Sections 10.44,
   10.44.1): `src/evaluation/inverse_model_mpc_benchmark.py` now also loads the DeepONet,
   Physics-Constrained DeepONet and FNO checkpoints of 10.41/10.42 and pilots them with the
@@ -411,6 +451,13 @@ tilemap world models, DAgger, distillation, cross-stage generalization).
   unified into `SnesLibretroEmulator.start_episode()`.
 - The Dyna-PPO row of the Section 10.27 master table was corrected: it had been pasted
   from the MPC row (164.75 px) instead of the recorded 115.00 px.
+- The attribution Sections 10.27 and 10.42 make to a hard kinematic shell - that the
+  discrete-kinematic consistency residual is identically zero *because of the clamps* -
+  is corrected by Section 10.47: the property comes from the increment parameterisation,
+  since every residual cell trained on its data term or behind the shell violates at
+  $0.0000$-$0.0210$ while every state cell violates at $0.8470$-$0.9987$. The repository's implicit "more injected
+  physics is better" is replaced by measured per-family signs (+$12.55$, +$558.99$,
+  -$199.64$ px of closed-loop progress for DeepONet, FNO and MLP respectively).
 - The Section 10.46 probe table reported the Physics-Constrained DeepONet ceiling as
   $25.50$ px/frame where `results/learned_structure_probe_metrics.json` measures $25.4946$.
   The cell was transcribed one rounding too high, and the quote gate had no row for it -

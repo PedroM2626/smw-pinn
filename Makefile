@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes record-sprint smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection record-sprint smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -38,6 +38,7 @@ help:
 	@echo "record-sprint      Excitation-targeted WRAM recording that saturates the speed bound (README 10.45, needs core + ROM)"
 	@echo "sprint-excitation  The velocity ceiling measured on both recordings (README 10.45)"
 	@echo "learned-probes     Fixed-point and gravity-gate probes on the learned models (README 10.46)"
+	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -145,6 +146,9 @@ sprint-excitation:
 learned-probes:
 	$(PY) -m src.evaluation.learned_structure_probe_benchmark
 
+physics-injection:
+	$(PY) -m src.evaluation.operator_physics_injection_benchmark
+
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in
 # results/ can ever be overwritten by a smoke run; tests/test_smoke_runs.py asserts
@@ -160,6 +164,7 @@ smoke-all:
 	$(PY) -m src.evaluation.symbolic_inverse_benchmark --config $(CONFIG_DIR)/smoke_symbolic_inverse.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.symbolic_tilemap_residual_benchmark --config $(CONFIG_DIR)/smoke_symbolic_tilemap.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.symbolic_engine_ablation_benchmark --config $(CONFIG_DIR)/smoke_symbolic_engines.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.operator_physics_injection_benchmark --config $(CONFIG_DIR)/smoke_physics_injection.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

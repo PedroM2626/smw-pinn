@@ -1,0 +1,12 @@
+# Seconds-scale version of the README 10.47 physics-injection grid (`make smoke-all`).
+# One family at the smallest budget: the point is to keep every arm of the new
+# target x mechanism code path executing, not to reproduce any number.
+epochs: 1
+seeds: "42"
+arms: "FNO"
+latent_dim: 32
+fno_width: 16
+fno_modes: 4
+rollout_horizon: 20
+num_rollout_starts: 2
+no_checkpoints: true

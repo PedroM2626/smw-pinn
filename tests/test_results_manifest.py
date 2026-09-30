@@ -534,3 +534,116 @@ def test_readme_quotes_the_committed_numbers(artifact: str, keypath: list[str], 
         "regenerated (update the prose and the 10.27 table) or the prose drifted from "
         "the evidence."
     )
+
+
+def _readme() -> str:
+    return README.read_text(encoding="utf-8")
+
+
+def test_readme_10_47_prediction_table_is_the_artifact() -> None:
+    """Every cell of the 10.47 forward table, checked as one row-tail string.
+
+    The table has 17 rows x 6 columns of transcribed numbers, which is far too
+    many to enumerate by hand in QUOTED_HEADLINES - and an unenumerated cell is
+    exactly how the 10.46 25.50/25.4946 slip survived CI.
+    """
+    path = RESULTS / "operator_physics_injection_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.47 grid has not been generated yet")
+    summary = json.loads(path.read_text(encoding="utf-8"))["summary"]
+    text = _readme()
+    missing = []
+    for arm, block in summary.items():
+        row = r"| {:.4f} | {:.4f} | {:.4f} | {:.2f} $\pm$ {:.2f} | {:.4f} |".format(
+            block["test_loss_data"]["mean"],
+            block["kinematic_violation_rate"]["mean"],
+            block["out_of_bounds_rate"]["mean"],
+            block["drift_multistart_mean_px"]["mean"],
+            block["drift_multistart_mean_px"]["std"],
+            block["vx_mae_px"]["mean"],
+        )
+        if row not in text:
+            missing.append(f"{arm}: {row}")
+    assert not missing, "README 10.47 prediction table disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+
+
+def test_readme_10_47_control_table_is_the_artifact() -> None:
+    path = RESULTS / "physics_injection_mpc_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.47 closed loop has not been run (hardware required)")
+    per_model = json.loads(path.read_text(encoding="utf-8"))["multi_seed"]["per_model"]
+    text = _readme()
+    missing = []
+    for arm, block in per_model.items():
+        row = r"| {:.2f} $\pm$ {:.2f} | {:.2f} - {:.2f} | {} / 5 | {} |".format(
+            block["progress_px_mean"],
+            block["progress_px_std"],
+            block["progress_px_min"],
+            block["progress_px_max"],
+            int(round(block["budget_reached_rate"] * 5)),
+            block["pit_or_death"],
+        )
+        paired = block["paired_vs_established_rules"]
+        if paired is not None:
+            row += " $ {:+.2f}$, $ {:.4f}$".format(
+                paired["mean_difference_px"], paired["wilcoxon_p"]
+            )
+        if row not in text:
+            missing.append(f"{arm}: {row}")
+    assert not missing, "README 10.47 control table disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+
+
+def test_readme_10_47_structure_table_is_the_artifact() -> None:
+    path = RESULTS / "physics_injection_structure_probe_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.47 structural probes have not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    probes = artifact["structural_probes"]
+    surrogates = artifact["surrogate_identification"]["per_surrogate"]
+    text = _readme()
+    missing = []
+    for arm, block in probes.items():
+        ceiling = block["ceiling"]
+        plateau = (
+            "none"
+            if ceiling["ceiling_like_fixed_point"] is None or ceiling["has_ceiling"] < 0.5
+            else "{:.2f}".format(ceiling["ceiling_like_fixed_point"])
+        )
+        row = "| {} | {:.2f} | {} | {:+.2f} | {:.1f}% |".format(
+            plateau,
+            block["acceleration_gain_px_per_frame"],
+            "yes" if block["ceiling_is_plausible"] else "no",
+            block["gravity_gate"]["tier_separation"],
+            surrogates[arm]["max_relative_error_pct"],
+        )
+        if row not in text:
+            missing.append(f"{arm}: {row}")
+    assert not missing, "README 10.47 structure table disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+
+
+def test_readme_10_47_parity_claim_is_in_the_artifact() -> None:
+    """10.47 states that its shared shell reproduces the published shell classes
+    bit-for-bit. That is a claim about the artifact, so the artifact has to say it."""
+    path = RESULTS / "operator_physics_injection_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.47 grid has not been generated yet")
+    summary = json.loads(path.read_text(encoding="utf-8"))["summary"]
+    text = _readme()
+    pairs = (
+        ("MLP/residual/hard", "Published_Hard_PINN_10_27"),
+        ("DeepONet/residual/hard", "Published_PC_DeepONet_10_42"),
+    )
+    for cell, reference in pairs:
+        for key in ("test_loss_data", "drift_multistart_mean_px", "vx_mae_px"):
+            value = summary[cell][key]["mean"]
+            assert value == summary[reference][key]["mean"], (
+                f"10.47 parity broken: {cell}:{key} = {value!r} but "
+                f"{reference}:{key} = {summary[reference][key]['mean']!r}"
+            )
+            assert f"{value:.6f}" in text, f"README never quotes {value:.6f} for {cell}:{key}"

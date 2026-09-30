@@ -91,6 +91,7 @@ class FNODynamics(nn.Module):
         width: int = 32,
         modes: int = 6,
         n_layers: int = 2,
+        sensor_dim: Optional[int] = None,
     ):
         super().__init__()
         self.state_dim = state_dim
@@ -99,7 +100,10 @@ class FNODynamics(nn.Module):
         self.modes = modes
         self.n_layers = n_layers
 
-        self.num_sensors = state_dim + action_dim
+        # sensor_dim decouples the sensor lattice density from the output channel
+        # count, so the same spectral operator can be asked for an increment field
+        # (README 10.47) while still reading the full [state, action] function.
+        self.num_sensors = sensor_dim if sensor_dim is not None else state_dim + action_dim
 
         # Sensor lattice x_i in [0, 1] and canonical output-channel queries y_q.
         self.register_buffer(

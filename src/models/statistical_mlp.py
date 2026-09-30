@@ -4,7 +4,7 @@ Statistical Baseline: Multilayer Perceptron (MLP) purely data-driven,
 without explicit physical priors or kinematic constraints.
 """
 
-from typing import List
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -23,11 +23,15 @@ class StatisticalMLPDynamics(nn.Module):
         hidden_dims: List[int] = [128, 128, 128],
         activation: str = "gelu",
         dropout: float = 0.0,
+        sensor_dim: Optional[int] = None,
     ):
         super().__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
-        in_dim = state_dim + action_dim
+        # sensor_dim decouples the input width from the output width: a network
+        # predicting increments is fed the full [state, action] reading while its
+        # output is the auxiliary channel set (README 10.47).
+        in_dim = sensor_dim if sensor_dim is not None else state_dim + action_dim
 
         act_cls = nn.GELU if activation.lower() == "gelu" else nn.ReLU
 

@@ -80,6 +80,7 @@ class DeepONetDynamics(nn.Module):
         branch_hidden_dims: Optional[List[int]] = None,
         trunk_hidden_dims: Optional[List[int]] = None,
         latent_dim: int = 64,
+        sensor_dim: Optional[int] = None,
     ):
         super().__init__()
         self.state_dim = state_dim
@@ -92,7 +93,10 @@ class DeepONetDynamics(nn.Module):
 
         # Branch net: encodes the input function sampled at its m sensors,
         # i.e. the combined state-action reading z_t in R^(state_dim+action_dim).
-        self.num_sensors = state_dim + action_dim
+        # sensor_dim decouples that sampling density from the output width, so the
+        # same operator can be asked for an increment field instead of a state one
+        # (README 10.47).
+        self.num_sensors = sensor_dim if sensor_dim is not None else state_dim + action_dim
         self.branch = _build_mlp(self.num_sensors, branch_hidden_dims, latent_dim)
 
         # Trunk net: encodes the query coordinate y_q of the output function.

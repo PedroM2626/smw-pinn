@@ -78,6 +78,9 @@ logger = get_logger(__name__)
 
 ARTIFACT_NAME = "learned_structure_probe_metrics.json"
 FIGURE_NAME = "learned_structure_probe.png"
+# --registry grid writes here instead, so probing the 10.47 arms cannot rewrite 10.46.
+GRID_ARTIFACT_NAME = "physics_injection_structure_probe_metrics.json"
+GRID_FIGURE_NAME = "physics_injection_structure_probe.png"
 
 # (label, checkpoint, factory, clamp-imposed-by-construction, ceiling-the-shell-uses)
 MODEL_REGISTRY: Tuple[Tuple[str, str, Callable[[], torch.nn.Module], bool, float], ...] = (
@@ -477,8 +480,13 @@ def run_study(
     rollout_len: int = 8,
     probe_rows: int = 193,
     seed: int = 42,
+    registry: Optional[Sequence[Tuple[Any, ...]]] = None,
+    artifact_name: str = ARTIFACT_NAME,
+    figure_name: str = FIGURE_NAME,
+    study_text: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Probe every committed learned model for the engine's two structural signatures."""
+    arms: Sequence[Tuple[Any, ...]] = registry if registry is not None else MODEL_REGISTRY
     set_global_seed(seed)
     torch.manual_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -492,7 +500,7 @@ def run_study(
 
     models: Dict[str, Any] = {}
     probes: Dict[str, Any] = {}
-    for label, checkpoint, factory, imposed, shell_ceiling in MODEL_REGISTRY:
+    for label, checkpoint, factory, imposed, shell_ceiling in arms:
         model = load_model(checkpoint, factory, device)
         if model is None:
             probes[label] = {"available": False, "reason": f"checkpoint {checkpoint} absent"}
@@ -540,7 +548,8 @@ def run_study(
     surrogate = run_surrogate_identification(data, models, reference, id_steps, rollout_len, seed)
 
     payload: Dict[str, Any] = {
-        "study": (
+        "study": study_text
+        or (
             "The trained dynamics models of sections 8, 10.41 and 10.42 are interrogated with "
             "the structural probes of 10.43/10.43.9 - the fixed point of the driven map and the "
             "held-jump tier separation - and the identification of 10.40 is re-run through each "
@@ -553,14 +562,14 @@ def run_study(
             "surrogate_identification": "Adam on the softplus-constrained 7-constant map, warm-started from the WRAM prior, same steps and lr as 10.40-E2",
             "surrogate_rollout_len": rollout_len,
             "seed": seed,
-            "models": [label for label, *_ in MODEL_REGISTRY],
+            "models": [label for label, *_ in arms],
         },
         "structural_probes": probes,
         "surrogate_identification": surrogate,
         "verdict": build_verdict(probes, surrogate),
     }
     os.makedirs(output_dir, exist_ok=True)
-    artifact = os.path.join(output_dir, ARTIFACT_NAME)
+    artifact = os.path.join(output_dir, artifact_name)
     write_metrics(
         artifact,
         payload,
@@ -569,7 +578,7 @@ def run_study(
         extra_meta={"models": list(probes)},
     )
     logger.info("Artifact written to: %s", artifact)
-    figure = _render_figure(probes, os.path.join(output_dir, "figures", FIGURE_NAME))
+    figure = _render_figure(probes, os.path.join(output_dir, "figures", figure_name))
     payload["_artifact"] = artifact
     payload["_figure"] = figure
     return payload
@@ -583,11 +592,37 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rollout-len", dest="rollout_len", type=int, default=8)
     parser.add_argument("--probe-rows", dest="probe_rows", type=int, default=193)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--registry",
+        choices=("published", "grid"),
+        default="published",
+        help="'published' probes the committed models of 8/10.41/10.42 (the 10.46 artifact); "
+        "'grid' probes the 10.47 physics-injection arms into their own artifact.",
+    )
     return parser
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args_with_config(build_parser(), argv)
+    if args.registry == "grid":
+        from src.evaluation.operator_physics_injection_benchmark import probe_registry
+
+        run_study(
+            output_dir=args.output_dir,
+            id_steps=args.id_steps,
+            rollout_len=args.rollout_len,
+            probe_rows=args.probe_rows,
+            seed=args.seed,
+            registry=probe_registry(),
+            artifact_name=GRID_ARTIFACT_NAME,
+            figure_name=GRID_FIGURE_NAME,
+            study_text=(
+                "The 10.47 physics-injection arms are interrogated with the same structural "
+                "probes as 10.46, so the question 'does the shell put the constraint in the "
+                "model' can be asked of a shell that was added deliberately."
+            ),
+        )
+        return 0
     run_study(
         output_dir=args.output_dir,
         id_steps=args.id_steps,

@@ -101,6 +101,9 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `inverse_model_mpc_metrics.json` | `src/evaluation/inverse_model_mpc_benchmark.py` | yes | 10.44, 10.44.1 |
 | `sprint_excitation_metrics.json` | `src/evaluation/sprint_excitation_benchmark.py` | no | 10.45 |
 | `learned_structure_probe_metrics.json` | `src/evaluation/learned_structure_probe_benchmark.py` | no | 10.46 |
+| `operator_physics_injection_metrics.json` | `src/evaluation/operator_physics_injection_benchmark.py` | no | 10.47 |
+| `physics_injection_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py` | yes | 10.47 |
+| `physics_injection_structure_probe_metrics.json` | `src/evaluation/learned_structure_probe_benchmark.py --registry grid` | no | 10.47 |
 
 ## Input freshness
 

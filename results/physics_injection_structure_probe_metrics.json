@@ -1,0 +1,1166 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T17:48:11+00:00",
+    "git_sha": "21bbd2ba974d819c3ccdbf8893ee01e105b101f0",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.learned_structure_probe_benchmark",
+    "models": [
+      "MLP/state/none",
+      "MLP/state/soft",
+      "MLP/residual/none",
+      "MLP/residual/soft",
+      "MLP/residual/hard",
+      "DeepONet/state/none",
+      "DeepONet/state/soft",
+      "DeepONet/residual/none",
+      "DeepONet/residual/soft",
+      "DeepONet/residual/hard",
+      "FNO/state/none",
+      "FNO/state/soft",
+      "FNO/residual/none",
+      "FNO/residual/soft",
+      "FNO/residual/hard"
+    ]
+  },
+  "study": "The 10.47 physics-injection arms are interrogated with the same structural probes as 10.46, so the question 'does the shell put the constraint in the model' can be asked of a shell that was added deliberately.",
+  "protocol": {
+    "velocity_support_cap": 49.0,
+    "probe_rows": 193,
+    "acceptance_rule": "a crossing counts as a ceiling only if it is positive, inside the observed support, approached from below while the map still accelerates, and stable from above; the raw 10.43 rule (which asks only that the map accelerate somewhere) is reported beside it for transparency",
+    "surrogate_identification": "Adam on the softplus-constrained 7-constant map, warm-started from the WRAM prior, same steps and lr as 10.40-E2",
+    "surrogate_rollout_len": 8,
+    "seed": 42,
+    "models": [
+      "MLP/state/none",
+      "MLP/state/soft",
+      "MLP/residual/none",
+      "MLP/residual/soft",
+      "MLP/residual/hard",
+      "DeepONet/state/none",
+      "DeepONet/state/soft",
+      "DeepONet/residual/none",
+      "DeepONet/residual/soft",
+      "DeepONet/residual/hard",
+      "FNO/state/none",
+      "FNO/state/soft",
+      "FNO/residual/none",
+      "FNO/residual/soft",
+      "FNO/residual/hard"
+    ]
+  },
+  "structural_probes": {
+    "MLP/state/none": {
+      "available": true,
+      "checkpoint": "physinj_mlp_state_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": -0.5447019338607788,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 30.068445205688477,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -1.728714923469381,
+        "crossings_in_range": 79
+      },
+      "acceleration_gain_px_per_frame": 12.328728993733723,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": -5.043205261230469,
+        "fall_gravity": -4.181825637817383,
+        "tier_separation": -0.8613796234130859
+      },
+      "gravity_gate_found": false
+    },
+    "MLP/state/soft": {
+      "available": true,
+      "checkpoint": "physinj_mlp_state_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 21.217723846435547,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 21.217723846435547,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.999992526307398,
+        "crossings_in_range": 109
+      },
+      "acceleration_gain_px_per_frame": 21.217111587524414,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 24.524666810408235,
+        "fall_gravity": 24.52266820333898,
+        "tier_separation": 0.0019986070692539215
+      },
+      "gravity_gate_found": false
+    },
+    "MLP/residual/none": {
+      "available": true,
+      "checkpoint": "physinj_mlp_residual_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": -0.2595134377479553,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 21.151464462280273,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.16129474250637366,
+        "crossings_in_range": 121
+      },
+      "acceleration_gain_px_per_frame": 0.5231704076131187,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 5.093234100341796,
+        "fall_gravity": 5.0847327168782535,
+        "tier_separation": 0.008501383463542567
+      },
+      "gravity_gate_found": false
+    },
+    "MLP/residual/soft": {
+      "available": true,
+      "checkpoint": "physinj_mlp_residual_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 0.0,
+        "bound_value_10_43_rule": null,
+        "overshoot": 0.0,
+        "accelerating": 0.0,
+        "ceiling_like_fixed_point": null,
+        "has_ceiling": 0.0,
+        "local_slope_at_ceiling": null,
+        "crossings_in_range": 193
+      },
+      "acceleration_gain_px_per_frame": -0.24739456176757812,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 5.1622314453125,
+        "fall_gravity": 5.186975479125977,
+        "tier_separation": -0.024744033813476562
+      },
+      "gravity_gate_found": false
+    },
+    "MLP/residual/hard": {
+      "available": true,
+      "checkpoint": "physinj_mlp_residual_hard_best.pt",
+      "bound_imposed_by_construction": true,
+      "shell_clamp_constant": 72.0,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 20.899385452270508,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 20.899385452270508,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.12870944276147556,
+        "crossings_in_range": 111
+      },
+      "acceleration_gain_px_per_frame": 0.5771732330322266,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 4.449781862894692,
+        "fall_gravity": 5.106323013305662,
+        "tier_separation": -0.6565411504109697
+      },
+      "gravity_gate_found": false
+    },
+    "DeepONet/state/none": {
+      "available": true,
+      "checkpoint": "physinj_deeponet_state_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 35.6100959777832,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 35.6100959777832,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.7880012356505122,
+        "crossings_in_range": 53
+      },
+      "acceleration_gain_px_per_frame": 13.209832191467285,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 25.357449054718018,
+        "fall_gravity": 25.081313967704773,
+        "tier_separation": 0.27613508701324463
+      },
+      "gravity_gate_found": false
+    },
+    "DeepONet/state/soft": {
+      "available": true,
+      "checkpoint": "physinj_deeponet_state_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 0.0,
+        "bound_value_10_43_rule": null,
+        "overshoot": 20.90082550048828,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": null,
+        "has_ceiling": 0.0,
+        "local_slope_at_ceiling": null,
+        "crossings_in_range": 0
+      },
+      "acceleration_gain_px_per_frame": 69.90082550048828,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 25.225241005420685,
+        "fall_gravity": 25.237520456314087,
+        "tier_separation": -0.0122794508934021
+      },
+      "gravity_gate_found": false
+    },
+    "DeepONet/residual/none": {
+      "available": true,
+      "checkpoint": "physinj_deeponet_residual_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 26.018770217895508,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 26.018770217895508,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.23683135363520055,
+        "crossings_in_range": 91
+      },
+      "acceleration_gain_px_per_frame": 1.8065894762674968,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 3.691937001546222,
+        "fall_gravity": 3.8130978393554678,
+        "tier_separation": -0.12116083780924569
+      },
+      "gravity_gate_found": false
+    },
+    "DeepONet/residual/soft": {
+      "available": true,
+      "checkpoint": "physinj_deeponet_residual_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 0.0,
+        "bound_value_10_43_rule": null,
+        "overshoot": 0.0,
+        "accelerating": 0.0,
+        "ceiling_like_fixed_point": null,
+        "has_ceiling": 0.0,
+        "local_slope_at_ceiling": null,
+        "crossings_in_range": 193
+      },
+      "acceleration_gain_px_per_frame": -0.24468353390693665,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 46.12179946899414,
+        "fall_gravity": 46.73541259765625,
+        "tier_separation": -0.6136131286621094
+      },
+      "gravity_gate_found": false
+    },
+    "DeepONet/residual/hard": {
+      "available": true,
+      "checkpoint": "physinj_deeponet_residual_hard_best.pt",
+      "bound_imposed_by_construction": true,
+      "shell_clamp_constant": 72.0,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 25.494585037231445,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 25.494585037231445,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.25990264269771096,
+        "crossings_in_range": 93
+      },
+      "acceleration_gain_px_per_frame": 1.909021822611491,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 3.68596989949544,
+        "fall_gravity": 3.7757109832763653,
+        "tier_separation": -0.08974108378092538
+      },
+      "gravity_gate_found": false
+    },
+    "FNO/state/none": {
+      "available": true,
+      "checkpoint": "physinj_fno_state_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 21.68267059326172,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 21.68267059326172,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.08677455357142433,
+        "crossings_in_range": 108
+      },
+      "acceleration_gain_px_per_frame": 1.614211670557658,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 2.667027791341148,
+        "fall_gravity": 2.8457654317220076,
+        "tier_separation": -0.17873764038085938
+      },
+      "gravity_gate_found": false
+    },
+    "FNO/state/soft": {
+      "available": true,
+      "checkpoint": "physinj_fno_state_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 3.8093385696411133,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 3.8093385696411133,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -1.0110872229751275,
+        "crossings_in_range": 178
+      },
+      "acceleration_gain_px_per_frame": 3.8513879776000977,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 23.755977392196655,
+        "fall_gravity": 23.80127501487732,
+        "tier_separation": -0.04529762268066406
+      },
+      "gravity_gate_found": false
+    },
+    "FNO/residual/none": {
+      "available": true,
+      "checkpoint": "physinj_fno_residual_none_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": -0.036546725779771805,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 18.885372161865234,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.0071498325892811075,
+        "crossings_in_range": 126
+      },
+      "acceleration_gain_px_per_frame": 0.07616004943847621,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 3.9908324686686214,
+        "fall_gravity": 4.002584126790364,
+        "tier_separation": -0.011751658121742281
+      },
+      "gravity_gate_found": false
+    },
+    "FNO/residual/soft": {
+      "available": true,
+      "checkpoint": "physinj_fno_residual_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 0.0,
+        "bound_value_10_43_rule": null,
+        "overshoot": 1.8178215026855469,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": null,
+        "has_ceiling": 0.0,
+        "local_slope_at_ceiling": null,
+        "crossings_in_range": 0
+      },
+      "acceleration_gain_px_per_frame": 1.8178215026855469,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 26.13698387145996,
+        "fall_gravity": 26.085758209228516,
+        "tier_separation": 0.05122566223144531
+      },
+      "gravity_gate_found": false
+    },
+    "FNO/residual/hard": {
+      "available": true,
+      "checkpoint": "physinj_fno_residual_hard_best.pt",
+      "bound_imposed_by_construction": true,
+      "shell_clamp_constant": 72.0,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 0.0,
+        "bound_value_10_43_rule": null,
+        "overshoot": 0.0,
+        "accelerating": 0.0,
+        "ceiling_like_fixed_point": null,
+        "has_ceiling": 0.0,
+        "local_slope_at_ceiling": null,
+        "crossings_in_range": 193
+      },
+      "acceleration_gain_px_per_frame": -0.016672770182291075,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 4.167680740356445,
+        "fall_gravity": 4.202829360961914,
+        "tier_separation": -0.03514862060546875
+      },
+      "gravity_gate_found": false
+    }
+  },
+  "surrogate_identification": {
+    "reference_wram": {
+      "max_vx": 72.0,
+      "walk_accel": 0.75,
+      "run_accel": 1.5,
+      "subpixels_per_pixel": 16.0,
+      "held_gravity": 3.0,
+      "fall_gravity": 6.0,
+      "decel": 0.5
+    },
+    "identification_on_real_transitions": {
+      "max_vx": {
+        "value": 72.0,
+        "rel_error_pct": 0.0
+      },
+      "walk_accel": {
+        "value": 0.11896464973688126,
+        "rel_error_pct": 84.13804670174916
+      },
+      "run_accel": {
+        "value": 0.51490718126297,
+        "rel_error_pct": 65.67285458246867
+      },
+      "subpixels_per_pixel": {
+        "value": 21.409671783447266,
+        "rel_error_pct": 33.81044864654541
+      },
+      "held_gravity": {
+        "value": 1.3250516653060913,
+        "rel_error_pct": 55.83161115646362
+      },
+      "fall_gravity": {
+        "value": 2.043733596801758,
+        "rel_error_pct": 65.93777338663737
+      },
+      "decel": {
+        "value": 0.4446457624435425,
+        "rel_error_pct": 11.070847511291504
+      }
+    },
+    "real_max_relative_error_pct": 84.13804670174916,
+    "real_final_loss": 0.07786925137042999,
+    "per_surrogate": {
+      "MLP/state/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.24506542086601257,
+            "rel_error_pct": 67.32461055119832,
+            "distance_from_real_estimate": 0.12610077112913132
+          },
+          "run_accel": {
+            "value": 0.02244783379137516,
+            "rel_error_pct": 98.50347774724166,
+            "distance_from_real_estimate": 0.4924593474715948
+          },
+          "subpixels_per_pixel": {
+            "value": 39.69786071777344,
+            "rel_error_pct": 148.11162948608398,
+            "distance_from_real_estimate": 18.288188934326172
+          },
+          "held_gravity": {
+            "value": 2.6116161346435547,
+            "rel_error_pct": 12.946128845214844,
+            "distance_from_real_estimate": 1.2865644693374634
+          },
+          "fall_gravity": {
+            "value": 1.8384394645690918,
+            "rel_error_pct": 69.35934225718181,
+            "distance_from_real_estimate": 0.20529413223266602
+          },
+          "decel": {
+            "value": 0.48816221952438354,
+            "rel_error_pct": 2.367556095123291,
+            "distance_from_real_estimate": 0.043516457080841064
+          }
+        },
+        "max_relative_error_pct": 148.11162948608398,
+        "max_drift_from_real_identification": 18.288188934326172,
+        "final_loss": 7.707270485555257
+      },
+      "MLP/state/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.3791767358779907,
+            "rel_error_pct": 49.44310188293457,
+            "distance_from_real_estimate": 0.26021208614110947
+          },
+          "run_accel": {
+            "value": 0.005240254104137421,
+            "rel_error_pct": 99.65064972639084,
+            "distance_from_real_estimate": 0.5096669271588326
+          },
+          "subpixels_per_pixel": {
+            "value": 19.42620277404785,
+            "rel_error_pct": 21.413767337799072,
+            "distance_from_real_estimate": 1.983469009399414
+          },
+          "held_gravity": {
+            "value": 21.738990783691406,
+            "rel_error_pct": 624.6330261230469,
+            "distance_from_real_estimate": 20.413939118385315
+          },
+          "fall_gravity": {
+            "value": 20.9925537109375,
+            "rel_error_pct": 249.87589518229166,
+            "distance_from_real_estimate": 18.948820114135742
+          },
+          "decel": {
+            "value": 8.732868194580078,
+            "rel_error_pct": 1646.5736389160156,
+            "distance_from_real_estimate": 8.288222432136536
+          }
+        },
+        "max_relative_error_pct": 1646.5736389160156,
+        "max_drift_from_real_identification": 20.413939118385315,
+        "final_loss": 55527553.95895548
+      },
+      "MLP/residual/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.006839074660092592,
+            "rel_error_pct": 99.08812337865432,
+            "distance_from_real_estimate": 0.11212557507678866
+          },
+          "run_accel": {
+            "value": 0.042474642395973206,
+            "rel_error_pct": 97.16835717360179,
+            "distance_from_real_estimate": 0.47243253886699677
+          },
+          "subpixels_per_pixel": {
+            "value": 15.67851448059082,
+            "rel_error_pct": 2.009284496307373,
+            "distance_from_real_estimate": 5.731157302856445
+          },
+          "held_gravity": {
+            "value": 2.8092706203460693,
+            "rel_error_pct": 6.3576459884643555,
+            "distance_from_real_estimate": 1.484218955039978
+          },
+          "fall_gravity": {
+            "value": 2.4856789112091064,
+            "rel_error_pct": 58.57201814651489,
+            "distance_from_real_estimate": 0.44194531440734863
+          },
+          "decel": {
+            "value": 0.5537742972373962,
+            "rel_error_pct": 10.754859447479248,
+            "distance_from_real_estimate": 0.10912853479385376
+          }
+        },
+        "max_relative_error_pct": 99.08812337865432,
+        "max_drift_from_real_identification": 5.731157302856445,
+        "final_loss": 0.11715868660944842
+      },
+      "MLP/residual/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.027186570689082146,
+            "rel_error_pct": 96.37512390812238,
+            "distance_from_real_estimate": 0.09177807904779911
+          },
+          "run_accel": {
+            "value": 0.1183542013168335,
+            "rel_error_pct": 92.1097199122111,
+            "distance_from_real_estimate": 0.3965529799461365
+          },
+          "subpixels_per_pixel": {
+            "value": 19.051054000854492,
+            "rel_error_pct": 19.069087505340576,
+            "distance_from_real_estimate": 2.3586177825927734
+          },
+          "held_gravity": {
+            "value": 4.276313304901123,
+            "rel_error_pct": 42.54377683003744,
+            "distance_from_real_estimate": 2.9512616395950317
+          },
+          "fall_gravity": {
+            "value": 0.036572687327861786,
+            "rel_error_pct": 99.39045521120231,
+            "distance_from_real_estimate": 2.007160909473896
+          },
+          "decel": {
+            "value": 0.153949573636055,
+            "rel_error_pct": 69.210085272789,
+            "distance_from_real_estimate": 0.2906961888074875
+          }
+        },
+        "max_relative_error_pct": 99.39045521120231,
+        "max_drift_from_real_identification": 2.9512616395950317,
+        "final_loss": 0.19889388558605348
+      },
+      "MLP/residual/hard": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.00780824339017272,
+            "rel_error_pct": 98.9589008813103,
+            "distance_from_real_estimate": 0.11115640634670854
+          },
+          "run_accel": {
+            "value": 0.07278240472078323,
+            "rel_error_pct": 95.14783968528111,
+            "distance_from_real_estimate": 0.44212477654218674
+          },
+          "subpixels_per_pixel": {
+            "value": 17.744211196899414,
+            "rel_error_pct": 10.901319980621338,
+            "distance_from_real_estimate": 3.6654605865478516
+          },
+          "held_gravity": {
+            "value": 3.5844104290008545,
+            "rel_error_pct": 19.480347633361816,
+            "distance_from_real_estimate": 2.259358763694763
+          },
+          "fall_gravity": {
+            "value": 3.3345744609832764,
+            "rel_error_pct": 44.42375898361206,
+            "distance_from_real_estimate": 1.2908408641815186
+          },
+          "decel": {
+            "value": 0.47882533073425293,
+            "rel_error_pct": 4.234933853149414,
+            "distance_from_real_estimate": 0.03417956829071045
+          }
+        },
+        "max_relative_error_pct": 98.9589008813103,
+        "max_drift_from_real_identification": 3.6654605865478516,
+        "final_loss": 0.12551251493923998
+      },
+      "DeepONet/state/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.400438129901886,
+            "rel_error_pct": 46.6082493464152,
+            "distance_from_real_estimate": 0.28147348016500473
+          },
+          "run_accel": {
+            "value": 0.006163813639432192,
+            "rel_error_pct": 99.58907909070452,
+            "distance_from_real_estimate": 0.5087433676235378
+          },
+          "subpixels_per_pixel": {
+            "value": 36.652984619140625,
+            "rel_error_pct": 129.0811538696289,
+            "distance_from_real_estimate": 15.24331283569336
+          },
+          "held_gravity": {
+            "value": 18.83383560180664,
+            "rel_error_pct": 527.7945200602213,
+            "distance_from_real_estimate": 17.50878393650055
+          },
+          "fall_gravity": {
+            "value": 1.5772228240966797,
+            "rel_error_pct": 73.712952931722,
+            "distance_from_real_estimate": 0.4665107727050781
+          },
+          "decel": {
+            "value": 2.426227331161499,
+            "rel_error_pct": 385.2454662322998,
+            "distance_from_real_estimate": 1.9815815687179565
+          }
+        },
+        "max_relative_error_pct": 527.7945200602213,
+        "max_drift_from_real_identification": 17.50878393650055,
+        "final_loss": 48.74358614403045
+      },
+      "DeepONet/state/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 47.24515914916992,
+            "rel_error_pct": 34.381723403930664,
+            "distance_from_real_estimate": 24.754840850830078
+          },
+          "walk_accel": {
+            "value": 7.904897689819336,
+            "rel_error_pct": 953.9863586425781,
+            "distance_from_real_estimate": 7.785933040082455
+          },
+          "run_accel": {
+            "value": 10.73919677734375,
+            "rel_error_pct": 615.9464518229166,
+            "distance_from_real_estimate": 10.22428959608078
+          },
+          "subpixels_per_pixel": {
+            "value": 37.51675796508789,
+            "rel_error_pct": 134.47973728179932,
+            "distance_from_real_estimate": 16.107086181640625
+          },
+          "held_gravity": {
+            "value": 14.20438003540039,
+            "rel_error_pct": 373.4793345133464,
+            "distance_from_real_estimate": 12.8793283700943
+          },
+          "fall_gravity": {
+            "value": 0.03099106438457966,
+            "rel_error_pct": 99.483482260257,
+            "distance_from_real_estimate": 2.012742532417178
+          },
+          "decel": {
+            "value": 0.0028491662815213203,
+            "rel_error_pct": 99.43016674369574,
+            "distance_from_real_estimate": 0.44179659616202116
+          }
+        },
+        "max_relative_error_pct": 953.9863586425781,
+        "max_drift_from_real_identification": 24.754840850830078,
+        "final_loss": 1294.0338829826899
+      },
+      "DeepONet/residual/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.01274802628904581,
+            "rel_error_pct": 98.30026316146056,
+            "distance_from_real_estimate": 0.10621662344783545
+          },
+          "run_accel": {
+            "value": 0.13694646954536438,
+            "rel_error_pct": 90.87023536364238,
+            "distance_from_real_estimate": 0.3779607117176056
+          },
+          "subpixels_per_pixel": {
+            "value": 15.507184028625488,
+            "rel_error_pct": 3.0800998210906982,
+            "distance_from_real_estimate": 5.902487754821777
+          },
+          "held_gravity": {
+            "value": 2.704268455505371,
+            "rel_error_pct": 9.857718149820963,
+            "distance_from_real_estimate": 1.3792167901992798
+          },
+          "fall_gravity": {
+            "value": 2.492919921875,
+            "rel_error_pct": 58.451334635416664,
+            "distance_from_real_estimate": 0.4491863250732422
+          },
+          "decel": {
+            "value": 0.6797422170639038,
+            "rel_error_pct": 35.94844341278076,
+            "distance_from_real_estimate": 0.23509645462036133
+          }
+        },
+        "max_relative_error_pct": 98.30026316146056,
+        "max_drift_from_real_identification": 5.902487754821777,
+        "final_loss": 0.10306921427518152
+      },
+      "DeepONet/residual/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.19353899359703064,
+            "rel_error_pct": 74.19480085372925,
+            "distance_from_real_estimate": 0.07457434386014938
+          },
+          "run_accel": {
+            "value": 0.40883228182792664,
+            "rel_error_pct": 72.74451454480489,
+            "distance_from_real_estimate": 0.10607489943504333
+          },
+          "subpixels_per_pixel": {
+            "value": 29.866411209106445,
+            "rel_error_pct": 86.66507005691528,
+            "distance_from_real_estimate": 8.45673942565918
+          },
+          "held_gravity": {
+            "value": 23.663854598999023,
+            "rel_error_pct": 688.7951532999674,
+            "distance_from_real_estimate": 22.338802933692932
+          },
+          "fall_gravity": {
+            "value": 18.132305145263672,
+            "rel_error_pct": 202.20508575439453,
+            "distance_from_real_estimate": 16.088571548461914
+          },
+          "decel": {
+            "value": 0.17974841594696045,
+            "rel_error_pct": 64.05031681060791,
+            "distance_from_real_estimate": 0.26489734649658203
+          }
+        },
+        "max_relative_error_pct": 688.7951532999674,
+        "max_drift_from_real_identification": 22.338802933692932,
+        "final_loss": 11.455839482009328
+      },
+      "DeepONet/residual/hard": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.005963080562651157,
+            "rel_error_pct": 99.20492259164651,
+            "distance_from_real_estimate": 0.1130015691742301
+          },
+          "run_accel": {
+            "value": 0.06305001676082611,
+            "rel_error_pct": 95.79666554927826,
+            "distance_from_real_estimate": 0.45185716450214386
+          },
+          "subpixels_per_pixel": {
+            "value": 17.476078033447266,
+            "rel_error_pct": 9.22548770904541,
+            "distance_from_real_estimate": 3.93359375
+          },
+          "held_gravity": {
+            "value": 3.5479023456573486,
+            "rel_error_pct": 18.26341152191162,
+            "distance_from_real_estimate": 2.2228506803512573
+          },
+          "fall_gravity": {
+            "value": 4.028463363647461,
+            "rel_error_pct": 32.858943939208984,
+            "distance_from_real_estimate": 1.9847297668457031
+          },
+          "decel": {
+            "value": 0.7411215901374817,
+            "rel_error_pct": 48.22431802749634,
+            "distance_from_real_estimate": 0.2964758276939392
+          }
+        },
+        "max_relative_error_pct": 99.20492259164651,
+        "max_drift_from_real_identification": 3.93359375,
+        "final_loss": 0.13522281638761646
+      },
+      "FNO/state/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.09624602645635605,
+            "rel_error_pct": 87.16719647248586,
+            "distance_from_real_estimate": 0.022718623280525208
+          },
+          "run_accel": {
+            "value": 0.2478952705860138,
+            "rel_error_pct": 83.47364862759908,
+            "distance_from_real_estimate": 0.2670119106769562
+          },
+          "subpixels_per_pixel": {
+            "value": 23.65472984313965,
+            "rel_error_pct": 47.8420615196228,
+            "distance_from_real_estimate": 2.245058059692383
+          },
+          "held_gravity": {
+            "value": 2.5196971893310547,
+            "rel_error_pct": 16.010093688964844,
+            "distance_from_real_estimate": 1.1946455240249634
+          },
+          "fall_gravity": {
+            "value": 3.474378824234009,
+            "rel_error_pct": 42.09368626276652,
+            "distance_from_real_estimate": 1.430645227432251
+          },
+          "decel": {
+            "value": 0.23027178645133972,
+            "rel_error_pct": 53.945642709732056,
+            "distance_from_real_estimate": 0.21437397599220276
+          }
+        },
+        "max_relative_error_pct": 87.16719647248586,
+        "max_drift_from_real_identification": 2.245058059692383,
+        "final_loss": 0.14054171040108865
+      },
+      "FNO/state/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.23883652687072754,
+            "rel_error_pct": 68.15512975056966,
+            "distance_from_real_estimate": 0.11987187713384628
+          },
+          "run_accel": {
+            "value": 0.0052131544798612595,
+            "rel_error_pct": 99.65245636800925,
+            "distance_from_real_estimate": 0.5096940267831087
+          },
+          "subpixels_per_pixel": {
+            "value": 34.65861511230469,
+            "rel_error_pct": 116.6163444519043,
+            "distance_from_real_estimate": 13.248943328857422
+          },
+          "held_gravity": {
+            "value": 20.67889976501465,
+            "rel_error_pct": 589.2966588338217,
+            "distance_from_real_estimate": 19.353848099708557
+          },
+          "fall_gravity": {
+            "value": 7.356827259063721,
+            "rel_error_pct": 22.61378765106201,
+            "distance_from_real_estimate": 5.313093662261963
+          },
+          "decel": {
+            "value": 2.951519012451172,
+            "rel_error_pct": 490.3038024902344,
+            "distance_from_real_estimate": 2.5068732500076294
+          }
+        },
+        "max_relative_error_pct": 589.2966588338217,
+        "max_drift_from_real_identification": 19.353848099708557,
+        "final_loss": 757.4936167615434
+      },
+      "FNO/residual/none": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.010386981070041656,
+            "rel_error_pct": 98.61506919066112,
+            "distance_from_real_estimate": 0.1085776686668396
+          },
+          "run_accel": {
+            "value": 0.06002035364508629,
+            "rel_error_pct": 95.99864309032758,
+            "distance_from_real_estimate": 0.4548868276178837
+          },
+          "subpixels_per_pixel": {
+            "value": 15.961886405944824,
+            "rel_error_pct": 0.23820996284484863,
+            "distance_from_real_estimate": 5.447785377502441
+          },
+          "held_gravity": {
+            "value": 2.7349987030029297,
+            "rel_error_pct": 8.83337656656901,
+            "distance_from_real_estimate": 1.4099470376968384
+          },
+          "fall_gravity": {
+            "value": 2.198853015899658,
+            "rel_error_pct": 63.3524497350057,
+            "distance_from_real_estimate": 0.1551194190979004
+          },
+          "decel": {
+            "value": 0.42677566409111023,
+            "rel_error_pct": 14.644867181777954,
+            "distance_from_real_estimate": 0.01787009835243225
+          }
+        },
+        "max_relative_error_pct": 98.61506919066112,
+        "max_drift_from_real_identification": 5.447785377502441,
+        "final_loss": 0.10255665030764452
+      },
+      "FNO/residual/soft": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.09196504950523376,
+            "rel_error_pct": 87.73799339930217,
+            "distance_from_real_estimate": 0.02699960023164749
+          },
+          "run_accel": {
+            "value": 0.8719121217727661,
+            "rel_error_pct": 41.872525215148926,
+            "distance_from_real_estimate": 0.35700494050979614
+          },
+          "subpixels_per_pixel": {
+            "value": 33.75577163696289,
+            "rel_error_pct": 110.97357273101807,
+            "distance_from_real_estimate": 12.346099853515625
+          },
+          "held_gravity": {
+            "value": 19.189483642578125,
+            "rel_error_pct": 539.6494547526041,
+            "distance_from_real_estimate": 17.864431977272034
+          },
+          "fall_gravity": {
+            "value": 2.790281057357788,
+            "rel_error_pct": 53.49531571070353,
+            "distance_from_real_estimate": 0.7465474605560303
+          },
+          "decel": {
+            "value": 0.40947744250297546,
+            "rel_error_pct": 18.104511499404907,
+            "distance_from_real_estimate": 0.03516831994056702
+          }
+        },
+        "max_relative_error_pct": 539.6494547526041,
+        "max_drift_from_real_identification": 17.864431977272034,
+        "final_loss": 105.32032153777568
+      },
+      "FNO/residual/hard": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.012182376347482204,
+            "rel_error_pct": 98.37568315366904,
+            "distance_from_real_estimate": 0.10678227338939905
+          },
+          "run_accel": {
+            "value": 0.08898573368787766,
+            "rel_error_pct": 94.0676177541415,
+            "distance_from_real_estimate": 0.4259214475750923
+          },
+          "subpixels_per_pixel": {
+            "value": 17.56310272216797,
+            "rel_error_pct": 9.769392013549805,
+            "distance_from_real_estimate": 3.846569061279297
+          },
+          "held_gravity": {
+            "value": 3.644367218017578,
+            "rel_error_pct": 21.478907267252605,
+            "distance_from_real_estimate": 2.319315552711487
+          },
+          "fall_gravity": {
+            "value": 3.7930150032043457,
+            "rel_error_pct": 36.783083279927574,
+            "distance_from_real_estimate": 1.749281406402588
+          },
+          "decel": {
+            "value": 0.3880422115325928,
+            "rel_error_pct": 22.391557693481445,
+            "distance_from_real_estimate": 0.05660355091094971
+          }
+        },
+        "max_relative_error_pct": 98.37568315366904,
+        "max_drift_from_real_identification": 3.846569061279297,
+        "final_loss": 0.12175242832045198
+      }
+    }
+  },
+  "verdict": {
+    "models_with_a_fixed_point": [
+      "DeepONet/residual/hard",
+      "DeepONet/residual/none",
+      "FNO/residual/none",
+      "FNO/state/none",
+      "MLP/residual/hard",
+      "MLP/residual/none"
+    ],
+    "fixed_point_learned": [
+      "DeepONet/residual/hard",
+      "DeepONet/residual/none",
+      "FNO/residual/none",
+      "FNO/state/none",
+      "MLP/residual/hard",
+      "MLP/residual/none"
+    ],
+    "fixed_point_imposed_by_architecture": [],
+    "models_without_a_fixed_point": [
+      "DeepONet/residual/soft",
+      "DeepONet/state/soft",
+      "FNO/residual/hard",
+      "FNO/residual/soft",
+      "MLP/residual/soft"
+    ],
+    "crossing_without_plausible_traction": [
+      "DeepONet/state/none",
+      "FNO/state/soft",
+      "MLP/state/none",
+      "MLP/state/soft"
+    ],
+    "surrogate_identification": {
+      "worst_model": "MLP/state/soft",
+      "worst_max_relative_error_pct": 1646.5736389160156,
+      "best_model": "FNO/state/none",
+      "best_max_relative_error_pct": 87.16719647248586
+    },
+    "reading": "Of the 15 trained models probed, 10 reach a stable positive fixed point of the driven map, but only 6 of them do so with a traction the engine could have: 4 fold back only after accelerating past 2.5 px/frame, which is an extrapolation artifact rather than a bound (DeepONet/state/none, FNO/state/soft, MLP/state/none, MLP/state/soft), 0 sit at a clamp their own shell wrote inside the observed support, and 5 show no crossing at all. A learned model having a plateau is therefore not evidence that it contains the engine's ceiling - the plateau's level, and the acceleration needed to reach it, are what decide that.",
+    "surrogate_reading": "Identifying the constants through a learned surrogate instead of the recording moves the worst-case relative error to 1646.6% (MLP/state/soft) and the best case to 87.2% (FNO/state/none), against the direct fit's own worst case of 84.1%: the extra error is the surrogate's bias, and it is strictly additive because the exact forward model is already available and differentiable."
+  }
+}

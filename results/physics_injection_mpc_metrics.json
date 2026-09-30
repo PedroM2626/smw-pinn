@@ -1,0 +1,317 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T17:40:20+00:00",
+    "git_sha": "21bbd2ba974d819c3ccdbf8893ee01e105b101f0",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.physics_injection_mpc_benchmark --seeds 42,43,44,45,46",
+    "controllers": [
+      "established_wram_engine_rules",
+      "published_pc_deeponet_10_42",
+      "published_hard_pinn_10_27",
+      "fno_residual_hard",
+      "fno_residual_none",
+      "fno_state_soft",
+      "deeponet_residual_none",
+      "deeponet_state_soft",
+      "mlp_residual_none"
+    ]
+  },
+  "study": "Closed-loop control of the physics-injection grid of 10.47 on the real console, with the published planner, objective, savestate and frame budget of 10.44, so the shell-versus-parameterisation question left open by 10.44.1 is answered where it was posed.",
+  "configuration": {
+    "frames_budget": 300,
+    "horizon": 15,
+    "num_candidates": 256,
+    "cem_iterations": 3,
+    "objective_weights": {
+      "weight_progress": 2.0,
+      "weight_velocity": 0.5,
+      "pit_penalty": 1000.0,
+      "death_y": 450.0
+    },
+    "protocol_source": "inverse_model_mpc_benchmark.py (README 10.44)",
+    "seed": 42,
+    "cem_seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ]
+  },
+  "per_controller": {
+    "established_wram_engine_rules": {
+      "progress_px": 605.0,
+      "frames_survived": 300,
+      "control_fps": 8.92,
+      "termination": "timeout",
+      "action_sequence": "LRjrwwwjwjrjrRrRrRRRrRrRrRrRrRrrrrrRrjrRRrRRRRrRrrRRrrrrRrrRrRrRrrRRRRRRrwRRRRRRRRRRrRrRRRRrRRRrRrrRrrRRRrrrrrrRrRRrRrRrRRrRwrRrRrrRRrRRrrrRRrRRRrRRrrrRRrRrRRRrRRRRrRRrRRrRrrrRrRRrrrRrrrrRrRRrRRRRrrrRRRrrRRrRRrRjRRwrRwRjrRrwRRrrRrrrrRRRRRRRRRRrRRrrRrrrrrRrRRRRrrrrrRrRrRrrRrrrRRRRRrrrRRRRrrrRRRRrrrrr"
+    },
+    "published_pc_deeponet_10_42": {
+      "progress_px": 641.81,
+      "frames_survived": 300,
+      "control_fps": 11.28,
+      "termination": "timeout",
+      "action_sequence": "rRrrrrrrrrrRRrRRrRrrrrrrRRrrrRRrrRRrrRRjrrRrrRrrRRrrRrRrRrRrrRRRRRrRrRRRRrrrrRrrrRrrRrjrrRrRrrrRrRRrRrRrrrrrrRrRrRrRrrrrrrwRrrrRrrrrrrRrrRrRrrrrRrrRrRrRrrrrrRrRjrRjrrrRrRRRrRRRrRRRrRrrRrRwrrrRRRrRrrrRjjrRRrrRrrrrrrRrrrrrrRrrrrrRRrrrrrrrRRrRjRrrRrrRrrrrrrrrrRRRrrrrrRrrrrrrrrrRrrrRrrRrRRRrRrrwwrrRrRrR"
+    },
+    "published_hard_pinn_10_27": {
+      "progress_px": 573.94,
+      "frames_survived": 300,
+      "control_fps": 23.5,
+      "termination": "timeout",
+      "action_sequence": "RRrwwrrrRwr.RrjrrRRrrrrrrrrrrrrrrrrrRrrrrrr.rwrrrrrrRRRRrrLrrrrrrrrrLLrrrrrrrjRRRrrrrrrrRrrrLr.wLrrrrwrrRRrrrrrrrrrrrrrrrjrrLrLLrw.wRrrrRRRRRrrrrrrrrrrRrrrrRrrLLrwrLrRrrrrRrrrrrrrrrrrrrrrRrRrr..rrLrrw.rrLRRrrrrrrrrrrrRrRrrRRRrRRRrRRRrrrrRRRRRrrRRRrrrrrrrrrrrrrrrjrrrrrrLrLrrrrrrrrrrrrrrrRrrrrrrRRrrrr"
+    },
+    "fno_residual_hard": {
+      "progress_px": 541.0,
+      "frames_survived": 300,
+      "control_fps": 8.9,
+      "termination": "timeout",
+      "action_sequence": "wwrrrrrrwwrwwwwwjrwwjwRwrwwwwjjwwwwwrwrwwwrrrrrrwwwwwwrrrwjrwwjwwwrwwwrrwwwwrwrwrwrwrrrrjwwrrRrRjwwwrwRrrrwrrRwwwwwwjjRRRrrrRRwRRRrrRrRRRRjRjRrrrRrRrRwwrjwrRRRRRRRRrrRjrjRRRwrrRRRRRjjRRjjRrjRRRRRRRrrrrRrrRrRrRrrrwRrrrrrwrwRRRRjRRrRRRrRRRrjrrrrrRrwjRrjrRrjrrrrrRRRrRRjjrrRRRRrRrwRrRrrrrwrRRRRRRRrRrrrR"
+    },
+    "fno_residual_none": {
+      "progress_px": -7.5,
+      "frames_survived": 300,
+      "control_fps": 7.45,
+      "termination": "timeout",
+      "action_sequence": "uLLLLrlwwwww.luuLLlllLLllllljrrLrRrrrrrww.LllLlLlLlLlllljllwwwwwww.jrrLLLrrrw....uuLLLlLLlLLllllwjLrRRLrRrrrwwj.LllLLllLLLllllljjjwwjLRrLrrrrrwu.lLu.lLLLlLlLlllljrLRLrRLRrrrwwu.uLlLLLLLLllllljlllwwjLRrLRrrrrrw..luLLlLLLLllLlllljRLrrRLrRRrrwwwuullllLLlllllllljjllwwwwjLLrrrrrRrwwuu.lLLLLlllLlLllljrRRL"
+    },
+    "fno_state_soft": {
+      "progress_px": 374.38,
+      "frames_survived": 300,
+      "control_fps": 8.13,
+      "termination": "timeout",
+      "action_sequence": "wwjrwjwwrwwjwjjwjwwjwwRjrwjwwwwwRwwwjjjwwwwwwjjjwwjwwwrrrjjwrwwrrrjrjwrwrjjwwrjwjjrwwjjwjwjrjwwwwrjwrwjwjRwjjjwRwjwjwwjrjjjwrwwwjwwwwwwrRwwwwjjjjRwwjwwwwwwwwjjjjwwRjwwwwjwwwwwwjjjwwjjjwjwwwjwjwwwjjjjwrwwjwwjjjjrwwrwwjjrwwwwwjjwwjwwrrRwwrjjjwrjrwwwrjRwwwjwjwwwjwwwwwwwjjwwjjRwRRwwjwwRjjwwjjjjwwRwjjjww"
+    },
+    "deeponet_residual_none": {
+      "progress_px": 643.0,
+      "frames_survived": 300,
+      "control_fps": 12.5,
+      "termination": "timeout",
+      "action_sequence": "rRrrrrrrRrrRRrRRrrrRrRrrrRRRRrRRrrrrRrrrrrRrrRrrRrrRRrRrRRRRrrRRRrrRrrRRRrRrrrrrrrRrrRRRrRrRrrRrRRrrrrrrrRrRrRrRRRRrRRRrrRrrrRrrrRRrRrRrRrrrrRRRRrRRRRRRrRrRRRRR.rrRrRrrRjrrRrRRrRrrrrrrRRRRrrrrrRrRrRrRRrrrrRRrRrrrrRRRrrrRrRRRRRrRRrrrRRRrrRrrrRrrrrRrrwrrRrrRrrrRrRRrrRrRRrrrrrrRrrRRRrrRrrRRrrRRrrrRRrrr"
+    },
+    "deeponet_state_soft": {
+      "progress_px": 27.62,
+      "frames_survived": 300,
+      "control_fps": 33.52,
+      "termination": "timeout",
+      "action_sequence": "R.rwRwLluwLrw.LrRL.rlL.wrL..R.lLurRL.Lllr.rLwww.RRlwLLwLRrluRRw.jR.R.RRuLlLur..Lwl.lruRRLLRru.rl.jr.rr.LRLuL.wrLlrlwLju.RrlLLLuLrwr.urw..uuRuRR.RlLRrlLLj.uRlrlLLrrr.wLr.LuLlrlrL.rrL..L.uljL.Rrr.jLllLjR....RrRwulullLL.u.RwlRrLrwLurLRjLruj.LR.lRw.LLurLrRjulljrRlurLuljrrlLrjLLrjLll.LrLuuR.jlLlRRRlrLLRL"
+    },
+    "mlp_residual_none": {
+      "progress_px": 634.06,
+      "frames_survived": 300,
+      "control_fps": 39.49,
+      "termination": "timeout",
+      "action_sequence": "wrrrrRR.rrrr.jRw.Rw.RrrRrrRrRrrrrrrrRrurrr.rrrrrrrrrrrRRrRrR.rrrrRrrrrr.rr..rrjjjRRRrrrrrrrurR.rrrRrrrrRrrr.jjjRRRRRrrrrrrrrrrrrrjrRrrRrRrrr.r.wrrrRRRRRRrrrrrrRrrrRrrrRRrrrrrrRrwrrrrrrRRRRrrrrrrrrrrrrRRrRrRRrrrrrr.RrrrrrrRRRrrrrrrrrrrrrrrrRRrrrrrrr.rrrRrrrjjjjjjRRRRrrrrrrrrrRRRRrrrrrrRRRrRrrrrrrjurR"
+    }
+  },
+  "agreement_with_established_physics": {
+    "established_wram_engine_rules": {
+      "first_action_agreement": 1.0,
+      "sequence_agreement": 1.0
+    },
+    "published_pc_deeponet_10_42": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4567
+    },
+    "published_hard_pinn_10_27": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4333
+    },
+    "fno_residual_hard": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.3133
+    },
+    "fno_residual_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.1
+    },
+    "fno_state_soft": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.0933
+    },
+    "deeponet_residual_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4767
+    },
+    "deeponet_state_soft": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.1667
+    },
+    "mlp_residual_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.3967
+    }
+  },
+  "multi_seed": {
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "per_model": {
+      "established_wram_engine_rules": {
+        "progress_px_mean": 619.902,
+        "progress_px_std": 20.017030748839854,
+        "progress_px_min": 601.5,
+        "progress_px_max": 643.38,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": null
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px_mean": 635.6099999999999,
+        "progress_px_std": 14.179582151812497,
+        "progress_px_min": 610.25,
+        "progress_px_max": 642.31,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 15.707999999999947,
+          "difference_std_px": 31.31841343363356,
+          "wilcoxon_p": 0.3125,
+          "ttest_p": 0.32484277971254566,
+          "cohen_dz": 0.5015579742979818,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px_mean": 299.2,
+        "progress_px_std": 253.32054515968503,
+        "progress_px_min": 113.56,
+        "progress_px_max": 579.44,
+        "frames_survived_mean": 224.6,
+        "budget_reached_rate": 0.4,
+        "pit_or_death": 3,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -320.70200000000006,
+          "difference_std_px": 265.14329827472545,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.05383622727361548,
+          "cohen_dz": -1.2095421686566938,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_residual_hard": {
+        "progress_px_mean": 554.738,
+        "progress_px_std": 28.609330121483083,
+        "progress_px_min": 521.25,
+        "progress_px_max": 591.31,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -65.16400000000002,
+          "difference_std_px": 44.38638789088383,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.030420880073428774,
+          "cohen_dz": -1.4681077487132836,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_residual_none": {
+        "progress_px_mean": -4.249999999999999,
+        "progress_px_std": 2.9818869864567303,
+        "progress_px_min": -7.5,
+        "progress_px_max": -0.88,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -624.152,
+          "difference_std_px": 17.502003313906663,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 1.4823325279025047e-07,
+          "cohen_dz": -35.66174619016694,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_state_soft": {
+        "progress_px_mean": 372.92600000000004,
+        "progress_px_std": 3.3586351394576943,
+        "progress_px_min": 368.19,
+        "progress_px_max": 377.06,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -246.97600000000003,
+          "difference_std_px": 20.50263714745009,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 1.1294085888527499e-05,
+          "cohen_dz": -12.046060134791801,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "deeponet_residual_none": {
+        "progress_px_mean": 623.062,
+        "progress_px_std": 17.5513423988024,
+        "progress_px_min": 610.12,
+        "progress_px_max": 643.0,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 3.159999999999991,
+          "difference_std_px": 33.28363937432321,
+          "wilcoxon_p": 0.8125,
+          "ttest_p": 0.8422557290332356,
+          "cohen_dz": 0.09494154063085376,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "deeponet_state_soft": {
+        "progress_px_mean": 30.212,
+        "progress_px_std": 4.661498686045078,
+        "progress_px_min": 24.94,
+        "progress_px_max": 35.5,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -589.69,
+          "difference_std_px": 15.466953481536063,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 1.134846292952192e-07,
+          "cohen_dz": -38.125801613352785,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "mlp_residual_none": {
+        "progress_px_mean": 498.838,
+        "progress_px_std": 216.13070945610667,
+        "progress_px_min": 114.44,
+        "progress_px_max": 634.06,
+        "frames_survived_mean": 274.6,
+        "budget_reached_rate": 0.8,
+        "pit_or_death": 1,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -121.06400000000004,
+          "difference_std_px": 230.30058603920227,
+          "wilcoxon_p": 0.1875,
+          "ttest_p": 0.30500305640426933,
+          "cohen_dz": -0.5256782107336551,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      }
+    }
+  }
+}
