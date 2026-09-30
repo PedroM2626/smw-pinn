@@ -50,6 +50,7 @@ from src.environment.dataset_loader import load_and_preprocess_data  # noqa: E40
 from src.evaluation.inverse_transfer_benchmark import PRIOR  # noqa: E402
 from src.evaluation.symbolic_engine_ablation_benchmark import (  # noqa: E402
     pysr_available,
+    pysr_skip_reason,
     run_gplearn,
     run_pysr,
     run_templates,
@@ -149,7 +150,7 @@ def analyse_dataset(
     out["pysr"] = (
         run_pysr(fit_bank, eval_bank, truth, pysr_iterations, max_train, seed, preset="real")
         if pysr_available()
-        else {"available": False, "reason": "the pysr package is not installed"}
+        else {"available": False, "reason": pysr_skip_reason()}
     )
     logger.info(
         "  %-18s support %.2f | held-out >=90%%: %.4f | clamp %.3f (BIC %s / tail %s)",

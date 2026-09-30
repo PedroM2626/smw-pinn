@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-09-30T19:51:32+00:00",
-    "git_sha": "21c3d4dc2dbaa0bc551a399cc469c5b110a837d3",
+    "generated_utc": "2026-09-30T20:22:39+00:00",
+    "git_sha": "98e504b911b9263fd4972dd9975b89511b23266e",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -60,6 +60,11 @@
         "std": 0.3132634248794027,
         "n_seeds": 5
       },
+      "raw_clip_rate": {
+        "mean": 0.15409818142652512,
+        "std": 0.09679917359476439,
+        "n_seeds": 5
+      },
       "compared_with_state_none": {
         "n_pairs": 5,
         "mean_difference": -186.9439741897583,
@@ -80,35 +85,40 @@
           "test_kinematic_error": 0.005756043564443561,
           "drift_multistart_mean_px": 138.87549686431885,
           "vx_mae_px": 0.9751039743423462,
-          "seconds": 19.53620982170105
+          "raw_clip_rate": 0.18510323762893677,
+          "seconds": 20.75291085243225
         },
         "43": {
           "test_loss_data": 1.0770214117235608,
           "test_kinematic_error": 0.01651871773517794,
           "drift_multistart_mean_px": 96.28692970275878,
           "vx_mae_px": 1.608891487121582,
-          "seconds": 19.443859577178955
+          "raw_clip_rate": 0.3084905743598938,
+          "seconds": 22.899571895599365
         },
         "44": {
           "test_loss_data": 0.7260410447915395,
           "test_kinematic_error": 0.023346435133134946,
           "drift_multistart_mean_px": 68.32443046569824,
           "vx_mae_px": 1.7787690162658691,
-          "seconds": 15.523447036743164
+          "raw_clip_rate": 0.11655773222446442,
+          "seconds": 17.350821018218994
         },
         "45": {
           "test_loss_data": 0.5796813132131801,
           "test_kinematic_error": 0.019540272194289547,
           "drift_multistart_mean_px": 75.61603507995605,
           "vx_mae_px": 1.6328226327896118,
-          "seconds": 16.622127294540405
+          "raw_clip_rate": 0.06709558516740799,
+          "seconds": 17.302013158798218
         },
         "46": {
           "test_loss_data": 0.8311887592077255,
           "test_kinematic_error": 0.018499915674328803,
           "drift_multistart_mean_px": 96.30615539550782,
           "vx_mae_px": 1.6096529960632324,
-          "seconds": 15.28074049949646
+          "raw_clip_rate": 0.09324377775192261,
+          "seconds": 17.44452929496765
         }
       }
     },
@@ -126,6 +136,11 @@
       "vx_mae_px": {
         "mean": 1.1149502515792846,
         "std": 0.14634241838322543,
+        "n_seeds": 5
+      },
+      "raw_clip_rate": {
+        "mean": 0.1804701194167137,
+        "std": 0.08023418371146859,
         "n_seeds": 5
       },
       "compared_with_state_none": {
@@ -148,35 +163,40 @@
           "test_kinematic_error": 0.004790698051113974,
           "drift_multistart_mean_px": 202.63918685913086,
           "vx_mae_px": 1.2995964288711548,
-          "seconds": 15.26603627204895
+          "raw_clip_rate": 0.1504424810409546,
+          "seconds": 17.537826776504517
         },
         "43": {
           "test_loss_data": 0.964817065331671,
           "test_kinematic_error": 0.0019618148734379145,
           "drift_multistart_mean_px": 145.05371551513673,
           "vx_mae_px": 0.8909710645675659,
-          "seconds": 30.873538970947266
+          "raw_clip_rate": 0.31415095925331116,
+          "seconds": 36.056753158569336
         },
         "44": {
           "test_loss_data": 0.5872269103924433,
           "test_kinematic_error": 0.001187602422821025,
           "drift_multistart_mean_px": 111.81505470275879,
           "vx_mae_px": 1.1042248010635376,
-          "seconds": 24.035181045532227
+          "raw_clip_rate": 0.15740740299224854,
+          "seconds": 29.157177448272705
         },
         "45": {
           "test_loss_data": 0.46769170726046844,
           "test_kinematic_error": 0.0011234957509098902,
           "drift_multistart_mean_px": 99.76547498703003,
           "vx_mae_px": 1.1441965103149414,
-          "seconds": 26.24283480644226
+          "raw_clip_rate": 0.10018382221460342,
+          "seconds": 27.851507902145386
         },
         "46": {
           "test_loss_data": 0.7165567547082901,
           "test_kinematic_error": 0.001622193593357224,
           "drift_multistart_mean_px": 161.46887550354003,
           "vx_mae_px": 1.1357624530792236,
-          "seconds": 24.485219717025757
+          "raw_clip_rate": 0.18016593158245087,
+          "seconds": 27.35828685760498
         }
       }
     },
@@ -194,6 +214,11 @@
       "vx_mae_px": {
         "mean": 1.7629892587661744,
         "std": 0.42358018416871546,
+        "n_seeds": 5
+      },
+      "raw_clip_rate": {
+        "mean": 0.18542455285787582,
+        "std": 0.08342024173411913,
         "n_seeds": 5
       },
       "compared_with_state_none": {
@@ -216,35 +241,40 @@
           "test_kinematic_error": 0.007259055358273062,
           "drift_multistart_mean_px": 143.34308967590331,
           "vx_mae_px": 1.248199701309204,
-          "seconds": 24.683724880218506
+          "raw_clip_rate": 0.17920354008674622,
+          "seconds": 26.824865341186523
         },
         "43": {
           "test_loss_data": 1.0927544401751623,
           "test_kinematic_error": 0.01753331596652667,
           "drift_multistart_mean_px": 114.48365936279296,
           "vx_mae_px": 1.6947773694992065,
-          "seconds": 23.976917505264282
+          "raw_clip_rate": 0.3254716992378235,
+          "seconds": 26.32354164123535
         },
         "44": {
           "test_loss_data": 0.7211854855219523,
           "test_kinematic_error": 0.015838464442640542,
           "drift_multistart_mean_px": 81.73615455627441,
           "vx_mae_px": 1.721060872077942,
-          "seconds": 18.10650134086609
+          "raw_clip_rate": 0.14488017559051514,
+          "seconds": 21.38469910621643
         },
         "45": {
           "test_loss_data": 0.5767742728485781,
           "test_kinematic_error": 0.016386783353107816,
           "drift_multistart_mean_px": 51.640831565856935,
           "vx_mae_px": 1.7211993932724,
-          "seconds": 19.56485080718994
+          "raw_clip_rate": 0.10569853335618973,
+          "seconds": 20.252988576889038
         },
         "46": {
           "test_loss_data": 0.9179348364472389,
           "test_kinematic_error": 0.030383922159671783,
           "drift_multistart_mean_px": 89.48994750976563,
           "vx_mae_px": 2.429708957672119,
-          "seconds": 17.40958523750305
+          "raw_clip_rate": 0.17186881601810455,
+          "seconds": 20.658352375030518
         }
       }
     }

@@ -60,17 +60,27 @@ RECORDINGS = (
 
 
 def gate_strata(states: np.ndarray, actions: np.ndarray, next_states: np.ndarray) -> Dict[str, Any]:
-    """The gravity tiers as the console shows them, counted and measured per stratum."""
+    """The gravity tiers as the console shows them, counted and measured per stratum.
+
+    The tiers are conditioned on being airborne, because that is what Section 4.2
+    states and what the published recordings make decisive: on the ground ``v_y`` is
+    forced to zero every frame, and a third of the frames in a normal playthrough are
+    exactly those. Measured without the condition, the published dataset's "descent"
+    stratum is 71% of its transitions with a median increment of 0.0 - walking, not
+    falling - and the gate cannot be seen either way.
+    """
     vy = np.asarray(next_states, dtype=np.float64)[:, 3]
     vy_prev = np.asarray(states, dtype=np.float64)[:, 3]
+    ground = np.asarray(states, dtype=np.float64)[:, 4] > 0.5
     jump = np.asarray(actions, dtype=np.float64)[:, 0] > 0.5
+    airborne = ~ground
     ascent = vy_prev < 0.0
     delta = vy - vy_prev
 
     strata = {
-        "ascent_held": ascent & jump,
-        "ascent_released": ascent & ~jump,
-        "descent": ~ascent,
+        "ascent_held": airborne & ascent & jump,
+        "ascent_released": airborne & ascent & ~jump,
+        "descent": airborne & ~ascent,
     }
     out: Dict[str, Any] = {}
     for name, mask in strata.items():
@@ -81,14 +91,79 @@ def gate_strata(states: np.ndarray, actions: np.ndarray, next_states: np.ndarray
             "median_delta_vy": float(np.median(delta[mask])) if count else None,
             "mean_delta_vy": float(np.mean(delta[mask])) if count else None,
         }
+    grounded = {
+        "transitions": int(ground.sum()),
+        "fraction": float(ground.mean()),
+        "median_delta_vy": float(np.median(delta[ground])) if ground.any() else None,
+    }
     held = out["ascent_held"]["median_delta_vy"]
     released = out["ascent_released"]["median_delta_vy"]
     out["measured_tier_separation"] = (
         None if held is None or released is None else float(released - held)
     )
+    out["grounded_reference"] = grounded
     out["both_tiers_present"] = bool(
         out["ascent_held"]["transitions"] >= 50 and out["ascent_released"]["transitions"] >= 50
     )
+    return out
+
+
+def ascent_phase_buckets(
+    states: np.ndarray, actions: np.ndarray, next_states: np.ndarray
+) -> Dict[str, Dict[str, Any]]:
+    """The two ascent tiers within phases of the rise, to exclude a sampling-offset story.
+
+    If the released branch only failed to separate in some part of the jump, the gate
+    would be a phase artifact of the recording rather than a missing physical branch.
+    """
+    vy = np.asarray(states, dtype=np.float64)[:, 3]
+    nvy = np.asarray(next_states, dtype=np.float64)[:, 3]
+    jump = np.asarray(actions, dtype=np.float64)[:, 0] > 0.5
+    ground = np.asarray(states, dtype=np.float64)[:, 4] > 0.5
+    delta = nvy - vy
+    air_ascent = (~ground) & (vy < 0.0)
+    edges = ((-1000.0, -60.0), (-60.0, -40.0), (-40.0, -20.0), (-20.0, 0.0))
+    out: Dict[str, Dict[str, Any]] = {}
+    for lo, hi in edges:
+        band = air_ascent & (vy >= lo) & (vy < hi)
+        held, released = band & jump, band & ~jump
+        out[f"{int(lo)}_to_{int(hi)}"] = {
+            "held_transitions": int(held.sum()),
+            "held_median_delta_vy": float(np.median(delta[held])) if held.any() else None,
+            "released_transitions": int(released.sum()),
+            "released_median_delta_vy": float(np.median(delta[released]))
+            if released.any()
+            else None,
+        }
+    return out
+
+
+def action_alignment_test(
+    states: np.ndarray,
+    actions: np.ndarray,
+    next_states: np.ndarray,
+    offsets: Sequence[int] = (-2, -1, 0, 1, 2),
+) -> Dict[str, float]:
+    """Does any shift of the button channel against physics reveal the tiers?
+
+    The action byte and the kinematic bytes are sampled at the same instant, but the
+    debounced latch at ``$7E:0016`` is written by the engine at its own point in the
+    frame. If the published recording simply associated the button with the wrong
+    frame, some non-zero offset would separate the ascent tiers the way it separates in
+    the excitation recordings. It does not, and that is what this function establishes.
+    """
+    vy = np.asarray(states, dtype=np.float64)[:, 3]
+    nvy = np.asarray(next_states, dtype=np.float64)[:, 3]
+    jump = np.asarray(actions, dtype=np.float64)[:, 0] > 0.5
+    ground = np.asarray(states, dtype=np.float64)[:, 4] > 0.5
+    delta = nvy - vy
+    air_ascent = (~ground) & (vy < 0.0)
+    out: Dict[str, float] = {}
+    for offset in offsets:
+        j = np.roll(jump, offset)
+        held, released = air_ascent & j, air_ascent & ~j
+        if held.any() and released.any():
+            out[str(offset)] = float(np.median(delta[released]) - np.median(delta[held]))
     return out
 
 
@@ -114,6 +189,12 @@ def analyse_recording(
     )
     block["heldout_strata"] = gate_strata(
         data["test_states"], data["test_actions"], data["test_next_states"]
+    )
+    block["ascent_phase_buckets"] = ascent_phase_buckets(
+        data["train_states"], data["train_actions"], data["train_next_states"]
+    )
+    block["action_alignment_test"] = action_alignment_test(
+        data["train_states"], data["train_actions"], data["train_next_states"]
     )
     block.update(
         analyse_dataset(

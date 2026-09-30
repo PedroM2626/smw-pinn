@@ -822,3 +822,110 @@ def test_readme_10_51_forward_table_is_the_artifact() -> None:
     assert not missing, "README 10.51 forward table disagrees with the artifacts:\n" + "\n".join(
         missing
     )
+
+
+def test_readme_10_51_control_table_is_the_artifact() -> None:
+    """Both sides of the reversal come from different runs; check them separately."""
+    proj_path = RESULTS / "projection_cell_mpc_metrics.json"
+    grid_path = RESULTS / "physics_injection_mpc_metrics.json"
+    if not (proj_path.is_file() and grid_path.is_file()):
+        pytest.skip("the 10.51 console run or its 10.47 reference has not been run")
+    proj = json.loads(proj_path.read_text(encoding="utf-8"))["multi_seed"]["per_model"]
+    grid = json.loads(grid_path.read_text(encoding="utf-8"))["multi_seed"]["per_model"]
+    text = _readme()
+    shell_of = {
+        "MLP": "published_hard_pinn_10_27",
+        "DeepONet": "published_pc_deeponet_10_42",
+        "FNO": "fno_residual_hard",
+    }
+    missing = []
+    for family, arm in shell_of.items():
+        key = f"{family.lower()}_state_projected"
+        block, shell = proj[key], grid[arm]
+        row = (
+            r"| {proj:.2f} $\pm$ {pstd:.2f} | {pmin:.2f} - {pmax:.2f} | {budget} / 5 | {deaths} |"
+            r" {sshell:.2f} $\pm$ {sstd:.2f} | {delta:+.2f} |"
+        ).format(
+            proj=block["progress_px_mean"],
+            pstd=block["progress_px_std"],
+            pmin=block["progress_px_min"],
+            pmax=block["progress_px_max"],
+            budget=int(round(block["budget_reached_rate"] * 5)),
+            deaths=block["pit_or_death"],
+            sshell=shell["progress_px_mean"],
+            sstd=shell["progress_px_std"],
+            delta=block["progress_px_mean"] - shell["progress_px_mean"],
+        )
+        if row not in text:
+            missing.append(f"{family}: {row}")
+    assert not missing, "README 10.51 control table disagrees with the artifacts:\n" + "\n".join(
+        missing
+    )
+
+
+def test_readme_10_52_gate_table_is_the_artifact() -> None:
+    path = RESULTS / "gate_excitation_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.52 gate study has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    display = {
+        "published_gameplay": "published gameplay",
+        "sprint_targeted": "sprint-targeted (10.45)",
+        "jump_targeted": "jump-targeted (this section)",
+    }
+    missing = []
+    for label, block in artifact["results"].items():
+        s = block["strata"]
+        held, rel = s["ascent_held"], s["ascent_released"]
+        desc, ground = s["descent"], s["grounded_reference"]
+        structure = block["templates"]["structure"]
+        step = structure.get("tier_separation")
+        row = (
+            r"| {name} | {n:,} | {hn:,} ({hf:.1%}), $\Delta v_y = {hm:.1f}$"
+            r" | {rn:,} ({rf:.1%}), $\Delta v_y = {rm:.1f}$"
+            r" | {dn:,} ({df:.1%}), {dm:.1f} | {gn:,} ({gf:.1%}), {gm:.1f}"
+            " | ${sep:+.1f}$ | {gate} | {step} | {gp} |"
+        ).format(
+            name=display[label],
+            n=block["profile"]["train_transitions"],
+            hn=held["transitions"],
+            hf=held["fraction"],
+            hm=held["median_delta_vy"],
+            rn=rel["transitions"],
+            rf=rel["fraction"],
+            rm=rel["median_delta_vy"],
+            dn=desc["transitions"],
+            df=desc["fraction"],
+            dm=desc["median_delta_vy"],
+            gn=ground["transitions"],
+            gf=ground["fraction"],
+            gm=ground["median_delta_vy"],
+            sep=s["measured_tier_separation"],
+            gate="**yes**" if structure["gravity_gate_discovered"] else "no",
+            step="-" if step is None else f"${step:.4f}$",
+            gp="yes" if block["gplearn"]["structure"]["gravity_gate_discovered"] else "no",
+        )
+        if row not in text:
+            missing.append(row)
+    assert not missing, "README 10.52 table disagrees with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_51_clip_rates_are_the_artifact() -> None:
+    """Finding 5 quotes a rate per family; the numbers have to come from the run."""
+    path = RESULTS / "projection_cell_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.51 study has not been run")
+    summary = json.loads(path.read_text(encoding="utf-8"))["summary"]
+    text = _readme()
+    missing = [
+        f"{label}: ${block['raw_clip_rate']['mean'] * 100:.2f}"
+        rf"\% \pm {block['raw_clip_rate']['std'] * 100:.2f}$"
+        for label, block in summary.items()
+        if (
+            f"${block['raw_clip_rate']['mean'] * 100:.2f}"
+            rf"\% \pm {block['raw_clip_rate']['std'] * 100:.2f}$"
+        )
+        not in text
+    ]
+    assert not missing, "README 10.51 clip rates disagree with the artifact:\n" + "\n".join(missing)

@@ -112,6 +112,18 @@ def pysr_available() -> bool:
     return True
 
 
+def pysr_skip_reason() -> str:
+    """Why the PySR leg cannot run, for the artifact that records it as skipped.
+
+    A missing package and a package whose Julia depot will not boot are different
+    diagnostics; conflating them in the artifact is how a machine-specific failure
+    ends up published as a statement about the software.
+    """
+    if importlib.util.find_spec("pysr") is None:
+        return "the pysr package is not installed"
+    return "PySR is installed but its Julia runtime did not start"
+
+
 def flat_transitions(
     windows: Sequence[Any],
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -733,7 +745,7 @@ def run_study(
             )
         hidden[f"replicate_{rep}"] = row
     if not have_pysr:
-        hidden["pysr"] = {"available": False, "reason": "the pysr package is not installed"}
+        hidden["pysr"] = {"available": False, "reason": pysr_skip_reason()}
 
     logger.info("=== Structure-specificity control: can the selector name the true mechanism? ===")
     specificity = run_specificity_control(seed, specificity_rows, specificity_noise)
@@ -749,7 +761,7 @@ def run_study(
 
     budget_sweep: Dict[str, Any] = {
         "available": False,
-        "reason": "the pysr package is not installed",
+        "reason": pysr_skip_reason(),
         "pysr_iterations": list(pysr_budgets),
     }
     if have_pysr and first_banks is not None:
@@ -827,7 +839,7 @@ def run_study(
     real["pysr"] = (
         run_pysr(train_bank, test_bank, prior, pysr_iterations, max_train, seed, preset="real")
         if have_pysr
-        else {"available": False, "reason": "the pysr package is not installed"}
+        else {"available": False, "reason": pysr_skip_reason()}
     )
     real["templates"] = run_templates(
         train_bank.states,

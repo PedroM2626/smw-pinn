@@ -203,6 +203,7 @@ def run_projection_cell_benchmark(
                     )["mean_drift_mean"]
                 ),
                 "vx_mae_px": _vx_mae(model, data, device),
+                "raw_clip_rate": _clip_rate(model, data, device),
                 "seconds": time.time() - t0,
             }
             logger.info(
@@ -220,12 +221,18 @@ def run_projection_cell_benchmark(
         family = label.split("/")[0]
         values = {
             key: [runs[s][label][key] for s in seeds]
-            for key in ("test_loss_data", "drift_multistart_mean_px", "vx_mae_px")
+            for key in (
+                "test_loss_data",
+                "drift_multistart_mean_px",
+                "vx_mae_px",
+                "raw_clip_rate",
+            )
         }
         summary[label] = {
             "test_loss_data": _mean(values["test_loss_data"]),
             "drift_multistart_mean_px": _mean(values["drift_multistart_mean_px"]),
             "vx_mae_px": _mean(values["vx_mae_px"]),
+            "raw_clip_rate": _mean(values["raw_clip_rate"]),
             "compared_with_state_none": _paired(
                 _series(
                     reference, arm_label(family, "state", "none"), "drift_multistart_mean_px", seeds
@@ -294,6 +301,24 @@ def _vx_mae(model: torch.nn.Module, data: Dict[str, Any], device: torch.device) 
     target = torch.as_tensor(data["test_next_states"], dtype=torch.float32)
     pred = model(states, actions).cpu()
     return float((pred[:, 2] - target[:, 2]).abs().mean())
+
+
+@torch.no_grad()
+def _clip_rate(model: torch.nn.Module, data: Dict[str, Any], device: torch.device) -> float:
+    """How often the wrapper has to overwrite the network's own velocity output.
+
+    This is the mechanism variable behind the projection: a large rate means the model
+    proposes out-of-bounds velocities that the projection then collapses onto the same
+    clamped value, which is the condition under which a clipped map stops discriminating
+    between the states a planner is querying.
+    """
+    model.eval()
+    states = torch.as_tensor(data["test_states"], dtype=torch.float32, device=device)
+    actions = torch.as_tensor(data["test_actions"], dtype=torch.float32, device=device)
+    raw = model.base(states, actions)
+    vx, vy = raw[:, 2], raw[:, 3]
+    outside = (vx.abs() > model.max_vx) | (vy > model.terminal_vy) | (vy < model.min_vy)
+    return float(outside.to(torch.float32).mean())
 
 
 def _mean(values: Sequence[float]) -> Dict[str, float]:

@@ -11,6 +11,45 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The excluded cell, filled** (README Section 10.51): `src/models/output_projection.py`
+  imposes the engine's velocity bounds as a post-hoc projection of a *state-output*
+  network - clip the proposed velocities, re-derive the positions from the clipped
+  values - which is the cell 10.47 declared unimplementable and left out, and is
+  deliberately not the CBF action filter of 10.16. `src/evaluation/projection_cell_benchmark.py`
+  fits one per family under the grid protocol and
+  `physics_injection_mpc_benchmark.py --study projection` flies them with the published
+  planner. On open-loop prediction the cheap mechanism wins: the projection beats the
+  in-graph shell by 41.98 px of drift for the MLP ($d_z = -2.64$, $p = 0.004$) and
+  31.67 px for the DeepONet ($p = 0.031$), tying on the FNO (+7.46, $p = 0.51$), at no
+  cost in data fit. On the console the ordering inverts for two of three families - the
+  projection covers $299.50 \pm 252.34$ px where the PC-DeepONet covers
+  $635.61 \pm 14.18$, and $207.50 \pm 143.06$ with three deaths where the hard FNO
+  covers $554.74 \pm 28.61$ with none - while for the MLP it is worth +221.34 px over
+  the shell and is statistically indistinguishable from the engine rules ($-99.37$ px,
+  $d_z = -0.46$, $p = 0.365$). The candidate mechanism is measured rather than asserted:
+  the wrapper overwrites its own network's velocity on 15.41% of held-out frames for the
+  MLP against 18.05% and 18.54% for the two operators that lost.
+- **The gravity gate under targeted excitation** (README Section 10.52):
+  `scripts/record_jump_gameplay.py` records WRAM telemetry whose policy alternates long
+  jump holds with short early releases (55% of jumps released within three frames), 6,116
+  transitions of which 942 are airborne, rising and already released;
+  `src/evaluation/gate_excitation_benchmark.py` measures the tiers straight from the
+  console and then hands three recordings to the engines of 10.43.9 unchanged. The
+  published recording turns out to contain no second vertical tier at all: its
+  released-ascent frames (513 of 6,329 training transitions, so the branch is not scarce)
+  have median $\Delta v_y = 3.0$, equal to the held branch, equal to falling, and
+  unchanged under every realignment of the button latch against the physics from $-2$ to
+  $+2$ frames - which makes four published negatives (10.37.1, 10.43.9, 10.46, 10.47)
+  accurate measurements rather than estimator failures, and narrows 10.45's coverage
+  remedy to "sample the branch where releasing changes the fall". Both MPC recordings do
+  exhibit it (6.0 released against 3.0 held, uniform across all four ascent-phase bands),
+  and there the template engine discovers the gate with all four criteria agreeing -
+  while fitting only $-0.8117$ and $-0.6734$ of a true $-3.0$ step. gplearn recovers
+  nothing on any recording; the PySR leg could not run in this environment and is
+  recorded with the reason. The velocity clamp moves again under a second targeted policy:
+  35.150 here against 36.075 on the sprint recording and 47.775 on the published one.
+
+
 - **The plateau-coincidence test** (README Section 10.50):
   `src/evaluation/plateau_provenance_benchmark.py` decides the question 10.46 recorded but
   refused to interpret - the plain DeepONet's implied plateau of 35.61 sitting 1.3% from
@@ -415,6 +454,15 @@ numbers* - those are reported here and in README Section 12, never applied silen
   flagged (README 10.28). This cleared the last `STALE` row in `results/MANIFEST.md`.
 
 ### Fixed
+
+- Study scratch directories are per-process (`mworld_*_scratch_<pid>`). A fixed name let a
+  seconds-scale smoke run delete the working directory of a multi-seed study that was
+  still training in it, and the run died mid-seed on a missing parent directory.
+- `pysr_available()` now verifies that the Julia runtime boots, not only that the package
+  is importable, and the skipped-leg reason is split accordingly
+  (`pysr_skip_reason()`): a machine whose Julia depot will not start used to publish
+  "the pysr package is not installed" into the artifact, which is a statement about the
+  software that the observation does not support.
 
 - README Section 10.43.5 (self-correction, also recorded in Section 12): the identified
   model's horizontal-velocity residual was said to be "tile geometry and slope acceleration
