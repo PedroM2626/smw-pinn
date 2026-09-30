@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation record-sprint smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes record-sprint smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -37,6 +37,7 @@ help:
 	@echo "inverse-mpc        Closed-loop MPC with the inverse-problem world models (README 10.44, needs core + ROM)"
 	@echo "record-sprint      Excitation-targeted WRAM recording that saturates the speed bound (README 10.45, needs core + ROM)"
 	@echo "sprint-excitation  The velocity ceiling measured on both recordings (README 10.45)"
+	@echo "learned-probes     Fixed-point and gravity-gate probes on the learned models (README 10.46)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -138,6 +139,11 @@ record-sprint:
 
 sprint-excitation:
 	$(PY) -m src.evaluation.sprint_excitation_benchmark
+
+# The 10.43 structural probes applied to the committed learned checkpoints, plus the
+# identification-through-a-surrogate control (README 10.46). Emulator-free.
+learned-probes:
+	$(PY) -m src.evaluation.learned_structure_probe_benchmark
 
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in

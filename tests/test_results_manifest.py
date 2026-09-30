@@ -185,6 +185,51 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
         ["structure_specificity_control", "verdict", "families_named_correctly"],
         "names the true mechanism in {} of 3 controls",
     ),
+    (
+        "learned_structure_probe_metrics.json",
+        ["structural_probes", "fno", "ceiling", "ceiling_like_fixed_point"],
+        "FNO {:.2f}",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        [
+            "multi_seed",
+            "per_model",
+            "learned_physics_constrained_deeponet_10_42",
+            "progress_px_mean",
+        ],
+        r"**{:.2f} $\pm$",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["multi_seed", "per_model", "learned_fno_10_42", "progress_px_std"],
+        r"$\pm$ {:.2f} | 367.94",
+    ),
+    (
+        "inverse_model_mpc_metrics.json",
+        ["multi_seed", "per_model", "learned_deeponet_10_41", "progress_px_min"],
+        "| {:.2f} - 438.06 |",
+    ),
+    (
+        "learned_structure_probe_metrics.json",
+        ["structural_probes", "deeponet", "ceiling", "ceiling_like_fixed_point"],
+        "plateau, {:.2f}, is",
+    ),
+    (
+        "learned_structure_probe_metrics.json",
+        ["surrogate_identification", "real_max_relative_error_pct"],
+        "arm) | {:.1f}% |",
+    ),
+    (
+        "learned_structure_probe_metrics.json",
+        ["surrogate_identification", "per_surrogate", "fno", "max_relative_error_pct"],
+        "| {:.1f}% | 2.25 |",
+    ),
+    (
+        "learned_structure_probe_metrics.json",
+        ["surrogate_identification", "per_surrogate", "soft_pinn", "max_relative_error_pct"],
+        "| {:.1f}% | 23.79 |",
+    ),
 ]
 
 

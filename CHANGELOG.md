@@ -11,6 +11,47 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **Learned operators driven as controllers on the real console** (README Sections 10.44,
+  10.44.1): `src/evaluation/inverse_model_mpc_benchmark.py` now also loads the DeepONet,
+  Physics-Constrained DeepONet and FNO checkpoints of 10.41/10.42 and pilots them with the
+  same CEM-MPC planner, objective, savestate, frame budget and seed protocol, so the closed
+  loop tests the prediction Section 10.42.3 states as a hazard. Outcome: the hybrid is the
+  best controller in the repository ($635.61 \pm 14.18$ px, 5/5 seeds, zero deaths,
+  $d_z = +0.50$ and statistically indistinguishable from the hand reverse-engineered rules);
+  the FNO loses 247 px to those rules with $d_z = -12.14$ on a spread of only $\pm 3.56$ px,
+  i.e. it fails reproducibly rather than noisily, which is the accuracy-versus-control
+  dissociation 10.42 predicted; and the plain DeepONet fails the *other* way
+  ($193.66 \pm 197.54$ px, one death). The Hard PINN and the PC-DeepONet share the same hard
+  kinematic shell and differ by 336 px and three deaths, so the shell bounds the failure mode
+  rather than determining the behaviour.
+- **Structural probes on learned dynamics models** (README Section 10.46):
+  `src/evaluation/learned_structure_probe_benchmark.py` puts the committed checkpoints of
+  Sections 8, 10.41 and 10.42 under the same interrogation the discovered laws were given -
+  the fixed point of the fully-driven map, the median held-jump tier separation - with the
+  same acceptance rules, and reports which model actually contains the engine's constraint.
+  Emulator-free (~1 min), wired as the `learned-probes` Make/CLI target, artifact indexed in
+  `results/MANIFEST.md`, tested in `tests/test_learned_structure_probe.py`.
+  Outcome: all six models reach a stable positive fixed point, but three of them only after
+  accelerating at 12-21 px/frame against the engine's maximum real increment of 1.8, so the
+  crossing is an extrapolation artifact and the study classifies it as one - three models
+  keep a plausible ceiling, and none of the three is near the engine's (21.7-25.5 against a
+  WRAM reference of 72.0, a support of 49.0 and the 36.075 that 10.45 measured on purpose).
+  No model recovers the gravity gate (largest separation 0.86 against a true -2.80). The
+  clamp carried by the Hard PINN and PC-DeepONet shells sits at 72.0, above the observed
+  support, so it never binds and the probe is not a tautology - recorded per model as
+  `shell_clamp_binds_within_support`.
+- **Identification through a learned surrogate, measured rather than argued** (README Section
+  10.46): the same 900-step, warm-started identification of 10.40-E2 is re-run against
+  pseudo-transitions rolled out by each learned model, to settle the question of why nobody
+  differentiates the constants through a trained operator. Every surrogate is worse than the
+  recording it was trained on - 87.2% worst-case error for the best (FNO) against the direct
+  fit's 84.1%, which itself reproduces the published 10.40-E2 figure - and the drift of the
+  recovered constants tracks the surrogate's own quality (3.9 units for the two
+  kinematically-constrained models, 23.8 for the Soft-PINN, whose identification loss
+  diverges to 4.8e7). The README also records the structural half of the argument, verified
+  rather than asserted: `simulate_step` is differentiable w.r.t. theta, and
+  `src/environment/snes_emulator.py` is a ctypes binding with no tensor path, which is why
+  every emulator-in-the-loop method here is gradient-free by necessity.
 - **Multi-seed closed-loop comparison** (README Section 10.44.1):
   `src/evaluation/inverse_model_mpc_benchmark.py` now accepts `--seeds` and, over CEM seeds
   42-46 with the world models fitted once, reports mean $\pm$ std per controller, the

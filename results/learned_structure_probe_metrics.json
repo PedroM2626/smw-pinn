@@ -1,0 +1,523 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T00:54:31+00:00",
+    "git_sha": "a62fcea52be54fe08b6d3ca1e7e5409bcfa32758",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.learned_structure_probe_benchmark",
+    "models": [
+      "mlp",
+      "soft_pinn",
+      "hard_pinn",
+      "deeponet",
+      "physics_constrained_deeponet",
+      "fno"
+    ]
+  },
+  "study": "The trained dynamics models of sections 8, 10.41 and 10.42 are interrogated with the structural probes of 10.43/10.43.9 - the fixed point of the driven map and the held-jump tier separation - and the identification of 10.40 is re-run through each learned model as a surrogate forward, to measure what that substitution costs.",
+  "protocol": {
+    "velocity_support_cap": 49.0,
+    "probe_rows": 193,
+    "acceptance_rule": "a crossing counts as a ceiling only if it is positive, inside the observed support, approached from below while the map still accelerates, and stable from above; the raw 10.43 rule (which asks only that the map accelerate somewhere) is reported beside it for transparency",
+    "surrogate_identification": "Adam on the softplus-constrained 7-constant map, warm-started from the WRAM prior, same steps and lr as 10.40-E2",
+    "surrogate_rollout_len": 8,
+    "seed": 42,
+    "models": [
+      "mlp",
+      "soft_pinn",
+      "hard_pinn",
+      "deeponet",
+      "physics_constrained_deeponet",
+      "fno"
+    ]
+  },
+  "structural_probes": {
+    "mlp": {
+      "available": true,
+      "checkpoint": "mlp_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": -0.5447019338607788,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 30.068445205688477,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -1.728714923469381,
+        "crossings_in_range": 79
+      },
+      "acceleration_gain_px_per_frame": 12.328728993733723,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": -5.043205261230469,
+        "fall_gravity": -4.181825637817383,
+        "tier_separation": -0.8613796234130859
+      },
+      "gravity_gate_found": false
+    },
+    "soft_pinn": {
+      "available": true,
+      "checkpoint": "pinn_soft_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 21.325284957885742,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 21.325284957885742,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -1.0000373684630102,
+        "crossings_in_range": 109
+      },
+      "acceleration_gain_px_per_frame": 21.3260440826416,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 24.569088235497475,
+        "fall_gravity": 24.569236367940903,
+        "tier_separation": -0.00014813244342803955
+      },
+      "gravity_gate_found": false
+    },
+    "hard_pinn": {
+      "available": true,
+      "checkpoint": "pinn_hard_best.pt",
+      "bound_imposed_by_construction": true,
+      "shell_clamp_constant": 72.0,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 23.205947875976562,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 23.205947875976562,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.1325210259885164,
+        "crossings_in_range": 102
+      },
+      "acceleration_gain_px_per_frame": 1.7152580261230472,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 4.304998512268064,
+        "fall_gravity": 4.875843378702797,
+        "tier_separation": -0.570844866434733
+      },
+      "gravity_gate_found": false
+    },
+    "deeponet": {
+      "available": true,
+      "checkpoint": "deeponet_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 35.6100959777832,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 35.6100959777832,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.7880012356505122,
+        "crossings_in_range": 53
+      },
+      "acceleration_gain_px_per_frame": 13.209832191467285,
+      "ceiling_is_plausible": false,
+      "gravity_gate": {
+        "held_gravity": 25.357449054718018,
+        "fall_gravity": 25.081313967704773,
+        "tier_separation": 0.27613508701324463
+      },
+      "gravity_gate_found": false
+    },
+    "physics_constrained_deeponet": {
+      "available": true,
+      "checkpoint": "operator_physicsconstrained_deeponet_best.pt",
+      "bound_imposed_by_construction": true,
+      "shell_clamp_constant": 72.0,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 25.494585037231445,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 25.494585037231445,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.25990264269771096,
+        "crossings_in_range": 93
+      },
+      "acceleration_gain_px_per_frame": 1.909021822611491,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 3.68596989949544,
+        "fall_gravity": 3.7757109832763653,
+        "tier_separation": -0.08974108378092538
+      },
+      "gravity_gate_found": false
+    },
+    "fno": {
+      "available": true,
+      "checkpoint": "operator_fno_best.pt",
+      "bound_imposed_by_construction": false,
+      "shell_clamp_constant": null,
+      "shell_clamp_binds_within_support": false,
+      "ceiling": {
+        "fixed_point_found_10_43_rule": 1.0,
+        "bound_value_10_43_rule": 21.68267059326172,
+        "overshoot": 0.0,
+        "accelerating": 1.0,
+        "ceiling_like_fixed_point": 21.68267059326172,
+        "has_ceiling": 1.0,
+        "local_slope_at_ceiling": -0.08677455357142433,
+        "crossings_in_range": 108
+      },
+      "acceleration_gain_px_per_frame": 1.614211670557658,
+      "ceiling_is_plausible": true,
+      "gravity_gate": {
+        "held_gravity": 2.667027791341148,
+        "fall_gravity": 2.8457654317220076,
+        "tier_separation": -0.17873764038085938
+      },
+      "gravity_gate_found": false
+    }
+  },
+  "surrogate_identification": {
+    "reference_wram": {
+      "max_vx": 72.0,
+      "walk_accel": 0.75,
+      "run_accel": 1.5,
+      "subpixels_per_pixel": 16.0,
+      "held_gravity": 3.0,
+      "fall_gravity": 6.0,
+      "decel": 0.5
+    },
+    "identification_on_real_transitions": {
+      "max_vx": {
+        "value": 72.0,
+        "rel_error_pct": 0.0
+      },
+      "walk_accel": {
+        "value": 0.11896464973688126,
+        "rel_error_pct": 84.13804670174916
+      },
+      "run_accel": {
+        "value": 0.51490718126297,
+        "rel_error_pct": 65.67285458246867
+      },
+      "subpixels_per_pixel": {
+        "value": 21.409671783447266,
+        "rel_error_pct": 33.81044864654541
+      },
+      "held_gravity": {
+        "value": 1.3250516653060913,
+        "rel_error_pct": 55.83161115646362
+      },
+      "fall_gravity": {
+        "value": 2.043733596801758,
+        "rel_error_pct": 65.93777338663737
+      },
+      "decel": {
+        "value": 0.4446457624435425,
+        "rel_error_pct": 11.070847511291504
+      }
+    },
+    "real_max_relative_error_pct": 84.13804670174916,
+    "real_final_loss": 0.07786925137042999,
+    "per_surrogate": {
+      "mlp": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.24506542086601257,
+            "rel_error_pct": 67.32461055119832,
+            "distance_from_real_estimate": 0.12610077112913132
+          },
+          "run_accel": {
+            "value": 0.02244783379137516,
+            "rel_error_pct": 98.50347774724166,
+            "distance_from_real_estimate": 0.4924593474715948
+          },
+          "subpixels_per_pixel": {
+            "value": 39.69786071777344,
+            "rel_error_pct": 148.11162948608398,
+            "distance_from_real_estimate": 18.288188934326172
+          },
+          "held_gravity": {
+            "value": 2.6116161346435547,
+            "rel_error_pct": 12.946128845214844,
+            "distance_from_real_estimate": 1.2865644693374634
+          },
+          "fall_gravity": {
+            "value": 1.8384394645690918,
+            "rel_error_pct": 69.35934225718181,
+            "distance_from_real_estimate": 0.20529413223266602
+          },
+          "decel": {
+            "value": 0.48816221952438354,
+            "rel_error_pct": 2.367556095123291,
+            "distance_from_real_estimate": 0.043516457080841064
+          }
+        },
+        "max_relative_error_pct": 148.11162948608398,
+        "max_drift_from_real_identification": 18.288188934326172,
+        "final_loss": 7.707270485555257
+      },
+      "soft_pinn": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.0012553397100418806,
+            "rel_error_pct": 99.83262137199442,
+            "distance_from_real_estimate": 0.11770931002683938
+          },
+          "run_accel": {
+            "value": 0.00401456980034709,
+            "rel_error_pct": 99.7323620133102,
+            "distance_from_real_estimate": 0.5108926114626229
+          },
+          "subpixels_per_pixel": {
+            "value": 12.92719841003418,
+            "rel_error_pct": 19.205009937286377,
+            "distance_from_real_estimate": 8.482473373413086
+          },
+          "held_gravity": {
+            "value": 21.622676849365234,
+            "rel_error_pct": 620.7558949788412,
+            "distance_from_real_estimate": 20.297625184059143
+          },
+          "fall_gravity": {
+            "value": 25.83212661743164,
+            "rel_error_pct": 330.53544362386066,
+            "distance_from_real_estimate": 23.788393020629883
+          },
+          "decel": {
+            "value": 20.16488265991211,
+            "rel_error_pct": 3932.976531982422,
+            "distance_from_real_estimate": 19.720236897468567
+          }
+        },
+        "max_relative_error_pct": 3932.976531982422,
+        "max_drift_from_real_identification": 23.788393020629883,
+        "final_loss": 48213638.16409743
+      },
+      "hard_pinn": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.007314149755984545,
+            "rel_error_pct": 99.02478003253539,
+            "distance_from_real_estimate": 0.11165049998089671
+          },
+          "run_accel": {
+            "value": 0.0813920646905899,
+            "rel_error_pct": 94.57386235396068,
+            "distance_from_real_estimate": 0.43351511657238007
+          },
+          "subpixels_per_pixel": {
+            "value": 17.558759689331055,
+            "rel_error_pct": 9.742248058319092,
+            "distance_from_real_estimate": 3.850912094116211
+          },
+          "held_gravity": {
+            "value": 3.675175189971924,
+            "rel_error_pct": 22.505839665730793,
+            "distance_from_real_estimate": 2.3501235246658325
+          },
+          "fall_gravity": {
+            "value": 3.8065414428710938,
+            "rel_error_pct": 36.5576426188151,
+            "distance_from_real_estimate": 1.762807846069336
+          },
+          "decel": {
+            "value": 0.462774395942688,
+            "rel_error_pct": 7.445120811462402,
+            "distance_from_real_estimate": 0.018128633499145508
+          }
+        },
+        "max_relative_error_pct": 99.02478003253539,
+        "max_drift_from_real_identification": 3.850912094116211,
+        "final_loss": 0.12339697948286754
+      },
+      "deeponet": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.400438129901886,
+            "rel_error_pct": 46.6082493464152,
+            "distance_from_real_estimate": 0.28147348016500473
+          },
+          "run_accel": {
+            "value": 0.006163813639432192,
+            "rel_error_pct": 99.58907909070452,
+            "distance_from_real_estimate": 0.5087433676235378
+          },
+          "subpixels_per_pixel": {
+            "value": 36.652984619140625,
+            "rel_error_pct": 129.0811538696289,
+            "distance_from_real_estimate": 15.24331283569336
+          },
+          "held_gravity": {
+            "value": 18.83383560180664,
+            "rel_error_pct": 527.7945200602213,
+            "distance_from_real_estimate": 17.50878393650055
+          },
+          "fall_gravity": {
+            "value": 1.5772228240966797,
+            "rel_error_pct": 73.712952931722,
+            "distance_from_real_estimate": 0.4665107727050781
+          },
+          "decel": {
+            "value": 2.426227331161499,
+            "rel_error_pct": 385.2454662322998,
+            "distance_from_real_estimate": 1.9815815687179565
+          }
+        },
+        "max_relative_error_pct": 527.7945200602213,
+        "max_drift_from_real_identification": 17.50878393650055,
+        "final_loss": 48.74358614403045
+      },
+      "physics_constrained_deeponet": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.005963080562651157,
+            "rel_error_pct": 99.20492259164651,
+            "distance_from_real_estimate": 0.1130015691742301
+          },
+          "run_accel": {
+            "value": 0.06305001676082611,
+            "rel_error_pct": 95.79666554927826,
+            "distance_from_real_estimate": 0.45185716450214386
+          },
+          "subpixels_per_pixel": {
+            "value": 17.476078033447266,
+            "rel_error_pct": 9.22548770904541,
+            "distance_from_real_estimate": 3.93359375
+          },
+          "held_gravity": {
+            "value": 3.5479023456573486,
+            "rel_error_pct": 18.26341152191162,
+            "distance_from_real_estimate": 2.2228506803512573
+          },
+          "fall_gravity": {
+            "value": 4.028463363647461,
+            "rel_error_pct": 32.858943939208984,
+            "distance_from_real_estimate": 1.9847297668457031
+          },
+          "decel": {
+            "value": 0.7411215901374817,
+            "rel_error_pct": 48.22431802749634,
+            "distance_from_real_estimate": 0.2964758276939392
+          }
+        },
+        "max_relative_error_pct": 99.20492259164651,
+        "max_drift_from_real_identification": 3.93359375,
+        "final_loss": 0.13522281638761646
+      },
+      "fno": {
+        "available": true,
+        "constants": {
+          "max_vx": {
+            "value": 72.0,
+            "rel_error_pct": 0.0,
+            "distance_from_real_estimate": 0.0
+          },
+          "walk_accel": {
+            "value": 0.09624602645635605,
+            "rel_error_pct": 87.16719647248586,
+            "distance_from_real_estimate": 0.022718623280525208
+          },
+          "run_accel": {
+            "value": 0.2478952705860138,
+            "rel_error_pct": 83.47364862759908,
+            "distance_from_real_estimate": 0.2670119106769562
+          },
+          "subpixels_per_pixel": {
+            "value": 23.65472984313965,
+            "rel_error_pct": 47.8420615196228,
+            "distance_from_real_estimate": 2.245058059692383
+          },
+          "held_gravity": {
+            "value": 2.5196971893310547,
+            "rel_error_pct": 16.010093688964844,
+            "distance_from_real_estimate": 1.1946455240249634
+          },
+          "fall_gravity": {
+            "value": 3.474378824234009,
+            "rel_error_pct": 42.09368626276652,
+            "distance_from_real_estimate": 1.430645227432251
+          },
+          "decel": {
+            "value": 0.23027178645133972,
+            "rel_error_pct": 53.945642709732056,
+            "distance_from_real_estimate": 0.21437397599220276
+          }
+        },
+        "max_relative_error_pct": 87.16719647248586,
+        "max_drift_from_real_identification": 2.245058059692383,
+        "final_loss": 0.14054171040108865
+      }
+    }
+  },
+  "verdict": {
+    "models_with_a_fixed_point": [
+      "fno",
+      "hard_pinn",
+      "physics_constrained_deeponet"
+    ],
+    "fixed_point_learned": [
+      "fno",
+      "hard_pinn",
+      "physics_constrained_deeponet"
+    ],
+    "fixed_point_imposed_by_architecture": [],
+    "models_without_a_fixed_point": [],
+    "crossing_without_plausible_traction": [
+      "deeponet",
+      "mlp",
+      "soft_pinn"
+    ],
+    "surrogate_identification": {
+      "worst_model": "soft_pinn",
+      "worst_max_relative_error_pct": 3932.976531982422,
+      "best_model": "fno",
+      "best_max_relative_error_pct": 87.16719647248586
+    },
+    "reading": "Of the 6 trained models probed, 6 reach a stable positive fixed point of the driven map, but only 3 of them do so with a traction the engine could have: 3 fold back only after accelerating past 2.5 px/frame, which is an extrapolation artifact rather than a bound (deeponet, mlp, soft_pinn), 0 sit at a clamp their own shell wrote inside the observed support, and 0 show no crossing at all. A learned model having a plateau is therefore not evidence that it contains the engine's ceiling - the plateau's level, and the acceleration needed to reach it, are what decide that.",
+    "surrogate_reading": "Identifying the constants through a learned surrogate instead of the recording moves the worst-case relative error to 3933.0% (soft_pinn) and the best case to 87.2% (fno), against the direct fit's own worst case of 84.1%: the extra error is the surrogate's bias, and it is strictly additive because the exact forward model is already available and differentiable."
+  }
+}

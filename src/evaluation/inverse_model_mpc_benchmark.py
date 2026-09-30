@@ -55,6 +55,11 @@ from src.inverse.symbolic_regression import (
     fit_law_bank,
 )
 from src.models.analytical_kinematics import AnalyticalKinematicsDynamics
+from src.models.deeponet import (
+    DeepONetDynamics,
+    PhysicsConstrainedDeepONetDynamics,
+)
+from src.models.fno import FNODynamics
 from src.models.inverse_world_models import (
     IdentifiedKinematicsDynamics,
     SymbolicKinematicsDynamics,
@@ -78,6 +83,23 @@ ARTIFACT_NAME = "inverse_model_mpc_metrics.json"
 FIGURE_NAME = "inverse_model_mpc_progress.png"
 # The published closed-loop budget (src/evaluation/mbrl_mpc_benchmark.py, README 10.6),
 # copied so these rows are comparable with the master table of Section 10.27.
+# label -> (checkpoint, factory). The hyperparameters repeat 10.41/10.42 exactly, so these
+# are the published models and not fresh fits.
+OPERATOR_CHECKPOINTS: Dict[str, tuple] = {
+    "learned_physics_constrained_deeponet_10_42": (
+        "operator_physicsconstrained_deeponet_best.pt",
+        lambda: PhysicsConstrainedDeepONetDynamics(state_dim=8, action_dim=6, latent_dim=64),
+    ),
+    "learned_fno_10_42": (
+        "operator_fno_best.pt",
+        lambda: FNODynamics(state_dim=8, action_dim=6, width=32, modes=6, n_layers=2),
+    ),
+    "learned_deeponet_10_41": (
+        "deeponet_best.pt",
+        lambda: DeepONetDynamics(state_dim=8, action_dim=6, latent_dim=64),
+    ),
+}
+
 OBJECTIVE_WEIGHTS = {
     "weight_progress": 2.0,
     "weight_velocity": 0.5,
@@ -143,6 +165,20 @@ def build_world_models(
         models["learned_hard_residual_pinn"] = pinn
     else:
         logger.warning("%s missing; the learned reference row is omitted.", pinn_ckpt)
+
+    # The learned operators of 10.41/10.42, driven here to test the prediction that section
+    # 10.42.3 states as a hazard: the FNO is the most accurate physics-free single-step model
+    # in the repository and the least kinematically consistent, so if accuracy were what a
+    # planner needs it should win, and if the violation rate is what it needs it should lose.
+    for label, (checkpoint, factory) in OPERATOR_CHECKPOINTS.items():
+        path = os.path.join("results", "checkpoints", checkpoint)
+        if not os.path.isfile(path):
+            logger.warning("%s missing; the %s row is omitted.", path, label)
+            continue
+        operator = factory().to(device)
+        operator.load_state_dict(torch.load(path, map_location=device, weights_only=True))
+        operator.eval()
+        models[label] = operator
     diagnostics = {
         "identified_theta": {
             k: float(v)
