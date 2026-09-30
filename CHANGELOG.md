@@ -411,6 +411,14 @@ tilemap world models, DAgger, distillation, cross-stage generalization).
   unified into `SnesLibretroEmulator.start_episode()`.
 - The Dyna-PPO row of the Section 10.27 master table was corrected: it had been pasted
   from the MPC row (164.75 px) instead of the recorded 115.00 px.
+- The Section 10.46 probe table reported the Physics-Constrained DeepONet ceiling as
+  $25.50$ px/frame where `results/learned_structure_probe_metrics.json` measures $25.4946$.
+  The cell was transcribed one rounding too high, and the quote gate had no row for it -
+  every other cell of that table was reached by a neighbouring claim but not this one.
+  Corrected in the prose and the table; the gate now covers all six ceilings, all six
+  traction gains, the four uncovered surrogate-error rows and one tier separation, so a
+  re-typed cell cannot survive again. An audit of every numeric cell in the four newest
+  section tables (10.43.9, 10.44, 10.45, 10.46) against their artifacts found no others.
 - Jump-impulse non-identifiability from single transitions is reported as a negative
   result (Section 10.37.1) rather than fitted away; Yoshi's Island 2 capture is reported
   as blocked with its diagnostics artifact (Section 10.36), not a fabricated state.

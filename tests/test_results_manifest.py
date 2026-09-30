@@ -232,6 +232,46 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
     ),
 ]
 
+# The 10.46 probe table is transcribed cell by cell from six models x three columns, and
+# one of those cells was pasted one rounding too high (25.50 for a measured 25.4946).
+# Every cell of both tables therefore gets its own row here: the artifact is the only
+# place the value can come from.
+for _model in ("mlp", "soft_pinn", "hard_pinn", "deeponet", "physics_constrained_deeponet", "fno"):
+    QUOTED_HEADLINES.append(
+        (
+            "learned_structure_probe_metrics.json",
+            ["structural_probes", _model, "ceiling", "ceiling_like_fixed_point"],
+            "| {:.2f} | $",
+        )
+    )
+    QUOTED_HEADLINES.append(
+        (
+            "learned_structure_probe_metrics.json",
+            ["structural_probes", _model, "acceleration_gain_px_per_frame"],
+            "| {:.2f} |",
+        )
+    )
+for _model in ("mlp", "hard_pinn", "physics_constrained_deeponet", "deeponet"):
+    QUOTED_HEADLINES.append(
+        (
+            "learned_structure_probe_metrics.json",
+            ["surrogate_identification", "per_surrogate", _model, "max_relative_error_pct"],
+            "| {:.1f}% |",
+        )
+    )
+QUOTED_HEADLINES.append(
+    (
+        "learned_structure_probe_metrics.json",
+        [
+            "structural_probes",
+            "physics_constrained_deeponet",
+            "gravity_gate",
+            "tier_separation",
+        ],
+        "${:+.2f}$ | no |",
+    )
+)
+
 
 def _manifest_text() -> str:
     if not MANIFEST.is_file():
