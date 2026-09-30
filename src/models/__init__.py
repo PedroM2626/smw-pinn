@@ -10,6 +10,7 @@ from src.models.cbf_projection import (
     smw_barrier_affine,
 )
 from src.models.deeponet import DeepONetDynamics, PhysicsConstrainedDeepONetDynamics
+from src.models.effective_velocity_dynamics import EffectiveVelocityDynamics
 from src.models.fno import FNODynamics
 from src.models.inverse_world_models import (
     IdentifiedKinematicsDynamics,
@@ -53,6 +54,7 @@ __all__ = [
     "FNODynamics",
     "ResidualDynamics",
     "ProjectedDynamics",
+    "EffectiveVelocityDynamics",
     "SoftPINNDynamics",
     "HardResidualPINNDynamics",
     "GravityIdentifiedPINNDynamics",

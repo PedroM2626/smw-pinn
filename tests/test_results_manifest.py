@@ -230,6 +230,31 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
         ["surrogate_identification", "per_surrogate", "soft_pinn", "max_relative_error_pct"],
         "| {:.1f}% | 23.79 |",
     ),
+    (
+        "effective_velocity_metrics.json",
+        ["console_reference", "x_effective_exact_rate"],
+        "{:.1%} of frames.",
+    ),
+    (
+        "effective_velocity_metrics.json",
+        ["console_reference", "x_next_residual_median_px"],
+        "{} px, one sub-pixel",
+    ),
+    (
+        "effective_velocity_metrics.json",
+        ["verdict", "carried_position_error_spread_px"],
+        "{:.6f} px across families",
+    ),
+    (
+        "physics_claim_audit_metrics.json",
+        ["telemetry", "ground_boundary_condition", "claimed_rate_vy_next_exactly_zero"],
+        "{:.2%} of 2,943",
+    ),
+    (
+        "physics_claim_audit_metrics.json",
+        ["telemetry", "speed_classes_observed", "rate_above_run_cap"],
+        "{:.4%} exceed the run cap of 48",
+    ),
 ]
 
 # The 10.46 probe table is transcribed cell by cell from six models x three columns, and
@@ -929,3 +954,117 @@ def test_readme_10_51_clip_rates_are_the_artifact() -> None:
         not in text
     ]
     assert not missing, "README 10.51 clip rates disagree with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_53_tables_are_generated_from_the_artifact() -> None:
+    """Every cell of the three 10.53 result tables is regenerated, not retyped."""
+    path = RESULTS / "effective_velocity_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.53 convention study has not been run")
+    from src.evaluation.effective_velocity_benchmark import (
+        render_convention_table,
+        render_ladder_table,
+        render_mechanism_table,
+    )
+
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    rows = (
+        render_convention_table(artifact)
+        + render_ladder_table(artifact)
+        + render_mechanism_table(artifact)
+    )
+    missing = [row for row in rows if row not in text]
+    assert not missing, "README 10.53 tables disagree with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_53_convention_contrasts_are_the_artifact() -> None:
+    """The paired single-axis table, including the significance of each row."""
+    path = RESULTS / "effective_velocity_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.53 convention study has not been run")
+    from src.evaluation.effective_velocity_benchmark import render_convention_contrast_table
+
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = [row for row in render_convention_contrast_table(artifact) if row not in text]
+    assert not missing, "README 10.53 contrasts disagree with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_53_invariance_and_parity_claims_are_derived() -> None:
+    """Two claims carry the section: the carried cells are one number, and ``next`` is 10.47."""
+    path = RESULTS / "effective_velocity_metrics.json"
+    grid = RESULTS / "operator_physics_injection_metrics.json"
+    if not (path.is_file() and grid.is_file()):
+        pytest.skip("the 10.53 study or its 10.47 reference has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    verdict = artifact["verdict"]
+    parity = artifact["next_mode_vs_published_grid"]
+    text = _readme()
+
+    assert verdict["n_carried_cells"] == 9
+    assert verdict["carried_position_error_spread_px"] == 0.0
+    position = f"{verdict['carried_position_error_px']:.4f} px"
+    spread = f"{verdict['carried_position_error_spread_px']:.6f} px"
+    assert position in text and spread in text, f"10.53 does not quote {position} / {spread}"
+    console = artifact["console_reference"]["x_carried_residual_mean_px"]
+    assert f"{console:.4f} px" in text, "the console's own residual is not quoted"
+
+    assert parity["available"] and parity["identical"]
+    assert len(parity["per_cell"]) == 9
+    for cell, block in parity["per_cell"].items():
+        assert block["n_seeds_compared"] == 5, f"parity for {cell} is not five-seed"
+    assert r"reproduces 10.47's `residual` artifact to $0.0$ px" in text
+
+
+def test_readme_10_53_closed_loop_is_the_artifact() -> None:
+    """The console rows and the within-study contrasts of the control table."""
+    path = RESULTS / "effective_velocity_mpc_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.53 closed loop has not been run")
+    from src.evaluation.physics_injection_mpc_benchmark import (
+        render_control_table,
+        render_convention_contrasts,
+    )
+
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    rows = render_control_table(artifact) + render_convention_contrasts(artifact)
+    missing = [row for row in rows if row not in text]
+    assert not missing, "README 10.53 closed loop disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+
+    per_model = artifact["multi_seed"]["per_model"]
+    away = [
+        block["mean_difference_px"]
+        for key, block in artifact["within_study_contrasts_px"].items()
+        if "next_none -> " in key
+    ]
+    assert len(away) == 6 and all(value > 0 for value in away)
+    assert rf"from +{min(away):.2f} px to +{max(away):.2f} px" in text
+    deaths = {name: block["pit_or_death"] for name, block in per_model.items()}
+    assert deaths["mlp_offset_none"] == 0 and deaths["fno_offset_none"] == 0
+    assert deaths["published_hard_pinn_10_27"] == 3
+
+
+def test_readme_10_54_physics_claim_audit_table_is_generated() -> None:
+    """Section 4's audit table, and the list of claims the telemetry does not satisfy."""
+    from src.evaluation.physics_claim_audit import render_audit_table
+
+    path = RESULTS / "physics_claim_audit_metrics.json"
+    if not path.is_file():
+        pytest.skip("the physics-claim audit has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = [row for row in render_audit_table(artifact) if row not in text]
+    assert not missing, "README 10.54 audit table disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+    refuted = artifact["verdict"]["claims_the_telemetry_does_not_satisfy"]
+    assert len(refuted) == 4
+    for claim in refuted:
+        assert f"`{claim}`" in text, f"the audit refutes {claim} but 10.54 does not say so"
+    for name, block in artifact["claims"].items():
+        sites = f"{len(block['sites_found'])}/{block['declared_sites']}"
+        assert rf"| {sites} |" in text, f"the audit's site count for {name} is not quoted"

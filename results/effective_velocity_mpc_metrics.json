@@ -1,0 +1,811 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T22:48:45+00:00",
+    "git_sha": "d61bf591c33802bd8d2bebddcf7a5deeea241bc1",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.physics_injection_mpc_benchmark --seeds 42,43,44,45,46 --study effective",
+    "controllers": [
+      "established_wram_engine_rules",
+      "published_pc_deeponet_10_42",
+      "published_hard_pinn_10_27",
+      "mlp_next_none",
+      "mlp_carried_none",
+      "mlp_offset_none",
+      "deeponet_next_none",
+      "deeponet_carried_none",
+      "deeponet_offset_none",
+      "fno_next_none",
+      "fno_carried_none",
+      "fno_offset_none"
+    ]
+  },
+  "study": "Closed-loop control of the 10.53 integration-convention arms - each family predicting increments with nothing but the data term, and position advanced either by the network's own next velocity, by the velocity the frame carries, or by a predicted correction to it - so the console's integration convention is judged by a planner rather than by a rollout.",
+  "configuration": {
+    "frames_budget": 300,
+    "horizon": 15,
+    "num_candidates": 256,
+    "cem_iterations": 3,
+    "objective_weights": {
+      "weight_progress": 2.0,
+      "weight_velocity": 0.5,
+      "pit_penalty": 1000.0,
+      "death_y": 450.0
+    },
+    "protocol_source": "inverse_model_mpc_benchmark.py (README 10.44)",
+    "seed": 42,
+    "cem_seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ]
+  },
+  "per_controller": {
+    "established_wram_engine_rules": {
+      "progress_px": 605.0,
+      "frames_survived": 300,
+      "control_fps": 15.38,
+      "termination": "timeout",
+      "action_sequence": "LRjrwwwjwjrjrRrRrRRRrRrRrRrRrRrrrrrRrjrRRrRRRRrRrrRRrrrrRrrRrRrRrrRRRRRRrwRRRRRRRRRRrRrRRRRrRRRrRrrRrrRRRrrrrrrRrRRrRrRrRRrRwrRrRrrRRrRRrrrRRrRRRrRRrrrRRrRrRRRrRRRRrRRrRRrRrrrRrRRrrrRrrrrRrRRrRRRRrrrRRRrrRRrRRrRjRRwrRwRjrRrwRRrrRrrrrRRRRRRRRRRrRRrrRrrrrrRrRRRRrrrrrRrRrRrrRrrrRRRRRrrrRRRRrrrRRRRrrrrr"
+    },
+    "published_pc_deeponet_10_42": {
+      "progress_px": 641.81,
+      "frames_survived": 300,
+      "control_fps": 27.39,
+      "termination": "timeout",
+      "action_sequence": "rRrrrrrrrrrRRrRRrRrrrrrrRRrrrRRrrRRrrRRjrrRrrRrrRRrrRrRrRrRrrRRRRRrRrRRRRrrrrRrrrRrrRrjrrRrRrrrRrRRrRrRrrrrrrRrRrRrRrrrrrrwRrrrRrrrrrrRrrRrRrrrrRrrRrRrRrrrrrRrRjrRjrrrRrRRRrRRRrRRRrRrrRrRwrrrRRRrRrrrRjjrRRrrRrrrrrrRrrrrrrRrrrrrRRrrrrrrrRRrRjRrrRrrRrrrrrrrrrRRRrrrrrRrrrrrrrrrRrrrRrrRrRRRrRrrwwrrRrRrR"
+    },
+    "published_hard_pinn_10_27": {
+      "progress_px": 573.94,
+      "frames_survived": 300,
+      "control_fps": 40.06,
+      "termination": "timeout",
+      "action_sequence": "RRrwwrrrRwr.RrjrrRRrrrrrrrrrrrrrrrrrRrrrrrr.rwrrrrrrRRRRrrLrrrrrrrrrLLrrrrrrrjRRRrrrrrrrRrrrLr.wLrrrrwrrRRrrrrrrrrrrrrrrrjrrLrLLrw.wRrrrRRRRRrrrrrrrrrrRrrrrRrrLLrwrLrRrrrrRrrrrrrrrrrrrrrrRrRrr..rrLrrw.rrLRRrrrrrrrrrrrRrRrrRRRrRRRrRRRrrrrRRRRRrrRRRrrrrrrrrrrrrrrrjrrrrrrLrLrrrrrrrrrrrrrrrRrrrrrrRRrrrr"
+    },
+    "mlp_next_none": {
+      "progress_px": 634.06,
+      "frames_survived": 300,
+      "control_fps": 38.76,
+      "termination": "timeout",
+      "action_sequence": "wrrrrRR.rrrr.jRw.Rw.RrrRrrRrRrrrrrrrRrurrr.rrrrrrrrrrrRRrRrR.rrrrRrrrrr.rr..rrjjjRRRrrrrrrrurR.rrrRrrrrRrrr.jjjRRRRRrrrrrrrrrrrrrjrRrrRrRrrr.r.wrrrRRRRRRrrrrrrRrrrRrrrRRrrrrrrRrwrrrrrrRRRRrrrrrrrrrrrrRRrRrRRrrrrrr.RrrrrrrRRRrrrrrrrrrrrrrrrRRrrrrrrr.rrrRrrrjjjjjjRRRRrrrrrrrrrRRRRrrrrrrRRRrRrrrrrrjurR"
+    },
+    "mlp_carried_none": {
+      "progress_px": 592.81,
+      "frames_survived": 300,
+      "control_fps": 36.9,
+      "termination": "timeout",
+      "action_sequence": "rRrrRrR.rRrRwrRwwrRRRrrrrRRrrrrrrrrrrlrrlrlrrlrrlrlrrlrrlrlruw.rrrr.uRLrrrrrrjjjRRRRrrrrrrrrrrrrurRr.rrrrrrwrrrrjjjjjjRRRrrRrrrrrrrrrrrrrrrrrRRrrr.rrrrrrrrRrrjjjjjjRRrrRrrrrrRRrRrrr.rrrrr.r.rrrjjjjjjuRRrrrrrrrrrrrrRRrRrRrrrrRrrjrrrrrjjujjRRRRrrrrrrrrrrrjrrrurr.rrrR..rrrRjjjjjRjrrrrrrrrRRrRrRrrrrrRrR"
+    },
+    "mlp_offset_none": {
+      "progress_px": 643.06,
+      "frames_survived": 300,
+      "control_fps": 38.62,
+      "termination": "timeout",
+      "action_sequence": "RrRrRrrRrrrRRrrRrRRrrrRrrRrRRrrrrRRRRRrrRRRRRrrrrrrRrrrrrrrrrRrRrrrrrrrRrRrrrRrRRrRRRRrrrrRRrrrrrrrrrRrRRrrrrRrrrRrrrrRrrRRrrrrrrrrRrrrrrrrrrrrRrrrrrrrrrRrrrRRRRrrrrrrRRRrrrrrRrrrrrrrrRRRrRrrrrrrrRRrrRRrRrRrRRrrrrRRrrrrrrRRrRrrrrrRRrrRrrRRrRRrrrrRrRrrrRrrrrrrRrrrrRRRrrrrrrRrrRrrrRRrRrRRRrrrRRrrrRrRr"
+    },
+    "deeponet_next_none": {
+      "progress_px": 643.0,
+      "frames_survived": 300,
+      "control_fps": 27.75,
+      "termination": "timeout",
+      "action_sequence": "rRrrrrrrRrrRRrRRrrrRrRrrrRRRRrRRrrrrRrrrrrRrrRrrRrrRRrRrRRRRrrRRRrrRrrRRRrRrrrrrrrRrrRRRrRrRrrRrRRrrrrrrrRrRrRrRRRRrRRRrrRrrrRrrrRRrRrRrRrrrrRRRRrRRRRRRrRrRRRRR.rrRrRrrRjrrRrRRrRrrrrrrRRRRrrrrrRrRrRrRRrrrrRRrRrrrrRRRrrrRrRRRRRrRRrrrRRRrrRrrrRrrrrRrrwrrRrrRrrrRrRRrrRrRRrrrrrrRrrRRRrrRrrRRrrRRrrrRRrrr"
+    },
+    "deeponet_carried_none": {
+      "progress_px": 643.06,
+      "frames_survived": 300,
+      "control_fps": 27.12,
+      "termination": "timeout",
+      "action_sequence": "RrrrRRrrRrrRRRrRrRRRRRRRRRrRRRrrRRRrRrrRRRrrrRRrRrrrrRrrRRrRrrRrrrRRRRRRrrRRRRrRrRRrRRrrrrRrRRRrRrrRrRrRRrrRrRRRRRRRrRRrRrRRrrRRrRRRRrjrRRRrrrRRrRRRrrrrRRRRRRRrrrRRRRRRRRRrrrRRrRRrrRRrRrRRRrRrRrrRRRrrRRRRRRrrRRrRRRrrrrrrRRrRRRrrRrRRRRrRrrrrrjrrrRrrrrRrrrrRrRRrRRrrRrrrrRrrrrrRRRRrRRRRrrrRRRrrrrRrrrrR"
+    },
+    "deeponet_offset_none": {
+      "progress_px": 641.25,
+      "frames_survived": 300,
+      "control_fps": 27.72,
+      "termination": "timeout",
+      "action_sequence": "rrrrRRRRRrrrRrrRrwRrrRrRRRrRRRrrRrRRRrRRRrRRrRRrRRrrrwrrrRrRrRRRrRrRRrRRrRRRrRrRRrRrRRrRrrrrRRrRRrrrrrRRrRrRRRrRRRRrrRRRRrrrrRRRRRrrRrrrwrRuwRrrRRRRRRrRrRRRRrRrRrRRrRrRRRrRrrRRrRrRrrjrrrjRrRRRrRRRRRrrrRRRRRrRRrRrrRRRrRjrrRRRRrwrjRrrRRRRRRRRrRrrrrRRrRrRRrRrRRRRRRRrrRRRrRrrrRrRRurRrRRjrjRRRRRRRRrRRrRr"
+    },
+    "fno_next_none": {
+      "progress_px": -7.5,
+      "frames_survived": 300,
+      "control_fps": 15.24,
+      "termination": "timeout",
+      "action_sequence": "uLLLLrlwwwww.luuLLlllLLllllljrrLrRrrrrrww.LllLlLlLlLlllljllwwwwwww.jrrLLLrrrw....uuLLLlLLlLLllllwjLrRRLrRrrrwwj.LllLLllLLLllllljjjwwjLRrLrrrrrwu.lLu.lLLLlLlLlllljrLRLrRLRrrrwwu.uLlLLLLLLllllljlllwwjLRrLRrrrrrw..luLLlLLLLllLlllljRLrrRLrRRrrwwwuullllLLlllllllljjllwwwwjLLrrrrrRrwwuu.lLLLLlllLlLllljrRRL"
+    },
+    "fno_carried_none": {
+      "progress_px": 559.94,
+      "frames_survived": 300,
+      "control_fps": 15.11,
+      "termination": "timeout",
+      "action_sequence": "rrrrrrrLrrLrLrrrrLrrrLrrrrrLrLrrrrLrrrrrrrLrrrLrrrLrrrrrrrrrrrrrrrRrrrrrrrRrrRRrRrrrRRRRRRRRrrRRrrRrRjRRrrRRrRrRrRRRrrRRrRrRRRRRRRrRRrrRRrrRRRRrRRrRrRrRRRrrrrRrRrRrrrRRrrRrRRRrRRRRRRRrRrrRRRRrRRRRRrRrRRRRRRRrRrRrrrrrRRrRrRRrRrRrRRrrRrRRRRRRRrRrRRRRrRRrRrrRRRRrrRRRrRRrrrRRrRrRRRRRRRrrRRRRrRrRRRrRRrRR"
+    },
+    "fno_offset_none": {
+      "progress_px": 601.44,
+      "frames_survived": 300,
+      "control_fps": 15.07,
+      "termination": "timeout",
+      "action_sequence": "R.r..R..rw.wRRRRRRRjRjwwwjwwrwrwwrjwwwwwwjrrrRrRrRRjrrwrjRrRRrrrrrrrrrRwwRrrrrrrRrrRRRrRrRRRRRrrwjRrRRRrRRrRrRLRRrRrwRrjRRRRRrrRRRrRRrRRRRRRwRRrRRrrrRRRRRRRRRRRrRLRrrRRRRRRRrRRrRRRRrrwjrRrrRRRrRRRrrrjRRRRRRwRLRrrRRrrrrjrjwRRRrrjRjRRrjRrRRrrRRrrRrjRRRrRLrrRrrrRrRRRRRjrrrRrRRRRRRrrrRrrwRRrrRrrwrrjLrrR"
+    }
+  },
+  "per_seed": {
+    "42": {
+      "established_wram_engine_rules": {
+        "progress_px": 605.0,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px": 641.81,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px": 573.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_next_none": {
+        "progress_px": 634.06,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_carried_none": {
+        "progress_px": 592.81,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_offset_none": {
+        "progress_px": 643.06,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_next_none": {
+        "progress_px": 643.0,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_carried_none": {
+        "progress_px": 643.06,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_offset_none": {
+        "progress_px": 641.25,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_next_none": {
+        "progress_px": -7.5,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_carried_none": {
+        "progress_px": 559.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_offset_none": {
+        "progress_px": 601.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      }
+    },
+    "43": {
+      "established_wram_engine_rules": {
+        "progress_px": 601.5,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px": 642.31,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px": 113.56,
+        "frames_survived": 177,
+        "termination": "pit/death"
+      },
+      "mlp_next_none": {
+        "progress_px": 589.69,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_carried_none": {
+        "progress_px": 630.25,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_offset_none": {
+        "progress_px": 602.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_next_none": {
+        "progress_px": 610.19,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_carried_none": {
+        "progress_px": 642.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_offset_none": {
+        "progress_px": 601.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_next_none": {
+        "progress_px": -7.25,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_carried_none": {
+        "progress_px": 98.44,
+        "frames_survived": 205,
+        "termination": "pit/death"
+      },
+      "fno_offset_none": {
+        "progress_px": 600.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      }
+    },
+    "44": {
+      "established_wram_engine_rules": {
+        "progress_px": 609.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px": 642.12,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px": 579.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_next_none": {
+        "progress_px": 575.19,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_carried_none": {
+        "progress_px": 637.0,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_offset_none": {
+        "progress_px": 610.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_next_none": {
+        "progress_px": 641.56,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_carried_none": {
+        "progress_px": 642.38,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_offset_none": {
+        "progress_px": 642.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_next_none": {
+        "progress_px": -3.31,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_carried_none": {
+        "progress_px": 590.38,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_offset_none": {
+        "progress_px": 606.94,
+        "frames_survived": 300,
+        "termination": "timeout"
+      }
+    },
+    "45": {
+      "established_wram_engine_rules": {
+        "progress_px": 639.69,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px": 641.56,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px": 114.06,
+        "frames_survived": 173,
+        "termination": "pit/death"
+      },
+      "mlp_next_none": {
+        "progress_px": 580.81,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_carried_none": {
+        "progress_px": 631.88,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "mlp_offset_none": {
+        "progress_px": 616.81,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_next_none": {
+        "progress_px": 610.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_carried_none": {
+        "progress_px": 642.25,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_offset_none": {
+        "progress_px": 642.81,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_next_none": {
+        "progress_px": -0.88,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_carried_none": {
+        "progress_px": 610.38,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_offset_none": {
+        "progress_px": 606.69,
+        "frames_survived": 300,
+        "termination": "timeout"
+      }
+    },
+    "46": {
+      "established_wram_engine_rules": {
+        "progress_px": 643.38,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px": 610.25,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px": 115.0,
+        "frames_survived": 173,
+        "termination": "pit/death"
+      },
+      "mlp_next_none": {
+        "progress_px": 114.44,
+        "frames_survived": 173,
+        "termination": "pit/death"
+      },
+      "mlp_carried_none": {
+        "progress_px": 113.12,
+        "frames_survived": 174,
+        "termination": "pit/death"
+      },
+      "mlp_offset_none": {
+        "progress_px": 641.5,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_next_none": {
+        "progress_px": 610.12,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_carried_none": {
+        "progress_px": 616.69,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "deeponet_offset_none": {
+        "progress_px": 641.44,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_next_none": {
+        "progress_px": -2.31,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_carried_none": {
+        "progress_px": 484.31,
+        "frames_survived": 300,
+        "termination": "timeout"
+      },
+      "fno_offset_none": {
+        "progress_px": 600.88,
+        "frames_survived": 300,
+        "termination": "timeout"
+      }
+    }
+  },
+  "agreement_with_established_physics": {
+    "established_wram_engine_rules": {
+      "first_action_agreement": 1.0,
+      "sequence_agreement": 1.0
+    },
+    "published_pc_deeponet_10_42": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4567
+    },
+    "published_hard_pinn_10_27": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4333
+    },
+    "mlp_next_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.3967
+    },
+    "mlp_carried_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.3967
+    },
+    "mlp_offset_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.5133
+    },
+    "deeponet_next_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4767
+    },
+    "deeponet_carried_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.5367
+    },
+    "deeponet_offset_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.5267
+    },
+    "fno_next_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.1
+    },
+    "fno_carried_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4933
+    },
+    "fno_offset_none": {
+      "first_action_agreement": 0.0,
+      "sequence_agreement": 0.4
+    }
+  },
+  "multi_seed": {
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "per_model": {
+      "established_wram_engine_rules": {
+        "progress_px_mean": 619.902,
+        "progress_px_std": 20.017030748839854,
+        "progress_px_min": 601.5,
+        "progress_px_max": 643.38,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": null
+      },
+      "published_pc_deeponet_10_42": {
+        "progress_px_mean": 635.6099999999999,
+        "progress_px_std": 14.179582151812497,
+        "progress_px_min": 610.25,
+        "progress_px_max": 642.31,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 15.707999999999947,
+          "difference_std_px": 31.31841343363356,
+          "wilcoxon_p": 0.3125,
+          "ttest_p": 0.32484277971254566,
+          "cohen_dz": 0.5015579742979818,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "published_hard_pinn_10_27": {
+        "progress_px_mean": 299.2,
+        "progress_px_std": 253.32054515968503,
+        "progress_px_min": 113.56,
+        "progress_px_max": 579.44,
+        "frames_survived_mean": 224.6,
+        "budget_reached_rate": 0.4,
+        "pit_or_death": 3,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -320.70200000000006,
+          "difference_std_px": 265.14329827472545,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.05383622727361548,
+          "cohen_dz": -1.2095421686566938,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "mlp_next_none": {
+        "progress_px_mean": 498.838,
+        "progress_px_std": 216.13070945610667,
+        "progress_px_min": 114.44,
+        "progress_px_max": 634.06,
+        "frames_survived_mean": 274.6,
+        "budget_reached_rate": 0.8,
+        "pit_or_death": 1,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -121.06400000000004,
+          "difference_std_px": 230.30058603920227,
+          "wilcoxon_p": 0.1875,
+          "ttest_p": 0.30500305640426933,
+          "cohen_dz": -0.5256782107336551,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "mlp_carried_none": {
+        "progress_px_mean": 521.012,
+        "progress_px_std": 228.6966914277511,
+        "progress_px_min": 113.12,
+        "progress_px_max": 637.0,
+        "frames_survived_mean": 274.8,
+        "budget_reached_rate": 0.8,
+        "pit_or_death": 1,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -98.89000000000003,
+          "difference_std_px": 241.89248923850442,
+          "wilcoxon_p": 1.0,
+          "ttest_p": 0.41235944454402923,
+          "cohen_dz": -0.4088179848465453,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "mlp_offset_none": {
+        "progress_px_mean": 622.95,
+        "progress_px_std": 18.324262604536063,
+        "progress_px_min": 602.94,
+        "progress_px_max": 643.06,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 3.047999999999979,
+          "difference_std_px": 21.974214889274208,
+          "wilcoxon_p": 1.0,
+          "ttest_p": 0.7719268762300951,
+          "cohen_dz": 0.138708027356542,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "deeponet_next_none": {
+        "progress_px_mean": 623.062,
+        "progress_px_std": 17.5513423988024,
+        "progress_px_min": 610.12,
+        "progress_px_max": 643.0,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 3.159999999999991,
+          "difference_std_px": 33.28363937432321,
+          "wilcoxon_p": 0.8125,
+          "ttest_p": 0.8422557290332356,
+          "cohen_dz": 0.09494154063085376,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "deeponet_carried_none": {
+        "progress_px_mean": 637.464,
+        "progress_px_std": 11.618236957473343,
+        "progress_px_min": 616.69,
+        "progress_px_max": 643.06,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 17.56199999999999,
+          "difference_std_px": 29.13323394338498,
+          "wilcoxon_p": 0.1875,
+          "ttest_p": 0.24895633429725825,
+          "cohen_dz": 0.6028167018508302,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "deeponet_offset_none": {
+        "progress_px_mean": 633.976,
+        "progress_px_std": 18.20443984307123,
+        "progress_px_min": 601.44,
+        "progress_px_max": 642.94,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": 14.074000000000002,
+          "difference_std_px": 18.882377498609642,
+          "wilcoxon_p": 0.3125,
+          "ttest_p": 0.17091094363655485,
+          "cohen_dz": 0.7453510555562353,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_next_none": {
+        "progress_px_mean": -4.249999999999999,
+        "progress_px_std": 2.9818869864567303,
+        "progress_px_min": -7.5,
+        "progress_px_max": -0.88,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -624.152,
+          "difference_std_px": 17.502003313906663,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 1.4823325279025047e-07,
+          "cohen_dz": -35.66174619016694,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_carried_none": {
+        "progress_px_mean": 468.69000000000005,
+        "progress_px_std": 212.45006566249867,
+        "progress_px_min": 98.44,
+        "progress_px_max": 610.38,
+        "frames_survived_mean": 281.0,
+        "budget_reached_rate": 0.8,
+        "pit_or_death": 1,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -151.212,
+          "difference_std_px": 204.52344430406993,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.17363148724526178,
+          "cohen_dz": -0.7393382236179705,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      },
+      "fno_offset_none": {
+        "progress_px_mean": 603.378,
+        "progress_px_std": 3.1463025919323258,
+        "progress_px_min": 600.88,
+        "progress_px_max": 606.94,
+        "frames_survived_mean": 300.0,
+        "budget_reached_rate": 1.0,
+        "pit_or_death": 0,
+        "paired_vs_established_rules": {
+          "n_pairs": 5,
+          "mean_difference_px": -16.52399999999998,
+          "difference_std_px": 19.697869935604732,
+          "wilcoxon_p": 0.0625,
+          "ttest_p": 0.13393356952810717,
+          "cohen_dz": -0.8388724290504199,
+          "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+        }
+      }
+    }
+  },
+  "within_study_contrasts_px": {
+    "mlp_next_none -> mlp_carried_none": {
+      "family": "mlp",
+      "n_pairs": 5,
+      "mean_difference_px": 22.17399999999999,
+      "difference_std_px": 42.77443196583678,
+      "wilcoxon_p": 0.4375,
+      "ttest_p": 0.3108732780346867,
+      "cohen_dz": 0.5183937922941908,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "mlp_next_none -> mlp_offset_none": {
+      "family": "mlp",
+      "n_pairs": 5,
+      "mean_difference_px": 124.112,
+      "difference_std_px": 225.5927890469906,
+      "wilcoxon_p": 0.0625,
+      "ttest_p": 0.2860263082628997,
+      "cohen_dz": 0.5501594289618348,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "mlp_carried_none -> mlp_offset_none": {
+      "family": "mlp",
+      "n_pairs": 5,
+      "mean_difference_px": 101.93800000000002,
+      "difference_std_px": 240.53694221470434,
+      "wilcoxon_p": 0.8125,
+      "ttest_p": 0.3969768169379832,
+      "cohen_dz": 0.42379353067941516,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "deeponet_next_none -> deeponet_carried_none": {
+      "family": "deeponet",
+      "n_pairs": 5,
+      "mean_difference_px": 14.401999999999997,
+      "difference_std_px": 16.516593777168445,
+      "wilcoxon_p": 0.0625,
+      "ttest_p": 0.12298715203078818,
+      "cohen_dz": 0.8719715574713996,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "deeponet_next_none -> deeponet_offset_none": {
+      "family": "deeponet",
+      "n_pairs": 5,
+      "mean_difference_px": 10.91400000000001,
+      "difference_std_px": 19.459648763531135,
+      "wilcoxon_p": 0.625,
+      "ttest_p": 0.2780926530633321,
+      "cohen_dz": 0.5608528772859291,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "deeponet_carried_none -> deeponet_offset_none": {
+      "family": "deeponet",
+      "n_pairs": 5,
+      "mean_difference_px": -3.487999999999988,
+      "difference_std_px": 23.863597172262192,
+      "wilcoxon_p": 1.0,
+      "ttest_p": 0.7601817570736238,
+      "cohen_dz": -0.14616404956978818,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "fno_next_none -> fno_carried_none": {
+      "family": "fno",
+      "n_pairs": 5,
+      "mean_difference_px": 472.94000000000005,
+      "difference_std_px": 210.77413254476934,
+      "wilcoxon_p": 0.0625,
+      "ttest_p": 0.007399214852471641,
+      "cohen_dz": 2.2438237286994673,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "fno_next_none -> fno_offset_none": {
+      "family": "fno",
+      "n_pairs": 5,
+      "mean_difference_px": 607.628,
+      "difference_std_px": 2.6744756495433233,
+      "wilcoxon_p": 0.0625,
+      "ttest_p": 9.007484070606406e-11,
+      "cohen_dz": 227.19518874802796,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    },
+    "fno_carried_none -> fno_offset_none": {
+      "family": "fno",
+      "n_pairs": 5,
+      "mean_difference_px": 134.68800000000002,
+      "difference_std_px": 210.59476956942686,
+      "wilcoxon_p": 0.125,
+      "ttest_p": 0.22591624491911003,
+      "cohen_dz": 0.6395600435631777,
+      "note": "Paired by CEM seed, so the proposal stream is controlled and only the world model varies. With five seeds the Wilcoxon floor is 2/2**5 = 0.0625, so the effect size is the load-bearing statistic, not the p-value."
+    }
+  }
+}

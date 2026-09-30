@@ -30,7 +30,7 @@ rather than of the model.
 """
 
 import math
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -44,14 +44,31 @@ MIN_VY = -80.0
 PUBLISHED_TOLERANCE_PX = 0.2
 TOLERANCE_AS_VELOCITY_JUMP = PUBLISHED_TOLERANCE_PX * SUBPIXELS_PER_PIXEL
 
+# A decade apart, and ending below the one sub-pixel/frame lag a next-velocity shell
+# leaves on an accelerating frame, so "exact by construction" and "inside the published
+# tolerance" separate (README 10.53).
+TOLERANCE_LADDER: Tuple[float, ...] = (0.2, 0.05, 0.01, 0.002)
 
-def published_predicate_rate(pred_traj: np.ndarray) -> float:
-    """Reproduce the 10.27 violation predicate: position vs the *previous* velocity."""
+
+def violation_rate_at_tolerance(pred_traj: np.ndarray, tolerance_px: float) -> float:
+    """The published predicate evaluated at an arbitrary tolerance.
+
+    Section 10.53 needs this because two models can both post 0.0000 at 0.2 px while one
+    of them is exact by construction and the other merely lands inside the tolerance: a
+    shell that advances position by its own *next* velocity leaves a residual of about one
+    sub-pixel per accelerating frame, which the published 0.2 px threshold happens not to
+    see. Tightening the threshold separates them.
+    """
     if pred_traj.shape[0] < 2:
         return 0.0
     dx = np.diff(pred_traj[:, 0])
     v_prev = pred_traj[:-1, 2]
-    return float(np.mean(np.abs(dx - v_prev / SUBPIXELS_PER_PIXEL) > PUBLISHED_TOLERANCE_PX))
+    return float(np.mean(np.abs(dx - v_prev / SUBPIXELS_PER_PIXEL) > tolerance_px))
+
+
+def published_predicate_rate(pred_traj: np.ndarray) -> float:
+    """Reproduce the 10.27 violation predicate: position vs the *previous* velocity."""
+    return violation_rate_at_tolerance(pred_traj, PUBLISHED_TOLERANCE_PX)
 
 
 def integration_residual(pred_traj: np.ndarray) -> Dict[str, float]:
@@ -72,6 +89,34 @@ def integration_residual(pred_traj: np.ndarray) -> Dict[str, float]:
         "integration_error_median_px": float(np.median(err)),
         "integration_error_p95_px": float(np.quantile(err, 0.95)),
     }
+
+
+def carried_integration_vs_published(
+    pred_traj: np.ndarray, tolerances: Tuple[float, ...] = TOLERANCE_LADDER
+) -> Dict[str, float]:
+    r"""Compare the published predicate with the same test written against $v_{t+1}$.
+
+    The repository's rollout predicate, and the violation rate 10.47 published with it,
+    measure $|(\hat x_{t+1} - \hat x_t) - \hat v_t / 16|$ - the position step against the
+    velocity the model carried *into* the step. Section 10.53 turns that convention into
+    the prediction target, so a model can satisfy the predicate with no kinematic penalty
+    at all, while the same model measured against its own next velocity looks different.
+    Reporting the two side by side, at a ladder of tolerances, is what separates "exact by
+    construction" from "inside the published tolerance".
+    """
+    out: Dict[str, float] = {}
+    if pred_traj.shape[0] < 2:
+        for tolerance in tolerances:
+            out[f"published_violation_at_{tolerance:g}px"] = 0.0
+            out[f"next_velocity_violation_at_{tolerance:g}px"] = 0.0
+        return out
+    dx = np.diff(pred_traj[:, 0])
+    carried = np.abs(dx - pred_traj[:-1, 2] / SUBPIXELS_PER_PIXEL)
+    following = np.abs(dx - pred_traj[1:, 2] / SUBPIXELS_PER_PIXEL)
+    for tolerance in tolerances:
+        out[f"published_violation_at_{tolerance:g}px"] = float(np.mean(carried > tolerance))
+        out[f"next_velocity_violation_at_{tolerance:g}px"] = float(np.mean(following > tolerance))
+    return out
 
 
 def velocity_jump_rate(pred_traj: np.ndarray) -> Dict[str, float]:

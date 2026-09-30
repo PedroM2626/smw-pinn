@@ -40,6 +40,7 @@ from src.evaluation.inverse_model_mpc_benchmark import (
     OBJECTIVE_WEIGHTS,
     _agreement,
     _multi_seed_summary,
+    _paired,
 )
 from src.evaluation.operator_physics_injection_benchmark import (
     MAX_VX,
@@ -177,6 +178,30 @@ def _projected(family: str) -> nn.Module:
     return build_projected(family)
 
 
+# The 10.53 arms: the same three families and the same unconstrained data term, with the
+# velocity that advances position switched from the frame's own prediction to the velocity
+# the console integrates with (and a version free to predict the difference). The published
+# ``next`` convention is flown alongside so the convention is the only difference between
+# rows of the same family, in the same run, against the same planner.
+EFFECTIVE_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = {}
+
+
+def _build_effective_arms() -> Dict[str, Tuple[str, Callable[[], nn.Module]]]:
+    """The nine unconstrained 10.53 cells: label -> (published checkpoint, factory)."""
+    from src.evaluation import effective_velocity_benchmark as eff
+
+    return {
+        f"{family.lower()}_{mode}_{eff.PUBLISHED_MECHANISM}": (
+            eff.checkpoint_name(eff.arm_label(family, mode, eff.PUBLISHED_MECHANISM)),
+            (lambda f=family, m=mode: eff.build_arm(f, m, eff.PUBLISHED_MECHANISM, 8, 6)),
+        )
+        for family in eff.FAMILIES
+        for mode in eff.MODES
+    }
+
+
+EFFECTIVE_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = _build_effective_arms()
+
 # study name -> (arms to fly, artifact to write, study description for the artifact)
 STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, str]] = {
     "grid": (
@@ -194,7 +219,87 @@ STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, st
         "networks with the engine's bounds projected onto their output - against the 10.42 "
         "shell, so the two ways of guaranteeing a velocity bound are compared by a planner.",
     ),
+    "effective": (
+        EFFECTIVE_ARMS,
+        "effective_velocity_mpc_metrics.json",
+        "Closed-loop control of the 10.53 integration-convention arms - each family predicting "
+        "increments with nothing but the data term, and position advanced either by the "
+        "network's own next velocity, by the velocity the frame carries, or by a predicted "
+        "correction to it - so the console's integration convention is judged by a planner "
+        "rather than by a rollout.",
+    ),
 }
+
+
+def _within_study_contrasts(
+    runs: Dict[int, Dict[str, Any]], arms: Dict[str, Tuple[str, Callable[[], nn.Module]]]
+) -> Dict[str, Any]:
+    """Paired differences over CEM seeds between the arms of one family.
+
+    The published summary pairs every controller against the hand-written engine rules,
+    which is the right reference for a headline but the wrong one for this study: the
+    10.53 rows differ only in the velocity that advances position, so the load-bearing
+    comparison is between rows of the same family in the same run.
+    """
+    from collections import defaultdict
+
+    by_family: Dict[str, List[str]] = defaultdict(list)
+    for key in arms:
+        by_family[key.split("_")[0]].append(key)
+
+    draws = sorted(runs)
+    out: Dict[str, Any] = {}
+    for family, keys in by_family.items():
+        if len(keys) < 2:
+            continue
+        for i, left in enumerate(keys):
+            for right in keys[i + 1 :]:
+                a = [float(runs[d][left]["progress_px"]) for d in draws]
+                b = [float(runs[d][right]["progress_px"]) for d in draws]
+                out[f"{left} -> {right}"] = {
+                    "family": family,
+                    **_paired(b, a),
+                }
+    return out
+
+
+def render_control_table(payload: Dict[str, Any]) -> List[str]:
+    r"""The README rows of one closed-loop study, generated from its artifact.
+
+    Kept next to the writer so the citation gate and the README are produced by the same
+    code: a re-run that moves a progress figure moves the table text, and the gate fails
+    until the README is regenerated. The last column is the paired comparison against the
+    hand-written engine rules, which is the reference every closed-loop section of this
+    repository has used since 10.44.
+    """
+    rows: List[str] = []
+    for name, block in payload["multi_seed"]["per_model"].items():
+        paired = block["paired_vs_established_rules"]
+        claim = (
+            "reference"
+            if paired is None
+            else (
+                rf"{paired['mean_difference_px']:+.2f} px, $d_z$ {paired['cohen_dz']:+.2f},"
+                rf" $p$ {paired['ttest_p']:.3f}"
+            )
+        )
+        rows.append(
+            rf"| `{name}` | {block['progress_px_mean']:.2f} $\pm$ {block['progress_px_std']:.2f}"
+            rf" | {block['progress_px_min']:.2f} | {block['progress_px_max']:.2f}"
+            f" | {block['frames_survived_mean']:.1f} | {block['pit_or_death']} | {claim} |"
+        )
+    return rows
+
+
+def render_convention_contrasts(payload: Dict[str, Any]) -> List[str]:
+    """Within-study pairs (same family, different convention), as README bullet rows."""
+    rows: List[str] = []
+    for key, block in payload.get("within_study_contrasts_px", {}).items():
+        rows.append(
+            rf"* `{key}`: {block['mean_difference_px']:+.2f} px"
+            rf" ($d_z$ {block['cohen_dz']:+.2f}, $p$ {block['ttest_p']:.3f})"
+        )
+    return rows
 
 
 def _load(
@@ -323,6 +428,17 @@ def run_physics_injection_closed_loop(
         emu.close()
 
     outcomes = runs[draws[0]]
+    per_seed = {
+        str(draw): {
+            name: {
+                "progress_px": row["progress_px"],
+                "frames_survived": row["frames_survived"],
+                "termination": row["termination"],
+            }
+            for name, row in runs[draw].items()
+        }
+        for draw in draws
+    }
     payload: Dict[str, Any] = {
         "study": study_text,
         "configuration": {
@@ -336,10 +452,12 @@ def run_physics_injection_closed_loop(
             "cem_seeds": draws,
         },
         "per_controller": outcomes,
+        "per_seed": per_seed,
         "agreement_with_established_physics": _agreement(outcomes, REFERENCE),
         "multi_seed": _multi_seed_summary(runs, REFERENCE, frames)
         if len(draws) > 1
         else {"available": False, "reason": "a single CEM seed was run"},
+        "within_study_contrasts_px": _within_study_contrasts(runs, arms) if len(draws) > 1 else {},
     }
 
     os.makedirs(output_dir, exist_ok=True)

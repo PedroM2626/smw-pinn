@@ -1,0 +1,219 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T22:52:12+00:00",
+    "git_sha": "d61bf591c33802bd8d2bebddcf7a5deeea241bc1",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.physics_claim_audit"
+  },
+  "study": "Every physics claim of README section 4 checked against the code that implements it and against the recorded transitions it describes.",
+  "protocol": {
+    "readme": "README.md",
+    "published_tolerance_px": 0.2,
+    "subpixels_per_pixel": 16.0,
+    "telemetry_dataset": "C:\\Users\\Acer\\Downloads\\mworld-experiment\\data\\raw\\smw_gameplay_dataset.npz",
+    "telemetry_scope": "training split of the canonical gameplay recording",
+    "emulator_required": false
+  },
+  "claims": {
+    "4.1_integration_identity_carried_velocity": {
+      "claim": "$$X_{t+1} = X_t + \\frac{v_{x, t}}{16.0}$$",
+      "readme_marker": "### 4.1 Fixed-Point Arithmetic",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 4,
+      "sites_found": [
+        "src/losses/physics_losses.py: expected_dx = vx_t / self.subpixels_per_pixel",
+        "src/evaluation/rollout_evaluator.py: curr_state[0, 2].item() / 16.0",
+        "src/evaluation/rollout_diagnostics.py: v_prev = pred_traj[:-1, 2]",
+        "src/models/effective_velocity_dynamics.py: used_vx, used_vy = vx_t + offset_vx, vy_t + offset_vy"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": "carried"
+    },
+    "4.1_violation_definition_next_velocity": {
+      "claim": "\\hat{X}_{t+1} \\ne X_t + \\frac{\\hat{v}_{x, t+1}}{16.0}",
+      "readme_marker": "### 4.1 Fixed-Point Arithmetic",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 2,
+      "sites_found": [
+        "src/models/residual_dynamics.py: hat_x = x_t + hat_vx / self.subpixels_per_pixel",
+        "src/models/output_projection.py: x = state[:, 0] + vx / self.subpixels_per_pixel"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": "next"
+    },
+    "4.2.1_jump_impulse_window": {
+      "claim": "v_{y, 0} \\in [-64, -80]",
+      "readme_marker": "### 4.2 Vertical Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 2,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: MIN_VY = -80.0",
+        "src/losses/physics_losses.py: min_vy: float = -80.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.2.3_4.2.4_gravity_tiers": {
+      "claim": "g_{\\text{held}} = +3.0",
+      "readme_marker": "### 4.2 Vertical Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 2,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: G_HOLD = 3.0",
+        "src/models/analytical_kinematics.py: G_FALL = 6.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.2.5_terminal_velocity": {
+      "claim": "v_{y} \\le v_{y, \\text{term}} = +64.0",
+      "readme_marker": "### 4.2 Vertical Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 3,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: TERMINAL_VY = 64.0",
+        "src/losses/physics_losses.py: terminal_vy: float = 64.0",
+        "src/evaluation/rollout_evaluator.py: hat_vy > 64.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.3.1_walk_speed": {
+      "claim": "|v_x| \\le 20",
+      "readme_marker": "### 4.3 Horizontal Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 1,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: VX_WALK = 20.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.3.2_run_speed": {
+      "claim": "|v_x| \\le 48",
+      "readme_marker": "### 4.3 Horizontal Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 1,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: VX_RUN = 48.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.3.3_sprint_speed": {
+      "claim": "|v_x| \\le 72",
+      "readme_marker": "### 4.3 Horizontal Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 5,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: VX_SPRINT = 72.0",
+        "src/models/residual_dynamics.py: max_vx: float = 72.0",
+        "src/models/output_projection.py: max_vx: float = 72.0",
+        "src/losses/physics_losses.py: max_vx: float = 72.0",
+        "src/evaluation/rollout_evaluator.py: abs(hat_vx) > 72.0"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    },
+    "4.3.5_ground_boundary_condition": {
+      "claim": "$$v_{y, t+1} = 0$$",
+      "readme_marker": "### 4.3 Horizontal Dynamics",
+      "claim_quoted_from_the_readme": true,
+      "declared_sites": 1,
+      "sites_found": [
+        "src/losses/physics_losses.py: stationary_ground_mask = (ground_contact > 0.5)"
+      ],
+      "sites_missing": [],
+      "implemented_by_every_declared_site": true,
+      "convention": null
+    }
+  },
+  "telemetry": {
+    "n_transitions": 6329,
+    "identity_vs_carried_velocity": {
+      "mean_abs_residual_px": 0.10980210143782589,
+      "median_abs_residual_px": 0.0,
+      "within_published_tolerance_rate": 0.9382208879759836,
+      "exact_to_half_a_subpixel_rate": 0.9382208879759836
+    },
+    "identity_vs_next_velocity": {
+      "mean_abs_residual_px": 0.17119608152946753,
+      "median_abs_residual_px": 0.0625,
+      "within_published_tolerance_rate": 0.9260546689840418,
+      "exact_to_half_a_subpixel_rate": 0.17901722231000158
+    },
+    "vertical_identity_vs_carried_velocity": {
+      "mean_abs_residual_px": 0.6193711486806762,
+      "median_abs_residual_px": 0.0,
+      "within_published_tolerance_rate": 0.758413651445726,
+      "exact_to_half_a_subpixel_rate": 0.758413651445726
+    },
+    "vertical_identity_vs_next_velocity": {
+      "mean_abs_residual_px": 0.754996839943119,
+      "median_abs_residual_px": 0.1875,
+      "within_published_tolerance_rate": 0.6566598198767578,
+      "exact_to_half_a_subpixel_rate": 0.3638805498498973
+    },
+    "speed_classes_observed": {
+      "max_abs_vx": 49.0,
+      "rate_above_walk_cap": 0.5488228788118186,
+      "rate_above_run_cap": 0.0006320113762047717,
+      "rate_above_sprint_cap": 0.0
+    },
+    "window_observed": {
+      "vy_min": -112.0,
+      "vy_max": 70.0,
+      "rate_above_terminal_velocity": 0.1336704060673092,
+      "rate_below_jump_window": 0.0739453310159583
+    },
+    "gravity_step_on_airborne_ascent": {
+      "n_frames": 1386,
+      "median_step_subpixels": 3.0,
+      "rate_at_3.0": 0.8650793650793651,
+      "rate_at_6.0": 0.07575757575757576
+    },
+    "ground_boundary_condition": {
+      "n_frames_claimed": 2943,
+      "claimed_rate_vy_next_exactly_zero": 0.0,
+      "claimed_median_abs_vy_next": 6.0,
+      "landed_this_frame_rate_vy_next_exactly_zero": 0.0,
+      "landed_this_frame_median_abs_vy_next": 6.0,
+      "claimed_rate_vy_current_exactly_zero": 0.0,
+      "claimed_median_abs_vy_current": 6.0
+    }
+  },
+  "verdict": {
+    "claims_audited": 9,
+    "claims_with_a_missing_implementation": [],
+    "claims_whose_readme_quote_was_not_found": [],
+    "claims_the_telemetry_does_not_satisfy": [
+      "4.1_violation_definition_next_velocity",
+      "4.2.1_jump_impulse_window",
+      "4.2.5_terminal_velocity",
+      "4.3.5_ground_boundary_condition"
+    ],
+    "contradictory_claim_pairs": [
+      "integration identity: 4.1_integration_identity_carried_velocity -> carried; 4.1_violation_definition_next_velocity -> next"
+    ],
+    "telemetry_prefers": "carried",
+    "carried_median_residual_px": 0.0,
+    "next_median_residual_px": 0.0625,
+    "reading": "9 of 9 claims are implemented by every file declared to implement them (none missing). Two of the claims describe the same integration identity with different velocities, and the repository implements both: the penalty and the published predicate advance position with the velocity the frame starts with, the hard shells with the velocity predicted for the next. The recorded transitions settle it - median residual 0.0000 px for the carried velocity against 0.0625 px for the next one, and 93.82% of frames integrate with the carried velocity exactly."
+  }
+}

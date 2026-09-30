@@ -11,6 +11,44 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **A prediction target the repository never had** (README Section 10.53):
+  `src/models/effective_velocity_dynamics.py` makes the velocity the engine *integrates
+  with* the thing a network predicts, in three modes that differ in one line - `next`
+  ($\hat x = x + \hat v_{t+1}/16$, the published shell, rebuilt so the axis can be flipped
+  inside one class), `carried` ($\hat x = x + v_t/16$, the convention 10.49 measured on the
+  console) and `offset` ($\hat x = x + (v_t + arepsilon_t)/16$, a free head for the frames
+  where the console leaves its own rule). `src/evaluation/effective_velocity_benchmark.py`
+  trains 3 families x 3 conventions x 3 mechanisms over five seeds and reports the published
+  predicate at a tolerance ladder (0.2 to 0.002 px) under both velocity conventions, with the
+  console scored on the same grid. The `next` mode reproduces 10.47's `residual` cells to
+  $0.0$ px of drift on all nine cells, so every contrast is the convention alone. The nine
+  `carried` cells share one held-out position error, 0.1056 px with a spread of 0.000000 px,
+  because no weight vector touches position there - better than the best learned position
+  head in 10.47's grid (0.1184 px) - and they hold the published violation predicate at
+  0.0000 down to 0.002 px with no clamp and no penalty, where the shells that publish 0.0000
+  at the tolerance are flagged on 0.9345-0.9578 of frames once the tolerance is tightened.
+  The composite penalty's kinematic term is identically zero on a carried graph (so part of
+  10.47's "soft" attribution moves to the bound and contact terms) and is what destroys the
+  offset head's gain on the graphs that have one (0.1065 px to 0.2119 px). On the console
+  `physics_injection_mpc_benchmark.py --study effective` flies the nine unconstrained arms
+  beside their published-convention twins: `fno_next_none` makes no progress
+  ($-4.25 \pm 2.98$ px) while `fno_carried_none` covers 468.69 px (+472.94 px, $d_z = +2.24$,
+  $p = 0.007$) and `fno_offset_none` covers 603.38 px (+607.63 px, $d_z = +227.20$); all six
+  contrasts that move away from `next` are positive.
+- **Section 4 audited against the code and the telemetry** (README Section 10.54):
+  `src/evaluation/physics_claim_audit.py` records, for each physics claim of Sections 4.1-4.3,
+  the README text itself, every file declared to implement it (verified by the source literal
+  that makes it that implementation, so a refactor invalidates the audit instead of silently
+  passing) and what the recorded transitions say. All nine claims are implemented by every
+  declared site; two of them are the same integration identity written with two different
+  velocities, and the audit reports that as a contradiction rather than picking a side; four
+  are not satisfied by the console's own data - the §4.1 next-velocity reading, the §4.2.1
+  jump window (7.39% of velocities below $-80$, min $-112.0$), the §4.2.5 terminal velocity
+  (13.37% above $+64$) and §4.3.5's non-penetration condition, which the telemetry satisfies
+  on 0.00% of the 2,943 frames it conditions on (median $|v_y| = 6.0$) - the condition
+  `GroundContactConsistencyLoss` penalises.
+
+
 - **The excluded cell, filled** (README Section 10.51): `src/models/output_projection.py`
   imposes the engine's velocity bounds as a post-hoc projection of a *state-output*
   network - clip the proposed velocities, re-derive the positions from the clipped
@@ -463,6 +501,10 @@ numbers* - those are reported here and in README Section 12, never applied silen
   (`pysr_skip_reason()`): a machine whose Julia depot will not start used to publish
   "the pysr package is not installed" into the artifact, which is a statement about the
   software that the observation does not support.
+- The closed-loop artifacts of `physics_injection_mpc_benchmark.py` paired every controller
+  against the hand-written engine rules and against nothing else, which is the wrong
+  reference for a study whose rows differ by one line of the graph. They now also publish the
+  per-seed outcomes and every within-family paired contrast (`within_study_contrasts_px`).
 
 - README Section 10.43.5 (self-correction, also recorded in Section 12): the identified
   model's horizontal-velocity residual was said to be "tile geometry and slope acceleration
@@ -534,6 +576,28 @@ the sample-efficiency and multi-seed studies, and the closed-loop MBRL line
 tilemap world models, DAgger, distillation, cross-stage generalization).
 
 ### Fixed (audited self-corrections, README Section 12)
+
+- README Section 10.54 (documentation correction, also recorded in Section 12): Section 4.1
+  states the integration identity with $v_{x,t}$ and defines a structural violation with
+  $\hat v_{x,t+1}$ two paragraphs later. Both readings are implemented in this repository -
+  the penalty and the rollout predicate read the first, every hard shell since 10.27
+  integrates with the second - and the telemetry decides in favour of the equation, so the
+  audit now publishes the pair as a measured contradiction instead of leaving the reader to
+  notice it. Two numbers are retracted along with it. (i) The kinematic-violation zeros that
+  Sections 8, 10.27, 10.42 and 10.47 publish as the signature of a hard shell are
+  inside-tolerance results: at 0.002 px the same arms are flagged on 0.9345-0.9578 of their
+  rollout frames, and a model with neither penalty nor clamp that integrates the way the
+  console does stays at exactly 0.0000 at every tolerance tried. (ii) Section 4.3.5's
+  non-penetration condition, which `GroundContactConsistencyLoss` enforces, is satisfied on
+  0.00% of the 2,943 grounded un-jumping frames in the training split (median $|v_y| = 6.0$
+  sub-pixels/frame) under all three ways of conditioning the stratum, so that penalty term
+  asks for something this recording does not show.
+- README Section 10.53 narrows Section 10.47's attribution of its own `soft` cells: on a
+  graph that integrates with the velocity the frame carries, the composite penalty's
+  kinematic term evaluates to exactly 0.0000, so whatever those cells measured came from the
+  bound and contact terms; on the `next` graphs the same term is not merely inactive but
+  contradicted (7.36 px$^2$ for the DeepONet, 7.54 for the FNO), because the penalty demands
+  the convention the shell refuses.
 
 - The Section 10.6 MPC numbers were re-recorded after the episode-preamble probe showed
   the committed savestate restores into engine mode `0x08`, not interactive `0x14`

@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -44,6 +44,8 @@ help:
 	@echo "plateau-provenance  Does a learned plateau follow the bound or the data support? (10.50)"
 	@echo "projection-cell  The state x hard output-projection cell, fitted and flown (10.51)"
 	@echo "gate-excitation  The held-jump gate measured on three recordings (README 10.52)"
+	@echo "effective-velocity  Predict the velocity the engine integrates with (10.53)"
+	@echo "physics-claims  Audit README section 4 against the code and the telemetry (10.53)"
 	@echo "record-jump        Record jump-excited WRAM telemetry (needs the console)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
@@ -171,6 +173,13 @@ projection-cell:
 gate-excitation:
 	$(PY) -m src.evaluation.gate_excitation_benchmark
 
+effective-velocity:
+	$(PY) -m src.evaluation.effective_velocity_benchmark
+	$(PY) -m src.evaluation.physics_injection_mpc_benchmark --study effective
+
+physics-claims:
+	$(PY) -m src.evaluation.physics_claim_audit
+
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
 
@@ -195,6 +204,8 @@ smoke-all:
 	$(PY) -m src.evaluation.plateau_provenance_benchmark --config $(CONFIG_DIR)/smoke_plateau_provenance.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.projection_cell_benchmark --config $(CONFIG_DIR)/smoke_projection_cell.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.gate_excitation_benchmark --config $(CONFIG_DIR)/smoke_gate_excitation.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.effective_velocity_benchmark --config $(CONFIG_DIR)/smoke_effective_velocity.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.physics_claim_audit --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 
