@@ -1017,6 +1017,24 @@ def test_readme_10_53_invariance_and_parity_claims_are_derived() -> None:
     assert r"reproduces 10.47's `residual` artifact to $0.0$ px" in text
 
 
+def test_readme_10_53_beats_the_published_grid_by_a_measured_margin() -> None:
+    """Finding 1 compares against 10.47's best position head; recompute the comparison."""
+    path = RESULTS / "effective_velocity_metrics.json"
+    grid = RESULTS / "operator_physics_injection_metrics.json"
+    if not (path.is_file() and grid.is_file()):
+        pytest.skip("the 10.53 study or its 10.47 reference has not been run")
+    summary = json.loads(path.read_text(encoding="utf-8"))["summary"]
+    carried = min(block["x_mae_px"]["mean"] for arm, block in summary.items() if "/carried/" in arm)
+    best_grid, best_arm = min(
+        (block["x_mae_px"]["mean"], arm)
+        for arm, block in json.loads(grid.read_text(encoding="utf-8"))["summary"].items()
+    )
+    text = _readme()
+    margin = (best_grid - carried) / best_grid * 100.0
+    assert rf"10.47's 17-arm grid is {best_grid:.4f} px (`{best_arm}`)" in text
+    assert rf"is {margin:.1f}% better than the best learned one" in text
+
+
 def test_readme_10_53_closed_loop_is_the_artifact() -> None:
     """The console rows and the within-study contrasts of the control table."""
     path = RESULTS / "effective_velocity_mpc_metrics.json"
