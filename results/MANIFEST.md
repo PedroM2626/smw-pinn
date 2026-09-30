@@ -104,6 +104,8 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `operator_physics_injection_metrics.json` | `src/evaluation/operator_physics_injection_benchmark.py` | no | 10.47 |
 | `physics_injection_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py` | yes | 10.47 |
 | `physics_injection_structure_probe_metrics.json` | `src/evaluation/learned_structure_probe_benchmark.py --registry grid` | no | 10.47 |
+| `kinematic_metric_decomposition_metrics.json` | `src/evaluation/kinematic_metric_decomposition_benchmark.py` | no | 10.48 |
+| `velocity_class_metrics.json` | `src/evaluation/velocity_class_benchmark.py` | no | 10.49 |
 
 ## Input freshness
 

@@ -90,6 +90,8 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.45 Does the Velocity Ceiling Become Measurable Under Targeted Excitation?](#1045-does-the-velocity-ceiling-become-measurable-under-targeted-excitation)
    * [10.46 Do Learned Dynamics Models Contain the Engine's Constraints?](#1046-do-learned-dynamics-models-contain-the-engines-constraints)
    * [10.47 Is It the Shell or the Parameterisation? The Physics-Injection Grid](#1047-is-it-the-shell-or-the-parameterisation-the-physics-injection-grid)
+   * [10.48 What the "Kinematic Violation" Figure Actually Measures](#1048-what-the-kinematic-violation-figure-actually-measures)
+   * [10.49 Which Documented Constant Does the Telemetry Actually Support?](#1049-which-documented-constant-does-the-telemetry-actually-support)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1894,7 +1896,7 @@ The section above was recorded on one seed, and this repository has already been
 4. **Survival, not speed, is where the variance lives.** The two rows that share a structure - seven constants, closed-form integration - have std $\approx 20$ px and never die; the rows that can mis-plan a gap carry std of 62, 198 and 253 px. A closed-loop benchmark on this stage is therefore a *risk* measurement before it is a performance measurement, and the budget-reached column is the summary statistic that matters.
 5. **The hybrid operator is the best controller in the repository, and it is not distinguishable from the hand-written rules.** Physics-Constrained DeepONet: $635.61 \pm 14.18$ px, five seeds, zero deaths, the tightest spread of any row including the rules themselves; paired against them it is $+15.71$ px ahead with $d_z = +0.50$ and $p = 0.32$, i.e. statistically indistinguishable from a model whose physics was reverse-engineered by hand. It is also the only learned model in the table that reaches the console's best tier.
 6. **The FNO is the cleanest accuracy-versus-control dissociation this repository has measured.** It is the most accurate physics-free single-step model in the study (10.42), it never dies, it reaches the budget on all five seeds - and it loses 247 px to the rules with $d_z = -12.14$, the largest effect size in the table, on a spread of only $\pm 3.56$ px. It fails *reproducibly*: this is not variance, it is a systematic planning handicap. The plain DeepONet is the opposite failure mode - $193.66 \pm 197.54$ px, one death, a ten-fold larger spread - so "no kinematic guarantees" admits both a stable handicap and an unstable one, and only the violation rates of 10.42 predicted which.
-7. **A shared shell does not imply shared control.** The Hard PINN and the PC-DeepONet integrate through the *same* hard kinematic clamp, and differ by 336 px and by three deaths to zero. The guarantee is therefore necessary and not sufficient: what separates them is the residual the operator learns on top of it, which is the same conclusion 10.46 reaches from the structural side - a clamp at 72.0 never binds within the observed support of 49.0, so the shell constrains the failure mode, not the behaviour.
+7. **A shared shell does not imply shared control.** The Hard PINN and the PC-DeepONet integrate through the *same* hard kinematic clamp, and differ by 336 px and by three deaths to zero. The guarantee is therefore necessary and not sufficient: what separates them is the residual the operator learns on top of it, which is the same conclusion 10.46 reaches from the structural side - a clamp at 72.0 never binds within the observed support of 49.0, so the shell constrains the failure mode, not the behaviour. Four published framings are corrected by §10.48 and §10.49 and are reported here rather than edited silently. (i) Every ceiling estimate this repository has published has been scored against `max_vx = 72.0`, which Section 4.3 documents as the *P-meter sprint* class and `src/models/analytical_kinematics.py` records as "not observable in the 8D state": across 45,389 transitions in four recordings **no frame ever exceeded 49.0** and none reached 72.0, so the template engine's 47.775 - published as "$33.6\%$ from the WRAM reference" - is in fact **0.47% from the documented run cap of 48.0**, and §10.45's sustained 36.075 is 24.8% below that cap rather than "50% off the ceiling". The measurements stand; the reference they were compared against was the wrong speed class. (ii) Section 4.2's vertical window of $[-80, +64]$ is left by 16.3% to 29.2% of the recorded transitions (the data reaches $-112.0$ and $+70.0$), so the hard shells' $v_y$ clamp rewrites real console states on a fifth to a third of frames - a mechanism behind §10.44.1's and §10.47's finding that the same shell helps one family and hurts another. (iii) Section 4.1's integration identity holds to a median of exactly 0.0000 px with the velocity at frame $t$ and 0.0625 px with the predicted velocity at $t+1$, which is the convention every implementation in this repository uses, and 1.3% to 6.4% of frames mismatch by more than 1 px under either - so "strictly linear" is a median property, not a per-frame invariant. (iv) The rollout kinematic-violation figure that Sections 8, 10.27 and 10.42 publish as the shell's signature is shown by §10.48 to be, for an exact integrator, numerically identical to a *velocity-jump* rate (FNO residual/soft: violation 0.1975, jump rate 0.1975, integration residual $9.2\times10^{-6}$ px), the console's own telemetry trips it on 0.0462 of frames, and a model can post 0.0000 while leaving the velocity bounds on 46.6% of its rollout frames; consistency, smoothness and boundedness are three numbers and the older tables quoted one of them. §10.48 also re-classifies the probed ceilings under four traction thresholds and finds §10.46's headline *is* load-bearing in its chosen constant (accepted sets of 3, 3, 9 and 9 at 1.0/1.5/2.5/3.5 px/frame, with the published three acceptances appearing only at 2.5 or looser), which is the qualification its own limitation asked the reader to make.
 
 **Limitations.** Five seeds is the minimum that makes a paired statement, not enough for a strong one: at $n = 5$ no Wilcoxon can reach $p < 0.05$, which is why $d_z$ carries the argument. The world models are fitted once, so this section measures planner stochasticity only - the identification and GP seed variance of 10.40/10.43 are a separate axis and are quantified there. The 300-frame budget still truncates the two closed-form rows on most seeds.
 
@@ -2056,6 +2058,64 @@ This study fills the grid: **family** (Statistical MLP, DeepONet, FNO) $\times$ 
 
 Regenerate: `python -m src.evaluation.operator_physics_injection_benchmark` (emulator-free, ~27 min for 17 arms $\times$ 5 seeds on this host; `make physics-injection`; smoke config `configs/smoke_physics_injection.yaml`; `--seeds`, `--arms`, `--epochs` and `--no-checkpoints` control the budget), then `python -m src.evaluation.physics_injection_mpc_benchmark --seeds 42,43,44,45,46` for the control table (requires the Libretro core and ROM of Section 11.2, ~18 min on the console; without hardware it exits with a diagnostic and writes nothing) and `python -m src.evaluation.learned_structure_probe_benchmark --registry grid` for the structure table (emulator-free, ~1 min; `--registry published` is the 10.46 artifact and the two never write to the same file).
 
+### 10.48 What the "Kinematic Violation" Figure Actually Measures
+
+Every physics claim in Sections 8, 10.27 and 10.42 is carried by one number: the rollout *kinematic-violation rate*, computed by `RolloutEvaluator` as a frame where `|Δx − v/16| > 0.2 px` - with `v` the velocity the model reported on the **previous** frame. Section 10.47 met the consequence: an arm that integrates position exactly by construction was still flagged on 16.18% of its frames. `src/evaluation/rollout_diagnostics.py` separates the properties that number mixes and re-scores every committed model - the six of Section 8/10.41/10.42 and the fifteen of 10.47 - with each one reported on its own, plus the recorded telemetry itself as the reference row.
+
+| model | shell in graph | published violation | integration residual (median px) | velocity-jump rate | bound-exceedance rate |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| mlp | no | 0.9790 | 2.05e+00 | 0.0092 | 0.4383 |
+| soft_pinn | no | 1.0000 | 1.34e+00 | 0.0000 | 0.0000 |
+| hard_pinn | yes | 0.0000 | 6.50e-06 | 0.0000 | 0.0000 |
+| deeponet | no | 0.9958 | 1.96e+00 | 0.0109 | 0.0000 |
+| physics_constrained_deeponet | yes | 0.0000 | 6.94e-06 | 0.0000 | 0.0000 |
+| fno | no | 0.8849 | 8.59e-01 | 0.1109 | 0.3275 |
+| grid:MLP/state/none | no | 0.9790 | 2.05e+00 | 0.0092 | 0.4383 |
+| grid:MLP/state/soft | no | 1.0000 | 1.33e+00 | 0.0000 | 0.0000 |
+| grid:MLP/residual/none | no | 0.0000 | 6.51e-06 | 0.0000 | 0.4658 |
+| grid:MLP/residual/soft | no | 0.0000 | 7.15e-06 | 0.0000 | 0.0000 |
+| grid:MLP/residual/hard | yes | 0.0000 | 6.29e-06 | 0.0000 | 0.0000 |
+| grid:DeepONet/state/none | no | 0.9958 | 1.96e+00 | 0.0109 | 0.0000 |
+| grid:DeepONet/state/soft | no | 1.0000 | 3.80e+00 | 0.0294 | 0.0025 |
+| grid:DeepONet/residual/none | no | 0.0000 | 6.48e-06 | 0.0000 | 0.2700 |
+| grid:DeepONet/residual/soft | no | 0.0000 | 6.61e-06 | 0.0000 | 0.0000 |
+| grid:DeepONet/residual/hard | yes | 0.0000 | 6.94e-06 | 0.0000 | 0.0000 |
+| grid:FNO/state/none | no | 0.8849 | 8.59e-01 | 0.1109 | 0.3275 |
+| grid:FNO/state/soft | no | 0.8773 | 1.48e+00 | 0.0025 | 0.0000 |
+| grid:FNO/residual/none | no | 0.0126 | 5.90e-06 | 0.0126 | 0.4050 |
+| grid:FNO/residual/soft | no | 0.1975 | 9.20e-06 | 0.1975 | 0.4150 |
+| grid:FNO/residual/hard | yes | 0.0000 | 6.83e-06 | 0.0000 | 0.0000 |
+| *recorded telemetry (the console itself)* | - | 0.0462 | 5.63e-02 | 0.0303 | 0.1183 |
+
+1. **For an exact integrator the published figure is not a consistency measurement at all - it is the jump rate, digit for digit.** The eleven models whose integration residual is below $10^{-4}$ px include `grid:FNO/residual/none` (residual $5.90\times10^{-6}$ px, violation 0.0126, jump rate 0.0126) and `grid:FNO/residual/soft` (residual $9.20\times10^{-6}$ px, violation 0.1975, jump rate 0.1975). The two columns are equal because that is what the predicate computes once the position identity holds: it fires on a velocity change of more than $3.2$ sub-pixels/frame. A "0% violation rate" therefore means *the model never accelerated by more than 3.2 sub-pixels in a frame*, which for the shells is a property of what they learned, not of what the graph guarantees.
+2. **The console's own telemetry is flagged on 4.62% of frames, so the scale runs from "as consistent as Mario", not from "zero".** Recorded transitions jump on 3.03% of frames and carry a median integration residual of 0.0563 px against the velocity they advanced by. A model at 0.0462 is exactly as self-consistent as the engine; the repository has been reading 0.0000 as the only acceptable value when it is in fact smoother than reality.
+3. **Zero violations is not a statement about the velocity bounds either.** `grid:MLP/residual/none` and `grid:DeepONet/residual/none` both post 0.0000 on the published metric while their rollouts leave the engine's bounds on 46.58% and 27.00% of frames. This is the same dissociation 10.47 measured for the shells' drift, now visible inside the metric the older tables published: consistency, smoothness and boundedness are three numbers, and the repository has been quoting one of them as if it covered all three.
+4. **The traction threshold that 10.46 chose is load-bearing, and the re-classification it invited changes the answer.** Re-scoring every probed ceiling of 10.46 and 10.47 under four thresholds gives accepted sets of 3, 3, 9 and 9 records at $1.0$, $1.5$, $2.5$ and $3.5$ px/frame. The three 10.46 acceptances - FNO at 1.61, Hard PINN at 1.72, PC-DeepONet at 1.91 - only appear at the published $2.5$ or looser; at $1.5$ the six published models contribute *none*, and the three survivors are all 10.47 grid arms ($0.08$-$0.58$ px/frame). 10.46's headline should therefore be read as "three of six pass a traction test set at 2.5 px/frame", which is what its own table says, and not as a threshold-free finding.
+
+**Limitations.** The jump-rate equivalence of finding 1 is exact only because the predicate's tolerance is the only active term once $\Delta x = \hat{v}_{t+1}/16$; a model that integrates with the *previous* velocity would couple the two columns differently, and 10.49 shows the console actually integrates that way. Rollouts are open-loop on the recorded action sequences, so a jump rate partly reflects the recorded policy's own acceleration. The reference row uses `next_states` as the trajectory, which inherits the console's real screen wraps: the integration column is reported as a median precisely because a wrap is a tail event of hundreds of pixels, not a physical one.
+
+Regenerate: `python -m src.evaluation.kinematic_metric_decomposition_benchmark` (emulator-free, ~1 min; `make metric-decomposition`; `--num-starts`, `--horizon` and `--config configs/smoke_metric_decomposition.yaml` control the budget).
+
+### 10.49 Which Documented Constant Does the Telemetry Actually Support?
+
+`max_vx = 72.0` is load-bearing across the repository: it is the identification prior of 10.40, the velocity-bounds term of the composite PINN loss, the horizontal clamp of every hard shell from 10.27 onward, and the reference against which 10.43, 10.43.9, 10.45 and 10.46 have scored their ceiling estimates. Section 4.3, however, documents *three* horizontal classes - walk at 20, run at 48, and maximum sprint with the P-meter active at 72 - and the code that carries the number says so itself (`src/models/analytical_kinematics.py`: `VX_SPRINT = 72.0 # section 4.3.3 (P-meter; not observable in the 8D state)`). `src/evaluation/velocity_class_benchmark.py` measures the velocity envelope of every recording in `data/raw` - four datasets, 45,389 transitions - against the classes, and checks the two other constants the same section documents.
+
+| recording | transitions | episodes | p95 | p99 | p99.9 | max | frames above the run cap | above the P-meter cap | $v_y$ range | outside the documented $v_y$ window | median $\lvert\Delta x - v_{x,t}/16\rvert$ | median $\lvert\Delta x - \hat v_{x,t+1}/16\rvert$ | mismatch $> 1$ px |
+| :--- | ---: | ---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| gameplay | 8,077 | 15 | 37.0 | 37.0 | 48.0 | 49.0 | 4 | 0 | -112.0 to 70.0 | 21.7% | 0.0000 | 0.0625 | 6.1% |
+| tilemap | 10,357 | 30 | 37.0 | 37.0 | 47.6 | 49.0 | 4 | 0 | -112.0 to 70.0 | 23.3% | 0.0000 | 0.0625 | 6.0% |
+| multi_entity | 19,702 | 35 | 37.0 | 37.0 | 47.0 | 49.0 | 5 | 0 | -112.0 to 70.0 | 16.3% | 0.0000 | 0.0625 | 1.3% |
+| sprint | 7,253 | 12 | 37.0 | 37.0 | 37.0 | 37.0 | 0 | 0 | -112.0 to 70.0 | 29.2% | 0.0000 | 0.0625 | 6.4% |
+
+1. **The P-meter class is never entered by any recording; the run class is the envelope.** Across 45,389 transitions, **zero** frames exceed 72.0 and 13 exceed 48.0 - 49.0 is the fastest frame ever recorded, in one episode per dataset, while p99.9 sits at 47.0-48.0 in the three passively recorded datasets and collapses to the same 37.0 as p95 in the excitation-targeted one, which never reaches the run cap at all. So the constant the repository has used as "the WRAM reference" is the cap of a speed class this data does not contain.
+2. **That reverses how 10.43.9 and 10.45 scored their own results.** The template engine's clamp on real telemetry, 47.775, published as "$33.6\%$ from the WRAM reference", is **0.47% from the documented run cap of 48.0** - the structure the template engine posits reaches the run cap to within half a percent, and it was the error column that scored it against the wrong class. (The free searches did not: PySR's telemetry fixed point was 34.193 and gplearn reported none, which remains 10.43.9's own finding.) The same re-scoring puts 10.45's sustained plateau 36.075 at 24.8% below the run cap, which is what a *sustained* speed under a particular policy should be: below the cap, not equal to it. What survives of 10.45 is its real conclusion - the published 49.0 maximum is a support artifact, and the ceiling has to be probed by excitation - and what does not survive is the framing of every estimate as roughly 50% off.
+3. **The vertical window of Section 4.2 is exceeded routinely, which means the hard shells overwrite real states.** Every recording reaches $v_y = -112.0$ and $+70.0$ against a documented window of $[-80, +64]$: between 16.3% and 29.2% of transitions lie outside it, depending on the dataset. The shells clamp $v_y$ into that window, so on a fifth to a third of real frames the "guarantee" does not describe the console - it rewrites it. That is a candidate mechanism for the pattern 10.44.1 and 10.47 keep hitting, where the same clamp helps one family and hurts another.
+4. **The console integrates with the previous frame's velocity; every implementation in this repository integrates with the predicted next one.** Median `|Δx − v_{x,t}/16|` is exactly 0.0000 px, while the same residual measured against the velocity the shells advance by is 0.0625 px - one sub-pixel, a persistent one-frame lag during acceleration, in the direction of the model's own acceleration. And the identity is exact only in the median: 1.3% to 6.4% of recorded frames differ by more than 1 px under either convention, concentrated in frames that also carry large vertical velocity. Section 4.1's "strictly linear" statement should be read as a median property, not a per-frame invariant.
+
+**Limitations.** This is a study of what the recordings support, not of what the engine allows: a ROM disassembly or a P-meter recording would settle the class question directly, and neither is available here - the 8D state carries no power-up byte, so the star hypothesis is supported by the repository's own documentation and the shape of the envelope rather than by observation. Each recording is one stage family, and the sustained 37.0 is a property of the policies that produced them (10.45 established that). The 13 frames above the run cap come from a single episode each, so they constrain the *run* cap from above without identifying the mechanism that produced them.
+
+Regenerate: `python -m src.evaluation.velocity_class_benchmark` (emulator-free, ~2 s; `make velocity-classes`; `--data-dir` and `--results-dir` control the inputs).
+
 ---
 
 ## 11. Complete Reproducibility Guide
@@ -2111,6 +2171,8 @@ smw-pinn/
 │   ├── operator_physics_injection_metrics.json # Physics-injection grid, 17 arms x 5 seeds (10.47)
 │   ├── physics_injection_mpc_metrics.json # Physics-injection arms flown on the console (10.47)
 │   ├── physics_injection_structure_probe_metrics.json # 10.46 probes applied to the 10.47 grid (10.47)
+│   ├── kinematic_metric_decomposition_metrics.json # Violation rate decomposed on 21 models (10.48)
+│   ├── velocity_class_metrics.json          # Recorded velocity envelope vs the documented classes (10.49)
 │   ├── inverse_model_mpc_metrics.json       # Closed-loop inverse-model MPC comparison (10.44)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
@@ -2206,6 +2268,9 @@ smw-pinn/
 │       ├── learned_structure_probe_benchmark.py # Fixed-point/gate probes on learned models (10.46)
 │       ├── operator_physics_injection_benchmark.py # Target x mechanism x family grid (10.47)
 │       ├── physics_injection_mpc_benchmark.py # The 10.47 grid flown on the console (10.47, hardware)
+│       ├── rollout_diagnostics.py           # Violation rate split into consistency/smoothness/bounds (10.48)
+│       ├── kinematic_metric_decomposition_benchmark.py # Re-scores every model with the split metric (10.48)
+│       ├── velocity_class_benchmark.py      # Which documented speed constant the telemetry reaches (10.49)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -2538,6 +2603,18 @@ python -m src.evaluation.physics_injection_mpc_benchmark --seeds 42,43,44,45,46
 # 54. The 10.46 structural probes applied to the 10.47 arms (~1 min, emulator-free). Writes a
 #     separate artifact, so `--registry published` (the 10.46 default) is never overwritten.
 python -m src.evaluation.learned_structure_probe_benchmark --registry grid
+
+# 55. Decompose the published rollout violation figure into integration residual,
+#     velocity-jump rate and bound exceedance, for every committed model and for the
+#     recorded telemetry (10.48). Emulator-free (~1 min); `--num-starts`/`--horizon`
+#     control the budget; writes results/kinematic_metric_decomposition_metrics.json.
+python -m src.evaluation.kinematic_metric_decomposition_benchmark
+
+# 56. Which of Section 4's documented speed constants the recordings actually reach
+#     (10.49): the velocity envelope of all four datasets against the walk/run/P-meter
+#     classes, the vertical window, and the integration-convention test. Emulator-free,
+#     ~2 s; writes results/velocity_class_metrics.json.
+python -m src.evaluation.velocity_class_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -2573,7 +2650,7 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 * **Asset paths in one place (`src/utils/paths.py`):** the Libretro core, ROM, savestates, datasets and every `results/` output resolve through repo-root-anchored, `SMW_*`-overridable helpers (`require_rom`, `require_core`, `results_file`, `checkpoint_file`), so entry points behave identically from any working directory and a missing ROM produces an acquisition message instead of a traceback. The WRAM register map lives in `src/environment/wram.py`.
 * **Cross-platform runner (`src/cli.py`):** `pip install -e .` exposes `smw-pinn`, whose subcommands mirror the Makefile (`smw-pinn baselines`, `smw-pinn multiseed`, `smw-pinn check-all`) plus a generic `smw-pinn run <module> [args...]` for the ~40 documented entry points. The mypy typed-core list lives here, so `make`, CI and `smw-pinn` cannot drift apart.
 * **Provenance and artifact index:** every artifact written by these tools embeds a `_meta` block (git SHA and dirty flag, library/CUDA versions, seed, command, UTC timestamp) via `src/utils/provenance.py:write_metrics`, and `results/MANIFEST.md` maps artifact → writer → command → README section. `tests/test_results_manifest.py` fails CI on an ownerless artifact, a fictional writer, a dangling claim, a growing `_meta` exemption list, a checkpoint newer than the result that used it, or a §10 headline that no longer matches its artifact.
-* **Fast smoke tests for the §10 studies:** eleven emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`, `smoke_operators.yaml`, `smoke_symbolic_inverse.yaml`, `smoke_symbolic_tilemap.yaml`, `smoke_symbolic_engines.yaml`, `smoke_physics_injection.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings, the §10.44 closed-loop comparison and the §10.47 grid flown on the console) are covered by `tests/test_hardware_loops.py` instead.
+* **Fast smoke tests for the §10 studies:** twelve emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`, `smoke_operators.yaml`, `smoke_symbolic_inverse.yaml`, `smoke_symbolic_tilemap.yaml`, `smoke_symbolic_engines.yaml`, `smoke_physics_injection.yaml`, `smoke_metric_decomposition.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings, the §10.44 closed-loop comparison and the §10.47 grid flown on the console) are covered by `tests/test_hardware_loops.py` instead.
 * **Standardized episode preamble:** closed-loop episodes start with `SnesLibretroEmulator.start_episode()` (restore savestate → force gameplay mode `0x14` → warm-up frames → read state). Before it existed, ~15 scripts copy-pasted three different versions of that preamble and the difference was worth 3.4x progress (§10.38.1).
 
 ---

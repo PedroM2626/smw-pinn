@@ -647,3 +647,111 @@ def test_readme_10_47_parity_claim_is_in_the_artifact() -> None:
                 f"{reference}:{key} = {summary[reference][key]['mean']!r}"
             )
             assert f"{value:.6f}" in text, f"README never quotes {value:.6f} for {cell}:{key}"
+
+
+def test_readme_10_48_decomposition_table_is_the_artifact() -> None:
+    path = RESULTS / "kinematic_metric_decomposition_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.48 decomposition study has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = []
+    for name, block in artifact["models"].items():
+        d = block["decomposition"]
+        row = "| {} | {} | {:.4f} | {:.2e} | {:.4f} | {:.4f} |".format(
+            name,
+            "yes" if block["imposed_by_construction"] else "no",
+            d["published_violation_rate"],
+            d["integration_error_median_px"],
+            d["jump_rate"],
+            d["bound_exceedance_rate"],
+        )
+        if row not in text:
+            missing.append(row)
+    ref = artifact["recorded_telemetry_reference"]
+    ref_row = "| *recorded telemetry (the console itself)* | - | {:.4f} | {:.2e} | {:.4f} | {:.4f} |".format(
+        ref["published_violation_rate"],
+        ref["integration_error_median_px"],
+        ref["jump_rate"],
+        ref["bound_exceedance_rate"],
+    )
+    if ref_row not in text:
+        missing.append(ref_row)
+    assert not missing, "README 10.48 table disagrees with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_48_threshold_sensitivity_is_stated_as_load_bearing() -> None:
+    """10.46's traction constant decides its headline; the README has to say so."""
+    path = RESULTS / "kinematic_metric_decomposition_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.48 decomposition study has not been run")
+    verdict = json.loads(path.read_text(encoding="utf-8"))["verdict"]
+    counts = verdict["traction_threshold_accept_counts"]
+    text = _readme()
+    values = [counts[key] for key in sorted(counts, key=float)]
+    listed = ", ".join(str(v) for v in values[:-1]) + f" and {values[-1]}"
+    assert listed in text, (
+        f"README 10.48 must state the acceptance counts exactly as measured ({listed})"
+    )
+    if not verdict["classification_is_threshold_independent"]:
+        assert "load-bearing" in text, (
+            "the classification depends on the chosen traction threshold, so the README "
+            "must say so rather than presenting the accepted set as threshold-free"
+        )
+
+
+def test_readme_10_49_recording_table_is_the_artifact() -> None:
+    path = RESULTS / "velocity_class_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.49 constant audit has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = []
+    for name, r in artifact["recordings"].items():
+        e, vb, ic = r["envelope_all"], r["vertical_bounds"], r["integration_convention"]
+        row = (
+            "| {} | {:,} | {} | {:.1f} | {:.1f} | {:.1f} | {:.1f} | {} | {} | "
+            "{:.1f} to {:.1f} | {:.1%} | {:.4f} | {:.4f} | {:.1%} |"
+        ).format(
+            name.replace("smw_", "").replace("_dataset.npz", ""),
+            r["transitions"],
+            r["episodes"],
+            e["p95"],
+            e["p99"],
+            e["p999"],
+            e["max"],
+            r["frames_above_run_cap"],
+            r["frames_above_p_meter_cap"],
+            vb["vy_min"],
+            vb["vy_max"],
+            vb["fraction_outside_the_documented_window"],
+            ic["median_abs_error_using_velocity_at_t"],
+            ic["median_abs_error_using_velocity_at_t_plus_1"],
+            ic["fraction_mismatching_by_more_than_1px"],
+        )
+        if row not in text:
+            missing.append(row)
+    assert not missing, "README 10.49 table disagrees with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_49_re_scoring_claims_are_derived_from_the_artifact() -> None:
+    """The reversal 10.49 publishes is an arithmetic claim about two error columns."""
+    path = RESULTS / "velocity_class_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.49 constant audit has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    vs_run = artifact["relative_error_vs_run_cap_pct"]
+    estimates = artifact["published_ceiling_estimates"]
+    assert "published_gameplay_template_bound" in estimates
+    assert f"{vs_run['published_gameplay_template_bound']:.2f}%" in text
+    assert f"{vs_run['sprint_targeted_template_bound']:.1f}%" in text
+    verdict = artifact["verdict"]
+    assert verdict["frames_above_p_meter_cap"] == 0
+    assert f"{verdict['transitions_examined']:,}" in text
+    assert f"{verdict['largest_velocity_ever_recorded']:.1f}" in text
+    for key in (
+        "integration_median_error_at_t_px",
+        "integration_median_error_at_t_plus_1_px",
+    ):
+        assert f"{verdict[key]:.4f}" in text, f"README never quotes the {key} figure"

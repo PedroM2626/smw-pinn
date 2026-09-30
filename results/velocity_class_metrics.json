@@ -1,0 +1,275 @@
+{
+  "_meta": {
+    "generated_utc": "2026-09-30T19:18:54+00:00",
+    "git_sha": "e861dd6e15244b2cf69c0158067d986a8616cd3b",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 0,
+    "command": "python -m src.evaluation.velocity_class_benchmark"
+  },
+  "study": "Which of Section 4.3's three documented horizontal speed classes does the WRAM telemetry reach, and against which constant should a discovered ceiling be scored?",
+  "protocol": {
+    "recordings": [
+      "smw_gameplay_dataset.npz",
+      "smw_tilemap_dataset.npz",
+      "smw_multi_entity_dataset.npz",
+      "smw_sprint_dataset.npz"
+    ],
+    "documented_classes_subpixels_per_frame": {
+      "walk": 20.0,
+      "run": 48.0,
+      "sprint_p_meter": 72.0
+    },
+    "subpixels_per_pixel": 16.0,
+    "min_speed_for_scale_identity": 8.0,
+    "emulator_required": false
+  },
+  "recordings": {
+    "smw_gameplay_dataset.npz": {
+      "transitions": 8077,
+      "episodes": 15,
+      "envelope_all": {
+        "p50": 21.0,
+        "p95": 37.0,
+        "p99": 37.0,
+        "p999": 48.0,
+        "max": 49.0
+      },
+      "envelope_on_ground": {
+        "p50": 20.0,
+        "p95": 36.0,
+        "p99": 37.0,
+        "p999": 48.0,
+        "max": 49.0
+      },
+      "band_counts": {
+        "up_to_walk": 3926,
+        "walk_to_run": 4147,
+        "run_to_p_meter": 4,
+        "above_p_meter": 0
+      },
+      "frames_above_run_cap": 4,
+      "frames_above_p_meter_cap": 0,
+      "episodes_reaching_above_run_cap": 1,
+      "vertical_bounds": {
+        "vy_min": -112.0,
+        "vy_max": 70.0,
+        "fraction_above_terminal": 0.1351987123932153,
+        "fraction_below_jump_floor": 0.08196112417976972,
+        "fraction_outside_the_documented_window": 0.21715983657298502
+      },
+      "integration_convention": {
+        "median_abs_error_using_velocity_at_t": 0.0,
+        "median_abs_error_using_velocity_at_t_plus_1": 0.0625,
+        "fraction_mismatching_by_more_than_1px": 0.060666088894391484
+      },
+      "subpixel_scale_identity": {
+        "median_ratio_with_velocity_at_t": 1.0,
+        "median_ratio_with_velocity_at_t_plus_1": 1.0,
+        "fraction_within_one_subpixel_at_t": 0.9117219078415522,
+        "median_abs_ratio_error_at_t": 0.0,
+        "median_abs_ratio_error_at_t_plus_1": 0.050000000000000044,
+        "moving_frames": 6185
+      }
+    },
+    "smw_tilemap_dataset.npz": {
+      "transitions": 10357,
+      "episodes": 30,
+      "envelope_all": {
+        "p50": 20.0,
+        "p95": 37.0,
+        "p99": 37.0,
+        "p999": 47.64400000000023,
+        "max": 49.0
+      },
+      "envelope_on_ground": {
+        "p50": 20.0,
+        "p95": 36.0,
+        "p99": 37.0,
+        "p999": 48.0,
+        "max": 49.0
+      },
+      "band_counts": {
+        "up_to_walk": 5377,
+        "walk_to_run": 4976,
+        "run_to_p_meter": 4,
+        "above_p_meter": 0
+      },
+      "frames_above_run_cap": 4,
+      "frames_above_p_meter_cap": 0,
+      "episodes_reaching_above_run_cap": 1,
+      "vertical_bounds": {
+        "vy_min": -112.0,
+        "vy_max": 70.0,
+        "fraction_above_terminal": 0.14096746162016027,
+        "fraction_below_jump_floor": 0.09240127450033793,
+        "fraction_outside_the_documented_window": 0.23336873612049822
+      },
+      "integration_convention": {
+        "median_abs_error_using_velocity_at_t": 0.0,
+        "median_abs_error_using_velocity_at_t_plus_1": 0.0625,
+        "fraction_mismatching_by_more_than_1px": 0.0603456599401371
+      },
+      "subpixel_scale_identity": {
+        "median_ratio_with_velocity_at_t": 1.0,
+        "median_ratio_with_velocity_at_t_plus_1": 1.0,
+        "fraction_within_one_subpixel_at_t": 0.9139757820383451,
+        "median_abs_ratio_error_at_t": 0.0,
+        "median_abs_ratio_error_at_t_plus_1": 0.050000000000000044,
+        "moving_frames": 7928
+      }
+    },
+    "smw_multi_entity_dataset.npz": {
+      "transitions": 19702,
+      "episodes": 35,
+      "envelope_all": {
+        "p50": 22.0,
+        "p95": 37.0,
+        "p99": 37.0,
+        "p999": 47.0,
+        "max": 49.0
+      },
+      "envelope_on_ground": {
+        "p50": 20.0,
+        "p95": 36.0,
+        "p99": 37.0,
+        "p999": 48.0,
+        "max": 49.0
+      },
+      "band_counts": {
+        "up_to_walk": 8623,
+        "walk_to_run": 11074,
+        "run_to_p_meter": 5,
+        "above_p_meter": 0
+      },
+      "frames_above_run_cap": 5,
+      "frames_above_p_meter_cap": 0,
+      "episodes_reaching_above_run_cap": 1,
+      "vertical_bounds": {
+        "vy_min": -112.0,
+        "vy_max": 70.0,
+        "fraction_above_terminal": 0.12414983250431429,
+        "fraction_below_jump_floor": 0.03903157039894427,
+        "fraction_outside_the_documented_window": 0.16318140290325855
+      },
+      "integration_convention": {
+        "median_abs_error_using_velocity_at_t": 0.0,
+        "median_abs_error_using_velocity_at_t_plus_1": 0.0625,
+        "fraction_mismatching_by_more_than_1px": 0.012638310831387676
+      },
+      "subpixel_scale_identity": {
+        "median_ratio_with_velocity_at_t": 1.0,
+        "median_ratio_with_velocity_at_t_plus_1": 1.0,
+        "fraction_within_one_subpixel_at_t": 0.9823196605374823,
+        "median_abs_ratio_error_at_t": 0.0,
+        "median_abs_ratio_error_at_t_plus_1": 0.050000000000000044,
+        "moving_frames": 16968
+      }
+    },
+    "smw_sprint_dataset.npz": {
+      "transitions": 7253,
+      "episodes": 12,
+      "envelope_all": {
+        "p50": 36.0,
+        "p95": 37.0,
+        "p99": 37.0,
+        "p999": 37.0,
+        "max": 37.0
+      },
+      "envelope_on_ground": {
+        "p50": 35.0,
+        "p95": 37.0,
+        "p99": 37.0,
+        "p999": 37.0,
+        "max": 37.0
+      },
+      "band_counts": {
+        "up_to_walk": 920,
+        "walk_to_run": 6333,
+        "run_to_p_meter": 0,
+        "above_p_meter": 0
+      },
+      "frames_above_run_cap": 0,
+      "frames_above_p_meter_cap": 0,
+      "episodes_reaching_above_run_cap": 0,
+      "vertical_bounds": {
+        "vy_min": -112.0,
+        "vy_max": 70.0,
+        "fraction_above_terminal": 0.18047704398180064,
+        "fraction_below_jump_floor": 0.11112643044257549,
+        "fraction_outside_the_documented_window": 0.2916034744243761
+      },
+      "integration_convention": {
+        "median_abs_error_using_velocity_at_t": 0.0,
+        "median_abs_error_using_velocity_at_t_plus_1": 0.0625,
+        "fraction_mismatching_by_more_than_1px": 0.0636977802288708
+      },
+      "subpixel_scale_identity": {
+        "median_ratio_with_velocity_at_t": 1.0,
+        "median_ratio_with_velocity_at_t_plus_1": 1.0277777777777777,
+        "fraction_within_one_subpixel_at_t": 0.9275787523162446,
+        "median_abs_ratio_error_at_t": 0.0,
+        "median_abs_ratio_error_at_t_plus_1": 0.02857142857142847,
+        "moving_frames": 6476
+      }
+    }
+  },
+  "published_ceiling_estimates": {
+    "published_gameplay_template_bound": 47.775000000000006,
+    "published_gameplay_pysr_fixed_point": 34.192702420208335,
+    "sprint_targeted_template_bound": 36.075,
+    "sprint_targeted_pysr_fixed_point": 35.756733846875
+  },
+  "relative_error_vs_run_cap_pct": {
+    "published_gameplay_template_bound": 0.4687499999999882,
+    "published_gameplay_pysr_fixed_point": 28.765203291232638,
+    "sprint_targeted_template_bound": 24.843749999999996,
+    "sprint_targeted_pysr_fixed_point": 25.50680448567708
+  },
+  "relative_error_vs_p_meter_cap_pct": {
+    "published_gameplay_template_bound": 33.64583333333332,
+    "published_gameplay_pysr_fixed_point": 52.51013552748842,
+    "sprint_targeted_template_bound": 49.89583333333333,
+    "sprint_targeted_pysr_fixed_point": 50.33786965711805
+  },
+  "verdict": {
+    "transitions_examined": 45389,
+    "frames_above_p_meter_cap": 0,
+    "frames_above_run_cap": 13,
+    "largest_velocity_ever_recorded": 49.0,
+    "median_scale_ratio_velocity_at_t": [
+      1.0,
+      1.0
+    ],
+    "median_scale_ratio_velocity_at_t_plus_1": [
+      1.0,
+      1.0277777777777777
+    ],
+    "median_abs_ratio_error_at_t": [
+      0.0,
+      0.0
+    ],
+    "median_abs_ratio_error_at_t_plus_1": [
+      0.02857142857142847,
+      0.050000000000000044
+    ],
+    "vertical_window_recorded": [
+      -112.0,
+      70.0
+    ],
+    "largest_fraction_outside_the_vertical_window": 0.2916034744243761,
+    "integration_median_error_at_t_px": 0.0,
+    "integration_median_error_at_t_plus_1_px": 0.0625,
+    "largest_fraction_mismatching_by_more_than_1px": 0.0636977802288708,
+    "closest_published_estimate_to_run_cap": "published_gameplay_template_bound",
+    "closest_published_error_pct_vs_run_cap": 0.4687499999999882,
+    "reading": "Across 45389 transitions from 4 recordings the horizontal velocity never once exceeded 49.0 sub-pixels/frame: 0 frames are above the documented P-meter class of 72 and 13 are above the run class of 48. The sub-pixel identity is satisfied to a median ratio of 1.000-1.000 with the velocity at frame $t$ and 1.000-1.028 with the velocity at $t+1$, so the factor of two is not a unit convention. Section 4.2's vertical window of -80 to 64 is itself exceeded by the recordings, which reach -112.0 to 70.0 and sit outside it on up to 29.2% of frames. The exact integration identity of Section 4.1 holds to a median of 0.0000 px when position advances by the velocity at $t$, and 0.0625 px when it advances by the velocity at $t+1$ - the convention every implementation in this repository uses - while up to 6.4% of recorded frames mismatch by more than 1 px. The published estimate closest to the run class is published_gameplay_template_bound at 0.47% - the class the recordings can reach is the run class, not the P-meter class that every error column has been scored against."
+  },
+  "figure": "results/figures/velocity_class_envelope.png"
+}

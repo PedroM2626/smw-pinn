@@ -11,6 +11,34 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The rollout violation figure decomposed** (README Section 10.48):
+  `src/evaluation/rollout_diagnostics.py` separates the three properties the published
+  predicate mixes - integration consistency measured against the velocity a model
+  actually advanced by, step-to-step velocity smoothness, and bound exceedance - and
+  `src/evaluation/kinematic_metric_decomposition_benchmark.py` re-scores every
+  committed model (6 published + 15 grid arms) with the three quantities separated,
+  plus the recorded telemetry itself as a reference row. For an exact integrator the
+  published figure *is* the jump rate, digit for digit (`grid:FNO/residual/soft`:
+  violation 0.1975, jump rate 0.1975, integration residual $9.2\times10^{-6}$ px),
+  Mario's own transitions trip the predicate on 0.0462 of frames, and models posting
+  0.0000 violations leave the velocity bounds on up to 46.6% of rollout frames. The
+  study also re-classifies the probed ceilings under four traction thresholds and
+  finds the accepted set is 3, 3, 9 and 9 records at 1.0/1.5/2.5/3.5 px/frame - so
+  Section 10.46's "three of six pass" is load-bearing in its chosen constant.
+- **Which documented constant the telemetry supports** (README Section 10.49):
+  `src/evaluation/velocity_class_benchmark.py` measures the velocity envelope of all
+  four recordings (45,389 transitions) against Section 4.3's three horizontal classes
+  and against Section 4.2's vertical window, and tests the two integration conventions.
+  No frame anywhere exceeds 49.0 sub-pixels/frame and none reaches the P-meter class of
+  72.0, so the repository's universal `max_vx = 72.0` is the cap of a speed class the
+  data never enters; re-scored against the documented run cap of 48.0, the template
+  engine's 47.775 is 0.47% away (it had been published as 33.6% off) and the sustained
+  36.075 of 10.45 is 24.8% below the cap, i.e. a policy's sustained speed rather than a
+  bound. The vertical window $[-80, +64]$ is exceeded on 16.3% to 29.2% of recorded
+  transitions (the data reaches -112.0 and +70.0), so the hard shells rewrite real
+  console states on a fifth to a third of frames, and the console integrates position
+  with the velocity at frame $t$ (median residual exactly 0.0000 px) while every
+  implementation in the repository uses the predicted $t+1$ velocity (median 0.0625 px).
 - **Physics-injection grid** (README Section 10.47): `src/models/residual_dynamics.py`
   factors the two things the published shell models always changed together - the
   *target* the network predicts and the *kinematics the graph enforces* - into one

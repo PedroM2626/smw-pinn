@@ -1,0 +1,6 @@
+# Seconds-scale version of the README 10.48 metric-decomposition study (`make smoke-all`).
+# Same 21-model sweep, fewer starts and a shorter rollout: the point is to keep every
+# model class and both registries executing, not to reproduce a published figure.
+num_starts: 2
+horizon: 20
+seed: 42
