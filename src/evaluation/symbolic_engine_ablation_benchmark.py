@@ -96,7 +96,20 @@ GP_EFFORT_GRID: Tuple[Tuple[int, int], ...] = ((500, 25), (500, 75), (1000, 150)
 
 
 def pysr_available() -> bool:
-    return importlib.util.find_spec("pysr") is not None
+    """True only when PySR *and* its Julia runtime actually start.
+
+    A `pysr` install whose PythonCall.jl fails to boot - a cold or damaged Julia depot -
+    must be recorded as a skipped leg, as 10.43.9 and 10.45 already do for a missing
+    package, rather than raising through the middle of a study.
+    """
+    if importlib.util.find_spec("pysr") is None:
+        return False
+    try:
+        import juliacall  # noqa: F401
+    except Exception as error:  # pragma: no cover - environment-dependent
+        logger.warning("PySR is installed but its Julia runtime did not start: %s", error)
+        return False
+    return True
 
 
 def flat_transitions(

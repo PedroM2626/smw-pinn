@@ -430,7 +430,7 @@ def run_operator_physics_injection_benchmark(
     os.makedirs(output_dir, exist_ok=True)
     evaluator = RolloutEvaluator(device=device)
     checkpoint_dir = os.path.join(output_dir, "checkpoints")
-    scratch_dir = os.path.join(tempfile.gettempdir(), "mworld_physinj_scratch")
+    scratch_dir = os.path.join(tempfile.gettempdir(), f"mworld_physinj_scratch_{os.getpid()}")
     os.makedirs(scratch_dir, exist_ok=True)
 
     runs: Dict[int, Dict[str, Dict[str, Any]]] = {}

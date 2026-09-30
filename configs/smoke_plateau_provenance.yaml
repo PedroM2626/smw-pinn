@@ -1,0 +1,10 @@
+# Seconds-scale version of the README 10.50 plateau-provenance study (`make smoke-all`).
+# One seed, two support caps, a coarse probe grid: exercises every family and both arms of
+# the truncation without claiming a result.
+epochs: 2
+seeds: "42"
+caps: "49,30"
+probe_rows: 41
+latent_dim: 32
+fno_width: 16
+fno_modes: 4

@@ -159,6 +159,43 @@ PUBLISHED_CHECKPOINTS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = {
 
 REFERENCE = "established_wram_engine_rules"
 
+# The 10.51 arms: the same state-output networks with the bounds projected onto the
+# output, flown against the 10.42 shell so the two ways of guaranteeing a bound can be
+# compared by a planner rather than by a rollout.
+PROJECTION_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = {
+    f"{family.lower()}_state_projected": (
+        f"proj_{family.lower()}_best.pt",
+        (lambda f=family: _projected(f)),
+    )
+    for family in ("MLP", "DeepONet", "FNO")
+}
+
+
+def _projected(family: str) -> nn.Module:
+    from src.evaluation.projection_cell_benchmark import build_projected
+
+    return build_projected(family)
+
+
+# study name -> (arms to fly, artifact to write, study description for the artifact)
+STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, str]] = {
+    "grid": (
+        GRID_CHECKPOINTS,
+        ARTIFACT_NAME,
+        "Closed-loop control of the physics-injection grid of 10.47 on the real console, "
+        "with the published planner, objective, savestate and frame budget of 10.44, so the "
+        "shell-versus-parameterisation question left open by 10.44.1 is answered where it was "
+        "posed.",
+    ),
+    "projection": (
+        PROJECTION_ARMS,
+        "projection_cell_mpc_metrics.json",
+        "Closed-loop control of the 10.51 output-projection arms - the same state-output "
+        "networks with the engine's bounds projected onto their output - against the 10.42 "
+        "shell, so the two ways of guaranteeing a velocity bound are compared by a planner.",
+    ),
+}
+
 
 def _load(
     checkpoint: str, factory: Callable[[], nn.Module], device: torch.device
@@ -173,8 +210,12 @@ def _load(
     return model
 
 
-def build_contenders(device: torch.device, seed: int) -> Dict[str, nn.Module]:
-    """Fit the reference rules and reload every grid/published arm that exists."""
+def build_contenders(
+    device: torch.device,
+    seed: int,
+    arms: Optional[Dict[str, Tuple[str, Callable[[], nn.Module]]]] = None,
+) -> Dict[str, nn.Module]:
+    """Fit the reference rules and reload every requested arm that exists."""
     from src.environment.dataset_loader import load_and_preprocess_data
 
     data = load_and_preprocess_data(seed=seed)
@@ -186,7 +227,7 @@ def build_contenders(device: torch.device, seed: int) -> Dict[str, nn.Module]:
 
     registry: Dict[str, Tuple[str, Callable[[], nn.Module]]] = {
         **PUBLISHED_CHECKPOINTS,
-        **GRID_CHECKPOINTS,
+        **(arms if arms is not None else GRID_CHECKPOINTS),
     }
     for label, (checkpoint, factory) in registry.items():
         model = _load(checkpoint, factory, device)
@@ -205,8 +246,12 @@ def run_physics_injection_closed_loop(
     rom_path: str = ROM_PATH,
     state_path: str = STATE_YOSHI_ISLAND_1,
     output_dir: str = "results",
+    study: str = "grid",
 ) -> Dict[str, Any]:
-    """Drive every grid arm that has a checkpoint with the published planner."""
+    """Drive every arm of one study with the published planner."""
+    if study not in STUDIES:
+        raise ValueError(f"unknown study {study!r}, expected one of {sorted(STUDIES)}")
+    arms, artifact_name, study_text = STUDIES[study]
     if not hardware_present():
         raise RuntimeError(
             "The physics-injection closed loop needs the Libretro core and a ROM dump "
@@ -218,8 +263,8 @@ def run_physics_injection_closed_loop(
     draws = list(seeds) if seeds else [seed]
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    models = build_contenders(device, seed)
-    logger.info("=== Physics-injection closed loop: %d controllers ===", len(models))
+    models = build_contenders(device, seed, arms)
+    logger.info("=== %s closed loop: %d controllers ===", study, len(models))
 
     with open(state_path, "rb") as fh:
         initial_savestate = fh.read()
@@ -279,12 +324,7 @@ def run_physics_injection_closed_loop(
 
     outcomes = runs[draws[0]]
     payload: Dict[str, Any] = {
-        "study": (
-            "Closed-loop control of the physics-injection grid of 10.47 on the real console, "
-            "with the published planner, objective, savestate and frame budget of 10.44, so the "
-            "shell-versus-parameterisation question left open by 10.44.1 is answered where it "
-            "was posed."
-        ),
+        "study": study_text,
         "configuration": {
             "frames_budget": frames,
             "horizon": horizon,
@@ -303,14 +343,14 @@ def run_physics_injection_closed_loop(
     }
 
     os.makedirs(output_dir, exist_ok=True)
-    artifact = os.path.join(output_dir, ARTIFACT_NAME)
+    artifact = os.path.join(output_dir, artifact_name)
     write_metrics(
         artifact,
         payload,
         seed=seed,
         command=(
             "python -m src.evaluation.physics_injection_mpc_benchmark"
-            f" --seeds {','.join(str(s) for s in draws)}"
+            f" --seeds {','.join(str(s) for s in draws)} --study {study}"
         ),
         extra_meta={"controllers": list(outcomes)},
     )
@@ -333,6 +373,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rom-path", default=ROM_PATH)
     parser.add_argument("--state-path", default=STATE_YOSHI_ISLAND_1)
     parser.add_argument("--output-dir", default="results")
+    parser.add_argument(
+        "--study",
+        choices=tuple(STUDIES),
+        default="grid",
+        help="which registry of arms to fly and which artifact to write",
+    )
     return parser
 
 
@@ -348,6 +394,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         rom_path=args.rom_path,
         state_path=args.state_path,
         output_dir=args.output_dir,
+        study=args.study,
     )
     return 0
 

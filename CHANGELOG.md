@@ -11,6 +11,20 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The plateau-coincidence test** (README Section 10.50):
+  `src/evaluation/plateau_provenance_benchmark.py` decides the question 10.46 recorded but
+  refused to interpret - the plain DeepONet's implied plateau of 35.61 sitting 1.3% from
+  the console's sustained 36.075 - by manipulating the data instead of the estimator: each
+  family is retrained on training splits truncated at four velocity caps (49, 36, 30, 24)
+  and probed over the full recorded range, three seeds per cell. The DeepONet's plateau
+  follows its support down ($32.12 \to 17.36$, slope $0.644$, $r = 0.924$) and the published
+  35.61 lies inside the seed spread of the untruncated cell ($32.12 \pm 9.08$), so the
+  coincidence was the recording plus one draw, not the representation. The FNO tracks too
+  ($0.709$, $r = 0.824$); the MLP does not ($0.329$, $r = 0.424$) and is not even monotone -
+  capping its support at 30 moves its plateau *up* to 39.14 - which is the same lesson
+  10.43 drew from the other direction: a fixed point of the driven map is a statement about
+  the extrapolation, not about where the data ends.
+
 - **The rollout violation figure decomposed** (README Section 10.48):
   `src/evaluation/rollout_diagnostics.py` separates the three properties the published
   predicate mixes - integration consistency measured against the velocity a model

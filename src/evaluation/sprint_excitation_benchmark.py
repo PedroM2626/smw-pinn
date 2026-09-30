@@ -106,8 +106,10 @@ def analyse_dataset(
     gp_seeds: int,
     pysr_iterations: int,
     max_train: int,
+    budget: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Run the excitation profile and all three engines over one recording."""
+    budget = dict(budget or GP_BUDGET)
     data = load_and_preprocess_data(dataset_path=path, seed=seed)
     fit_bank = bank_from_transitions(
         data["train_states"], data["train_actions"], data["train_next_states"]
@@ -141,7 +143,7 @@ def analyse_dataset(
         eval_bank,
         truth,
         tuple(range(gp_seeds)),
-        GP_BUDGET,
+        budget,
         preset="real",
     )
     out["pysr"] = (

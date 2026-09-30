@@ -755,3 +755,70 @@ def test_readme_10_49_re_scoring_claims_are_derived_from_the_artifact() -> None:
         "integration_median_error_at_t_plus_1_px",
     ):
         assert f"{verdict[key]:.4f}" in text, f"README never quotes the {key} figure"
+
+
+def test_readme_10_50_plateau_table_is_the_artifact() -> None:
+    path = RESULTS / "plateau_provenance_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.50 plateau-provenance study has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = []
+    for family, block in artifact["results"].items():
+        for cap, entry in block["by_cap"].items():
+            if entry["plateau_mean"] is None:
+                continue
+            row = "| {} | {} | {:.1f} | {:.2f} | {} | {} | {} / 3 |".format(
+                family,
+                cap,
+                entry["training_support_cap"],
+                entry["plateau_mean"],
+                "{:.2f}".format(entry["plateau_std"]) if entry["plateau_std"] is not None else "-",
+                "{:.2f}".format(entry["gain_mean"]) if entry["gain_mean"] is not None else "-",
+                entry["seeds_with_a_plateau"],
+            )
+            if row not in text:
+                missing.append(row)
+        fit = block["plateau_vs_support_cap"]
+        if fit["slope"] is not None:
+            for token in (f"slope ${fit['slope']:.3f}$", f"correlation ${fit['correlation']:.3f}$"):
+                if token not in text:
+                    missing.append(f"{family}: {token}")
+    assert not missing, "README 10.50 table disagrees with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_51_forward_table_is_the_artifact() -> None:
+    """The projection contrasts quote three artifacts at once; check all three."""
+    proj_path = RESULTS / "projection_cell_metrics.json"
+    grid_path = RESULTS / "operator_physics_injection_metrics.json"
+    if not (proj_path.is_file() and grid_path.is_file()):
+        pytest.skip("the 10.51 study or its 10.47 reference has not been run")
+    proj = json.loads(proj_path.read_text(encoding="utf-8"))["summary"]
+    grid = json.loads(grid_path.read_text(encoding="utf-8"))["summary"]
+    text = _readme()
+    missing = []
+    for label, block in proj.items():
+        family = label.split("/")[0]
+        a, b = block["compared_with_state_none"], block["compared_with_residual_hard"]
+        row = (
+            r"| {family} | {none:.2f} | {proj:.2f} $\pm$ {std:.2f} | {shell:.2f} |"
+            " {adif:+.2f}, $d_z$ {adz:+.2f}, $p$ {ap:.3f} |"
+            " {bdif:+.2f}, $d_z$ {bdz:+.2f}, $p$ {bp:.3f} |"
+        ).format(
+            family=family,
+            none=grid[f"{family}/state/none"]["drift_multistart_mean_px"]["mean"],
+            proj=block["drift_multistart_mean_px"]["mean"],
+            std=block["drift_multistart_mean_px"]["std"],
+            shell=grid[f"{family}/residual/hard"]["drift_multistart_mean_px"]["mean"],
+            adif=a["mean_difference"],
+            adz=a["cohen_dz"],
+            ap=a["ttest_p"],
+            bdif=b["mean_difference"],
+            bdz=b["cohen_dz"],
+            bp=b["ttest_p"],
+        )
+        if row not in text:
+            missing.append(row)
+    assert not missing, "README 10.51 forward table disagrees with the artifacts:\n" + "\n".join(
+        missing
+    )

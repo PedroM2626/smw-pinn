@@ -223,3 +223,24 @@ def test_closed_loop_registry_names_the_checkpoints_the_grid_publishes() -> None
     for key, label in expected.items():
         assert GRID_CHECKPOINTS[key][0] == checkpoint_name(label)
         assert arm_label(*label.split("/")) == label
+
+
+def test_projection_registry_matches_the_files_10_51_publishes() -> None:
+    """A renamed projected arm would silently drop a row from the closed loop."""
+    from src.evaluation.physics_injection_mpc_benchmark import PROJECTION_ARMS, STUDIES
+    from src.evaluation.projection_cell_benchmark import (
+        FAMILIES,
+        build_projected,
+        projection_checkpoint_name,
+    )
+
+    assert set(PROJECTION_ARMS) == {f"{f.lower()}_state_projected" for f in FAMILIES}
+    for family in FAMILIES:
+        checkpoint, factory = PROJECTION_ARMS[f"{family.lower()}_state_projected"]
+        assert checkpoint == projection_checkpoint_name(family)
+        model = factory()
+        assert model(torch.zeros(2, 8), torch.zeros(2, 6)).shape == (2, 8)
+        assert model.bounds_imposed_by_construction is True
+        assert isinstance(model, type(build_projected(family)))
+    assert set(STUDIES) == {"grid", "projection"}
+    assert STUDIES["projection"][1] == "projection_cell_mpc_metrics.json"

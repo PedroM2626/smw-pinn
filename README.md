@@ -92,6 +92,9 @@ Within the evaluated benchmark, the **Hard Residual PINN (Hard Physics Constrain
    * [10.47 Is It the Shell or the Parameterisation? The Physics-Injection Grid](#1047-is-it-the-shell-or-the-parameterisation-the-physics-injection-grid)
    * [10.48 What the "Kinematic Violation" Figure Actually Measures](#1048-what-the-kinematic-violation-figure-actually-measures)
    * [10.49 Which Documented Constant Does the Telemetry Actually Support?](#1049-which-documented-constant-does-the-telemetry-actually-support)
+   * [10.50 Is the Coincidence a Bound or the Support?](#1050-is-the-coincidence-a-bound-or-the-support)
+   * [10.51 The Excluded Cell: Bounds Projected onto a State-Output Network](#1051-the-excluded-cell-bounds-projected-onto-a-state-output-network)
+   * [10.52 Collecting the Missing Branch: the Gravity Gate Under Targeted Excitation](#1052-collecting-the-missing-branch-the-gravity-gate-under-targeted-excitation)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -2116,6 +2119,63 @@ Regenerate: `python -m src.evaluation.kinematic_metric_decomposition_benchmark` 
 
 Regenerate: `python -m src.evaluation.velocity_class_benchmark` (emulator-free, ~2 s; `make velocity-classes`; `--data-dir` and `--results-dir` control the inputs).
 
+### 10.50 Is the Coincidence a Bound or the Support?
+
+Section 10.46 published a number it explicitly refused to interpret: the plain DeepONet's implied plateau, $35.61$ sub-pixels/frame, sits $1.3\%$ from the sustained sprint ceiling the console was measured at in 10.45 ($36.075$), while the other five models probed there sat between 21 and 30. The section said the agreement "is not evidence of anything... but it is the kind of number a future study should test rather than smooth over". This is that test.
+
+The instrument is a manipulation rather than an estimator: keep the console and the architecture, change only the support of what the model is allowed to see. Transitions whose next-state velocity exceeds a cap - $49$ (the recording as is), $36$, $30$, $24$ - are dropped from the training split, and each resulting model is probed with the 10.46 fixed-point instrument over the *full* recorded range, so the probe cannot be the thing that moved. Three seeds per cell.
+
+| family | training cap | support the model saw | implied plateau | std over seeds | max driven accel. | seeds with a plateau |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| DeepONet | 49.0 | 49.0 | 32.12 | 9.08 | 16.49 | 3 / 3 |
+| DeepONet | 36.0 | 36.0 | 28.75 | 11.81 | 17.07 | 3 / 3 |
+| DeepONet | 30.0 | 30.0 | 18.18 | 1.80 | 17.86 | 3 / 3 |
+| DeepONet | 24.0 | 24.0 | 17.36 | 0.75 | 16.96 | 3 / 3 |
+| *DeepONet, plateau vs support* | | slope $0.644$ | correlation $0.924$ | | | |
+| FNO | 49.0 | 49.0 | 23.85 | 3.07 | 2.02 | 2 / 3 |
+| FNO | 36.0 | 36.0 | 23.56 | 1.26 | 0.75 | 3 / 3 |
+| FNO | 30.0 | 30.0 | 7.00 | 1.65 | 0.33 | 2 / 3 |
+| FNO | 24.0 | 24.0 | 8.66 | 2.90 | 0.53 | 2 / 3 |
+| *FNO, plateau vs support* | | slope $0.709$ | correlation $0.824$ | | | |
+| MLP | 49.0 | 49.0 | 33.12 | 4.13 | 12.51 | 3 / 3 |
+| MLP | 36.0 | 36.0 | 36.31 | 7.44 | 11.76 | 3 / 3 |
+| MLP | 30.0 | 30.0 | 39.14 | 2.84 | 8.26 | 3 / 3 |
+| MLP | 24.0 | 24.0 | 20.34 | 1.82 | 6.76 | 3 / 3 |
+| *MLP, plateau vs support* | | slope $0.329$ | correlation $0.424$ | | | |
+
+1. **The coincidence was the data, and the number was one draw.** With the recording's fast frames removed, the DeepONet's plateau follows them down: $32.12$ with the full support, $17.36$ at cap $24$, a slope of $0.644$ on the support cap with correlation $0.924$. The published $35.61$ is inside the seed spread of its own untruncated cell ($32.12 \pm 9.08$ over three seeds) - so the $1.3\%$ agreement with $36.075$ is neither a property of the operator representation nor a measurement of the console: it is one sample from a distribution whose mean is set by what the model was shown. Section 10.46's decision to record rather than interpret is vindicated; the interpretation is now closed, and it is negative.
+2. **The FNO tracks the support too, and more steeply** ($0.709$, $r = 0.824$, from $23.85$ down to $8.66$), which is what the 10.46 traction test would have predicted: its plateau at the full support was already one of the "plausible" ones, and it collapses when the data stops telling it anything about the top of the range.
+3. **The MLP is the counterexample, and it is instructive.** Its plateau does not track the cap ($0.329$, $r = 0.424$) and is not even monotone: truncating the support to $30$ moves the implied plateau *up* to $39.14$, above the fastest frame the model ever saw. A fixed point of the driven map is a statement about where the learned extrapolation folds back, not about where the data stops, and this is the same logic that made 10.43 refuse to report "no fixed point" as the data maximum - now demonstrated from the other side.
+4. **Two of the three families plateau below their support, all three plateau far below the run cap that 10.49 establishes.** The untruncated plateaus are $32.12$, $23.85$ and $33.12$ against a documented run bound of $48.0$ sub-pixels/frame: on the correct reference the gap is $31\%$ to $50\%$ rather than the $50\%$ to $70\%$ 10.46 computed against the P-meter constant.
+
+**Limitations.** Three seeds per cell is enough to say whether a plateau is stable and not enough to fit a slope with confidence intervals; the slope and correlation are reported as descriptive quantities, which is exactly the reading finding 1 needs (the published value lies inside the observed spread). Truncating the training split changes the class balance of the *upper* velocity band, so an arm trained at cap $24$ also sees proportionally fewer sustained-run frames; the probe scan range is held at the full recorded support in every cell to keep the comparison honest, and where no fixed point exists the cell records "none" rather than the data maximum, following 10.43's rule.
+
+![Does the learned plateau follow the bound or the support?](results/figures/plateau_provenance.png)
+
+*Implied plateau against the velocity cap applied to the training split, three seeds per point. A plateau that were the engine's bound would stay flat as the cap is lowered; the dotted diagonal is what a pure support artifact looks like. The DeepONet and the FNO fall with the support; the MLP does not move monotonically at all.*
+
+Regenerate: `python -m src.evaluation.plateau_provenance_benchmark` (emulator-free, ~15 min for 3 families $\times$ 4 caps $\times$ 3 seeds; `make plateau-provenance`; smoke config `configs/smoke_plateau_provenance.yaml`; `--caps`, `--seeds` and `--epochs` control the budget).
+
+### 10.51 The Excluded Cell: Bounds Projected onto a State-Output Network
+
+10.47 crossed target with mechanism and left one cell unimplemented, with the reason stated in its limitations: a clamp has nothing to integrate when the network already outputs the next state, so ``state`` $\times$ ``hard`` is not a shell but an *output projection* - clip the predicted velocity to the admissible window and re-derive the position from the clipped value. That is a third way to impose the same physical fact, and no arm of this repository had ever used it: the shells constrain what the network can express, the composite penalty constrains what it is rewarded for, and the projection constrains what it is allowed to say, after the fact, for any weights whatever. `src/models/output_projection.py` implements it (and is deliberately *not* the CBF layer of 10.16, which solves a quadratic program on the action to keep the next state safe - that changes what an agent commands, not how a prediction is read).
+
+The three families are then trained exactly as 10.47 trains its cells - same dataset, split, optimizer recipe, five seeds - and compared with the two cells that already exist for the same family, with the comparison numbers read from the 10.47 artifact so both sides of every contrast come from one protocol.
+
+| family | `state`/`none` drift (px) | `state`/projected drift (px) | `residual`/`hard` drift (px) | projection vs no mechanism ($\Delta$ px, $d_z$, $t$ $p$) | projection vs the shell ($\Delta$ px, $d_z$, $t$ $p$) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| MLP | 282.03 | 95.08 $\pm$ 27.46 | 137.06 | -186.94, $d_z$ -1.70, $p$ 0.019 | -41.98, $d_z$ -2.64, $p$ 0.004 |
+| DeepONet | 168.01 | 96.14 $\pm$ 34.63 | 127.81 | -71.87, $d_z$ -1.29, $p$ 0.045 | -31.67, $d_z$ -1.46, $p$ 0.031 |
+| FNO | 161.27 | 144.15 $\pm$ 41.04 | 136.69 | -17.12, $d_z$ -0.61, $p$ 0.244 | +7.46, $d_z$ +0.32, $p$ 0.510 |
+
+1. **On open-loop prediction the cheap mechanism wins.** Imposing the bounds on the output rather than building them into the graph improves multi-start drift for two of three families *against the shell* - by $41.98$ px for the MLP ($d_z = -2.64$, $p = 0.004$) and $31.67$ px for the DeepONet ($p = 0.031$) - and never hurts it (the FNO contrast is $+7.46$ px with $d_z = +0.32$, $p = 0.51$). Against the same network with no mechanism at all, every family improves, the MLP by $186.94$ px. The projection is also the only one of the three mechanisms that is a guarantee without changing what the network is asked to output: the data loss of the projected cells ($0.6862$ to $0.7984$) is of the same order as the shell's ($0.6214$ to $0.6273$), while the unassisted state models span $0.5404$ to $44.6601$, so the guarantee is not being paid for with a worse fit.
+2. **Why this is the right completion of the grid rather than another variant:** the three mechanisms differ in the strength of what they ensure. `none` ensures nothing; `soft` ensures the bound in expectation, and 10.48 measured how far that gets: the soft-penalised arms of 10.47 hold the bound on their held-out single steps (0.0% out-of-bounds for three of the six soft cells) and then leave it on up to 41.5% of their *rollout* frames; `hard` ensures it for the increment and, through the integration, ensures position consistency; `projected` ensures the bound for *any* weights, including the state-output ones, but says nothing about consistency until the position is re-derived - which is precisely what the wrapper does, so its outputs are consistent by construction too. After this section the repository has measured every cell of that ladder.
+3. **And why the result is not yet a recommendation:** 10.44 established, and 10.47 re-established on fifteen more models, that open-loop drift does not order closed-loop control. The projection's advantage above is therefore a prediction-side fact, and the control-side question is answered next, with the same planner, objective, savestate and budget that produced the 10.44 and 10.47 control tables.
+
+**Limitations.** The projection is applied to the velocity channels only and passes the contact logits through untouched, so it cannot express a collision response - it forbids an impossible state rather than producing the correct one. The comparison against `residual`/`hard` is across two different parameterisations, so a difference between them is the difference between two *mechanisms in the place where each is naturally defined*, not a controlled single-axis contrast; the contrast inside the `state` target (projection versus nothing) is the clean one.
+
+Regenerate: `python -m src.evaluation.projection_cell_benchmark` (emulator-free, ~6 min for three arms $\times$ five seeds; `make projection-cell` also flies them; smoke config `configs/smoke_projection_cell.yaml`).
+
 ---
 
 ## 11. Complete Reproducibility Guide
@@ -2129,7 +2189,7 @@ smw-pinn/
 │   ├── multiseed.yaml                  # K=10 significance study defaults
 │   ├── sample_efficiency.yaml          # Pareto study defaults
 │   ├── reproduce.yaml                  # 2-epoch CPU smoke test (`make reproduce`)
-│   └── smoke_*.yaml                    # 11 fast emulator-free study configs (`make smoke`)
+│   └── smoke_*.yaml                    # 15 fast emulator-free study configs (`make smoke`)
 ├── CONTRIBUTING.md                     # Setup, canonical commands, conventions
 ├── Dockerfile / .dockerignore          # CPU container (CUDA via build-arg)
 ├── Makefile                            # install / test / lint / reproduce / benchmark
@@ -2173,6 +2233,10 @@ smw-pinn/
 │   ├── physics_injection_structure_probe_metrics.json # 10.46 probes applied to the 10.47 grid (10.47)
 │   ├── kinematic_metric_decomposition_metrics.json # Violation rate decomposed on 21 models (10.48)
 │   ├── velocity_class_metrics.json          # Recorded velocity envelope vs the documented classes (10.49)
+│   ├── plateau_provenance_metrics.json      # Plateaus followed by the data support (10.50)
+│   ├── projection_cell_metrics.json         # State x hard as an output projection (10.51)
+│   ├── projection_cell_mpc_metrics.json     # The projected arms flown on the console (10.51)
+│   ├── gate_excitation_metrics.json         # The gravity gate measured on three recordings (10.52)
 │   ├── inverse_model_mpc_metrics.json       # Closed-loop inverse-model MPC comparison (10.44)
 │   ├── checkpoints/                       # Best trained model & policy weights (.pt)
 │   ├── checkpoints_ensemble/              # Deep Ensemble member weights (E=5) (.pt)
@@ -2214,6 +2278,7 @@ smw-pinn/
 │   │   ├── deeponet.py                    # DeepONet + Physics-Constrained DeepONet operators
 │   │   ├── fno.py                         # Fourier Neural Operator (spectral conv baseline)
 │   │   ├── residual_dynamics.py           # Increment target + optional hard kinematic shell (10.47)
+│   │   ├── output_projection.py           # Bounds projected onto a state-output network (10.51)
 │   │   └── tilemap_pinn.py                # Tilemap-conditioned spatial PINN architecture
 │   ├── losses/
 │   │   └── physics_losses.py              # Analytical physics loss functions
@@ -2271,6 +2336,9 @@ smw-pinn/
 │       ├── rollout_diagnostics.py           # Violation rate split into consistency/smoothness/bounds (10.48)
 │       ├── kinematic_metric_decomposition_benchmark.py # Re-scores every model with the split metric (10.48)
 │       ├── velocity_class_benchmark.py      # Which documented speed constant the telemetry reaches (10.49)
+│       ├── plateau_provenance_benchmark.py  # Plateau vs training-support truncation (10.50)
+│       ├── projection_cell_benchmark.py     # The state x hard output-projection cell (10.51)
+│       ├── gate_excitation_benchmark.py     # The gravity gate measured on three recordings (10.52)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -2615,6 +2683,26 @@ python -m src.evaluation.kinematic_metric_decomposition_benchmark
 #     classes, the vertical window, and the integration-convention test. Emulator-free,
 #     ~2 s; writes results/velocity_class_metrics.json.
 python -m src.evaluation.velocity_class_benchmark
+
+# 57. Follow a learned plateau with the data it was shown (10.50): train each family on
+#     training splits truncated at four velocity caps and re-probe over the full range.
+#     Emulator-free (~15 min); `--caps`, `--seeds` and `--epochs` cut the budget; writes
+#     results/plateau_provenance_metrics.json.
+python -m src.evaluation.plateau_provenance_benchmark
+
+# 58. The cell 10.47 excluded (10.51): fit the state-output networks with the bounds
+#     projected onto their output (~6 min), then fly them against the 10.42 shell on the
+#     console (~12 min, hardware). Writes results/projection_cell_metrics.json and
+#     results/projection_cell_mpc_metrics.json.
+python -m src.evaluation.projection_cell_benchmark
+python -m src.evaluation.physics_injection_mpc_benchmark --study projection
+
+# 59. Collect and measure the missing branch of the gravity gate (10.52): step 1 records
+#     jump-excited WRAM telemetry (hardware, ~15 min), step 2 measures the tiers on the
+#     published, sprint and jump recordings with the engines of 10.43.9 (emulator-free,
+#     ~20 min; `--only published_gameplay` and the GP budget flags cut it).
+python scripts/record_jump_gameplay.py --episodes 10 --frames-per-episode 700
+python -m src.evaluation.gate_excitation_benchmark
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)
@@ -2650,7 +2738,7 @@ smw-pinn check-all # the same gate on Windows, where `make` is usually unavailab
 * **Asset paths in one place (`src/utils/paths.py`):** the Libretro core, ROM, savestates, datasets and every `results/` output resolve through repo-root-anchored, `SMW_*`-overridable helpers (`require_rom`, `require_core`, `results_file`, `checkpoint_file`), so entry points behave identically from any working directory and a missing ROM produces an acquisition message instead of a traceback. The WRAM register map lives in `src/environment/wram.py`.
 * **Cross-platform runner (`src/cli.py`):** `pip install -e .` exposes `smw-pinn`, whose subcommands mirror the Makefile (`smw-pinn baselines`, `smw-pinn multiseed`, `smw-pinn check-all`) plus a generic `smw-pinn run <module> [args...]` for the ~40 documented entry points. The mypy typed-core list lives here, so `make`, CI and `smw-pinn` cannot drift apart.
 * **Provenance and artifact index:** every artifact written by these tools embeds a `_meta` block (git SHA and dirty flag, library/CUDA versions, seed, command, UTC timestamp) via `src/utils/provenance.py:write_metrics`, and `results/MANIFEST.md` maps artifact → writer → command → README section. `tests/test_results_manifest.py` fails CI on an ownerless artifact, a fictional writer, a dangling claim, a growing `_meta` exemption list, a checkpoint newer than the result that used it, or a §10 headline that no longer matches its artifact.
-* **Fast smoke tests for the §10 studies:** twelve emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`, `smoke_operators.yaml`, `smoke_symbolic_inverse.yaml`, `smoke_symbolic_tilemap.yaml`, `smoke_symbolic_engines.yaml`, `smoke_physics_injection.yaml`, `smoke_metric_decomposition.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings, the §10.44 closed-loop comparison and the §10.47 grid flown on the console) are covered by `tests/test_hardware_loops.py` instead.
+* **Fast smoke tests for the §10 studies:** fifteen emulator-free studies that otherwise need minutes or a GPU also ship a seconds-scale config (`configs/smoke_multiseed.yaml`, `smoke_sample_efficiency.yaml`, `smoke_pinn_ensemble.yaml`, `smoke_unified_ppo.yaml`, `smoke_set_multi_entity.yaml`, `smoke_deeponet.yaml`, `smoke_operators.yaml`, `smoke_symbolic_inverse.yaml`, `smoke_symbolic_tilemap.yaml`, `smoke_symbolic_engines.yaml`, `smoke_physics_injection.yaml`, `smoke_metric_decomposition.yaml`, `smoke_plateau_provenance.yaml`, `smoke_projection_cell.yaml`, `smoke_gate_excitation.yaml`) and `make smoke` / `smw-pinn smoke-all` runs them all into `results_smoke/` (git-ignored, so a smoke run can never overwrite a published artifact). `tests/test_smoke_runs.py` executes the two cheapest and contract-checks every config against its entry point's real `--help` output, because a config key the parser does not know is silently ignored. The studies that genuinely need the Libretro core and ROM (the §10.18–§10.34 recordings, the §10.44 closed-loop comparison, the §10.47 grid and the §10.51 projection arms flown on the console, and the two excitation recorders of §10.45 and §10.52) are covered by `tests/test_hardware_loops.py` instead.
 * **Standardized episode preamble:** closed-loop episodes start with `SnesLibretroEmulator.start_episode()` (restore savestate → force gameplay mode `0x14` → warm-up frames → read state). Before it existed, ~15 scripts copy-pasted three different versions of that preamble and the difference was worth 3.4x progress (§10.38.1).
 
 ---

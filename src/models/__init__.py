@@ -15,6 +15,7 @@ from src.models.inverse_world_models import (
     IdentifiedKinematicsDynamics,
     SymbolicKinematicsDynamics,
 )
+from src.models.output_projection import ProjectedDynamics
 from src.models.pinn_ensemble import DeepPINNEnsemble
 from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
 from src.models.pinn_hard_residual import HardResidualPINNDynamics
@@ -51,6 +52,7 @@ __all__ = [
     "PhysicsConstrainedDeepONetDynamics",
     "FNODynamics",
     "ResidualDynamics",
+    "ProjectedDynamics",
     "SoftPINNDynamics",
     "HardResidualPINNDynamics",
     "GravityIdentifiedPINNDynamics",

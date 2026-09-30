@@ -1,0 +1,10 @@
+# Seconds-scale version of the README 10.52 gate-excitation study (`make smoke-all`).
+# One recording, one GP seed at a token budget, and PySR at its minimum iteration count:
+# the smoke run proves the plumbing across all three engines, not a measurement.
+gp_seeds: 1
+gp_population: 60
+gp_generations: 4
+pysr_iterations: 1
+max_train: 400
+only: "published_gameplay"
+seed: 42

@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -41,6 +41,10 @@ help:
 	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "metric-decomposition  Split the rollout violation figure into consistency/smoothness (10.48)"
 	@echo "velocity-classes  Which documented speed constant the telemetry supports (README 10.49)"
+	@echo "plateau-provenance  Does a learned plateau follow the bound or the data support? (10.50)"
+	@echo "projection-cell  The state x hard output-projection cell, fitted and flown (10.51)"
+	@echo "gate-excitation  The held-jump gate measured on three recordings (README 10.52)"
+	@echo "record-jump        Record jump-excited WRAM telemetry (needs the console)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
 
@@ -157,6 +161,19 @@ metric-decomposition:
 velocity-classes:
 	$(PY) -m src.evaluation.velocity_class_benchmark
 
+plateau-provenance:
+	$(PY) -m src.evaluation.plateau_provenance_benchmark
+
+projection-cell:
+	$(PY) -m src.evaluation.projection_cell_benchmark
+	$(PY) -m src.evaluation.physics_injection_mpc_benchmark --study projection
+
+gate-excitation:
+	$(PY) -m src.evaluation.gate_excitation_benchmark
+
+record-jump:
+	$(PY) scripts/record_jump_gameplay.py
+
 # Seconds-scale counterparts of the studies that otherwise need a GPU and minutes
 # (configs/smoke_*.yaml). They write into $(SMOKE_DIR)/ so no published artifact in
 # results/ can ever be overwritten by a smoke run; tests/test_smoke_runs.py asserts
@@ -175,6 +192,9 @@ smoke-all:
 	$(PY) -m src.evaluation.operator_physics_injection_benchmark --config $(CONFIG_DIR)/smoke_physics_injection.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.kinematic_metric_decomposition_benchmark --config $(CONFIG_DIR)/smoke_metric_decomposition.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.velocity_class_benchmark --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.plateau_provenance_benchmark --config $(CONFIG_DIR)/smoke_plateau_provenance.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.projection_cell_benchmark --config $(CONFIG_DIR)/smoke_projection_cell.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.gate_excitation_benchmark --config $(CONFIG_DIR)/smoke_gate_excitation.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

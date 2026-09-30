@@ -106,6 +106,10 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `physics_injection_structure_probe_metrics.json` | `src/evaluation/learned_structure_probe_benchmark.py --registry grid` | no | 10.47 |
 | `kinematic_metric_decomposition_metrics.json` | `src/evaluation/kinematic_metric_decomposition_benchmark.py` | no | 10.48 |
 | `velocity_class_metrics.json` | `src/evaluation/velocity_class_benchmark.py` | no | 10.49 |
+| `plateau_provenance_metrics.json` | `src/evaluation/plateau_provenance_benchmark.py` | no | 10.50 |
+| `projection_cell_metrics.json` | `src/evaluation/projection_cell_benchmark.py` | no | 10.51 |
+| `projection_cell_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py --study projection` | yes | 10.51 (pending: the console run is in flight) |
+| `gate_excitation_metrics.json` | `src/evaluation/gate_excitation_benchmark.py` | no | 10.52 (pending: the console run is in flight) |
 
 ## Input freshness
 
