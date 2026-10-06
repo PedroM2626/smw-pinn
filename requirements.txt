@@ -56,4 +56,4 @@ ruff>=0.16.0,<0.17
 # `>=1.0.0` let CI resolve a newer interpreter that crashes the typecheck gate
 # (run #14, exit code 2). Keep it locked to what makes `make typecheck` green;
 # widen deliberately only after re-validating on every supported Python version.
-mypy>=2.3.1,<2.4
+mypy>=2.3.1,<2.5
