@@ -16,7 +16,7 @@ numbers* - those are reported here and in README Section 12, never applied silen
   with* the thing a network predicts, in three modes that differ in one line - `next`
   ($\hat x = x + \hat v_{t+1}/16$, the published shell, rebuilt so the axis can be flipped
   inside one class), `carried` ($\hat x = x + v_t/16$, the convention 10.49 measured on the
-  console) and `offset` ($\hat x = x + (v_t + arepsilon_t)/16$, a free head for the frames
+  console) and `offset` ($\hat x = x + (v_t + \varepsilon_t)/16$, a free head for the frames
   where the console leaves its own rule). `src/evaluation/effective_velocity_benchmark.py`
   trains 3 families x 3 conventions x 3 mechanisms over five seeds and reports the published
   predicate at a tolerance ladder (0.2 to 0.002 px) under both velocity conventions, with the
@@ -47,6 +47,56 @@ numbers* - those are reported here and in README Section 12, never applied silen
   (13.37% above $+64$) and §4.3.5's non-penetration condition, which the telemetry satisfies
   on 0.00% of the 2,943 frames it conditions on (median $|v_y| = 6.0$) - the condition
   `GroundContactConsistencyLoss` penalises.
+- **The canonical sparse-identification estimator, run on every recording** (README Section
+  10.56): `src/inverse/sindy_identification.py` implements SINDy as published (degree-2
+  polynomial dictionary, ridge with the constant exempt, sequential thresholding to a sparse
+  support), with two decisions that turn out to carry the section: the columns are standardised
+  for conditioning only and rescaled back before thresholding, so $\alpha$ is in physical units,
+  and the derivative is the forward difference over one frame, which is what the engine's own
+  step is. `src/evaluation/sindy_identification_benchmark.py` identifies five recordings - the
+  published gameplay set and the four this repository recorded for §10.31, §10.41, §10.45 and
+  §10.52 - under least squares and a Huber variant, with a six-point threshold sweep. The Huber
+  fit recovers the sub-pixel scale as 16.00 on all five recordings (worst deviation
+  $9.4 \times 10^{-5}$) where least squares gives 16.17-19.01 and §10.37's gradient
+  identification of the same recording gave 21.41; it recovers the gravity gate at 79-98% of its
+  measured size where least squares returns it with the *sign inverted* on all four recordings
+  that contain it; and it invents no gate on the fifth, which has none, so the spurious-structure
+  list is empty. The threshold is a units statement: at $\alpha = 0.02$ the jump recording's
+  displacement law reduces to one term, $0.0625\,v_x$, at relative error $1.8 \times 10^{-6}$,
+  while at $\alpha = 0.1$ - above $1/16$ - the velocity term is deleted and the pooled held-out
+  $R^2$ is *better* than at $\alpha = 0.5$. What the method does not recover is reported with the
+  same table: the horizontal velocity law is a 23-term interaction pile at $R^2$ 0.124, §4.3.4's
+  single friction coefficient does not exist in this data, and the pruning step shows why -
+  36 of the 81 dictionary columns are constant or exact duplicates on the published recording,
+  so no identification on it can exceed rank 45.
+- **The numerical method as an axis** (README Section 10.55): `src/models/neural_ode_dynamics.py`
+  reads the same networks used in 10.42/10.47/10.53 as a *continuous* acceleration field
+  ($\mathrm{d}x/\mathrm{d}t = v_x/16$, $\mathrm{d}v/\mathrm{d}t = a(s,a)$) and takes one frame as
+  one integration step of that field, under four named solvers: forward Euler, the velocity-first
+  (semi-implicit) split every published shell implements, explicit midpoint and classical RK4.
+  `src/evaluation/neural_ode_integrator_benchmark.py` trains 3 families x 4 solvers x 2 bounding
+  mechanisms over five seeds, and its measure is a fitted one: the coefficient $c$ in
+  $\hat x = x + v_t/16 + c\,\hat a/16$ is regressed out of each trained arm's held-out behaviour
+  and the identical estimator is applied to the recorded console. Every arm measures its own
+  method (0.0000 / 1.0000 / 0.5025-0.5042 / 0.5009-0.5014), and the console's fitted slope is
+  0.4956 horizontally - which this section then explains away rather than publishes: the slope is
+  carried by an average of 12.6 of 1,792 held-out frames per split, the exact-frame rate is 93.5%
+  over all frames and 99.3% on the frames with no contact flag set, and on that contact-free
+  subset the fitted slope falls to 0.0720. The engine's step is a first-order accumulation and the
+  exceptions are collisions. Euler is also the best predictor (0.1056 px, the 10.53 `carried`
+  floor, with the tight-tolerance violation rate at exactly 0.0000) while the second-order methods
+  pay 0.1182-0.1209 px and the split 0.1281-0.1366 px, so the accuracy NeuralODEs are bought for
+  is aimed at a truncation error the target does not have. Closed loop
+  (`physics_injection_mpc_benchmark.py --study ode`) `deeponet_euler_free` covers
+  643.02 $\pm$ 0.08 px, the tightest spread any learned controller in this repository has
+  produced; for the MLP the ordering inverts against the open loop (midpoint and RK4 reach the
+  frame budget in all five seeds at 610.40 and 614.09 px where Euler dies once at 521.66 px).
+  The study also carries its own reproducibility check, because its `euler` and `symplectic` arms
+  are 10.53's `carried` and `next` cells through a second code path: position error reproduces to
+  0.0000 px and MLP closed-loop progress to +0.65 px, drift does not reproduce at all (gaps of
+  0.0008 to 88.00 px) and the FNO's closed-loop row moves by -469.38 px - which corrects 10.53's
+  finding 7 and is recorded in README Section 12.
+
 
 
 - **The excluded cell, filled** (README Section 10.51): `src/models/output_projection.py`

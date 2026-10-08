@@ -1,0 +1,10 @@
+# Seconds-scale version of the README 10.55 integrator study (`make smoke-all`).
+# One seed, two epochs, one family: the point is that every solver trains and scores, not
+# that any coefficient reproduces.
+epochs: 2
+patience: 2
+seeds: "42"
+arms: MLP
+latent_dim: 32
+fno_width: 16
+fno_modes: 4

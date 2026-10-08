@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -45,7 +45,9 @@ help:
 	@echo "projection-cell  The state x hard output-projection cell, fitted and flown (10.51)"
 	@echo "gate-excitation  The held-jump gate measured on three recordings (README 10.52)"
 	@echo "effective-velocity  Predict the velocity the engine integrates with (10.53)"
-	@echo "physics-claims  Audit README section 4 against the code and the telemetry (10.53)"
+	@echo "physics-claims  Audit README section 4 against the code and the telemetry (10.54)"
+	@echo "neural-ode  Learn a continuous field, choose the integrator (10.55)"
+	@echo "sindy  Sparse identification of the engine's law on every recording (10.56)"
 	@echo "record-jump        Record jump-excited WRAM telemetry (needs the console)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
@@ -180,6 +182,13 @@ effective-velocity:
 physics-claims:
 	$(PY) -m src.evaluation.physics_claim_audit
 
+neural-ode:
+	$(PY) -m src.evaluation.neural_ode_integrator_benchmark
+	$(PY) -m src.evaluation.physics_injection_mpc_benchmark --study ode
+
+sindy:
+	$(PY) -m src.evaluation.sindy_identification_benchmark
+
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
 
@@ -206,6 +215,8 @@ smoke-all:
 	$(PY) -m src.evaluation.gate_excitation_benchmark --config $(CONFIG_DIR)/smoke_gate_excitation.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.effective_velocity_benchmark --config $(CONFIG_DIR)/smoke_effective_velocity.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.physics_claim_audit --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.neural_ode_integrator_benchmark --config $(CONFIG_DIR)/smoke_neural_ode.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.sindy_identification_benchmark --config $(CONFIG_DIR)/smoke_sindy.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

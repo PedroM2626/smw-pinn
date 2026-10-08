@@ -16,6 +16,7 @@ from src.models.inverse_world_models import (
     IdentifiedKinematicsDynamics,
     SymbolicKinematicsDynamics,
 )
+from src.models.neural_ode_dynamics import FIELD_EVALUATIONS, SOLVERS, NeuralODEDynamics
 from src.models.output_projection import ProjectedDynamics
 from src.models.pinn_ensemble import DeepPINNEnsemble
 from src.models.pinn_gravity import GravityIdentifiedPINNDynamics
@@ -55,6 +56,9 @@ __all__ = [
     "ResidualDynamics",
     "ProjectedDynamics",
     "EffectiveVelocityDynamics",
+    "NeuralODEDynamics",
+    "SOLVERS",
+    "FIELD_EVALUATIONS",
     "SoftPINNDynamics",
     "HardResidualPINNDynamics",
     "GravityIdentifiedPINNDynamics",

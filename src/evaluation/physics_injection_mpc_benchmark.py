@@ -202,6 +202,23 @@ def _build_effective_arms() -> Dict[str, Tuple[str, Callable[[], nn.Module]]]:
 
 EFFECTIVE_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = _build_effective_arms()
 
+
+def _build_ode_arms() -> Dict[str, Tuple[str, Callable[[], nn.Module]]]:
+    """The twelve unconstrained 10.55 cells: one integrator per row, same field network."""
+    from src.evaluation import neural_ode_integrator_benchmark as ode
+
+    return {
+        f"{family.lower()}_{solver}_free": (
+            ode.checkpoint_name(ode.arm_label(family, solver, "free")),
+            (lambda f=family, s=solver: ode.build_arm(f, s, "free", STATE_DIM, ACTION_DIM)),
+        )
+        for family in ode.FAMILIES
+        for solver in ode.SOLVERS
+    }
+
+
+ODE_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = _build_ode_arms()
+
 # study name -> (arms to fly, artifact to write, study description for the artifact)
 STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, str]] = {
     "grid": (
@@ -218,6 +235,14 @@ STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, st
         "Closed-loop control of the 10.51 output-projection arms - the same state-output "
         "networks with the engine's bounds projected onto their output - against the 10.42 "
         "shell, so the two ways of guaranteeing a velocity bound are compared by a planner.",
+    ),
+    "ode": (
+        ODE_ARMS,
+        "neural_ode_integrator_mpc_metrics.json",
+        "Closed-loop control of the 10.55 integrator arms - the same learned continuous "
+        "acceleration field walked by forward Euler, by the velocity-first split the "
+        "published shells implement, by midpoint and by RK4 - so the numerical method, which "
+        "is the part a world modeler usually leaves implicit, is judged by a planner.",
     ),
     "effective": (
         EFFECTIVE_ARMS,

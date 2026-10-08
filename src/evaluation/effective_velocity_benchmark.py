@@ -258,25 +258,19 @@ def telemetry_reference(states: np.ndarray, next_states: np.ndarray) -> Dict[str
     return out
 
 
-@torch.no_grad()
-def one_step_metrics(
-    model: EffectiveVelocityDynamics, data: Dict[str, Any], device: torch.device
+def prediction_metrics(
+    pred: np.ndarray, s: np.ndarray, ns: np.ndarray, per_variable: Dict[str, Dict[str, float]]
 ) -> Dict[str, float]:
-    """Held-out errors, including how well the effective velocity itself is recovered."""
-    model.eval()
-    states = torch.as_tensor(data["test_states"], dtype=torch.float32, device=device)
-    actions = torch.as_tensor(data["test_actions"], dtype=torch.float32, device=device)
-    targets = torch.as_tensor(data["test_next_states"], dtype=torch.float32)
-    pred = model(states, actions).cpu()
-    per_variable = compute_per_variable_metrics(pred, targets)
-    s = np.asarray(data["test_states"], dtype=np.float64)
-    ns = np.asarray(data["test_next_states"], dtype=np.float64)
+    """Held-out errors that any next-state predictor has, independent of its parameterisation.
 
+    Shared with 10.55 because the two studies must score the same quantity the same way: an
+    integrator arm and a convention arm are only comparable if "position error" and
+    "effective-velocity error" are the same arithmetic in both artifacts.
+    """
     moved_true = SUBPIXELS_PER_PIXEL * (ns[:, :2] - s[:, :2])
-    moved_pred = SUBPIXELS_PER_PIXEL * (pred[:, :2].numpy() - s[:, :2])
+    moved_pred = SUBPIXELS_PER_PIXEL * (np.asarray(pred)[:, :2] - s[:, :2])
     position_error = np.abs(moved_pred - moved_true)
-    reported_error = SUBPIXELS_PER_PIXEL * np.abs(pred[:, 2:4].numpy() - ns[:, 2:4])
-    offsets = model.effective_velocity(states, actions).cpu().numpy() - s[:, 2:4]
+    reported_error = SUBPIXELS_PER_PIXEL * np.abs(np.asarray(pred)[:, 2:4] - ns[:, 2:4])
     return {
         "x_mae_px": float(per_variable["x"]["mae"]),
         "y_mae_px": float(per_variable["y"]["mae"]),
@@ -287,11 +281,28 @@ def one_step_metrics(
         "effective_vy_mae_subpx": float(position_error[:, 1].mean()),
         "x_effective_exact_rate": float(np.mean(position_error[:, 0] < EXACT_SUBPIXELS)),
         "y_effective_exact_rate": float(np.mean(position_error[:, 1] < EXACT_SUBPIXELS)),
-        "offset_vx_mean_abs_subpx": float(np.abs(offsets[:, 0]).mean()),
-        "offset_vy_mean_abs_subpx": float(np.abs(offsets[:, 1]).mean()),
         "metrics_position_subpx": float(position_error.mean()),
         "metrics_velocity_subpx": float(reported_error.mean()),
     }
+
+
+@torch.no_grad()
+def one_step_metrics(
+    model: EffectiveVelocityDynamics, data: Dict[str, Any], device: torch.device
+) -> Dict[str, float]:
+    """`prediction_metrics` plus the effective-velocity offset this target owns."""
+    model.eval()
+    states = torch.as_tensor(data["test_states"], dtype=torch.float32, device=device)
+    actions = torch.as_tensor(data["test_actions"], dtype=torch.float32, device=device)
+    targets = torch.as_tensor(data["test_next_states"], dtype=torch.float32)
+    pred = model(states, actions).cpu()
+    s = np.asarray(data["test_states"], dtype=np.float64)
+    ns = np.asarray(data["test_next_states"], dtype=np.float64)
+    out = prediction_metrics(pred.numpy(), s, ns, compute_per_variable_metrics(pred, targets))
+    offsets = model.effective_velocity(states, actions).cpu().numpy() - s[:, 2:4]
+    out["offset_vx_mean_abs_subpx"] = float(np.abs(offsets[:, 0]).mean())
+    out["offset_vy_mean_abs_subpx"] = float(np.abs(offsets[:, 1]).mean())
+    return out
 
 
 def rollout_violations(runs: np.ndarray) -> Dict[str, float]:

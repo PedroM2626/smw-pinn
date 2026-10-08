@@ -1,0 +1,5 @@
+# Seconds-scale version of the README 10.56 identification (`make smoke-all`).
+# A coarser threshold and a degree-1 dictionary: the point is that every recording is
+# identified and the artifact is written, not that a coefficient reproduces.
+alpha: 0.2
+max_degree: 1

@@ -18,7 +18,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 import pytest
 
@@ -254,6 +254,51 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
         "physics_claim_audit_metrics.json",
         ["telemetry", "speed_classes_observed", "rate_above_run_cap"],
         "{:.4%} exceed the run cap of 48",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "exact_rate_x"],
+        "{:.1%} of frames",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "c_x"],
+        "{:.4f} horizontally",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "c_x_contact_free"],
+        "falls to {:.4f}",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "exact_rate_x_contact_free"],
+        "{:.1%} of them are exact",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "n_holding_the_slope_x"],
+        "average of {:.1f} per split",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["console_coefficient", "n_frames_x_contact_free"],
+        "averages {:.0f} frames per split",
+    ),
+    (
+        "neural_ode_integrator_metrics.json",
+        ["integrator_vs_convention_study", "worst_abs_drift_difference_px"],
+        "{:.2f}",
+    ),
+    (
+        "neural_ode_integrator_mpc_metrics.json",
+        ["multi_seed", "per_model", "deeponet_euler_free", "progress_px_std"],
+        "spread of {:.2f} px",
+    ),
+    (
+        "sindy_identification_metrics.json",
+        ["results", "published_gameplay", "recovered_subpixels_per_pixel", "robust"],
+        "{:.6f}",
     ),
 ]
 
@@ -1086,3 +1131,251 @@ def test_readme_10_54_physics_claim_audit_table_is_generated() -> None:
     for name, block in artifact["claims"].items():
         sites = f"{len(block['sites_found'])}/{block['declared_sites']}"
         assert rf"| {sites} |" in text, f"the audit's site count for {name} is not quoted"
+
+
+def _sindy_artifact() -> Dict[str, Any]:
+    path = RESULTS / "sindy_identification_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.56 identification study has not been run")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _ode_artifact() -> Dict[str, Any]:
+    path = RESULTS / "neural_ode_integrator_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.55 integrator study has not been run")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_readme_10_55_tables_are_generated_from_the_artifact() -> None:
+    """Every cell of the two 10.55 tables is regenerated from the artifact."""
+    from src.evaluation.neural_ode_integrator_benchmark import (
+        render_bounding_table,
+        render_integrator_table,
+    )
+
+    artifact = _ode_artifact()
+    if not artifact.get("summary"):
+        pytest.skip("the 10.55 grid wrote no summary")
+    rows = render_integrator_table(artifact) + render_bounding_table(artifact)
+    text = _readme()
+    missing = [row for row in rows if row not in text]
+    assert not missing, "README 10.55 tables disagree with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_55_measured_coefficients_are_the_methods_ones() -> None:
+    """Each solver's fitted second-order coefficient must be the number its algebra predicts."""
+    from src.evaluation.neural_ode_integrator_benchmark import EXPECTED_C, SOLVERS
+
+    artifact = _ode_artifact()
+    summary = artifact["summary"]
+    text = _readme()
+    measured = {
+        solver: [
+            summary[arm]["c_pooled"]["mean"] for arm in summary if arm.endswith(f"/{solver}/free")
+        ]
+        for solver in SOLVERS
+    }
+    for solver, values in measured.items():
+        assert values, f"no free {solver} cell in the artifact"
+        assert max(abs(value - EXPECTED_C[solver]) for value in values) < 0.01, (
+            f"{solver} measured {max(values):.4f} against the expected {EXPECTED_C[solver]}"
+        )
+    reading = artifact["verdict"]["reading"]
+    for solver in SOLVERS:
+        assert f"{solver} " in reading
+    assert rf"| {artifact['verdict']['console_measured_c']:.4f} |" in text
+    assert rf"| {artifact['verdict']['console_exact_identity_rate_x'] * 100:.1f}% |" in text
+    assert artifact["verdict"]["console_frames_holding_the_slope_x"] < (
+        artifact["verdict"]["console_frames_x"] / 20
+    ), "the console's slope should be carried by a small tail"
+
+
+def test_readme_10_55_console_is_first_order_on_contact_free_frames() -> None:
+    """The claim that replaces 'the fit says 0.50': away from contacts the console is exact."""
+    console = _ode_artifact()["console_coefficient"]
+    text = _readme()
+    assert console["exact_rate_x"] < console["exact_rate_x_contact_free"]
+    assert console["c_x_contact_free"] < console["c_x"]
+    assert console["n_holding_the_slope_x"] < console["n_frames_x"] / 100
+    assert rf"{console['exact_rate_x'] * 100:.1f}%" in text
+    assert rf"{console['exact_rate_x_contact_free'] * 100:.1f}%" in text
+    assert rf"{console['c_x_contact_free']:.4f}" in text
+    assert rf"{console['n_holding_the_slope_x']:.1f}" in text
+    assert rf"{console['n_frames_x']:,.0f}" in text
+    assert rf"{console['mean_residual_of_those_x']:.2f}" in text
+    assert rf"{console['n_frames_x_contact_free']:.0f}" in text
+
+
+def test_readme_10_55_parity_gap_is_reported_not_hidden() -> None:
+    """The euler arms are 10.53's carried arms re-trained through a second code path."""
+    artifact = _ode_artifact()
+    parity = artifact["integrator_vs_convention_study"]
+    if not parity.get("available"):
+        pytest.skip("10.53's artifact was not published when 10.55 ran")
+    text = _readme()
+    gaps = [cell["max_abs_drift_difference_px"] for cell in parity["per_cell"].values()]
+    assert len(gaps) == 6
+    for gap in gaps:
+        assert rf"{gap:.2f}" in text or rf"{gap:.4f}" in text, (
+            f"a cross-artifact drift gap of {gap:.4f} px is not quoted"
+        )
+    worst = parity["worst_abs_drift_difference_px"]
+    assert worst is not None and rf"{worst:.2f}" in text
+
+
+def test_readme_10_55_closed_loop_is_the_artifact() -> None:
+    """The flown rows and the within-study contrasts of the integrator arms."""
+    path = RESULTS / "neural_ode_integrator_mpc_metrics.json"
+    if not path.is_file():
+        pytest.skip("the 10.55 closed loop has not been recorded")
+    from src.evaluation.physics_injection_mpc_benchmark import (
+        render_control_table,
+        render_convention_contrasts,
+    )
+
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    rows = render_control_table(artifact) + render_convention_contrasts(artifact)
+    missing = [row for row in rows if row not in text]
+    assert not missing, "README 10.55 closed loop disagrees with the artifact:\n" + "\n".join(
+        missing
+    )
+    contrasts = artifact["within_study_contrasts_px"]
+    assert len(contrasts) == 18, "three families x the six pairs of four solvers"
+    significant = {key: block for key, block in contrasts.items() if block["ttest_p"] < 0.05}
+    assert len(significant) == 3 and all("fno" in key for key in significant), (
+        f"the README says three FNO contrasts reach p < 0.05, the artifact says {significant}"
+    )
+    deeponet = [
+        abs(block["mean_difference_px"]) for key, block in contrasts.items() if "deeponet" in key
+    ]
+    assert max(deeponet) < 20, "the README calls the DeepONet solver spread under 20 px"
+
+
+def test_readme_10_55_closed_loop_reproduction_against_10_53_is_quoted() -> None:
+    """The same convention trained twice: this table is the study's own reproducibility check."""
+    ode_path = RESULTS / "neural_ode_integrator_mpc_metrics.json"
+    eff_path = RESULTS / "effective_velocity_mpc_metrics.json"
+    if not (ode_path.is_file() and eff_path.is_file()):
+        pytest.skip("one of the two closed-loop artifacts has not been recorded")
+    from src.evaluation.neural_ode_integrator_benchmark import render_cross_study_closed_loop
+
+    rows = render_cross_study_closed_loop(
+        json.loads(ode_path.read_text(encoding="utf-8")),
+        json.loads(eff_path.read_text(encoding="utf-8")),
+    )
+    text = _readme()
+    missing = [row for row in rows if row not in text]
+    assert not missing, (
+        "README 10.55's cross-study table disagrees with the artifacts:\n" + "\n".join(missing)
+    )
+    gaps = [float(row.rsplit("|", 2)[1].replace("px", "").strip()) for row in rows if row.strip()]
+    assert len(gaps) == 6
+    assert max(abs(value) for value in gaps) > 100, "the FNO rows are the reproducibility result"
+    assert sum(abs(value) < 20 for value in gaps) == 4
+
+
+def test_readme_10_56_tables_are_generated_from_the_artifact() -> None:
+    """Every cell of the four 10.56 tables is regenerated from the artifact."""
+    from src.evaluation.sindy_identification_benchmark import (
+        render_constants_table,
+        render_equation_table,
+        render_gate_table,
+        render_identification_table,
+        render_sweep_table,
+    )
+
+    artifact = _sindy_artifact()
+    results = artifact["results"]
+    text = _readme()
+    rows = (
+        render_identification_table(results)
+        + render_constants_table(results, artifact["cross_instrument"])
+        + render_gate_table(results)
+        + render_equation_table(results, ["published_gameplay", "jump_targeted"])
+        + render_sweep_table(results, ["published_gameplay", "jump_targeted"])
+    )
+    missing = [row for row in rows if row not in text]
+    assert not missing, "README 10.56 tables disagree with the artifact:\n" + "\n".join(missing)
+
+
+def test_readme_10_56_scale_and_gate_claims_are_derived() -> None:
+    """The two headline claims of the section are recomputed from the artifact's numbers."""
+    artifact = _sindy_artifact()
+    text = _readme()
+    recovered = artifact["verdict"]["subpixels_per_pixel_recovered"]
+    robust = {label: block["robust"] for label, block in recovered.items()}
+    least = {label: block["least_squares"] for label, block in recovered.items()}
+    assert all(round(value, 2) == 16.00 for value in robust.values())
+    assert all(abs(value - 16.0) < 9.5e-5 for value in robust.values())
+    assert all(abs(robust[label] - 16.0) < abs(least[label] - 16.0) for label in recovered), (
+        "the Huber fit is the one that recovers the scale"
+    )
+    for value in robust.values():
+        assert f"{value:.6f}" in text, f"the recovered scale {value:.6f} is not quoted"
+
+    separations = artifact["verdict"]["tier_separation_measured_and_identified"]
+    gated = [
+        label
+        for label, per_loss in separations.items()
+        if per_loss["robust"]["measured"] not in (None, 0.0)
+    ]
+    assert len(gated) == 4
+    assert all(separations[label]["robust"]["measured"] == 3.0 for label in gated)
+    assert all(separations[label]["robust"]["identified"] > 0 for label in gated)
+    assert all(separations[label]["least_squares"]["identified"] < 0 for label in gated)
+    fractions = artifact["verdict"]["gate_recovered_fraction_of_measured"]
+    lo, hi = min(fractions.values()), max(fractions.values())
+    assert f"{lo * 100:.0f}-{hi * 100:.0f}% of its measured size" in text
+    assert artifact["verdict"]["recordings_with_a_spurious_gate_after_thresholding"] == []
+    assert "spurious-gate list in the artifact is empty" in text
+
+
+def test_readme_10_56_threshold_is_a_units_claim_the_artifact_supports() -> None:
+    """1/16 is the smallest physical coefficient, so the sweep must show it being cut."""
+    artifact = _sindy_artifact()
+    for label in ("published_gameplay", "jump_targeted"):
+        sweep = artifact["results"][label]["alpha_sweep_robust"]
+        for entry in sweep:
+            terms = {term["term"]: term["coefficient"] for term in entry["terms_dx"]}
+            if entry["alpha"] >= 0.1:
+                assert "vx" not in terms, f"{label} at alpha {entry['alpha']} kept the law"
+            else:
+                assert terms.get("vx") == pytest.approx(0.0625, abs=1e-4)
+        sparse = next(entry for entry in sweep if entry["alpha"] == 0.02)
+        if label == "jump_targeted":
+            assert [term["term"] for term in sparse["terms_dx"]] == ["vx"]
+            assert sparse["heldout_relative_error"]["dx"] < 1e-5
+
+    published = {
+        entry["alpha"]: entry
+        for entry in artifact["results"]["published_gameplay"]["alpha_sweep_robust"]
+    }
+    coarse = [published[0.5], published[0.2], published[0.1]]
+    pooled = [entry["heldout_r2"]["pooled"] for entry in coarse]
+    assert pooled == sorted(pooled), "the pooled score rises while the law is absent"
+    assert all(entry["heldout_r2"]["dx"] < 0.2 for entry in coarse)
+
+
+def test_readme_10_56_dictionary_rank_is_the_pruning_step() -> None:
+    """The rank-limit finding quotes the pruning counts and the named duplicate columns."""
+    artifact = _sindy_artifact()
+    results = artifact["results"]
+    text = _readme()
+    assert all(block["dictionary_terms"] == 81 for block in results.values())
+    assert "36 of 81" in text
+    assert f"{results['published_gameplay']['kept_terms']} survive" in text
+    for label, short in (
+        ("tilemap", "tilemap"),
+        ("multi_entity", "multi-entity"),
+        ("sprint_targeted", "sprint"),
+        ("jump_targeted", "jump"),
+    ):
+        kept = results[label]["kept_terms"]
+        assert f"{kept} ({short})" in text, f"the {label} kept-column count is not quoted"
+    dropped = " ".join(results["published_gameplay"]["dropped_duplicates"])
+    assert "c_ground c_left (duplicate of c_left)" in dropped
+    assert "a_down a_right (duplicate of a_down)" in dropped
+    for label in ("sprint_targeted", "jump_targeted"):
+        assert "vx a_right (duplicate of vx)" in " ".join(results[label]["dropped_duplicates"])

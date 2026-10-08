@@ -242,6 +242,6 @@ def test_projection_registry_matches_the_files_10_51_publishes() -> None:
         assert model(torch.zeros(2, 8), torch.zeros(2, 6)).shape == (2, 8)
         assert model.bounds_imposed_by_construction is True
         assert isinstance(model, type(build_projected(family)))
-    assert set(STUDIES) == {"grid", "projection", "effective"}
+    assert set(STUDIES) == {"grid", "projection", "effective", "ode"}
     assert STUDIES["projection"][1] == "projection_cell_mpc_metrics.json"
     assert STUDIES["effective"][1] == "effective_velocity_mpc_metrics.json"
