@@ -62,6 +62,7 @@ from src.utils.logging import get_logger
 from src.utils.paths import PINN_HARD_CKPT, ROM_PATH, STATE_YOSHI_ISLAND_1, hardware_present
 from src.utils.provenance import write_metrics
 from src.utils.seed import set_global_seed
+from src.utils.typography import demath_typographic
 
 logger = get_logger(__name__)
 
@@ -313,7 +314,7 @@ def render_control_table(payload: Dict[str, Any]) -> List[str]:
             rf" | {block['progress_px_min']:.2f} | {block['progress_px_max']:.2f}"
             f" | {block['frames_survived_mean']:.1f} | {block['pit_or_death']} | {claim} |"
         )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_convention_contrasts(payload: Dict[str, Any]) -> List[str]:
@@ -324,7 +325,7 @@ def render_convention_contrasts(payload: Dict[str, Any]) -> List[str]:
             rf"* `{key}`: {block['mean_difference_px']:+.2f} px"
             rf" ($d_z$ {block['cohen_dz']:+.2f}, $p$ {block['ttest_p']:.3f})"
         )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def _load(

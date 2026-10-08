@@ -101,6 +101,57 @@ def test_the_detector_fires_on_each_defect_it_exists_to_catch() -> None:
         assert expected in violations(document), f"{expected!r} was not detected"
 
 
+def test_readme_stays_inside_githubs_math_budget() -> None:
+    """GitHub renders a bounded number of math expressions per document, then stops.
+
+    Measured on this repository's own page rather than assumed: the README held 1,759 spans,
+    the first 1,368 rendered as formulas and every one of the remaining 300 came back as the
+    generic "Unable to render expression." - valid LaTeX, in the right delimiters, unrecovered.
+    The last third of the document was therefore unreadable however correct it was, and no
+    local check of span *syntax* could have shown it.
+
+    The bound is a budget, not a measurement of the file's quality: math is spent on the
+    expressions that need it, and `src/utils/typography.py` converts the ones that were only
+    ever typography (a lone `\\pm`, a bare number). 1,300 leaves headroom under the observed
+    cap; if a future section needs more, the answer is de-math something else, not to raise
+    this number.
+    """
+    spans = math_spans(README.read_text(encoding="utf-8"))
+    assert len(spans) <= 1300, (
+        f"README holds {len(spans)} math expressions; GitHub stops rendering near 1,368 and "
+        "everything past that shows as 'Unable to render expression.' Convert typographic "
+        "spans with src.utils.typography.demath_typographic instead of raising this bound."
+    )
+
+
+def test_display_math_is_never_a_paragraph_continuation() -> None:
+    """A `$$…$$` line that follows text is inline math to GitHub, and `$…$` inside it errors."""
+    lines = README.read_text(encoding="utf-8").split("\n")
+    in_fence = False
+    joined = []
+    for number, line in enumerate(lines, 1):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if DISPLAY_LINE.match(line) and number > 1 and lines[number - 2].strip():
+            joined.append(f"line {number}: display math continues the previous paragraph")
+    assert not joined, "\n".join(joined)
+
+
+def test_no_macro_githubs_katex_build_refuses() -> None:
+    """GitHub's KaTeX runs with a macro allowlist, and `\\operatorname` is not on it."""
+    forbidden = ("\\operatorname", "\\middle", "\\bigl(", "\\relax")
+    found = [
+        f"line {span['line']}: {token}"
+        for span in math_spans(README.read_text(encoding="utf-8"))
+        for token in forbidden
+        if token in str(span["content"])
+    ]
+    assert not found, "math macros GitHub will not render:\n" + "\n".join(found)
+
+
 def test_the_detector_leaves_correct_markup_alone() -> None:
     """The repairs must not be over-eager: these forms are what the README uses."""
     good = (

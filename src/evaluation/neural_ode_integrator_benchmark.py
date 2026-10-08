@@ -88,6 +88,7 @@ from src.utils.logging import get_logger
 from src.utils.paths import DATASET_GAMEPLAY, RESULTS_DIR
 from src.utils.provenance import read_metrics, write_metrics
 from src.utils.seed import set_global_seed
+from src.utils.typography import demath_typographic
 
 logger = get_logger(__name__)
 
@@ -465,7 +466,7 @@ def render_integrator_table(payload: Dict[str, Any]) -> List[str]:
         rf" | {console['published_violation_at_0.002px']:.4f}"
         rf" | {console['exact_rate_x'] * 100:.1f}% |"
     )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_cross_study_closed_loop(
@@ -497,7 +498,7 @@ def render_cross_study_closed_loop(
                 rf" | {b['pit_or_death']}"
                 rf" | {b['progress_px_mean'] - a['progress_px_mean']:+.2f} px |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_bounding_table(payload: Dict[str, Any]) -> List[str]:
@@ -519,7 +520,7 @@ def render_bounding_table(payload: Dict[str, Any]) -> List[str]:
             f"| {np.mean([b['out_of_bounds_rate']['mean'] for b in free]):.3f} "
             f"| {np.mean([b['max_abs_vx_predicted']['mean'] for b in free]):.2f} |"
         )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def run_neural_ode_integrator_benchmark(

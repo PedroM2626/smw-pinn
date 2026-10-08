@@ -86,6 +86,7 @@ from src.utils.logging import get_logger
 from src.utils.paths import DATASET_GAMEPLAY, RESULTS_DIR
 from src.utils.provenance import read_metrics, write_metrics
 from src.utils.seed import set_global_seed
+from src.utils.typography import demath_typographic
 
 logger = get_logger(__name__)
 
@@ -547,7 +548,7 @@ def render_convention_table(payload: Dict[str, Any]) -> List[str]:
         rf" | {reference[published_violation_key(0.002)]:.4f}"
         rf" | {reference[next_velocity_violation_key(0.002)]:.4f} |"
     )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_ladder_table(payload: Dict[str, Any]) -> List[str]:
@@ -593,7 +594,7 @@ def render_ladder_table(payload: Dict[str, Any]) -> List[str]:
         )
         + f" | {reference[next_velocity_violation_key(TIGHTEST_TOLERANCE)]:.4f} |"
     )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_mechanism_table(payload: Dict[str, Any]) -> List[str]:
@@ -610,7 +611,7 @@ def render_mechanism_table(payload: Dict[str, Any]) -> List[str]:
                 f" | {float(np.mean([summary[a]['test_kinematic_error']['mean'] for a in arms])):.4f}"
                 f" | {float(np.mean([summary[a]['out_of_bounds_rate']['mean'] for a in arms])):.3f} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_convention_contrast_table(payload: Dict[str, Any]) -> List[str]:
@@ -627,7 +628,7 @@ def render_convention_contrast_table(payload: Dict[str, Any]) -> List[str]:
                 rf"| {family} | {label} | {value['mean_difference']:+.4f}"
                 rf" | $d_z$ {value['cohen_dz']:+.2f} | $p$ {value['ttest_p']:.3f} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def run_effective_velocity_benchmark(

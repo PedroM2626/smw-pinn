@@ -64,6 +64,7 @@ from src.utils.paths import (
     RESULTS_DIR,
 )
 from src.utils.provenance import read_metrics, write_metrics
+from src.utils.typography import demath_typographic
 
 logger = get_logger(__name__)
 
@@ -437,7 +438,7 @@ def render_identification_table(results: Dict[str, Any]) -> List[str]:
                 rf" | {fit['heldout_r2']['dvx']:.3f}"
                 rf" | {fit['heldout_r2']['dvy']:.3f} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 MAX_TERMS_SHOWN = 8
@@ -481,7 +482,7 @@ def render_equation_table(
                 rf" | {fit['heldout_relative_error'][target]:.4f}"
                 rf" | {fit['heldout_r2'][target]:.3f} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_constants_table(results: Dict[str, Any], cross: Dict[str, Any]) -> List[str]:
@@ -527,7 +528,7 @@ def render_constants_table(results: Dict[str, Any], cross: Dict[str, Any]) -> Li
         rf" | {coast_cell}"
         rf" | {identified['decel']:.3f} | 0.5 |"
     )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_sweep_table(results: Dict[str, Any], labels: Sequence[str]) -> List[str]:
@@ -563,7 +564,7 @@ def render_sweep_table(results: Dict[str, Any], labels: Sequence[str]) -> List[s
                 rf" | {entry['heldout_r2']['dx']:.4f}"
                 rf" | {entry['heldout_r2']['pooled']:.4f} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_gate_table(results: Dict[str, Any]) -> List[str]:
@@ -589,7 +590,7 @@ def render_gate_table(results: Dict[str, Any]) -> List[str]:
                 rf" | {'-' if separation is None else f'{separation:+.1f}'}"
                 rf" | {'-' if identified is None else f'{identified:+.3f}'} |"
             )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def integration_convention(data: Dict[str, Any], split: str = "train") -> Dict[str, float]:

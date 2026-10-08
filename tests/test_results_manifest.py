@@ -22,6 +22,8 @@ from typing import Any, Dict
 
 import pytest
 
+from src.utils.typography import demath_typographic as _plain
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS = REPO_ROOT / "results"
 MANIFEST = RESULTS / "MANIFEST.md"
@@ -311,7 +313,7 @@ for _model in ("mlp", "soft_pinn", "hard_pinn", "deeponet", "physics_constrained
         (
             "learned_structure_probe_metrics.json",
             ["structural_probes", _model, "ceiling", "ceiling_like_fixed_point"],
-            "| {:.2f} | $",
+            "| {:.2f} | ",
         )
     )
     QUOTED_HEADLINES.append(
@@ -598,7 +600,7 @@ def test_readme_quotes_the_committed_numbers(artifact: str, keypath: list[str], 
         node = node[key]
     rendered = fmt.format(node)
     text = README.read_text(encoding="utf-8")
-    assert rendered in text, (
+    assert _plain(rendered) in text, (
         f"README.md no longer contains {rendered!r} "
         f"({artifact}:{'/'.join(keypath)} = {node!r}). Either the artifact was "
         "regenerated (update the prose and the 10.27 table) or the prose drifted from "
@@ -632,7 +634,7 @@ def test_readme_10_47_prediction_table_is_the_artifact() -> None:
             block["drift_multistart_mean_px"]["std"],
             block["vx_mae_px"]["mean"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(f"{arm}: {row}")
     assert not missing, "README 10.47 prediction table disagrees with the artifact:\n" + "\n".join(
         missing
@@ -660,7 +662,7 @@ def test_readme_10_47_control_table_is_the_artifact() -> None:
             # No space after the opening `$`: GitHub does not start a math span there,
             # and the cell's dollars then pair against each other instead.
             row += " ${:+.2f}$, ${:.4f}$".format(paired["mean_difference_px"], paired["wilcoxon_p"])
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(f"{arm}: {row}")
     assert not missing, "README 10.47 control table disagrees with the artifact:\n" + "\n".join(
         missing
@@ -690,7 +692,7 @@ def test_readme_10_47_structure_table_is_the_artifact() -> None:
             block["gravity_gate"]["tier_separation"],
             surrogates[arm]["max_relative_error_pct"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(f"{arm}: {row}")
     assert not missing, "README 10.47 structure table disagrees with the artifact:\n" + "\n".join(
         missing
@@ -736,7 +738,7 @@ def test_readme_10_48_decomposition_table_is_the_artifact() -> None:
             d["jump_rate"],
             d["bound_exceedance_rate"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(row)
     ref = artifact["recorded_telemetry_reference"]
     ref_row = "| *recorded telemetry (the console itself)* | - | {:.4f} | {:.2e} | {:.4f} | {:.4f} |".format(
@@ -745,7 +747,7 @@ def test_readme_10_48_decomposition_table_is_the_artifact() -> None:
         ref["jump_rate"],
         ref["bound_exceedance_rate"],
     )
-    if ref_row not in text:
+    if _plain(ref_row) not in text:
         missing.append(ref_row)
     assert not missing, "README 10.48 table disagrees with the artifact:\n" + "\n".join(missing)
 
@@ -760,7 +762,7 @@ def test_readme_10_48_threshold_sensitivity_is_stated_as_load_bearing() -> None:
     text = _readme()
     values = [counts[key] for key in sorted(counts, key=float)]
     listed = ", ".join(str(v) for v in values[:-1]) + f" and {values[-1]}"
-    assert listed in text, (
+    assert _plain(listed) in text, (
         f"README 10.48 must state the acceptance counts exactly as measured ({listed})"
     )
     if not verdict["classification_is_threshold_independent"]:
@@ -799,7 +801,7 @@ def test_readme_10_49_recording_table_is_the_artifact() -> None:
             ic["median_abs_error_using_velocity_at_t_plus_1"],
             ic["fraction_mismatching_by_more_than_1px"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(row)
     assert not missing, "README 10.49 table disagrees with the artifact:\n" + "\n".join(missing)
 
@@ -847,12 +849,12 @@ def test_readme_10_50_plateau_table_is_the_artifact() -> None:
                 "{:.2f}".format(entry["gain_mean"]) if entry["gain_mean"] is not None else "-",
                 entry["seeds_with_a_plateau"],
             )
-            if row not in text:
+            if _plain(row) not in text:
                 missing.append(row)
         fit = block["plateau_vs_support_cap"]
         if fit["slope"] is not None:
             for token in (f"slope ${fit['slope']:.3f}$", f"correlation ${fit['correlation']:.3f}$"):
-                if token not in text:
+                if _plain(token) not in text:
                     missing.append(f"{family}: {token}")
     assert not missing, "README 10.50 table disagrees with the artifact:\n" + "\n".join(missing)
 
@@ -887,7 +889,7 @@ def test_readme_10_51_forward_table_is_the_artifact() -> None:
             bdz=b["cohen_dz"],
             bp=b["ttest_p"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(row)
     assert not missing, "README 10.51 forward table disagrees with the artifacts:\n" + "\n".join(
         missing
@@ -926,7 +928,7 @@ def test_readme_10_51_control_table_is_the_artifact() -> None:
             sstd=shell["progress_px_std"],
             delta=block["progress_px_mean"] - shell["progress_px_mean"],
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(f"{family}: {row}")
     assert not missing, "README 10.51 control table disagrees with the artifacts:\n" + "\n".join(
         missing
@@ -976,7 +978,7 @@ def test_readme_10_52_gate_table_is_the_artifact() -> None:
             step="-" if step is None else f"${step:.4f}$",
             gp="yes" if block["gplearn"]["structure"]["gravity_gate_discovered"] else "no",
         )
-        if row not in text:
+        if _plain(row) not in text:
             missing.append(row)
     assert not missing, "README 10.52 table disagrees with the artifact:\n" + "\n".join(missing)
 
@@ -1019,7 +1021,7 @@ def test_readme_10_53_tables_are_generated_from_the_artifact() -> None:
         + render_ladder_table(artifact)
         + render_mechanism_table(artifact)
     )
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, "README 10.53 tables disagree with the artifact:\n" + "\n".join(missing)
 
 
@@ -1032,7 +1034,7 @@ def test_readme_10_53_convention_contrasts_are_the_artifact() -> None:
 
     artifact = json.loads(path.read_text(encoding="utf-8"))
     text = _readme()
-    missing = [row for row in render_convention_contrast_table(artifact) if row not in text]
+    missing = [row for row in render_convention_contrast_table(artifact) if _plain(row) not in text]
     assert not missing, "README 10.53 contrasts disagree with the artifact:\n" + "\n".join(missing)
 
 
@@ -1051,7 +1053,9 @@ def test_readme_10_53_invariance_and_parity_claims_are_derived() -> None:
     assert verdict["carried_position_error_spread_px"] == 0.0
     position = f"{verdict['carried_position_error_px']:.4f} px"
     spread = f"{verdict['carried_position_error_spread_px']:.6f} px"
-    assert position in text and spread in text, f"10.53 does not quote {position} / {spread}"
+    assert _plain(position) in text and _plain(spread) in text, (
+        f"10.53 does not quote {position} / {spread}"
+    )
     console = artifact["console_reference"]["x_carried_residual_mean_px"]
     assert f"{console:.4f} px" in text, "the console's own residual is not quoted"
 
@@ -1059,7 +1063,7 @@ def test_readme_10_53_invariance_and_parity_claims_are_derived() -> None:
     assert len(parity["per_cell"]) == 9
     for cell, block in parity["per_cell"].items():
         assert block["n_seeds_compared"] == 5, f"parity for {cell} is not five-seed"
-    assert r"reproduces 10.47's `residual` artifact to $0.0$ px" in text
+    assert r"reproduces 10.47's `residual` artifact to 0.0 px" in text
 
 
 def test_readme_10_53_beats_the_published_grid_by_a_measured_margin() -> None:
@@ -1093,7 +1097,7 @@ def test_readme_10_53_closed_loop_is_the_artifact() -> None:
     artifact = json.loads(path.read_text(encoding="utf-8"))
     text = _readme()
     rows = render_control_table(artifact) + render_convention_contrasts(artifact)
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, "README 10.53 closed loop disagrees with the artifact:\n" + "\n".join(
         missing
     )
@@ -1120,7 +1124,7 @@ def test_readme_10_54_physics_claim_audit_table_is_generated() -> None:
         pytest.skip("the physics-claim audit has not been run")
     artifact = json.loads(path.read_text(encoding="utf-8"))
     text = _readme()
-    missing = [row for row in render_audit_table(artifact) if row not in text]
+    missing = [row for row in render_audit_table(artifact) if _plain(row) not in text]
     assert not missing, "README 10.54 audit table disagrees with the artifact:\n" + "\n".join(
         missing
     )
@@ -1195,7 +1199,7 @@ def test_readme_10_55_tables_are_generated_from_the_artifact() -> None:
         pytest.skip("the 10.55 grid wrote no summary")
     rows = render_integrator_table(artifact) + render_bounding_table(artifact)
     text = _readme()
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, "README 10.55 tables disagree with the artifact:\n" + "\n".join(missing)
 
 
@@ -1273,7 +1277,7 @@ def test_readme_10_55_closed_loop_is_the_artifact() -> None:
     artifact = json.loads(path.read_text(encoding="utf-8"))
     text = _readme()
     rows = render_control_table(artifact) + render_convention_contrasts(artifact)
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, "README 10.55 closed loop disagrees with the artifact:\n" + "\n".join(
         missing
     )
@@ -1302,7 +1306,7 @@ def test_readme_10_55_closed_loop_reproduction_against_10_53_is_quoted() -> None
         json.loads(eff_path.read_text(encoding="utf-8")),
     )
     text = _readme()
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, (
         "README 10.55's cross-study table disagrees with the artifacts:\n" + "\n".join(missing)
     )
@@ -1332,7 +1336,7 @@ def test_readme_10_56_tables_are_generated_from_the_artifact() -> None:
         + render_equation_table(results, ["published_gameplay", "jump_targeted"])
         + render_sweep_table(results, ["published_gameplay", "jump_targeted"])
     )
-    missing = [row for row in rows if row not in text]
+    missing = [row for row in rows if _plain(row) not in text]
     assert not missing, "README 10.56 tables disagree with the artifact:\n" + "\n".join(missing)
 
 
@@ -1493,7 +1497,7 @@ def test_readme_10_10_ensemble_uncertainty_is_the_artifact() -> None:
         "out_of_distribution_uncertainty": "{:.4f}",
         "ood_uncertainty_ratio": "{:.3f}",
     }
-    missing = [key for key, fmt in quoted.items() if fmt.format(art[key]) not in text]
+    missing = [key for key, fmt in quoted.items() if _plain(fmt.format(art[key])) not in text]
     assert not missing, "README 10.10 never quotes the artifact value of: " + ", ".join(missing)
     assert art["out_of_distribution_uncertainty"] < art["in_distribution_uncertainty"], (
         "the section retracts the OOD trigger because the shock spread is the lower figure; "

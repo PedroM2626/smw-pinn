@@ -601,6 +601,21 @@ numbers* - those are reported here and in README Section 12, never applied silen
   is a within-tolerance result (0.9345-0.9578 of rollout frames are flagged at 0.002 px). The
   sentence is now confined to the four architectures of Section 8, says so, and the section names
   the studies that train the repository's other models.
+- **GitHub's math budget, measured, is why the second half of the README never rendered.**
+  The repository's page returns the generic "Unable to render expression." for every
+  expression past the first ~1,368: 1,368 came out as formulas, the next 300 did not, and all
+  of them were syntactically valid. The README held 1,759 spans, so Sections 10.52-12 were
+  unreadable however correct their LaTeX was, and no syntax check could see it.
+  `src/utils.typography.demath_typographic` now converts the 602 spans that were never
+  mathematics - a lone `$\pm$`, `$R^2$`, `$\times$`, `$\mu\text{s}$`, and any span whose whole
+  content is a bare number - and it is applied by the 16 `render_*` functions that emit README
+  rows *and* by the gates that compare them, so presentation has one definition instead of two
+  typed copies that can disagree. Symbols and formulas keep their math. Three gates hold it:
+  `test_readme_stays_inside_githubs_math_budget` (≤1,300 spans, with headroom under the
+  measured cap), `test_display_math_is_never_a_paragraph_continuation` (a `$$…$$` line that
+  follows text is parsed as *inline* math, which is what made the 12D state expression error
+  with "'_' allowed only in math mode") and `test_no_macro_githubs_katex_build_refuses`
+  (`\operatorname{sign}` → `\mathrm{sign}`; GitHub runs KaTeX with a macro allowlist).
 - **Two stale pointers and one stale deferral.** Section 10.47's limitation asked for "the
   CBF machinery of 10.16" - which is the cross-stage generalization study - and is now
   pointed at 10.39, where `CBFQPLayer` lives, and at 10.51, which has since filled the

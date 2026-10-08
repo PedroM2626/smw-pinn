@@ -42,6 +42,7 @@ from src.environment.dataset_loader import load_and_preprocess_data
 from src.utils.logging import get_logger
 from src.utils.paths import DATASET_GAMEPLAY, RESULTS_DIR
 from src.utils.provenance import write_metrics
+from src.utils.typography import demath_typographic
 
 logger = get_logger(__name__)
 
@@ -559,7 +560,7 @@ def render_audit_table(payload: Dict[str, Any]) -> List[str]:
             rf"{sites}{flag} | {block['telemetry_evidence']} "
             rf"| {verdict} | {dissent} |"
         )
-    return rows
+    return [demath_typographic(row) for row in rows]
 
 
 def render_section_4_qualifiers(payload: Dict[str, Any]) -> List[str]:
@@ -581,7 +582,7 @@ def render_section_4_qualifiers(payload: Dict[str, Any]) -> List[str]:
     released_descent = strata["descent_released"]
     released_ascent = strata["ascent_released"]
     n = telemetry["n_transitions"]
-    return [
+    rows = [
         rf"*Measured on the {n:,} training transitions of the gameplay recording (§10.54): exact "
         rf"on {carried['exact_to_half_a_subpixel_rate']:.2%} of them, median residual "
         rf"{carried['median_abs_residual_px']:.4f} px. Scored against $\hat v_{{x,t+1}}$ instead "
@@ -624,6 +625,7 @@ def render_section_4_qualifiers(payload: Dict[str, Any]) -> List[str]:
         rf"retracted form, and the artifact records that as an open prose-and-code disagreement "
         rf"rather than smoothing it over.*",
     ]
+    return [demath_typographic(row) for row in rows]
 
 
 def run_physics_claim_audit(
