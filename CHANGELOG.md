@@ -532,6 +532,13 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Changed
 
+- The validated `mypy` band moved from `>=2.3.1,<2.4` to `>=2.3.1,<2.5` (`pyproject.toml`,
+  `requirements.txt`), accepting Dependabot PR #8 rather than merging it blind: `mypy 2.4.0`
+  was pointed at the exact typed-core gate `src/cli.py` passes (the same 52 modules) and
+  reported no issues, and the 3.11/3.12/ubuntu and native-Windows legs the pin now allows are
+  validated by the CI run the merge triggers. The band stays an upper bound on purpose - the
+  reason it exists is CI run #14, where an unbounded `mypy>=1.0.0` resolved an interpreter that
+  crashed the typecheck gate with exit code 2.
 - mypy typed core expanded from 19 to 40 modules: the whole reusable library is now
   checked (`src/models`, `src/losses`, `src/planning`, `src/perception`, `src/utils`, plus
   the environment data/vectorised-sim layer, the trainer and the per-variable/rollout
