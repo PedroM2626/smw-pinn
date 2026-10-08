@@ -1379,3 +1379,26 @@ def test_readme_10_56_dictionary_rank_is_the_pruning_step() -> None:
     assert "a_down a_right (duplicate of a_down)" in dropped
     for label in ("sprint_targeted", "jump_targeted"):
         assert "vx a_right (duplicate of vx)" in " ".join(results[label]["dropped_duplicates"])
+
+
+def test_readme_10_55_spread_superlative_is_a_cross_artifact_fact() -> None:
+    """10.55 calls 0.08 px the tightest spread for a controller that progresses - recompute it."""
+    ode = RESULTS / "neural_ode_integrator_mpc_metrics.json"
+    if not ode.is_file():
+        pytest.skip("the 10.55 closed loop has not been recorded")
+    rows: list[tuple[float, float, str]] = []
+    for path in sorted(RESULTS.glob("*mpc*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for name, block in payload.get("multi_seed", {}).get("per_model", {}).items():
+            std, mean = block.get("progress_px_std"), block.get("progress_px_mean")
+            if std is not None and mean is not None:
+                rows.append((std, mean, f"{path.name}:{name}"))
+    progressing = sorted((row for row in rows if row[1] > 300.0))
+    assert progressing[0][2].endswith("deeponet_euler_free"), (
+        f"the README's superlative is wrong: {progressing[0][2]} is tighter at {progressing[0][0]:.3f} px"
+    )
+    assert progressing[0][1] > 600.0, "the arm being praised for stability must also make progress"
+    tighter = [row for row in rows if row[0] < progressing[0][0]]
+    assert all(abs(row[1]) < 1.0 for row in tighter), (
+        f"the section claims only stationary arms are tighter, found {tighter}"
+    )

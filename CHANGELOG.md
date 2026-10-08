@@ -88,8 +88,9 @@ numbers* - those are reported here and in README Section 12, never applied silen
   pay 0.1182-0.1209 px and the split 0.1281-0.1366 px, so the accuracy NeuralODEs are bought for
   is aimed at a truncation error the target does not have. Closed loop
   (`physics_injection_mpc_benchmark.py --study ode`) `deeponet_euler_free` covers
-  643.02 $\pm$ 0.08 px, the tightest spread any learned controller in this repository has
-  produced; for the MLP the ordering inverts against the open loop (midpoint and RK4 reach the
+  643.02 $\pm$ 0.08 px, the tightest between-seed spread this repository has recorded for a
+  controller that progresses (the only tighter row is `fno_euler_free` at 0.078 px, on -0.69 px
+  of travel); for the MLP the ordering inverts against the open loop (midpoint and RK4 reach the
   frame budget in all five seeds at 610.40 and 614.09 px where Euler dies once at 521.66 px).
   The study also carries its own reproducibility check, because its `euler` and `symplectic` arms
   are 10.53's `carried` and `next` cells through a second code path: position error reproduces to
