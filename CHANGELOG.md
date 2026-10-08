@@ -593,6 +593,14 @@ numbers* - those are reported here and in README Section 12, never applied silen
   blind, 328.9 px hand-coded); Section 10.52's re-scored ceilings were quoted as 25.6% and
   26.8% below the run cap where the fitted clamps give 26.8% and 24.8%; and Section 10.51
   credited three of six soft cells with zero out-of-bounds frames where the grid gives four.
+- **Section 1's headline superlative was a scope error, not a wrong number.** It read "the
+  lowest reported prediction error and the strongest kinematic consistency across the evaluated
+  metrics"; on the same split and seed, 10.42 measures `PhysicsConstrained_DeepONet` at $0.5766$
+  and `FNO` at $0.4025$ against the Hard PINN's $0.5783$, 10.37's zero-parameter engine rules carry
+  an *identically* zero kinematic residual, and 10.48/10.53 show the quoted `0.0%` violation rate
+  is a within-tolerance result (0.9345-0.9578 of rollout frames are flagged at 0.002 px). The
+  sentence is now confined to the four architectures of Section 8, says so, and the section names
+  the studies that train the repository's other models.
 - **Two stale pointers and one stale deferral.** Section 10.47's limitation asked for "the
   CBF machinery of 10.16" - which is the cross-stage generalization study - and is now
   pointed at 10.39, where `CBFQPLayer` lives, and at 10.51, which has since filled the
