@@ -194,7 +194,7 @@ def test_the_grid_reproduces_its_published_weights_byte_for_byte() -> None:
     assert len(lines) == 12, "twelve unconstrained arms publish weights"
     for line in lines:
         digest, _, recorded = line.partition(" ")
-        target = repo / recorded.lstrip("*")
+        target = repo / recorded.strip().lstrip("*")
         assert target.is_file(), f"{target} is gone; the section's parity control has no evidence"
         assert hashlib.sha256(target.read_bytes()).hexdigest() == digest, (
             f"{target.name} was regenerated after 10.55's closed loop flew it"
