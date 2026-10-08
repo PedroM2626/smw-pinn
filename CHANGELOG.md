@@ -632,6 +632,27 @@ tilemap world models, DAgger, distillation, cross-stage generalization).
 
 ### Fixed (audited self-corrections, README Section 12)
 
+- README Sections 4.1-4.3 and Section 10.54 (documentation correction, also recorded in
+  Section 12): the audit that *found* four physics claims the recording does not support has
+  been followed by rewriting the claims. §4.1's structural violation is now defined against
+  the frame's initial velocity rather than $\hat v_{x,t+1}$; §4.2.1 and §4.2.5 are stated as
+  an impulse range and a terminal parameter that the telemetry leaves by 7.39% (to $-112.0$)
+  and 13.37% (to $+70.0$) rather than as bounds the engine enforces; §4.2.4's doubling is now
+  qualified by the stratum it is actually observable in (released descent, 31.49% of 867
+  frames, against released ascent still stepping $+3.0$ in 84.21% of 532); and §4.3.5 is
+  rewritten from "vertical velocity is forced to zero" to the rule the data gives - the ground
+  flag suppresses the gravity increment, exactly zero on 90.72% of the 2,943 grounded
+  un-jumping frames, while the velocity itself is zero on 0.00% of them. The audit gained a
+  per-claim satisfaction test, a stratum table for the tiers, a collision-free measure of the
+  identity (exact on 96.99% of 2,755 frames), and a `prose_and_code_disagree` list, because
+  correcting the documentation does not correct the code: `ResidualDynamics` and
+  `ProjectedDynamics` still advance position with the predicted next velocity,
+  `RolloutEvaluator` still scores $|v_x| \le 72$ and $v_y \le 64$ as absolute bounds, and
+  `GroundContactConsistencyLoss` with `AnalyticalKinematicsDynamics` still zero the vertical
+  velocity on a grounded frame - §4.3.5 now declares zero implementing sites, which is the
+  honest statement of that state. Every corrected sentence carries its measured qualifier
+  *inside* §4, emitted by `render_section_4_qualifiers` and compared against the artifact by
+  the citation gate, so a rule cannot outlive its measurement again.
 - README Section 10.54 (documentation correction, also recorded in Section 12): Section 4.1
   states the integration identity with $v_{x,t}$ and defines a structural violation with
   $\hat v_{x,t+1}$ two paragraphs later. Both readings are implemented in this repository -

@@ -253,7 +253,7 @@ QUOTED_HEADLINES: list[tuple[str, list[str], str]] = [
     (
         "physics_claim_audit_metrics.json",
         ["telemetry", "speed_classes_observed", "rate_above_run_cap"],
-        "{:.4%} exceed the run cap of 48",
+        "{:.4%} exceed $48$",
     ),
     (
         "neural_ode_integrator_metrics.json",
@@ -1112,7 +1112,7 @@ def test_readme_10_53_closed_loop_is_the_artifact() -> None:
 
 
 def test_readme_10_54_physics_claim_audit_table_is_generated() -> None:
-    """Section 4's audit table, and the list of claims the telemetry does not satisfy."""
+    """Section 4's audit table, the claims the recording satisfies, and the code that dissents."""
     from src.evaluation.physics_claim_audit import render_audit_table
 
     path = RESULTS / "physics_claim_audit_metrics.json"
@@ -1124,13 +1124,49 @@ def test_readme_10_54_physics_claim_audit_table_is_generated() -> None:
     assert not missing, "README 10.54 audit table disagrees with the artifact:\n" + "\n".join(
         missing
     )
-    refuted = artifact["verdict"]["claims_the_telemetry_does_not_satisfy"]
-    assert len(refuted) == 4
-    for claim in refuted:
-        assert f"`{claim}`" in text, f"the audit refutes {claim} but 10.54 does not say so"
     for name, block in artifact["claims"].items():
+        assert block["claim_quoted_from_the_readme"], f"{name} is not quoted from its own section"
         sites = f"{len(block['sites_found'])}/{block['declared_sites']}"
         assert rf"| {sites} |" in text, f"the audit's site count for {name} is not quoted"
+    verdict = artifact["verdict"]
+    # The empty lists are the correction: §4 was rewritten to what the recording supports, and
+    # every claim is implemented by the files that declare it. The findings are the dissenters.
+    assert verdict["claims_the_telemetry_does_not_satisfy"] == []
+    assert verdict["claims_with_a_missing_implementation"] == []
+    dissenters = verdict["prose_and_code_disagree"]
+    assert len(dissenters) == 4, [entry["claim"] for entry in dissenters]
+    files = {
+        site.split(":")[0].split("/")[-1]
+        for entry in dissenters
+        for site in entry["sites_implementing_a_different_rule"]
+    }
+    for name in sorted(files):
+        assert name in text, f"{name} disagrees with section 4 and the README does not say so"
+    ground = next(e for e in dissenters if e["claim"] == "4.3.5_ground_flag_gates_gravity")
+    assert ground["as_stated_in_section_4"] in text
+
+
+def test_section_4_qualifiers_are_generated_from_the_audit_artifact() -> None:
+    """Section 4 now carries its measured qualifier inline, one line per claim, gated."""
+    from src.evaluation.physics_claim_audit import render_section_4_qualifiers
+
+    path = RESULTS / "physics_claim_audit_metrics.json"
+    if not path.is_file():
+        pytest.skip("the physics-claim audit has not been run")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    start = text.index("## 4. Mathematical Formulation")
+    end = text.index("## 5. Evaluated Machine Learning")
+    section = text[start:end]
+    lines = render_section_4_qualifiers(artifact)
+    assert len(lines) == 7, "one qualifier per measured claim of sections 4.1-4.3"
+    outside = [line[:70] for line in lines if line not in section]
+    assert not outside, "section 4 is missing its measured qualifiers:\n" + "\n".join(outside)
+    # The three figures the section used to state without a measurement attached.
+    telemetry = artifact["telemetry"]
+    assert rf"{telemetry['window_observed']['vy_min']:.1f}" in section
+    assert rf"{telemetry['window_observed']['vy_max']:.1f}" in section
+    assert rf"{telemetry['speed_classes_observed']['max_abs_vx']:.1f}" in section
 
 
 def _sindy_artifact() -> Dict[str, Any]:

@@ -115,7 +115,10 @@ class GroundContactConsistencyLoss(nn.Module):
 
         if stationary_ground_mask.any():
             ground_vy = hat_vy_next[stationary_ground_mask]
-            # On ground, vy must be exactly zero (no sinking, no floating)
+            # Section 4.3.5 as retracted by 10.54: the recording never zeroes vy on these
+            # frames and suppresses the gravity increment on almost all of them, so this term
+            # asks for a rest state the console does not produce. No figure is quoted here on
+            # purpose - results/physics_claim_audit_metrics.json is the source of those.
             return torch.mean(ground_vy**2)
         return torch.tensor(0.0, device=current_state.device)
 

@@ -82,7 +82,9 @@ class RolloutEvaluator:
             if abs((hat_x - prev_x) - (curr_state[0, 2].item() / 16.0)) > 0.2:
                 kin_violations += 1
 
-            # Velocity saturation boundary violation
+            # Velocity saturation boundary violation. 10.54 records this as a disagreement
+            # with section 4: 72 and 64 are a speed class and a documented clamp that the
+            # telemetry is observed to leave, so neither is an absolute bound on real states.
             if abs(hat_vx) > 72.0 or hat_vy > 64.0:
                 vel_violations += 1
 

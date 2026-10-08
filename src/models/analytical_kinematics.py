@@ -19,7 +19,8 @@ other world model here, so it drops into `RolloutEvaluator` and
 * asymmetric, input-modulated gravity g_held = +3, g_fall = +6       (section 4.2)
 * hardware velocity saturation        vy in [-80, +64], tiered vx   (sections 4.2, 4.3)
 * traction / friction / skid ramps                                 (section 4.3)
-* ground boundary condition           vy_{t+1} = 0 when resting      (section 4.3.5)
+* ground boundary condition           vy_{t+1} = 0 when resting      (section 4.3.5, the
+                                                         retracted form - see 10.54)
 
 Parameter honesty
 -----------------
@@ -218,7 +219,10 @@ class AnalyticalKinematicsDynamics(nn.Module):
         g = torch.where(ascending_held, G_HOLD, G_FALL)  # sections 4.2.3 / 4.2.4
         vy_next = torch.where(takeoff, impulse, vy + g)
 
-        # Section 4.3.5: on solid ground, not jumping, downward motion is cancelled.
+        # Section 4.3.5 as the telemetry reads it: on solid ground, not jumping, the gravity
+        # increment is suppressed rather than the velocity being zeroed. This implementation
+        # still zeroes the downward motion, which is the retracted form - 10.54 records it as a
+        # prose-and-code disagreement, and `physics_claim_audit` fails if this line moves.
         resting = (c_ground > 0.5) & (jump <= 0.5) & (vy >= 0.0)
         vy_next = torch.where(resting, torch.zeros_like(vy_next), vy_next)
         return torch.clamp(vy_next, MIN_VY, TERMINAL_VY)
