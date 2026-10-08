@@ -29,7 +29,7 @@ velocity tiers) but deliberately does not state the per-frame traction, friction
 skid or jump-impulse magnitudes. Rather than inventing them, this model carries
 exactly six scalars and fits them by deterministic coordinate-wise grid search
 restricted to the published ranges (`IDENTIFIABLE` below). Six interpretable
-scalars are compared against 9,992 (Hard PINN) and 36,360 (MLP) weights.
+scalars are compared against 36,486 (Hard PINN) and 36,744 (MLP) weights.
 
 Known limitation (stated, not hidden): the four contact flags cannot be derived
 from kinematics alone - they require a tile query - so they are propagated

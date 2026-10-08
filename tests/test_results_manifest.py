@@ -657,9 +657,9 @@ def test_readme_10_47_control_table_is_the_artifact() -> None:
         )
         paired = block["paired_vs_established_rules"]
         if paired is not None:
-            row += " $ {:+.2f}$, $ {:.4f}$".format(
-                paired["mean_difference_px"], paired["wilcoxon_p"]
-            )
+            # No space after the opening `$`: GitHub does not start a math span there,
+            # and the cell's dollars then pair against each other instead.
+            row += " ${:+.2f}$, ${:.4f}$".format(paired["mean_difference_px"], paired["wilcoxon_p"])
         if row not in text:
             missing.append(f"{arm}: {row}")
     assert not missing, "README 10.47 control table disagrees with the artifact:\n" + "\n".join(
@@ -1437,4 +1437,65 @@ def test_readme_10_55_spread_superlative_is_a_cross_artifact_fact() -> None:
     tighter = [row for row in rows if row[0] < progressing[0][0]]
     assert all(abs(row[1]) < 1.0 for row in tighter), (
         f"the section claims only stationary arms are tighter, found {tighter}"
+    )
+
+
+def test_readme_parameter_counts_are_the_profiling_artifact_and_the_retired_ones_are_gone() -> None:
+    """Every parameter count the README prints is the one the profiler measured.
+
+    Section 1, Section 5, Section 7, Section 9 and 10.41 each quote a weight count, and
+    for a long stretch they quoted an architecture the repository no longer trains: the
+    published Hard PINN was printed as 9,992 and 41,862 while every artifact and every
+    constructor default says 36,486. The compact pair (`--matched-baseline`) is a
+    different configuration and was being quoted as if it were the headline model.
+    """
+    path = RESULTS / "computational_profiling_metrics.json"
+    if not path.is_file():
+        pytest.skip("the computational profile has not been recorded")
+    profile = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    missing = [
+        f"{model}: {block['parameters']:,} parameters"
+        for model, block in profile.items()
+        if f"{block['parameters']:,}" not in text
+    ]
+    assert not missing, "README never quotes the measured parameter count of:\n" + "\n".join(
+        missing
+    )
+
+    # Retired counts may survive only inside the correction that retires them.
+    corrections = text[text.index("\n## 12") :]
+    retired = ("9,992", "41,862", "36,360", "206,600")
+    stale = [n for n in retired if n in text[: text.index("\n## 12")]]
+    assert not stale, f"README still prints a retired weight count outside Section 12: {stale}"
+    assert all(n in corrections for n in retired), (
+        "Section 12 is expected to record which counts were retired, and it does not name "
+        f"{[n for n in retired if n not in corrections]}"
+    )
+
+
+def test_readme_10_10_ensemble_uncertainty_is_the_artifact() -> None:
+    """10.10's three uncertainty figures, and the direction that made them a retraction.
+
+    The section published the OOD probe as evidence that ensemble variance flags a
+    non-physical shock. The artifact says the opposite - the spread falls from 0.4609 to
+    0.4189 - and the prose now says so too, which is a claim about which number is bigger.
+    Both halves are pinned: a re-run that reversed the ordering has to be met by editing
+    the section, not by letting this test go red.
+    """
+    path = RESULTS / "pinn_ensemble_metrics.json"
+    if not path.is_file():
+        pytest.skip("the deep ensemble study has not been run")
+    art = json.loads(path.read_text(encoding="utf-8"))
+    text = _readme()
+    quoted = {
+        "in_distribution_uncertainty": "{:.4f}",
+        "out_of_distribution_uncertainty": "{:.4f}",
+        "ood_uncertainty_ratio": "{:.3f}",
+    }
+    missing = [key for key, fmt in quoted.items() if fmt.format(art[key]) not in text]
+    assert not missing, "README 10.10 never quotes the artifact value of: " + ", ".join(missing)
+    assert art["out_of_distribution_uncertainty"] < art["in_distribution_uncertainty"], (
+        "the section retracts the OOD trigger because the shock spread is the lower figure; "
+        "the artifact no longer says that, so the retraction needs re-reading"
     )

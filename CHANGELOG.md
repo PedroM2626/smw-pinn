@@ -555,6 +555,55 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **Expressions the README's own renderer refuses.** `$ +15.71$` is not math to GitHub: a
+  span may not open after a space, so the cell's dollars paired against their neighbours and
+  KaTeX was handed `15.71$, $` - "Unable to render expression." The same mispairing came from
+  WRAM addresses left out of a code span (`($7E:00E4 / 7E:00D8$)`), from one code span split
+  across a line break, from a `next`/`carried` pair whose closing backticks had been eaten,
+  and from a `0x_{C}` subscript that was really the world-map mode `0x0C`. Raw `<`/`>` inside
+  `$…$` are now `\lt`/`\gt`, which survive the HTML pass. `tests/test_readme_math_rendering.py`
+  pins all four properties over the whole file and is validated by corrupting one span of
+  each kind; a fifth test checks that every table-of-contents link lands on a heading.
+- **The 10.47 control-table gate was the source of its own unrenderable cells.** It built the
+  expected row with `" $ {:+.2f}$, $ {:.4f}$"`, so the README matched a form GitHub cannot
+  render and the table it generated was wrong in exactly the way the test could not see. The
+  format string now emits `$+15.71$, $0.3125$`.
+- **Section 10.54's claim column printed LaTeX as text.** `render_audit_table` stripped the
+  `$$` from a stored claim without re-delimiting it, so five of its ten rows showed
+  `\hat{X}_{t+1} \ne ...` literally. Claims are now quoted as inline math, with
+  `\lvert`/`\rvert` for absolute values: a raw `|` splits a table row and the usual `\|`
+  escape is KaTeX's *double* bar.
+- **Retired weight counts** (README Sections 1, 5, 7, 9, 10.41; Section 12 records it): the
+  Hard PINN was printed as 9,992 and 41,862, the MLP as 36,360 and the LSTM as 206,600. The
+  profiler, every study artifact and the constructor defaults the canonical benchmark uses
+  agree on 36,486, 36,744 and 223,368; 9,992 was nearest the compact `--matched-baseline`
+  pair (10,054 / 10,184), a different configuration, so Section 1's "72.5% lighter than the
+  MLP" compared a model that was never trained here against one that was.
+- **Six other statements the committed artifacts contradict**, each corrected to the value
+  the artifact carries: Section 10.4's "304 px" of drift is 78.13 px at the published start
+  and 288.73 px over the 10-start variant; Section 7's hypothesis-test heading said 5 seeds
+  where `multiseed_benchmark_metrics.json` records 10 (its Wilcoxon floor is 0.002, which 5
+  seeds cannot reach); Section 10.29.3's DAgger row is 831.75 px at 2,707.5 FPS, not 833.50
+  at 2,860.4; Section 10.10 claimed the ensemble's variance flags an out-of-distribution
+  shock while its own table shows the spread *falling* (0.4609 in, 0.4189 out, ratio 0.909),
+  which is retracted - the table's verdict cell now states the ratio it measures, and
+  `test_readme_10_10_ensemble_uncertainty_is_the_artifact` pins the three figures *and* the
+  direction, so a re-run that reversed the ordering cannot pass unnoticed; Section 10.19's
+  "prior 164 px barrier" was not the prior best (115.0 px
+  blind, 328.9 px hand-coded); Section 10.52's re-scored ceilings were quoted as 25.6% and
+  26.8% below the run cap where the fitted clamps give 26.8% and 24.8%; and Section 10.51
+  credited three of six soft cells with zero out-of-bounds frames where the grid gives four.
+- **Two stale pointers and one stale deferral.** Section 10.47's limitation asked for "the
+  CBF machinery of 10.16" - which is the cross-stage generalization study - and is now
+  pointed at 10.39, where `CBFQPLayer` lives, and at 10.51, which has since filled the
+  `state x hard` cell it called unimplemented. Section 10.36 still said the OOD-with-danger
+  holdout "stays deferred"; it has been delivered as Section 10.35. Section 10.49's command
+  comment said "all four datasets" while `data/raw` holds seven recordings and the study
+  covers four of them.
+- **The README no longer duplicates an index it does not own.** Section 11.1's tree listed
+  every `results/*.json` with a one-line description; `results/MANIFEST.md` is that index, is
+  gated, and is owned by the writers, so the 38-line copy is gone and the tree points at it.
+
 - Study scratch directories are per-process (`mworld_*_scratch_<pid>`). A fixed name let a
   seconds-scale smoke run delete the working directory of a multi-seed study that was
   still training in it, and the run died mid-seed on a missing parent directory.

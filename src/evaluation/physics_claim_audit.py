@@ -281,7 +281,8 @@ SATISFACTION_TESTS: Dict[str, Callable[[Dict[str, Any]], Tuple[bool, str]]] = {
     "top_class_is_never_reached": lambda t: (
         t["speed_classes_observed"]["rate_above_sprint_cap"] == 0.0,
         f"{t['speed_classes_observed']['rate_above_sprint_cap']:.2%} above $72$, max observed "
-        f"$\\|v_x\\| = {t['speed_classes_observed']['max_abs_vx']:.1f}$",
+        rf"$\lvert v_x \rvert = "
+        f"{t['speed_classes_observed']['max_abs_vx']:.1f}$",
     ),
     "grounded_frames_are_never_stopped": lambda t: (
         t["ground_boundary_condition"]["claimed_rate_vy_next_exactly_zero"] is not None
@@ -289,7 +290,8 @@ SATISFACTION_TESTS: Dict[str, Callable[[Dict[str, Any]], Tuple[bool, str]]] = {
         and t["ground_boundary_condition"]["claimed_rate_step_exactly_zero"] > 0.5,
         f"the recorded vertical velocity is exactly zero on "
         f"{t['ground_boundary_condition']['claimed_rate_vy_next_exactly_zero']:.2%} of "
-        f"{t['ground_boundary_condition']['n_frames_claimed']:,} frames, median $\\|v_y\\| = "
+        f"{t['ground_boundary_condition']['n_frames_claimed']:,} frames, median "
+        rf"$\lvert v_y\rvert = "
         f"{t['ground_boundary_condition']['claimed_median_abs_vy_next']:.1f}$, while its "
         f"*increment* is zero on "
         f"{t['ground_boundary_condition']['claimed_rate_step_exactly_zero']:.2%} of them "
@@ -505,6 +507,33 @@ def _verdict(report: Dict[str, Any], telemetry: Dict[str, Any]) -> Dict[str, Any
     }
 
 
+def _cell_math(latex: str) -> str:
+    r"""Quote a §4 claim as a table cell GitHub can render.
+
+    Claims are stored exactly as §4 writes them - delimiters included, because
+    `claim_quoted_from_the_readme` compares the stored string with the section - so here
+    the delimiters are reduced to inline ones. The pipes then have to go: GitHub splits a
+    table row on a raw `|` even inside `$…$`, and the usual escape `\|` is KaTeX's double
+    bar, not an absolute value. `\lvert`/`\rvert` keep the glyph and the row.
+    """
+    body = latex
+    if body.startswith("$$") and body.endswith("$$"):
+        body = body[2:-2]
+    elif body.startswith("$") and body.endswith("$"):
+        body = body[1:-1]
+    cells: List[str] = []
+    left = True
+    for char in body:
+        if char != "|":
+            cells.append(char)
+            continue
+        # The spaces are load-bearing: `\lvert` is a TeX control word, and `\lvertv_x`
+        # would be read as one unknown command.
+        cells.append(r"\lvert " if left else r" \rvert ")
+        left = not left
+    return "$" + " ".join("".join(cells).split()) + "$"
+
+
 def render_audit_table(payload: Dict[str, Any]) -> List[str]:
     r"""The README rows for this audit, generated from the artifact.
 
@@ -525,11 +554,9 @@ def render_audit_table(payload: Dict[str, Any]) -> List[str]:
                 sorted({s.split(":")[0].split("/")[-1] for s in block["dissenting_sites"]})
             )
         )
-        # The claim is quoted from section 4, where it is written as display math with bare
-        # pipes; inside a table cell it has to be inline and escaped or it splits the row.
-        quote = block["claim"].replace("$$", "$").replace("|", r"\|")
         rows.append(
-            rf"| §{name.split('_')[0]} | {quote} | {sites}{flag} | {block['telemetry_evidence']} "
+            rf"| §{name.split('_')[0]} | {_cell_math(block['claim'])} | "
+            rf"{sites}{flag} | {block['telemetry_evidence']} "
             rf"| {verdict} | {dissent} |"
         )
     return rows
