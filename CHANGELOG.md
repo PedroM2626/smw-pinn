@@ -95,7 +95,11 @@ numbers* - those are reported here and in README Section 12, never applied silen
   are 10.53's `carried` and `next` cells through a second code path: position error reproduces to
   0.0000 px and MLP closed-loop progress to +0.65 px, drift does not reproduce at all (gaps of
   0.0008 to 88.00 px) and the FNO's closed-loop row moves by -469.38 px - which corrects 10.53's
-  finding 7 and is recorded in README Section 12.
+  finding 7 and is recorded in README Section 12. The comparison is attributable to the code path
+  and not to the machine because the command was run twice: `results/checkpoints/ode_published.sha256`
+  holds the first run's hashes for the twelve published weights, the second run's files match them
+  byte-for-byte, and `tests/test_neural_ode_dynamics.py` recomputes the committed files against that
+  listing on every CI run.
 
 
 

@@ -173,3 +173,29 @@ def test_closed_loop_registry_matches_the_checkpoints_the_grid_publishes() -> No
 
     assert set(STUDIES) == {"grid", "projection", "effective", "ode"}
     assert STUDIES["ode"][1] == "neural_ode_integrator_mpc_metrics.json"
+
+
+def test_the_grid_reproduces_its_published_weights_byte_for_byte() -> None:
+    """The control behind 10.55's parity claim: re-running the command changed nothing.
+
+    `results/checkpoints/ode_published.sha256` was written from the *first* run of
+    ``--seeds 42,43,44,45,46`` and the twelve files in the repository come from the second.
+    Their hashes matching is what licenses "the same convention, second code path" gaps are
+    the parameterisation rather than the machine - and it is why the clamped cells, which
+    publish no weights and did move between those two runs, carry no claim in the section.
+    """
+    import hashlib
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    listing = repo / "results" / "checkpoints" / "ode_published.sha256"
+    assert listing.is_file(), "the published-checkpoint hash listing is part of 10.55's evidence"
+    lines = [line for line in listing.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(lines) == 12, "twelve unconstrained arms publish weights"
+    for line in lines:
+        digest, _, recorded = line.partition(" ")
+        target = repo / recorded.lstrip("*")
+        assert target.is_file(), f"{target} is gone; the section's parity control has no evidence"
+        assert hashlib.sha256(target.read_bytes()).hexdigest() == digest, (
+            f"{target.name} was regenerated after 10.55's closed loop flew it"
+        )
