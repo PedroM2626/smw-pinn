@@ -48,7 +48,7 @@ help:
 	@echo "physics-claims  Audit README section 4 against the code and the telemetry (10.54)"
 	@echo "neural-ode  Learn a continuous field, choose the integrator (10.55)"
 	@echo "sindy  Sparse identification of the engine's law on every recording (10.56)"
-	@echo "corrected-physics  What the three section-4 corrections cost (10.57)"
+	@echo "corrected-physics  What the three section-4 corrections cost, open loop and on the console (10.57, 10.57.1)"
 	@echo "record-jump        Record jump-excited WRAM telemetry (needs the console)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
@@ -191,9 +191,12 @@ sindy:
 	$(PY) -m src.evaluation.sindy_identification_benchmark
 
 # What the corrected forms of section 4 cost or buy, per family, paired over seeds
-# (README 10.57). Emulator-free; publishes no checkpoint.
+# (README 10.57), then the same arms flown by the published planner on the real console
+# (10.57.1, needs core + ROM). The forward leg publishes the eight flown arms' weights under
+# its own corrphys_ prefix; run the module directly to train without writing any.
 corrected-physics:
-	$(PY) -m src.evaluation.corrected_physics_ablation
+	$(PY) -m src.evaluation.corrected_physics_ablation --save-checkpoints
+	$(PY) -m src.evaluation.physics_injection_mpc_benchmark --study corrected
 
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py

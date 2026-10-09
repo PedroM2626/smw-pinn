@@ -117,6 +117,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `neural_ode_integrator_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py --study ode` | yes | 10.55 |
 | `sindy_identification_metrics.json` | `src/evaluation/sindy_identification_benchmark.py` | no | 10.56 |
 | `corrected_physics_ablation_metrics.json` | `src/evaluation/corrected_physics_ablation.py` | no | 10.57 |
+| `corrected_physics_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py --study corrected` | yes | 10.57 |
 
 ## Input freshness
 
@@ -145,6 +146,7 @@ judging every dependency pair a tie.
       dyna_ppo_metrics.json           <- pinn_hard_best.pt
       cross_level_control_metrics.json <- pinn_hard_best.pt mlp_best.pt pinn_soft_best.pt dagger_policy_best.pt
       inverse_model_mpc_metrics.json  <- pinn_hard_best.pt
+      corrected_physics_mpc_metrics.json <- corrphys_hard_pinn_next_best.pt corrphys_hard_pinn_carried_best.pt corrphys_mlp_residual_hard_next_best.pt corrphys_mlp_residual_hard_carried_best.pt corrphys_deeponet_residual_hard_next_best.pt corrphys_deeponet_residual_hard_carried_best.pt corrphys_fno_residual_hard_next_best.pt corrphys_fno_residual_hard_carried_best.pt pinn_hard_best.pt operator_physicsconstrained_deeponet_best.pt
 ```
 
 `STALE` rows are the honest backlog; there are none left. The `mbrl_mpc_metrics.json`,

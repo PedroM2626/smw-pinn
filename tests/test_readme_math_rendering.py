@@ -216,3 +216,22 @@ def test_every_table_of_contents_link_lands_on_a_heading() -> None:
             continue
         broken.append(link)
     assert not broken, f"table-of-contents links with no heading to land on: {broken}"
+
+
+def test_the_readme_ranges_its_own_study_sections_correctly() -> None:
+    """Section 1 says "Sections 10.37-10.56 train and score ...": a range that stops short of the
+    section it is printed in is a claim about a document that has already grown. This is the same
+    class of error as the retired weight counts - not a wrong digit, an unstopped sentence.
+    """
+    text = README.read_text(encoding="utf-8")
+    sections = [int(m.group(1)) for m in re.finditer(r"^### 10\.(\d+)\b", text, re.M)]
+    assert sections, "the README has no 10.x sections to range over"
+    last = max(sections)
+    ranges = re.findall(r"Sections 10\.(\d+)-10\.(\d+) train and score", text)
+    assert ranges, "section 1 no longer states the range of the study sections"
+    assert len(ranges) == 1, f"more than one section claims the study range: {ranges}"
+    start, end = (int(a) for a in ranges[0])
+    assert (start, end) == (37, last), (
+        f"the range is stated as 10.{start}-10.{end} but the study sections run "
+        f"10.{min(sections)}-10.{last}"
+    )

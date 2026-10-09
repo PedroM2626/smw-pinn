@@ -171,7 +171,7 @@ def test_every_arm_builds_and_emits_a_full_state() -> None:
 def test_closed_loop_registry_matches_the_checkpoints_the_grid_publishes() -> None:
     from src.evaluation.physics_injection_mpc_benchmark import STUDIES
 
-    assert set(STUDIES) == {"grid", "projection", "effective", "ode"}
+    assert set(STUDIES) == {"grid", "projection", "effective", "ode", "corrected"}
     assert STUDIES["ode"][1] == "neural_ode_integrator_mpc_metrics.json"
 
 

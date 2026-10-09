@@ -28,6 +28,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
   inside the study itself. `tests/test_corrected_physics_ablation.py` pins all four tables cell by
   cell *and* re-evaluates the quantifiers the findings use, including "at 72.0 every arm flags
   0.0000" and "the carried position error is one number across four models".
+- **README 10.57.1, the same eight arms flown on the console** (`physics_injection_mpc_benchmark.py
+  --study corrected`, the second step of `make corrected-physics`, 55 episodes in 16 min): the four
+  shells x two conventions, with the published `next` arm beside each `carried` one and the three
+  reference rows reproducing the 10.47 and 10.53 closed loops to the pixel. The console disagrees
+  with the drift column for two of the three families - the corrected MLP/PINN arm loses 319.90 px
+  ($p$ 0.018) and dies in the same hole in 5 seeds out of 5, where its published twin dies in 1,
+  while the corrected FNO *gains* 28.61 px and the DeepONet moves 5.92 px at $p$ 0.651. It also
+  found the study's own instrument limit: three of the eleven rows are duplicates from different
+  weight files with byte-identical action sequences, so eleven episodes-per-seed of evidence is
+  eight programs, which the gate now recomputes two independent ways.
 - **`tests/test_cli_parity.py`:** the `smw-pinn` runner claims to mirror the Makefile and had not
   kept up - ten study targets from 10.45 to 10.56 had no subcommand. The ten are registered, with
   the new study, and the test refuses a single-module Makefile target without one.
@@ -576,6 +586,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **A claim about the repository's own state that the batch itself had made false.** README
+  Section 12's eighth entry closed by saying §4.3.5 "declares zero implementing sites because
+  nothing in the repository yet implements the corrected rule", which was true when §10.54 first
+  ran and stopped being true in the same commit that added `contact_rule="zero_increment"` to the
+  penalty and the ground branch to `AnalyticalKinematicsDynamics` - §10.54's own finding 2 records
+  the two implementations. The sentence now states what the audit measures, the same entry carries
+  10.57.1's closed-loop half of the decision instead of leaving it as an inference from drift, and
+  Section 1's range over the study sections - still "10.37-10.56" after 10.57 shipped - is pinned by
+  `test_the_readme_ranges_its_own_study_sections_correctly`, which refuses a range that stops short
+  of the section it is printed in.
 - **Expressions the README's own renderer refuses.** `$ +15.71$` is not math to GitHub: a
   span may not open after a space, so the cell's dollars paired against their neighbours and
   KaTeX was handed `15.71$, $` - "Unable to render expression." The same mispairing came from

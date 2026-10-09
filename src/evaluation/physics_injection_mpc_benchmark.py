@@ -220,6 +220,22 @@ def _build_ode_arms() -> Dict[str, Tuple[str, Callable[[], nn.Module]]]:
 
 ODE_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = _build_ode_arms()
 
+
+def _build_corrected_arms() -> Dict[str, Tuple[str, Callable[[], nn.Module]]]:
+    """The eight 10.57 arms: each shell flown twice, once per reading of section 4.1."""
+    from src.evaluation import corrected_physics_ablation as corr
+
+    return {
+        corr.arm_slug(label): (
+            corr.checkpoint_name(label),
+            (lambda arm=label: corr.build_arm_for(arm)),
+        )
+        for label in corr.FLYABLE_LABELS
+    }
+
+
+CORRECTED_ARMS: Dict[str, Tuple[str, Callable[[], nn.Module]]] = _build_corrected_arms()
+
 # study name -> (arms to fly, artifact to write, study description for the artifact)
 STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, str]] = {
     "grid": (
@@ -253,6 +269,17 @@ STUDIES: Dict[str, Tuple[Dict[str, Tuple[str, Callable[[], nn.Module]]], str, st
         "network's own next velocity, by the velocity the frame carries, or by a predicted "
         "correction to it - so the console's integration convention is judged by a planner "
         "rather than by a rollout.",
+    ),
+    "corrected": (
+        CORRECTED_ARMS,
+        "corrected_physics_mpc_metrics.json",
+        "Closed-loop control of the 10.57 arms on the real console: the same shell, the same "
+        "clamps and the same objective, flown once advancing position with its own predicted "
+        "next velocity (the convention every published artifact of this repository was recorded "
+        "with) and once with the velocity the frame carries (how section 4.1 reads and 10.54 "
+        "measures the console), including the canonical Hard Residual PINN - so the decision the "
+        "flags leave open, whether to retrain the flagship on its own documentation, is priced by "
+        "a planner rather than by an open-loop rollout.",
     ),
 }
 

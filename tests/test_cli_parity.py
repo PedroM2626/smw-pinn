@@ -98,5 +98,6 @@ def test_the_three_two_leg_studies_map_to_their_forward_module() -> None:
         ("projection-cell", "src.evaluation.projection_cell_benchmark"),
         ("effective-velocity", "src.evaluation.effective_velocity_benchmark"),
         ("neural-ode", "src.evaluation.neural_ode_integrator_benchmark"),
+        ("corrected-physics", "src.evaluation.corrected_physics_ablation"),
     ):
         assert MODULE_COMMANDS[name] == forward, f"{name} no longer names its forward leg"

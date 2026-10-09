@@ -126,6 +126,45 @@ ARM_PLAN: List[Tuple[str, str, Optional[str], str, str, str]] = [
 
 PAIR_SUFFIXES = (("/next", "/carried"), ("/published", "/increment"))
 
+# The arms the console flies. Only these publish weights, and only when the study is asked
+# to: the default run trains into a scratch directory so the committed checkpoints - which are
+# what every earlier artifact is a measurement of - keep their lineage.
+FLYABLE_LABELS: Tuple[str, ...] = (
+    "Hard PINN/next",
+    "Hard PINN/carried",
+    "MLP/residual/hard/next",
+    "MLP/residual/hard/carried",
+    "DeepONet/residual/hard/next",
+    "DeepONet/residual/hard/carried",
+    "FNO/residual/hard/next",
+    "FNO/residual/hard/carried",
+)
+
+
+def publishes(label: str) -> bool:
+    """True for the eight arms 10.57.1 flies, which are the only weights this study can publish."""
+    return label in FLYABLE_LABELS
+
+
+def arm_slug(label: str) -> str:
+    """The console-runner key for one arm: a family prefix the paired contrasts can group on."""
+    return label.replace("/", "_").replace(" ", "_").lower()
+
+
+def checkpoint_name(label: str) -> str:
+    """The weight file the primary seed publishes for one arm."""
+    return f"corrphys_{arm_slug(label)}_best.pt"
+
+
+def build_arm_for(label: str, state_dim: int = 8, action_dim: int = 6) -> nn.Module:
+    """Rebuild one published arm untrained, so a checkpoint load is a shape check too."""
+    for plan_label, kind, family, target, mechanism, mode in ARM_PLAN:
+        if plan_label == label:
+            return _build(
+                kind, family, target, mechanism, mode, (state_dim, action_dim, LATENT_DIM)
+            )
+    raise ValueError(f"{label!r} is not an arm of this study")
+
 
 def pair_of(label: str) -> Optional[Tuple[str, str]]:
     """The (published, corrected) arm a label belongs to, or None if it stands alone."""
@@ -386,6 +425,7 @@ def run_corrected_physics_ablation(
     num_rollout_starts: int = 10,
     latent_dim: int = LATENT_DIM,
     only_arms: Optional[Sequence[str]] = None,
+    save_checkpoints: bool = False,
 ) -> Dict[str, Any]:
     """Train and score every arm of the correction ablation, then write its artifact."""
     draws = list(seeds) if seeds else [seed]
@@ -397,10 +437,14 @@ def run_corrected_physics_ablation(
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(output_dir, exist_ok=True)
-    # No weight is published here: the committed checkpoints are what every earlier artifact is a
-    # measurement *of*, and republishing them would silently re-date them.
+    # By default no weight is published: the committed checkpoints are what every earlier
+    # artifact is a measurement *of*. `--save-checkpoints` opts in, and only for the eight arms
+    # 10.57.1 flies, under a `corrphys_` prefix no other study reads.
+    checkpoint_dir = os.path.join(output_dir, "checkpoints")
     scratch_dir = os.path.join(tempfile.gettempdir(), f"mworld_corrphys_scratch_{os.getpid()}")
     os.makedirs(scratch_dir, exist_ok=True)
+    if save_checkpoints:
+        os.makedirs(checkpoint_dir, exist_ok=True)
 
     runs: Dict[int, Dict[str, Dict[str, Any]]] = {draw: {} for draw in draws}
     replays: Dict[str, Dict[str, Any]] = {}
@@ -423,14 +467,19 @@ def run_corrected_physics_ablation(
             }
             if kind != "closed":
                 loss_rule = mode_or_rule if kind == "soft" else CONTACT_ZERO_VELOCITY
+                publishes_this = save_checkpoints and draw == draws[0] and publishes(label)
                 trainer = DynamicsTrainer(
                     model=model,
-                    model_type=f"corrphys_{label.replace('/', '_').lower()}",
+                    model_type=(
+                        f"corrphys_{arm_slug(label)}"
+                        if publishes_this
+                        else f"corrphys_scratch_{arm_slug(label)}_s{draw}"
+                    ),
                     device=device,
                     learning_rate=learning_rate,
                     weight_decay=weight_decay,
                     loss_fn=build_loss("soft" if kind == "soft" else "none", loss_rule),
-                    save_dir=scratch_dir,
+                    save_dir=checkpoint_dir if publishes_this else scratch_dir,
                 )
                 started = time.time()
                 trainer.fit(
@@ -484,7 +533,7 @@ def run_corrected_physics_ablation(
             },
             "alternative_ruler_max_vx": RUN_CLASS_VX,
             "arms_built_with": "10.47 build_arm/build_loss, same constructor defaults",
-            "checkpoints_published": False,
+            "checkpoints_published": save_checkpoints,
             "emulator_required": False,
             "closed_loop_measured": False,
         },
@@ -659,6 +708,11 @@ def main() -> Dict[str, Any]:
     parser.add_argument("--num-starts", type=int, default=10)
     parser.add_argument("--latent-dim", type=int, default=LATENT_DIM)
     parser.add_argument("--arms", default=None, help="comma-separated arm-label filter")
+    parser.add_argument(
+        "--save-checkpoints",
+        action="store_true",
+        help="publish the eight flown arms' weights under results/checkpoints (off by default)",
+    )
     args = parse_args_with_config(parser)
     payload = run_corrected_physics_ablation(
         dataset_path=args.dataset_path,
@@ -672,6 +726,7 @@ def main() -> Dict[str, Any]:
         num_rollout_starts=args.num_starts,
         latent_dim=args.latent_dim,
         only_arms=None if not args.arms else str(args.arms).split(","),
+        save_checkpoints=args.save_checkpoints,
     )
     logger.info("verdict written: %d arms", payload["verdict"]["arms"])
     return payload
