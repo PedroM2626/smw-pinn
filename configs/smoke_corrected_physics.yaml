@@ -1,0 +1,8 @@
+# Seconds-scale version of the README 10.57 correction ablation (`make smoke-all`).
+# Two convention arms and the closed-form pair, three epochs, one seed: the point is that
+# the corrected modes are constructible and scored, that the default arm still lines up with
+# 10.47, and that the artifact is written - not that a paired contrast means anything at n=1.
+epochs: 3
+seeds: 42
+num_starts: 3
+arms: Hard PINN/next,Hard PINN/carried,engine rules/next,engine rules/carried

@@ -46,6 +46,13 @@ import torch
 import torch.nn as nn
 
 from src.environment import wram
+from src.utils.kinematics import (
+    CARRIED,
+    CONTACT_ZERO_VELOCITY,
+    NEXT,
+    check_contact_rule,
+    check_position_velocity,
+)
 
 # Published invariants (README section 4). Not fitted.
 SUBPIXELS_PER_PIXEL = wram.SUBPIXELS_PER_PIXEL  # 16.0
@@ -124,6 +131,8 @@ class AnalyticalKinematicsDynamics(nn.Module):
         params: EngineRuleParameters | None = None,
         max_vx: float = VX_SPRINT,
         subpixels_per_pixel: float = SUBPIXELS_PER_PIXEL,
+        position_velocity: str = NEXT,
+        ground_rule: str = CONTACT_ZERO_VELOCITY,
     ):
         super().__init__()
         if state_dim != 8:
@@ -136,6 +145,8 @@ class AnalyticalKinematicsDynamics(nn.Module):
         self.max_vx = max_vx
         self.subpixels_per_pixel = subpixels_per_pixel
         self.params = params or EngineRuleParameters()
+        self.position_velocity = check_position_velocity(position_velocity)
+        self.ground_rule = check_contact_rule(ground_rule)
 
     # --- introspection helpers used by the benchmark / reports ---------------
     @property
@@ -153,11 +164,12 @@ class AnalyticalKinematicsDynamics(nn.Module):
         left = action[:, IDX_LEFT]
 
         vx_next = self._horizontal_velocity(vx_t, right - left, run, p)
-        vy_next = self._vertical_velocity(vx_t, vy_t, c_ground, jump, p)
+        vy_next = self._vertical_velocity(vx_t, vy_t, c_ground, jump, p, self.ground_rule)
 
         # Section 4.1: exact discrete integration, zero kinematic residual.
-        x_next = x_t + vx_next / self.subpixels_per_pixel
-        y_next = y_t + vy_next / self.subpixels_per_pixel
+        use_vx, use_vy = (vx_t, vy_t) if self.position_velocity == CARRIED else (vx_next, vy_next)
+        x_next = x_t + use_vx / self.subpixels_per_pixel
+        y_next = y_t + use_vy / self.subpixels_per_pixel
 
         # Contact channels: persistence (not derivable from kinematics).
         contacts = state[:, 4:]
@@ -210,6 +222,7 @@ class AnalyticalKinematicsDynamics(nn.Module):
         c_ground: torch.Tensor,
         jump: torch.Tensor,
         p: EngineRuleParameters,
+        ground_rule: str = CONTACT_ZERO_VELOCITY,
     ) -> torch.Tensor:
         """Asymmetric gravity, momentum-modulated takeoff, and the resting rule."""
         takeoff = (jump > 0.5) & (c_ground > 0.5) & (vy > -1.0)
@@ -224,7 +237,13 @@ class AnalyticalKinematicsDynamics(nn.Module):
         # still zeroes the downward motion, which is the retracted form - 10.54 records it as a
         # prose-and-code disagreement, and `physics_claim_audit` fails if this line moves.
         resting = (c_ground > 0.5) & (jump <= 0.5) & (vy >= 0.0)
-        vy_next = torch.where(resting, torch.zeros_like(vy_next), vy_next)
+        if ground_rule == CONTACT_ZERO_VELOCITY:
+            vy_next = torch.where(resting, torch.zeros_like(vy_next), vy_next)
+        else:
+            # The rule §4.3.5 now states: the ground flag suppresses the gravity *step*, so the
+            # body keeps the vertical velocity the frame started with instead of being stopped.
+            grounded = (c_ground > 0.5) & (jump <= 0.5)
+            vy_next = torch.where(grounded, vy, vy_next)
         return torch.clamp(vy_next, MIN_VY, TERMINAL_VY)
 
     # --- system identification ------------------------------------------------

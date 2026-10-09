@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-08T15:04:21+00:00",
-    "git_sha": "51bb2e260be5fb91c80d6da53b4799f43b512a11",
+    "generated_utc": "2026-10-09T00:41:42+00:00",
+    "git_sha": "5240225f6809a956ee1986b9f4552e27b2aa9bda",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -40,13 +40,17 @@
       "claim": "$$X_{t+1} = X_t + \\frac{v_{x, t}}{16.0}$$",
       "readme_marker": "### 4.1 Fixed-Point Arithmetic",
       "claim_quoted_from_the_readme": true,
-      "declared_sites": 5,
+      "declared_sites": 9,
       "sites_found": [
         "src/losses/physics_losses.py: expected_dx = vx_t / self.subpixels_per_pixel",
         "src/evaluation/rollout_evaluator.py: curr_state[0, 2].item() / 16.0",
         "src/evaluation/rollout_diagnostics.py: v_prev = pred_traj[:-1, 2]",
         "src/models/effective_velocity_dynamics.py: used_vx, used_vy = vx_t + offset_vx, vy_t + offset_vy",
-        "src/models/neural_ode_dynamics.py: z[:, 2:4] / self.subpixels_per_pixel"
+        "src/models/neural_ode_dynamics.py: z[:, 2:4] / self.subpixels_per_pixel",
+        "src/models/residual_dynamics.py: if self.position_velocity == CARRIED else",
+        "src/models/output_projection.py: if self.position_velocity == CARRIED else",
+        "src/models/pinn_hard_residual.py: if self.position_velocity == CARRIED else",
+        "src/models/analytical_kinematics.py: if self.position_velocity == CARRIED else"
       ],
       "sites_missing": [],
       "implemented_by_every_declared_site": true,
@@ -54,6 +58,8 @@
       "dissenting_sites_missing": [],
       "asserts": "carried_identity_is_exact",
       "convention": "carried",
+      "corrected_form": "position_velocity=\"carried\" in four shells",
+      "corrected_by_default": false,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "median 0.0000 px, exact on 93.82% of frames"
     },
@@ -69,12 +75,16 @@
       "sites_missing": [],
       "implemented_by_every_declared_site": true,
       "dissenting_sites": [
-        "src/models/residual_dynamics.py: hat_x = x_t + hat_vx / self.subpixels_per_pixel",
-        "src/models/output_projection.py: x = state[:, 0] + vx / self.subpixels_per_pixel"
+        "src/models/residual_dynamics.py: position_velocity: str = NEXT",
+        "src/models/output_projection.py: position_velocity: str = NEXT",
+        "src/models/pinn_hard_residual.py: position_velocity: str = NEXT",
+        "src/models/analytical_kinematics.py: position_velocity: str = NEXT"
       ],
       "dissenting_sites_missing": [],
       "asserts": "next_velocity_definition_would_flag_the_engine_itself",
       "convention": "carried",
+      "corrected_form": "position_velocity=\"carried\"",
+      "corrected_by_default": false,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "median 0.0625 px against $\\hat v_{x,t+1}$ - the console would violate its own definition on 82.10% of frames"
     },
@@ -93,6 +103,8 @@
       "dissenting_sites_missing": [],
       "asserts": "impulse_range_is_not_an_observed_bound",
       "convention": null,
+      "corrected_form": null,
+      "corrected_by_default": null,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "7.39% of velocities below $-80$ (min -112.0)"
     },
@@ -111,6 +123,8 @@
       "dissenting_sites_missing": [],
       "asserts": "both_gravity_tiers_are_observed",
       "convention": null,
+      "corrected_form": null,
+      "corrected_by_default": null,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "86.51% of 1,386 airborne-ascent frames step $3.0$, 7.58% step $6.0$"
     },
@@ -128,6 +142,8 @@
       "dissenting_sites_missing": [],
       "asserts": "released_descent_is_the_only_stratum_where_the_upper_tier_is_common",
       "convention": null,
+      "corrected_form": null,
+      "corrected_by_default": null,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "released descent is the only stratum where $6.0$ is common (31.49% of 867 frames) - released *ascent* still steps $3.0$ in 84.21% of 532 frames, so the gate is not separable by button state in this recording"
     },
@@ -143,11 +159,13 @@
       "sites_missing": [],
       "implemented_by_every_declared_site": true,
       "dissenting_sites": [
-        "src/evaluation/rollout_evaluator.py: hat_vy > 64.0"
+        "src/evaluation/rollout_evaluator.py: terminal_vy: float = 64.0"
       ],
       "dissenting_sites_missing": [],
       "asserts": "terminal_velocity_is_broken_by_the_recording",
       "convention": null,
+      "corrected_form": "RolloutEvaluator(terminal_vy=...)",
+      "corrected_by_default": false,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "13.37% above $+64$ (max 70.0)"
     },
@@ -165,6 +183,8 @@
       "dissenting_sites_missing": [],
       "asserts": "walk_cap_is_a_class_not_a_bound",
       "convention": null,
+      "corrected_form": null,
+      "corrected_by_default": null,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "54.88% of frames above $20$"
     },
@@ -182,6 +202,8 @@
       "dissenting_sites_missing": [],
       "asserts": "run_cap_is_a_class_and_is_breached",
       "convention": null,
+      "corrected_form": null,
+      "corrected_by_default": null,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "0.0632% of frames above $48$"
     },
@@ -199,11 +221,13 @@
       "sites_missing": [],
       "implemented_by_every_declared_site": true,
       "dissenting_sites": [
-        "src/evaluation/rollout_evaluator.py: abs(hat_vx) > 72.0"
+        "src/evaluation/rollout_evaluator.py: max_vx: float = 72.0"
       ],
       "dissenting_sites_missing": [],
       "asserts": "top_class_is_never_reached",
       "convention": null,
+      "corrected_form": "RolloutEvaluator(max_vx=48.0), the class 10.49 reaches",
+      "corrected_by_default": false,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "0.00% above $72$, max observed $\\lvert v_x \\rvert = 49.0$"
     },
@@ -211,17 +235,22 @@
       "claim": "v_{y, t+1} = v_{y, t} + g \\cdot (1 - c_{t, \\text{ground}})",
       "readme_marker": "### 4.3 Horizontal Dynamics",
       "claim_quoted_from_the_readme": true,
-      "declared_sites": 0,
-      "sites_found": [],
+      "declared_sites": 2,
+      "sites_found": [
+        "src/models/analytical_kinematics.py: vy_next = torch.where(grounded, vy, vy_next)",
+        "src/losses/physics_losses.py: ground_vy = ground_vy - current_state[stationary_ground_mask, 3]"
+      ],
       "sites_missing": [],
       "implemented_by_every_declared_site": true,
       "dissenting_sites": [
-        "src/losses/physics_losses.py: stationary_ground_mask = (ground_contact > 0.5)",
-        "src/models/analytical_kinematics.py: resting = (c_ground > 0.5) & (jump <= 0.5)"
+        "src/losses/physics_losses.py: def __init__(self, rule: str = CONTACT_ZERO_VELOCITY)",
+        "src/models/analytical_kinematics.py: ground_rule: str = CONTACT_ZERO_VELOCITY"
       ],
       "dissenting_sites_missing": [],
       "asserts": "grounded_frames_are_never_stopped",
       "convention": null,
+      "corrected_form": "contact_rule=\"zero_increment\" / ground_rule=\"zero_increment\"",
+      "corrected_by_default": false,
       "satisfied_by_the_telemetry": true,
       "telemetry_evidence": "the recorded vertical velocity is exactly zero on 0.00% of 2,943 frames, median $\\lvert v_y\\rvert = 6.0$, while its *increment* is zero on 90.72% of them (median step +0.0)"
     }
@@ -335,36 +364,47 @@
         "claim": "4.1_violation_defined_with_carried_velocity",
         "as_stated_in_section_4": "\\hat{X}_{t+1} \\ne X_t + \\frac{v_{x, t}}{16.0}",
         "sites_implementing_a_different_rule": [
-          "src/models/residual_dynamics.py: hat_x = x_t + hat_vx / self.subpixels_per_pixel",
-          "src/models/output_projection.py: x = state[:, 0] + vx / self.subpixels_per_pixel"
+          "src/models/residual_dynamics.py: position_velocity: str = NEXT",
+          "src/models/output_projection.py: position_velocity: str = NEXT",
+          "src/models/pinn_hard_residual.py: position_velocity: str = NEXT",
+          "src/models/analytical_kinematics.py: position_velocity: str = NEXT"
         ]
       },
       {
         "claim": "4.2.5_terminal_velocity",
         "as_stated_in_section_4": "v_{y} \\le v_{y, \\text{term}} = +64.0\\text{ subpixels/frame}",
         "sites_implementing_a_different_rule": [
-          "src/evaluation/rollout_evaluator.py: hat_vy > 64.0"
+          "src/evaluation/rollout_evaluator.py: terminal_vy: float = 64.0"
         ]
       },
       {
         "claim": "4.3.3_sprint_speed",
         "as_stated_in_section_4": "$|v_x| \\le 72\\text{ subpixels/frame}$",
         "sites_implementing_a_different_rule": [
-          "src/evaluation/rollout_evaluator.py: abs(hat_vx) > 72.0"
+          "src/evaluation/rollout_evaluator.py: max_vx: float = 72.0"
         ]
       },
       {
         "claim": "4.3.5_ground_flag_gates_gravity",
         "as_stated_in_section_4": "v_{y, t+1} = v_{y, t} + g \\cdot (1 - c_{t, \\text{ground}})",
         "sites_implementing_a_different_rule": [
-          "src/losses/physics_losses.py: stationary_ground_mask = (ground_contact > 0.5)",
-          "src/models/analytical_kinematics.py: resting = (c_ground > 0.5) & (jump <= 0.5)"
+          "src/losses/physics_losses.py: def __init__(self, rule: str = CONTACT_ZERO_VELOCITY)",
+          "src/models/analytical_kinematics.py: ground_rule: str = CONTACT_ZERO_VELOCITY"
         ]
       }
     ],
+    "claims_with_a_reachable_corrected_form": [
+      "4.1_integration_identity_carried_velocity",
+      "4.1_violation_defined_with_carried_velocity",
+      "4.2.5_terminal_velocity",
+      "4.3.3_sprint_speed",
+      "4.3.5_ground_flag_gates_gravity"
+    ],
+    "claims_whose_corrected_form_is_the_default": [],
+    "diverging_sites": 8,
     "telemetry_prefers": "carried",
     "carried_median_residual_px": 0.0,
     "next_median_residual_px": 0.0625,
-    "reading": "10 of 10 claims are implemented by every file declared to implement them (none missing), 10 of 10 are satisfied by the recorded transitions as the section now states them (none failing), and 4 are disagreed with by code the section itself lists: the identity is written with the carried velocity (93.82% of frames exact, median 0.0000 px) while two shells advance position with the predicted next velocity (median 0.0625 px), and \u00a74.3.5 now says the ground flag gates the gravity step while the contact penalty still asks for $v_y = 0$."
+    "reading": "10 of 10 claims are implemented by every file declared to implement them (none missing), 10 of 10 are satisfied by the recorded transitions as the section now states them (none failing), and 4 are still disagreed with by 8 default code paths: the identity is written with the carried velocity (93.82% of frames exact, median 0.0000 px) while the shells advance position with the predicted next velocity by default (median 0.0625 px). The state of the fix is now part of the record: 5 of 10 claims have a corrected form reachable in the same class or penalty, and 5 of those are not the default, because every artifact in this repository was recorded with the published form. 10.57 measures what the difference costs per family."
   }
 }

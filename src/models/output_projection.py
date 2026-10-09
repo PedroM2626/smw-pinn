@@ -25,6 +25,8 @@ changes what the agent commands rather than how a prediction is read.
 import torch
 import torch.nn as nn
 
+from src.utils.kinematics import CARRIED, NEXT, check_position_velocity
+
 
 class ProjectedDynamics(nn.Module):
     """
@@ -36,6 +38,11 @@ class ProjectedDynamics(nn.Module):
         max_vx / terminal_vy / min_vy: the engine's admissible velocity window.
         subpixels_per_pixel: WRAM position scale, used to re-derive position from the
             projected velocity so the output stays internally consistent.
+        position_velocity: ``"next"`` (the default every published artifact uses) re-derives
+            position from the projected next-frame velocity; ``"carried"`` advances it with
+            the velocity the frame starts with, which is how README 4.1 states the identity
+            and how the telemetry measures the console. Under ``"carried"`` the projection
+            still constrains the velocity output, but no weight reaches position at all.
 
     The contact channels are passed through unchanged: projecting them would mean
     deciding the collision response, which is the engine's business, not the wrapper's.
@@ -49,6 +56,7 @@ class ProjectedDynamics(nn.Module):
         terminal_vy: float = 64.0,
         min_vy: float = -80.0,
         subpixels_per_pixel: float = 16.0,
+        position_velocity: str = NEXT,
     ):
         super().__init__()
         self.base = base
@@ -57,6 +65,7 @@ class ProjectedDynamics(nn.Module):
         self.terminal_vy = terminal_vy
         self.min_vy = min_vy
         self.subpixels_per_pixel = subpixels_per_pixel
+        self.position_velocity = check_position_velocity(position_velocity)
 
     @property
     def bounds_imposed_by_construction(self) -> bool:
@@ -68,8 +77,11 @@ class ProjectedDynamics(nn.Module):
         raw = self.base(state, action)
         vx = torch.clamp(raw[:, 2], -self.max_vx, self.max_vx)
         vy = torch.clamp(raw[:, 3], self.min_vy, self.terminal_vy)
-        x = state[:, 0] + vx / self.subpixels_per_pixel
-        y = state[:, 1] + vy / self.subpixels_per_pixel
+        use_vx, use_vy = (
+            (state[:, 2], state[:, 3]) if self.position_velocity == CARRIED else (vx, vy)
+        )
+        x = state[:, 0] + use_vx / self.subpixels_per_pixel
+        y = state[:, 1] + use_vy / self.subpixels_per_pixel
         contacts = raw[:, 4 : self.state_dim]
         return torch.cat(
             [x.unsqueeze(-1), y.unsqueeze(-1), vx.unsqueeze(-1), vy.unsqueeze(-1), contacts], dim=-1

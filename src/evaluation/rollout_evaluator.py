@@ -18,8 +18,26 @@ class RolloutEvaluator:
     and directly compares against ground-truth game trajectories.
     """
 
-    def __init__(self, device: torch.device):
+    def __init__(
+        self,
+        device: torch.device,
+        max_vx: float = 72.0,
+        terminal_vy: float = 64.0,
+        tolerance_px: float = 0.2,
+    ):
+        """The published predicate, with its two thresholds nameable.
+
+        ``max_vx=72.0`` and ``terminal_vy=64.0`` are the constants §8 and §10.27 onwards have
+        always scored against, and §10.49/§10.54 record that they are a speed *class* and an
+        unenforced engine parameter rather than bounds the console respects - the recordings
+        reach 49.0 and 70.0. They are therefore parameters here, not literals: 10.57 scores the
+        same rollouts against the reachable run class (48.0) to show what the published
+        violation column is measuring. Defaults keep every earlier number reproducible.
+        """
         self.device = device
+        self.max_vx = max_vx
+        self.terminal_vy = terminal_vy
+        self.tolerance_px = tolerance_px
 
     @torch.no_grad()
     def evaluate_rollout(
@@ -79,13 +97,13 @@ class RolloutEvaluator:
             prev_x = curr_state[0, 0].item()
 
             # Kinematic violation (> 0.2 pixels deviation from dx = vx/16.0)
-            if abs((hat_x - prev_x) - (curr_state[0, 2].item() / 16.0)) > 0.2:
+            if abs((hat_x - prev_x) - (curr_state[0, 2].item() / 16.0)) > self.tolerance_px:
                 kin_violations += 1
 
             # Velocity saturation boundary violation. 10.54 records this as a disagreement
             # with section 4: 72 and 64 are a speed class and a documented clamp that the
             # telemetry is observed to leave, so neither is an absolute bound on real states.
-            if abs(hat_vx) > 72.0 or hat_vy > 64.0:
+            if abs(hat_vx) > self.max_vx or hat_vy > self.terminal_vy:
                 vel_violations += 1
 
             pred_traj[t] = next_state_pred[0].cpu().numpy()

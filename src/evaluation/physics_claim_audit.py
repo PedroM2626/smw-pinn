@@ -58,6 +58,12 @@ README_PATH = os.path.join(REPO_ROOT, "README.md")
 # whether the recorded transitions agree with the sentence, and `disagrees_with` lists the
 # sites that implement a different rule from the one §4 now states - documentation and code
 # on the same subject, deliberately kept apart so the gap stays visible.
+#
+# `corrected_in` is new as of 10.57: the literal that makes the *corrected* rule reachable in the
+# same file, and `corrected_by_default` says whether it is what a caller gets without asking.
+# Every default is still the published one, because every artifact in the repository was recorded
+# with it - so for each claim the honest state is "implemented, not default", and that is what the
+# audit now prints instead of "no implementation exists".
 CLAIMS: Dict[str, Dict[str, Any]] = {
     "4.1_integration_identity_carried_velocity": {
         "readme_marker": "### 4.1 Fixed-Point Arithmetic",
@@ -73,7 +79,13 @@ CLAIMS: Dict[str, Dict[str, Any]] = {
                 "used_vx, used_vy = vx_t + offset_vx, vy_t + offset_vy",
             ),
             ("src/models/neural_ode_dynamics.py", "z[:, 2:4] / self.subpixels_per_pixel"),
+            ("src/models/residual_dynamics.py", "if self.position_velocity == CARRIED else"),
+            ("src/models/output_projection.py", "if self.position_velocity == CARRIED else"),
+            ("src/models/pinn_hard_residual.py", "if self.position_velocity == CARRIED else"),
+            ("src/models/analytical_kinematics.py", "if self.position_velocity == CARRIED else"),
         ],
+        "corrected_in": 'position_velocity="carried" in four shells',
+        "corrected_by_default": False,
     },
     "4.1_violation_defined_with_carried_velocity": {
         "readme_marker": "### 4.1 Fixed-Point Arithmetic",
@@ -84,10 +96,16 @@ CLAIMS: Dict[str, Dict[str, Any]] = {
             ("src/losses/physics_losses.py", "expected_dx = vx_t / self.subpixels_per_pixel"),
             ("src/evaluation/rollout_evaluator.py", "curr_state[0, 2].item() / 16.0"),
         ],
+        # The four shells still default to the next-frame form; the literal that makes it the
+        # default is the constructor argument, which is precisely what a caller inherits.
         "disagrees_with": [
-            ("src/models/residual_dynamics.py", "hat_x = x_t + hat_vx / self.subpixels_per_pixel"),
-            ("src/models/output_projection.py", "x = state[:, 0] + vx / self.subpixels_per_pixel"),
+            ("src/models/residual_dynamics.py", "position_velocity: str = NEXT"),
+            ("src/models/output_projection.py", "position_velocity: str = NEXT"),
+            ("src/models/pinn_hard_residual.py", "position_velocity: str = NEXT"),
+            ("src/models/analytical_kinematics.py", "position_velocity: str = NEXT"),
         ],
+        "corrected_in": 'position_velocity="carried"',
+        "corrected_by_default": False,
     },
     "4.2.1_jump_impulse_range": {
         "readme_marker": "### 4.2 Vertical Dynamics",
@@ -121,7 +139,9 @@ CLAIMS: Dict[str, Dict[str, Any]] = {
             ("src/models/analytical_kinematics.py", "TERMINAL_VY = 64.0"),
             ("src/losses/physics_losses.py", "terminal_vy: float = 64.0"),
         ],
-        "disagrees_with": [("src/evaluation/rollout_evaluator.py", "hat_vy > 64.0")],
+        "disagrees_with": [("src/evaluation/rollout_evaluator.py", "terminal_vy: float = 64.0")],
+        "corrected_in": "RolloutEvaluator(terminal_vy=...)",
+        "corrected_by_default": False,
     },
     "4.3.1_walk_speed": {
         "readme_marker": "### 4.3 Horizontal Dynamics",
@@ -145,20 +165,33 @@ CLAIMS: Dict[str, Dict[str, Any]] = {
             ("src/models/output_projection.py", "max_vx: float = 72.0"),
             ("src/losses/physics_losses.py", "max_vx: float = 72.0"),
         ],
-        "disagrees_with": [("src/evaluation/rollout_evaluator.py", "abs(hat_vx) > 72.0")],
+        "disagrees_with": [("src/evaluation/rollout_evaluator.py", "max_vx: float = 72.0")],
+        "corrected_in": "RolloutEvaluator(max_vx=48.0), the class 10.49 reaches",
+        "corrected_by_default": False,
     },
     "4.3.5_ground_flag_gates_gravity": {
         "readme_marker": "### 4.3 Horizontal Dynamics",
         "claim": r"v_{y, t+1} = v_{y, t} + g \cdot (1 - c_{t, \text{ground}})",
         "asserts": "grounded_frames_are_never_stopped",
-        # Nothing in this repository implements the rule as section 4 now states it: the two
-        # files that read the ground flag implement the retracted form, so they are recorded as
-        # dissenters and the audit fails if either literal changes without this being revisited.
-        "sites": [],
-        "disagrees_with": [
-            ("src/losses/physics_losses.py", "stationary_ground_mask = (ground_contact > 0.5)"),
-            ("src/models/analytical_kinematics.py", "resting = (c_ground > 0.5) & (jump <= 0.5)"),
+        # The rule now has an implementation in both places it matters - the closed-form engine
+        # rules and the composite penalty - but neither is what a caller gets by default, because
+        # every published artifact was recorded with the retracted rest-state form.
+        "sites": [
+            ("src/models/analytical_kinematics.py", "vy_next = torch.where(grounded, vy, vy_next)"),
+            (
+                "src/losses/physics_losses.py",
+                "ground_vy = ground_vy - current_state[stationary_ground_mask, 3]",
+            ),
         ],
+        "disagrees_with": [
+            (
+                "src/losses/physics_losses.py",
+                "def __init__(self, rule: str = CONTACT_ZERO_VELOCITY)",
+            ),
+            ("src/models/analytical_kinematics.py", "ground_rule: str = CONTACT_ZERO_VELOCITY"),
+        ],
+        "corrected_in": 'contact_rule="zero_increment" / ground_rule="zero_increment"',
+        "corrected_by_default": False,
     },
 }
 
@@ -212,6 +245,10 @@ def audit_claims(claims: Dict[str, Dict[str, Any]] = CLAIMS) -> Dict[str, Any]:
             "dissenting_sites_missing": dissent_missing,
             "asserts": spec["asserts"],
             "convention": spec.get("convention"),
+            # Reachability is verified through `sites` (the corrected line must be in the file);
+            # these two fields only say how a caller reaches it, and whether that is the default.
+            "corrected_form": spec.get("corrected_in"),
+            "corrected_by_default": spec.get("corrected_by_default"),
         }
     return report
 
@@ -480,12 +517,22 @@ def _verdict(report: Dict[str, Any], telemetry: Dict[str, Any]) -> Dict[str, Any
     disagreements = _prose_and_code_disagreements(report)
     carried = telemetry["identity_vs_carried_velocity"]
     following = telemetry["identity_vs_next_velocity"]
+    with_correction = [name for name, block in report.items() if block.get("corrected_form")]
+    default_correction = [
+        name for name, block in report.items() if block.get("corrected_by_default")
+    ]
+    dissent_files = sum(
+        len(block["dissenting_sites"]) for block in report.values() if block["dissenting_sites"]
+    )
     return {
         "claims_audited": len(report),
         "claims_with_a_missing_implementation": unimplemented,
         "claims_whose_readme_quote_was_not_found": unquoted,
         "claims_the_telemetry_does_not_satisfy": unsatisfied,
         "prose_and_code_disagree": disagreements,
+        "claims_with_a_reachable_corrected_form": with_correction,
+        "claims_whose_corrected_form_is_the_default": default_correction,
+        "diverging_sites": dissent_files,
         "telemetry_prefers": "carried"
         if carried["median_abs_residual_px"] <= following["median_abs_residual_px"]
         else "next",
@@ -496,14 +543,17 @@ def _verdict(report: Dict[str, Any], telemetry: Dict[str, Any]) -> Dict[str, Any
             f"file declared to implement them ({unimplemented or 'none missing'}), "
             f"{len(report) - len(unsatisfied)} of {len(report)} are satisfied by the recorded "
             f"transitions as the section now states them ({unsatisfied or 'none failing'}), and "
-            f"{len(disagreements)} are disagreed with by code the section itself lists: the "
-            f"identity is written with the carried velocity "
+            f"{len(disagreements)} are still disagreed with by {dissent_files} default code paths: "
+            f"the identity is written with the carried velocity "
             f"({carried['exact_to_half_a_subpixel_rate']:.2%} of frames exact, median "
-            f"{carried['median_abs_residual_px']:.4f} px) while two shells advance position with "
-            f"the predicted next velocity "
-            f"(median {following['median_abs_residual_px']:.4f} px), and §4.3.5 now says the "
-            f"ground flag gates the gravity step while the contact penalty still asks for "
-            f"$v_y = 0$."
+            f"{carried['median_abs_residual_px']:.4f} px) while the shells advance position with "
+            f"the predicted next velocity by default "
+            f"(median {following['median_abs_residual_px']:.4f} px). The state of the fix is now "
+            f"part of the record: {len(with_correction)} of {len(report)} claims have a corrected "
+            f"form reachable in the same class or penalty, and "
+            f"{len(with_correction) - len(default_correction)} of those are not the default, "
+            f"because every artifact in this repository was recorded with the published form. "
+            f"10.57 measures what the difference costs per family."
         ),
     }
 
@@ -555,10 +605,21 @@ def render_audit_table(payload: Dict[str, Any]) -> List[str]:
                 sorted({s.split(":")[0].split("/")[-1] for s in block["dissenting_sites"]})
             )
         )
+        # The seventh column is the state of the fix, not of the measurement: how a caller reaches
+        # the rule §4 states, and whether asking for it is the default. "not the default" is the
+        # honest description of every one of them, because the published artifacts used the old
+        # form; 10.57 is what the difference costs.
+        corrected = block.get("corrected_form")
+        reachable = (
+            "n/a"
+            if not corrected
+            else f"`{corrected}`"
+            + ("" if block.get("corrected_by_default") else " - not the default")  # noqa: E501
+        )
         rows.append(
             rf"| §{name.split('_')[0]} | {_cell_math(block['claim'])} | "
             rf"{sites}{flag} | {block['telemetry_evidence']} "
-            rf"| {verdict} | {dissent} |"
+            rf"| {verdict} | {dissent} | {reachable} |"
         )
     return [demath_typographic(row) for row in rows]
 

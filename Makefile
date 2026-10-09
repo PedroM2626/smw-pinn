@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -48,6 +48,7 @@ help:
 	@echo "physics-claims  Audit README section 4 against the code and the telemetry (10.54)"
 	@echo "neural-ode  Learn a continuous field, choose the integrator (10.55)"
 	@echo "sindy  Sparse identification of the engine's law on every recording (10.56)"
+	@echo "corrected-physics  What the three section-4 corrections cost (10.57)"
 	@echo "record-jump        Record jump-excited WRAM telemetry (needs the console)"
 	@echo "run MOD=... ARGS=...  any module, e.g. make run MOD=src.evaluation.spatial_holdout_benchmark"
 	@echo "clean              remove caches (portable: runs on Windows + Unix)"
@@ -189,6 +190,11 @@ neural-ode:
 sindy:
 	$(PY) -m src.evaluation.sindy_identification_benchmark
 
+# What the corrected forms of section 4 cost or buy, per family, paired over seeds
+# (README 10.57). Emulator-free; publishes no checkpoint.
+corrected-physics:
+	$(PY) -m src.evaluation.corrected_physics_ablation
+
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
 
@@ -217,6 +223,7 @@ smoke-all:
 	$(PY) -m src.evaluation.physics_claim_audit --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.neural_ode_integrator_benchmark --config $(CONFIG_DIR)/smoke_neural_ode.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.sindy_identification_benchmark --config $(CONFIG_DIR)/smoke_sindy.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.corrected_physics_ablation --config $(CONFIG_DIR)/smoke_corrected_physics.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

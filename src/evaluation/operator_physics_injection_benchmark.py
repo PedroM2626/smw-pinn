@@ -58,6 +58,7 @@ from src.models import (
 )
 from src.training.trainer import DynamicsTrainer
 from src.utils.config import parse_args_with_config
+from src.utils.kinematics import CONTACT_ZERO_VELOCITY, NEXT
 from src.utils.logging import get_logger
 from src.utils.paths import DATASET_GAMEPLAY, RESULTS_DIR
 from src.utils.provenance import write_metrics
@@ -177,6 +178,7 @@ def build_arm(
     fno_width: int,
     fno_modes: int,
     fno_layers: int,
+    position_velocity: str = NEXT,
 ) -> nn.Module:
     """Construct one grid cell: the family's net, optionally wrapped in the shell."""
     sensor_dim = state_dim + action_dim
@@ -220,13 +222,14 @@ def build_arm(
         terminal_vy=TERMINAL_VY,
         min_vy=MIN_VY,
         subpixels_per_pixel=SUBPIXELS_PER_PIXEL,
+        position_velocity=position_velocity,
     )
 
 
-def build_loss(mechanism: str) -> nn.Module:
+def build_loss(mechanism: str, contact_rule: str = CONTACT_ZERO_VELOCITY) -> nn.Module:
     """One of the three training objectives; ``hard`` is a graph constraint, not a loss."""
     if mechanism == "soft":
-        return CompositePINNLoss(**SOFT_LAMBDAS)
+        return CompositePINNLoss(**SOFT_LAMBDAS, contact_rule=contact_rule)
     return nn.SmoothL1Loss()
 
 

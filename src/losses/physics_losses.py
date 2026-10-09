@@ -10,6 +10,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.utils.kinematics import (
+    CONTACT_ZERO_INCREMENT,
+    CONTACT_ZERO_VELOCITY,
+    check_contact_rule,
+)
+
 
 class DiscreteKinematicsLoss(nn.Module):
     """
@@ -89,12 +95,22 @@ class VelocityBoundsLoss(nn.Module):
 
 class GroundContactConsistencyLoss(nn.Module):
     """
-    Penalizes spurious downward vertical velocity when resting on solid ground
-    without an active jump command.
+    Penalizes the vertical velocity a grounded, un-jumping frame should not have.
+
+    ``rule`` selects which statement of §4.3.5 the penalty enforces:
+
+    * ``"zero_velocity"`` (default, the form every published artifact was trained with)
+      asks ``hat_vy_next = 0`` on those frames;
+    * ``"zero_increment"`` asks ``hat_vy_next = vy_t``, which is the rule README 4.3.5 now
+      states after 10.54 measured the console: the ground flag suppresses the gravity
+      *step* and does not stop the body.
+
+    §10.57 trains both against the same data.
     """
 
-    def __init__(self):
+    def __init__(self, rule: str = CONTACT_ZERO_VELOCITY):
         super().__init__()
+        self.rule = check_contact_rule(rule)
 
     def forward(
         self,
@@ -115,6 +131,8 @@ class GroundContactConsistencyLoss(nn.Module):
 
         if stationary_ground_mask.any():
             ground_vy = hat_vy_next[stationary_ground_mask]
+            if self.rule == CONTACT_ZERO_INCREMENT:
+                ground_vy = ground_vy - current_state[stationary_ground_mask, 3]
             # Section 4.3.5 as retracted by 10.54: the recording never zeroes vy on these
             # frames and suppresses the gravity increment on almost all of them, so this term
             # asks for a rest state the console does not produce. No figure is quoted here on
@@ -135,6 +153,7 @@ class CompositePINNLoss(nn.Module):
         lambda_bound: float = 0.5,
         lambda_contact: float = 0.5,
         use_huber: bool = True,
+        contact_rule: str = CONTACT_ZERO_VELOCITY,
     ):
         super().__init__()
         self.lambda_kin = lambda_kin
@@ -143,7 +162,7 @@ class CompositePINNLoss(nn.Module):
 
         self.kin_loss_fn = DiscreteKinematicsLoss()
         self.bound_loss_fn = VelocityBoundsLoss()
-        self.contact_loss_fn = GroundContactConsistencyLoss()
+        self.contact_loss_fn = GroundContactConsistencyLoss(rule=contact_rule)
 
         self.data_loss_fn = nn.SmoothL1Loss() if use_huber else nn.MSELoss()
 

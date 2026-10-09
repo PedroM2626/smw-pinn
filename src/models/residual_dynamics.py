@@ -27,6 +27,8 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 
+from src.utils.kinematics import CARRIED, NEXT, check_position_velocity
+
 AUX_PREFIX = 2  # residual channels 0 and 1 are delta_vx, delta_vy
 
 
@@ -49,6 +51,13 @@ class ResidualDynamics(nn.Module):
     The position integration ``x_{t+1} = x_t + v_{t+1} / 16`` is exact in both
     modes, so the discrete-kinematics consistency residual is zero by
     construction either way; only the *bounds* depend on ``hard``.
+
+    ``position_velocity`` selects which velocity advances position. ``"next"`` is the form
+    every published artifact was recorded with. ``"carried"`` implements §4.1 as the
+    section now states it and as the telemetry measures it - position advances with the
+    velocity the frame starts with - and under it no weight vector reaches the position
+    channel: the increment still shapes the velocity output, and the residual stays zero
+    for a different reason. §10.57 measures what that swap costs.
     """
 
     def __init__(
@@ -60,6 +69,7 @@ class ResidualDynamics(nn.Module):
         terminal_vy: float = 64.0,
         min_vy: float = -80.0,
         subpixels_per_pixel: float = 16.0,
+        position_velocity: str = NEXT,
     ):
         super().__init__()
         self.base = base
@@ -69,6 +79,7 @@ class ResidualDynamics(nn.Module):
         self.terminal_vy = terminal_vy
         self.min_vy = min_vy
         self.subpixels_per_pixel = subpixels_per_pixel
+        self.position_velocity = check_position_velocity(position_velocity)
         self.aux_dim = state_dim - AUX_PREFIX
 
     @property
@@ -96,8 +107,9 @@ class ResidualDynamics(nn.Module):
         if self.hard:
             hat_vx = torch.clamp(hat_vx, -self.max_vx, self.max_vx)
             hat_vy = torch.clamp(hat_vy, self.min_vy, self.terminal_vy)
-        hat_x = x_t + hat_vx / self.subpixels_per_pixel
-        hat_y = y_t + hat_vy / self.subpixels_per_pixel
+        use_vx, use_vy = (vx_t, vy_t) if self.position_velocity == CARRIED else (hat_vx, hat_vy)
+        hat_x = x_t + use_vx / self.subpixels_per_pixel
+        hat_y = y_t + use_vy / self.subpixels_per_pixel
         return torch.cat(
             [
                 hat_x.unsqueeze(-1),

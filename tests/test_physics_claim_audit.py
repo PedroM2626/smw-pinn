@@ -45,13 +45,35 @@ def test_the_declared_sites_and_the_dissenters_are_still_in_the_source() -> None
         )
 
 
-def test_the_ground_claim_declares_no_implementation_and_two_dissenters() -> None:
-    """The corrected §4.3.5 is documented as unimplemented, and the audit says so out loud."""
+def test_the_ground_claim_is_implemented_but_not_by_default() -> None:
+    """§4.3.5 went from "nothing implements this" to "the rule exists, the default is elsewhere".
+
+    That is the distinction the audit exists to keep honest. Two files now implement the rule as
+    the section states it, the same two still ship the retracted rest-state form as the value a
+    caller inherits, and if someone flips a default this test stops them from doing it without
+    revisiting the claim - because the flip changes what every published artifact measured.
+    """
     block = audit_claims()["4.3.5_ground_flag_gates_gravity"]
-    assert block["declared_sites"] == 0
+    assert block["declared_sites"] == 2, "the corrected rule lost an implementation"
+    assert block["implemented_by_every_declared_site"]
     assert len(block["dissenting_sites"]) == 2
     files = {site.split(":")[0] for site in block["dissenting_sites"]}
     assert files == {"src/losses/physics_losses.py", "src/models/analytical_kinematics.py"}
+    assert block["corrected_form"] and not block["corrected_by_default"]
+
+
+def test_every_diverging_claim_records_how_its_correction_is_reached() -> None:
+    """A disagreement without a named fix is a complaint; with one, it is a decision."""
+    report = audit_claims()
+    diverging = [name for name, block in report.items() if block["dissenting_sites"]]
+    assert diverging, "the audit has stopped finding any default that diverges from section 4"
+    missing = [name for name in diverging if not report[name]["corrected_form"]]
+    assert not missing, (
+        f"claims the code diverges from, with no reachable correction named: {missing}"
+    )
+    assert all(not report[name]["corrected_by_default"] for name in diverging), (
+        "a corrected form became the default, which re-dates every artifact recorded with the old one"
+    )
 
 
 def test_the_identity_is_exact_where_no_collision_flag_is_set() -> None:

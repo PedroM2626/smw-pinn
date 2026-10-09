@@ -11,6 +11,27 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The corrected forms of README section 4 are constructible, and priced.**
+  `src/utils/kinematics.py` names the two position-integration conventions;
+  `ResidualDynamics`, `ProjectedDynamics`, `HardResidualPINNDynamics` and
+  `AnalyticalKinematicsDynamics` take `position_velocity="next"|"carried"`,
+  `GroundContactConsistencyLoss`/`CompositePINNLoss` take `contact_rule` (`zero_velocity` as
+  published, `zero_increment` as §4.3.5 now states), and `RolloutEvaluator` takes
+  `max_vx`/`terminal_vy`/`tolerance_px` so a rollout can be scored against the speed class the
+  telemetry reaches. Every default is unchanged, deliberately: the parity control in the new study
+  exists to prove the published path was not moved.
+- **README 10.57, `src/evaluation/corrected_physics_ablation.py`** (`make corrected-physics`,
+  `smw-pinn corrected-physics`, emulator-free, publishes no checkpoint): 16 arms over five seeds,
+  built by the same `build_arm`/`build_loss` as 10.47, one axis changed at a time - the §4.1
+  convention, the §4.3.5 ground rule, and the predicate's velocity bound - plus a same-weights
+  replay that changes the graph without retraining, and a tolerance ladder (0.2 and 0.002 px)
+  inside the study itself. `tests/test_corrected_physics_ablation.py` pins all four tables cell by
+  cell *and* re-evaluates the quantifiers the findings use, including "at 72.0 every arm flags
+  0.0000" and "the carried position error is one number across four models".
+- **`tests/test_cli_parity.py`:** the `smw-pinn` runner claims to mirror the Makefile and had not
+  kept up - ten study targets from 10.45 to 10.56 had no subcommand. The ten are registered, with
+  the new study, and the test refuses a single-module Makefile target without one.
+
 - **A prediction target the repository never had** (README Section 10.53):
   `src/models/effective_velocity_dynamics.py` makes the velocity the engine *integrates
   with* the thing a network predicts, in three modes that differ in one line - `next`
