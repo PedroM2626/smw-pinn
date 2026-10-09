@@ -317,3 +317,37 @@ def test_no_span_is_written_where_github_cannot_form_it() -> None:
     """Raw LaTeX with no error box - the defect neither the budget nor the tokenizer rules saw."""
     defects = unformable_spans(README.read_text(encoding="utf-8"))
     assert not defects, "spans GitHub leaves as raw LaTeX:\n" + "\n".join(defects[:12])
+
+
+# An underscore between two punctuation characters - the `}_{` of \mathcal{L}_{\text{kin}} - meets
+# CommonMark's emphasis flanking, so the parser can pair it with another such underscore on the
+# same line, across formulas, and the page then shows a *rendered* expression whose subscripts
+# have been eaten. Four lines were observed corrupted that way; all four had two of these spans
+# on one line, and each was fixed by splitting the line, never by guessing at the parser.
+FLANKING_UNDERSCORE = re.compile(r"[}{)\]]_(?=[}{[(\\])")
+
+
+def test_no_two_flanking_underscores_share_a_line() -> None:
+    """The third renderer rule: `}_{` pairs are emphasis bait, and one per line is survivable."""
+    text = README.read_text(encoding="utf-8")
+    in_fence = False
+    offenders = []
+    for number, line in enumerate(text.split("\n"), 1):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        masked = [False] * len(line)
+        for code in CODE_SPAN.finditer(line):
+            for k in range(code.start(), code.end()):
+                masked[k] = True
+        dollars = [k for k, char in enumerate(line) if char == "$" and not masked[k]]
+        risky = sum(
+            1
+            for a, b in zip(dollars[0::2], dollars[1::2])
+            if FLANKING_UNDERSCORE.search(line[a + 1 : b])
+        )
+        if risky >= 2:
+            offenders.append((number, risky, line.strip()[:60]))
+    assert not offenders, f"lines whose subscripts can pair as emphasis: {offenders[:6]}"

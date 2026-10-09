@@ -586,6 +586,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **Four formulas GitHub rendered *successfully* with their subscripts eaten.** An underscore
+  between two punctuation characters - the `}_{` of `\mathcal{L}_{\text{kin}}` - satisfies
+  CommonMark's emphasis flanking, so the parser pairs it with another such underscore on the same
+  line, across formulas, and the page shows a rendered expression that no longer says what the
+  source says. Nothing looked broken: no raw LaTeX, no error box, no failing span. Four lines were
+  measured corrupted this way (the Section 5.4 LSTM formulation, the gradient-stiffness bullet, the
+  PPO physical-residual charge and the hybrid actor's four integration rules); each now gives its
+  at-risk formulas a line of their own, and
+  `test_no_two_flanking_underscores_share_a_line` refuses two of them on one line - exactly those
+  four on the previous commit, nothing on this one.
 - **Twenty-four expressions the page showed as source, with no error box to say so.** Two rules of
   GitHub's renderer, both measured on this repository's own page rather than assumed: it forms no
   math inside emphasis (317 `<em>` runs, 0 of them holding a formula), and it does not read a `$`
