@@ -586,6 +586,13 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **The table of contents was missing five sections, and one entry was in the wrong place.** The
+  10.57 ToC line had been pasted onto the prose of Section 12 instead of into the contents, so the
+  section had no entry and Section 12 had a stray bullet in the middle of a sentence; Sections
+  10.1-10.4 had never been listed at all. `test_every_study_section_has_a_table_of_contents_entry`
+  now checks the direction the anchor check never did - every `### 10.x` heading must be linked from
+  the contents block - and refuses an entry sitting anywhere else in the document. Both mutations
+  (drop an entry, move one into the body) were verified to make it fail.
 - **A claim about the repository's own state that the batch itself had made false.** README
   Section 12's eighth entry closed by saying §4.3.5 "declares zero implementing sites because
   nothing in the repository yet implements the corrected rule", which was true when §10.54 first

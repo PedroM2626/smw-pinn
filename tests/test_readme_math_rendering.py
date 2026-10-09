@@ -22,7 +22,7 @@ Run:  pytest tests/test_readme_math_rendering.py -q
 
 import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 README = Path(__file__).resolve().parent.parent / "README.md"
 
@@ -235,3 +235,40 @@ def test_the_readme_ranges_its_own_study_sections_correctly() -> None:
         f"the range is stated as 10.{start}-10.{end} but the study sections run "
         f"10.{min(sections)}-10.{last}"
     )
+
+
+def test_every_study_section_has_a_table_of_contents_entry() -> None:
+    """The other direction of the anchor check: a heading with no link is invisible.
+
+    A 10.57 ToC entry meant for the list was pasted onto the prose of Section 12 instead, which
+    left Section 12 with a stray bullet and the table of contents without a section. A link that
+    lands on nothing is caught by the anchor test; a heading nobody links to, and an entry that
+    sits in the body rather than in the contents, were caught by nothing at all.
+    """
+    text = README.read_text(encoding="utf-8")
+    toc_end = text.index("## 1. Project Overview")
+    in_fence = False
+    offset = 0
+    headings: List[str] = []
+    entries: List[Tuple[str, bool]] = []
+    for line in text.split("\n"):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence:
+            heading = HEADING.match(line)
+            if heading and heading.group(1) == "###" and "$" not in heading.group(2):
+                title = heading.group(2)
+                if re.match(r"10\.\d+\s", title):
+                    headings.append(_slug(title))
+            entry = re.fullmatch(r"\s+\* \[[^\]]+\]\(#([a-z0-9\-]+)\)", line)
+            if entry:
+                entries.append((entry.group(1), offset < toc_end))
+        offset += len(line) + 1
+    assert len(headings) > 20, (
+        f"only {len(headings)} study headings parsed: the check is not running"
+    )
+    linked = {anchor for anchor, in_toc in entries if in_toc}
+    missing = [h for h in headings if h not in linked]
+    assert not missing, f"study sections with no table-of-contents entry: {missing[:6]}"
+    stray = [anchor for anchor, in_toc in entries if not in_toc]
+    assert not stray, f"table-of-contents entries pasted into the body: {stray[:4]}"
