@@ -123,7 +123,14 @@ def test_the_renderers_emit_one_block_per_claim(renderer: str) -> None:
     else:
         lines = render_section_4_qualifiers(payload)
         assert len(lines) == 7
-        assert all(line.startswith("*Measured") and line.endswith("*") for line in lines)
+        assert all(line.startswith("*Measured") for line in lines)
+        # GitHub forms no math inside an emphasis run, so a qualifier that carries a formula keeps
+        # its italics on the label only; the ones with nothing to render stay whole-line italics.
+        with_math = [line for line in lines if "$" in line]
+        assert len(with_math) >= 3, "the qualifiers are supposed to carry formulas"
+        assert all(not line.rstrip().endswith("*") for line in with_math), (
+            "a formula inside whole-line emphasis prints as raw LaTeX on GitHub"
+        )
 
 
 def test_the_audit_reads_the_readme_it_documents() -> None:

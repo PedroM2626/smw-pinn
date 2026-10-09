@@ -272,3 +272,48 @@ def test_every_study_section_has_a_table_of_contents_entry() -> None:
     assert not missing, f"study sections with no table-of-contents entry: {missing[:6]}"
     stray = [anchor for anchor, in_toc in entries if not in_toc]
     assert not stray, f"table-of-contents entries pasted into the body: {stray[:4]}"
+
+
+def unformable_spans(text: str) -> List[str]:
+    r"""Every span GitHub will not form, for the two rules measured on the rendered page.
+
+    Rule one: a note written as a whole-line emphasis loses every formula in it - the page holds
+    317 `<em>` elements and not one contains a rendered expression, so `$\hat v_{x,t+1}$` inside
+    `*Measured …*` prints as source with no error box. Rule two: a `$` that touches an
+    alphanumeric, or opens after a hyphen or slash, is not a delimiter - the raw set outside
+    emphasis was exactly `$\mu$s`, `$\approx$173`, `frame$^2$`, `rank-$p$` and `$x$/$y$`. The
+    typographic ones are converted by `src/utils/typography.unemphasise_math` and
+    `demath_typographic`; the rest were reworded, which is what the second rule asks of a fix.
+    """
+    out: List[str] = []
+    in_fence = False
+    for number, line in enumerate(text.split("\n"), 1):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence or DISPLAY_LINE.match(line):
+            continue
+        masked = [False] * len(line)
+        for code in CODE_SPAN.finditer(line):
+            for k in range(code.start(), code.end()):
+                masked[k] = True
+        dollars = [k for k, char in enumerate(line) if char == "$" and not masked[k]]
+        if len(dollars) % 2:
+            continue  # already reported as an unpaired line
+        whole_note = re.match(r"^\s*\*([^*\s].*)\*\s*$", line)
+        if whole_note and "$" in whole_note.group(1):
+            out.append(f"line {number}: a note in whole-line emphasis cannot hold math")
+            continue
+        for a, b in zip(dollars[0::2], dollars[1::2]):
+            span = line[a : b + 1]
+            before = line[a - 1] if a else ""
+            after = line[b + 1] if b + 1 < len(line) else ""
+            if re.match(r"[A-Za-z0-9\-/]", before) or re.match(r"[A-Za-z0-9/]", after):
+                out.append(f"line {number}: delimiter touches a word or a slash ({span[:44]})")
+    return out
+
+
+def test_no_span_is_written_where_github_cannot_form_it() -> None:
+    """Raw LaTeX with no error box - the defect neither the budget nor the tokenizer rules saw."""
+    defects = unformable_spans(README.read_text(encoding="utf-8"))
+    assert not defects, "spans GitHub leaves as raw LaTeX:\n" + "\n".join(defects[:12])

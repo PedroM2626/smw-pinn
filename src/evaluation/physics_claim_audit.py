@@ -42,7 +42,7 @@ from src.environment.dataset_loader import load_and_preprocess_data
 from src.utils.logging import get_logger
 from src.utils.paths import DATASET_GAMEPLAY, RESULTS_DIR
 from src.utils.provenance import write_metrics
-from src.utils.typography import demath_typographic
+from src.utils.typography import demath_typographic, unemphasise_math
 
 logger = get_logger(__name__)
 
@@ -686,7 +686,7 @@ def render_section_4_qualifiers(payload: Dict[str, Any]) -> List[str]:
         rf"retracted form, and the artifact records that as an open prose-and-code disagreement "
         rf"rather than smoothing it over.*",
     ]
-    return [demath_typographic(row) for row in rows]
+    return [unemphasise_math(demath_typographic(row)) for row in rows]
 
 
 def run_physics_claim_audit(

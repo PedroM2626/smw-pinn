@@ -586,6 +586,18 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **Twenty-four expressions the page showed as source, with no error box to say so.** Two rules of
+  GitHub's renderer, both measured on this repository's own page rather than assumed: it forms no
+  math inside emphasis (317 `<em>` runs, 0 of them holding a formula), and it does not read a `$`
+  that touches a word character as a delimiter. So `*Measured … $\hat v_{x,t+1}$ …*` notes and
+  spans like `344.73 $\mu$s`, `$\approx$173`, `$122\times$`, `frame$^2$`, `rank-$p$` and `$x$/$y$`
+  printed literally - valid LaTeX, no "Unable to render expression." anywhere, invisible to the
+  tokenizer checks and to the render-budget gate. `src/utils/typography.py` now converts the
+  typographic ones to the Unicode they always meant and `unemphasise_math` moves a whole-line
+  note's italics onto its label; the three that were neither were reworded. The renderer that
+  writes Section 4's measured qualifiers emits the new form, so the document and its citation gate
+  changed together. `test_no_span_is_written_where_github_cannot_form_it` refuses both shapes and
+  was validated against the previous commit's README, where it reports 30 sites.
 - **The table of contents was missing five sections, and one entry was in the wrong place.** The
   10.57 ToC line had been pasted onto the prose of Section 12 instead of into the contents, so the
   section had no entry and Section 12 had a stray bullet in the middle of a sentence; Sections
