@@ -319,16 +319,21 @@ def test_no_span_is_written_where_github_cannot_form_it() -> None:
     assert not defects, "spans GitHub leaves as raw LaTeX:\n" + "\n".join(defects[:12])
 
 
-# An underscore between two punctuation characters - the `}_{` of \mathcal{L}_{\text{kin}} - meets
-# CommonMark's emphasis flanking, so the parser can pair it with another such underscore on the
-# same line, across formulas, and the page then shows a *rendered* expression whose subscripts
-# have been eaten. Four lines were observed corrupted that way; all four had two of these spans
-# on one line, and each was fixed by splitting the line, never by guessing at the parser.
+# An underscore can satisfy CommonMark's emphasis flanking inside a formula, so the parser pairs it
+# with another underscore on the same line and the page renders an expression whose subscripts have
+# been eaten - no raw LaTeX, no error box, nothing that looks broken. Measured on the live page:
+# 25 emphasis runs still hold LaTeX fragments. This rule states the shape that can be asserted
+# locally - two subscripts written as `}_{` or `}_\` sharing one line - which covers four of those
+# 25, all four fixed by giving each formula its own line. The other 21 pair an underscore inside a
+# formula with one outside it; no local grammar for that shape has been derived, and README
+# Section 12 publishes the count instead of this file pretending the class is closed. To see the
+# symptom, render the README on GitHub and evaluate: [...document.querySelectorAll('article em')]
+#   .filter(e => /\\[a-z]{2,}|_[{\\]/.test(e.textContent)).length
 FLANKING_UNDERSCORE = re.compile(r"[}{)\]]_(?=[}{[(\\])")
 
 
 def test_no_two_flanking_underscores_share_a_line() -> None:
-    """The third renderer rule: `}_{` pairs are emphasis bait, and one per line is survivable."""
+    """The assertable half of the subscript-eating rule: two `}_{` spans on one line is the shape."""
     text = README.read_text(encoding="utf-8")
     in_fence = False
     offenders = []
