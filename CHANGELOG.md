@@ -11,6 +11,22 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **README 10.58, `src/evaluation/residue_process_study.py`** (`make residue-process`,
+  `smw-pinn residue-process`, emulator-free, ~3 min over the six committed recordings): the residue of
+  section 4.1 measured as a *process* rather than as an error bar - the lattice it lives on, its
+  memory, the per-frame rules that fail to reproduce it, whether the richer recordings rank it, and a
+  four-way calibration of drift-plus-Gaussian diffusion, iid jumps, a two-state geometric chain and a
+  run-length renewal process against the recorded trajectories at 1/5/15/30/60 frames. The answer to
+  "is it noise": no. The residual takes 5-13 values per recording and never leaves the sub-pixel grid
+  (off-integer deviation exactly 0.0); an exception is followed by an exception at 104x-626x the rate
+  after a clean frame; 75.4-99.3% of exception frames are positions that do not move while the
+  velocity byte holds, where the residue is exactly minus that velocity; and the 197 frames the clamp
+  leaves over are all exactly one whole pixel off. An iid fit is reasonable only at one frame - at 60
+  it under-predicts the spread by 5.1-5.9x - and only the kernel that models run *duration* covers,
+  which is what a constraint looks like to a model that cannot see it. The section is generated from
+  the artifact including its prose, and `tests/test_residue_process_study.py` re-derives the
+  quantifiers: exhaustive clamp accounting per recording, the growth of the over-dispersion, and the
+  coverage ordering at each recording's longest horizon.
 - **The corrected forms of README section 4 are constructible, and priced.**
   `src/utils/kinematics.py` names the two position-integration conventions;
   `ResidualDynamics`, `ProjectedDynamics`, `HardResidualPINNDynamics` and

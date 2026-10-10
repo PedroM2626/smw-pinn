@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -198,6 +198,10 @@ corrected-physics:
 	$(PY) -m src.evaluation.corrected_physics_ablation --save-checkpoints
 	$(PY) -m src.evaluation.physics_injection_mpc_benchmark --study corrected
 
+# Is the residue of section 4.1 a diffusion, an iid jump or a state constraint (10.58)
+residue-process:
+	$(PY) -m src.evaluation.residue_process_study
+
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
 
@@ -227,6 +231,7 @@ smoke-all:
 	$(PY) -m src.evaluation.neural_ode_integrator_benchmark --config $(CONFIG_DIR)/smoke_neural_ode.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.sindy_identification_benchmark --config $(CONFIG_DIR)/smoke_sindy.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.corrected_physics_ablation --config $(CONFIG_DIR)/smoke_corrected_physics.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.residue_process_study --config $(CONFIG_DIR)/smoke_residue_process.yaml --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

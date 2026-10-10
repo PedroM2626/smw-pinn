@@ -1,0 +1,2208 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-10T01:52:41+00:00",
+    "git_sha": "0a693d3dd38e875e5a8c7648374bf772a4e8f024",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.evaluation.residue_process_study"
+  },
+  "study": "Is the residue of section 4.1 a diffusion (SDE), an iid jump measure, or a persistent deterministic reset process - measured as the lattice it lives on, its memory, the failure of per-frame rules on the observed state, the conditioning on the richer recordings, and the calibration of three propagators against the recorded trajectories.",
+  "protocol": {
+    "recordings": [
+      "gameplay",
+      "jump",
+      "sprint",
+      "multi_entity",
+      "tilemap",
+      "set_multi_entity"
+    ],
+    "subpixels_per_pixel": 16.0,
+    "exact_tolerance_subpixels": 0.5,
+    "horizons_frames": [
+      1,
+      5,
+      15,
+      30,
+      60
+    ],
+    "band": 0.9,
+    "samples": 2000,
+    "max_starts_per_horizon": 1500,
+    "screen_modulus_px": 256.0,
+    "screen_edge_px": 16.0,
+    "seed": 42
+  },
+  "per_recording": {
+    "gameplay": {
+      "lattice": {
+        "n_frames": 8077,
+        "distinct_residue_values": 13,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9293054351863316,
+        "rate_exception": 0.07069456481366844,
+        "atoms": {
+          "+0": 7506,
+          "-35": 166,
+          "-34": 44,
+          "-22": 43,
+          "-21": 43,
+          "-36": 41,
+          "-29": 41,
+          "-25": 41,
+          "-20": 41,
+          "-19": 41,
+          "-15": 41,
+          "-16": 24
+        },
+        "largest_gap_between_atoms_subpixels": 16.0,
+        "mean_residue_subpixels": -1.9020675993561966,
+        "mean_abs_residue_px": 0.1201173084065866,
+        "median_abs_exception_subpixels": 29.0,
+        "worst_abs_exception_subpixels": 36.0
+      },
+      "persistence": {
+        "rate_exception": 0.07069456481366844,
+        "rate_exception_after_exception": 0.9281961471103327,
+        "rate_exception_after_clean": 0.005473234548124416,
+        "persistence_lift": 169.588227756183,
+        "mean_run_length": 13.926829268292684,
+        "longest_run": 44,
+        "n_runs": 41,
+        "residue_autocorrelation_lag1": 0.9579690398226518,
+        "rate_exception_2_frames_after_exception": 0.9036777583187391,
+        "rate_exception_2_frames_after_clean": 0.007356875334403424,
+        "rate_exception_5_frames_after_exception": 0.8458844133099825,
+        "rate_exception_5_frames_after_clean": 0.011842282330776477,
+        "rate_exception_15_frames_after_exception": 0.6077057793345009,
+        "rate_exception_15_frames_after_clean": 0.030765004807032002
+      },
+      "rules": {
+        "n_exceptions": 571,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.02276707530647986,
+        "rate_exceptions_with_velocity_unchanged": 0.9281961471103327,
+        "rate_exceptions_exactly_one_pixel_short": 0.04203152364273205,
+        "exception_rate_when_velocity_zeroed": 0.01194267515923567,
+        "rate_any_contact_flag_among_exceptions": 0.8546409807355516,
+        "rate_any_contact_flag_overall": 0.6208988485823944
+      },
+      "clamp": {
+        "n_exceptions": 571,
+        "n_exceptions_in_episode": 571,
+        "n_exceptions_pinned_in_episode": 542,
+        "rate_pinned": 0.06710412281787792,
+        "share_of_exceptions_pinned": 0.9492119089316988,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.003856382978723404,
+        "exception_rate_when_not_pinned_over_marginal": 0.054448615717106984,
+        "n_exceptions_left_after_the_clamp": 29,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 24,
+          "+16": 5
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 713,
+          "share_of_recording": 0.08827534975857373,
+          "rate_exception": 0.1767180925666199,
+          "mean_residue_subpixels": -5.548387096774194,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 404,
+          "share_of_recording": 0.050018571251702365,
+          "rate_exception": 0.10148514851485149,
+          "mean_residue_subpixels": -3.551980198019802,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 6960,
+          "share_of_recording": 0.861706078989724,
+          "rate_exception": 0.058045977011494256,
+          "mean_residue_subpixels": -1.4327586206896552,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 3062,
+          "share_of_recording": 0.37910115141760553,
+          "rate_exception": 0.027106466361854997,
+          "mean_residue_subpixels": -0.7416721097322012,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 5014,
+          "share_of_recording": 0.620775040237712,
+          "rate_exception": 0.09732748304746709,
+          "mean_residue_subpixels": -2.611088950937375,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 5015,
+          "share_of_recording": 0.6208988485823944,
+          "rate_exception": 0.09730807577268195,
+          "mean_residue_subpixels": -2.610568295114656,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 1258,
+          "share_of_recording": 0.15575089761049896,
+          "rate_exception": 0.000794912559618442,
+          "mean_residue_subpixels": -0.012718600953895072,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 6819,
+          "share_of_recording": 0.844249102389501,
+          "rate_exception": 0.08358996920369556,
+          "mean_residue_subpixels": -2.250623258542308,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 8077,
+        "base_rate": 0.07069456481366844,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.8001059747648466
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.9700916441394462
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -1.972,
+            "observed_sd_cumulative_subpixels": 7.20392596667493,
+            "observed_max_abs_cumulative_subpixels": 36.0,
+            "iid_diffusion_sd_subpixels": 7.261195779890873,
+            "over_dispersion_vs_iid": 0.992112895044843,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9246666666666666,
+                "mean_band_width_subpixels": 23.85308730862621,
+                "mean_interval_score": 42.52824975626978,
+                "mean_cumulative_subpixels": -1.8970917040800654
+              },
+              "jump_iid": {
+                "coverage_90": 0.954,
+                "mean_band_width_subpixels": 20.748933333333333,
+                "mean_interval_score": 30.331600000000005,
+                "mean_cumulative_subpixels": -1.900074
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9953333333333333,
+                "mean_band_width_subpixels": 2.736,
+                "mean_interval_score": 4.8693333333333335,
+                "mean_cumulative_subpixels": -2.0359256666666665
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.99,
+                "mean_band_width_subpixels": 1.596,
+                "mean_interval_score": 5.3293333333333335,
+                "mean_cumulative_subpixels": -2.041335666666667
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -9.080666666666668,
+            "observed_sd_cumulative_subpixels": 34.27892685342151,
+            "observed_max_abs_cumulative_subpixels": 180.0,
+            "iid_diffusion_sd_subpixels": 16.23652736177059,
+            "over_dispersion_vs_iid": 2.1112228058157503,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.932,
+                "mean_band_width_subpixels": 53.2268221914676,
+                "mean_interval_score": 180.33277672752163,
+                "mean_cumulative_subpixels": -9.489038681460332
+              },
+              "jump_iid": {
+                "coverage_90": 0.9313333333333333,
+                "mean_band_width_subpixels": 35.99496666666666,
+                "mean_interval_score": 163.93963333333335,
+                "mean_cumulative_subpixels": -9.513530333333334
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9266666666666666,
+                "mean_band_width_subpixels": 6.048,
+                "mean_interval_score": 64.87133333333334,
+                "mean_cumulative_subpixels": -9.522562
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9613333333333334,
+                "mean_band_width_subpixels": 62.96286666666667,
+                "mean_interval_score": 81.21286666666668,
+                "mean_cumulative_subpixels": -18.078626333333332
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -36.52,
+            "observed_sd_cumulative_subpixels": 114.74388988816209,
+            "observed_max_abs_cumulative_subpixels": 540.0,
+            "iid_diffusion_sd_subpixels": 28.122490329068928,
+            "over_dispersion_vs_iid": 4.080146834277923,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.8973333333333333,
+                "mean_band_width_subpixels": 92.38976953363736,
+                "mean_interval_score": 649.8975419444153,
+                "mean_cumulative_subpixels": -28.51304716270416
+              },
+              "jump_iid": {
+                "coverage_90": 0.8973333333333333,
+                "mean_band_width_subpixels": 81.73143333333334,
+                "mean_interval_score": 626.3214333333334,
+                "mean_cumulative_subpixels": -28.525521666666666
+              },
+              "markov_geometric": {
+                "coverage_90": 0.82,
+                "mean_band_width_subpixels": 34.18146666666667,
+                "mean_interval_score": 554.0088000000002,
+                "mean_cumulative_subpixels": -33.24829033333334
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9586666666666667,
+                "mean_band_width_subpixels": 338.84853333333336,
+                "mean_interval_score": 402.9725333333334,
+                "mean_cumulative_subpixels": -72.19934066666667
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -63.36333333333334,
+            "observed_sd_cumulative_subpixels": 196.16759328583188,
+            "observed_max_abs_cumulative_subpixels": 1080.0,
+            "iid_diffusion_sd_subpixels": 39.77120723107548,
+            "over_dispersion_vs_iid": 4.93240228153183,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.8833333333333333,
+                "mean_band_width_subpixels": 130.6989461234011,
+                "mean_interval_score": 1084.644204322217,
+                "mean_cumulative_subpixels": -57.12082758939104
+              },
+              "jump_iid": {
+                "coverage_90": 0.8846666666666667,
+                "mean_band_width_subpixels": 129.1344333333333,
+                "mean_interval_score": 1069.1871,
+                "mean_cumulative_subpixels": -57.05165566666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.7526666666666667,
+                "mean_band_width_subpixels": 51.630866666666655,
+                "mean_interval_score": 1342.4808666666668,
+                "mean_cumulative_subpixels": -60.92507066666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.962,
+                "mean_band_width_subpixels": 747.5705333333334,
+                "mean_interval_score": 829.0118666666667,
+                "mean_cumulative_subpixels": -153.59237066666665
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -126.41733333333333,
+            "observed_sd_cumulative_subpixels": 317.3780319527837,
+            "observed_max_abs_cumulative_subpixels": 1505.0,
+            "iid_diffusion_sd_subpixels": 56.244980658137855,
+            "over_dispersion_vs_iid": 5.642779644317712,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.06133333333333333,
+                "mean_band_width_subpixels": 184.70020910764745,
+                "mean_interval_score": 2331.1431709061294,
+                "mean_cumulative_subpixels": -114.1742070645729
+              },
+              "jump_iid": {
+                "coverage_90": 0.05733333333333333,
+                "mean_band_width_subpixels": 181.66493333333332,
+                "mean_interval_score": 2469.9276000000004,
+                "mean_cumulative_subpixels": -114.06585466666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.5866666666666667,
+                "mean_band_width_subpixels": 66.2083,
+                "mean_interval_score": 3239.079633333334,
+                "mean_cumulative_subpixels": -114.594636
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.97,
+                "mean_band_width_subpixels": 1232.9467,
+                "mean_interval_score": 1313.0440333333331,
+                "mean_cumulative_subpixels": -250.409824
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 7.261195779890873,
+          "jump_intensity": 0.07069456481366844,
+          "n_atoms": 12,
+          "chain": {
+            "p_exception_from_clean": 0.005473234548124416,
+            "p_exception_from_exception": 0.9281961471103327,
+            "p_exception_stationary": 0.07069456481366844
+          },
+          "mean_exception_run_frames": 13.926829268292684,
+          "max_exception_run_frames": 44,
+          "mean_clean_run_frames": 134.03571428571428
+        }
+      }
+    },
+    "jump": {
+      "lattice": {
+        "n_frames": 6116,
+        "distinct_residue_values": 6,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9507848266841072,
+        "rate_exception": 0.04921517331589274,
+        "atoms": {
+          "+0": 5815,
+          "-36": 172,
+          "-34": 44,
+          "-37": 42,
+          "-35": 41,
+          "-16": 2
+        },
+        "largest_gap_between_atoms_subpixels": 18.0,
+        "mean_residue_subpixels": -1.750981033355134,
+        "mean_abs_residue_px": 0.10943631458469588,
+        "median_abs_exception_subpixels": 36.0,
+        "worst_abs_exception_subpixels": 37.0
+      },
+      "persistence": {
+        "rate_exception": 0.04921517331589274,
+        "rate_exception_after_exception": 0.9700996677740864,
+        "rate_exception_after_clean": 0.0015503875968992248,
+        "persistence_lift": 625.7142857142858,
+        "mean_run_length": 33.44444444444444,
+        "longest_run": 44,
+        "n_runs": 9,
+        "residue_autocorrelation_lag1": 0.9739943696639174,
+        "rate_exception_2_frames_after_exception": 0.946843853820598,
+        "rate_exception_2_frames_after_clean": 0.0027610008628127696,
+        "rate_exception_5_frames_after_exception": 0.8770764119601329,
+        "rate_exception_5_frames_after_clean": 0.006418039895923678,
+        "rate_exception_15_frames_after_exception": 0.6445182724252492,
+        "rate_exception_15_frames_after_clean": 0.01888790820829656
+      },
+      "rules": {
+        "n_exceptions": 301,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.023255813953488372,
+        "rate_exceptions_with_velocity_unchanged": 0.9700996677740864,
+        "rate_exceptions_exactly_one_pixel_short": 0.006644518272425249,
+        "exception_rate_when_velocity_zeroed": 0.015021459227467811,
+        "rate_any_contact_flag_among_exceptions": 0.2857142857142857,
+        "rate_any_contact_flag_overall": 0.0750490516677567
+      },
+      "clamp": {
+        "n_exceptions": 301,
+        "n_exceptions_in_episode": 301,
+        "n_exceptions_pinned_in_episode": 299,
+        "rate_pinned": 0.04888816219751472,
+        "share_of_exceptions_pinned": 0.9933554817275747,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.00034441191665231615,
+        "exception_rate_when_not_pinned_over_marginal": 0.006986641737804128,
+        "n_exceptions_left_after_the_clamp": 2,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 2
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 317,
+          "share_of_recording": 0.05183126226291694,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 310,
+          "share_of_recording": 0.05068672334859385,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 5489,
+          "share_of_recording": 0.8974820143884892,
+          "rate_exception": 0.054836946620513756,
+          "mean_residue_subpixels": -1.9509928948806705,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 5657,
+          "share_of_recording": 0.9249509483322433,
+          "rate_exception": 0.03800601025278416,
+          "mean_residue_subpixels": -1.3383418773201343,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 458,
+          "share_of_recording": 0.0748855461085677,
+          "rate_exception": 0.18777292576419213,
+          "mean_residue_subpixels": -6.851528384279476,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 459,
+          "share_of_recording": 0.0750490516677567,
+          "rate_exception": 0.18736383442265794,
+          "mean_residue_subpixels": -6.836601307189542,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 469,
+          "share_of_recording": 0.07668410725964683,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 5647,
+          "share_of_recording": 0.9233158927403532,
+          "rate_exception": 0.05330263856915176,
+          "mean_residue_subpixels": -1.8964051708871967,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 6116,
+        "base_rate": 0.04921517331589274,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.6409452012923388
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.9921431285225802
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -1.5346666666666666,
+            "observed_sd_cumulative_subpixels": 7.23146814661833,
+            "observed_max_abs_cumulative_subpixels": 37.0,
+            "iid_diffusion_sd_subpixels": 7.706814360822793,
+            "over_dispersion_vs_iid": 0.9383213099538428,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9566666666666667,
+                "mean_band_width_subpixels": 25.316947978345677,
+                "mean_interval_score": 43.53223334865433,
+                "mean_cumulative_subpixels": -1.7456997680739725
+              },
+              "jump_iid": {
+                "coverage_90": 0.96,
+                "mean_band_width_subpixels": 13.616133333333366,
+                "mean_interval_score": 35.19746666666668,
+                "mean_cumulative_subpixels": -1.7500016666666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.996,
+                "mean_band_width_subpixels": 0.13,
+                "mean_interval_score": 2.623333333333334,
+                "mean_cumulative_subpixels": -1.5494666666666668
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.996,
+                "mean_band_width_subpixels": 0.13,
+                "mean_interval_score": 2.623333333333334,
+                "mean_cumulative_subpixels": -1.541805
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -7.926666666666667,
+            "observed_sd_cumulative_subpixels": 35.83783785640844,
+            "observed_max_abs_cumulative_subpixels": 185.0,
+            "iid_diffusion_sd_subpixels": 17.23296080077136,
+            "over_dispersion_vs_iid": 2.0796100142469025,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9533333333333334,
+                "mean_band_width_subpixels": 56.49334490913958,
+                "mean_interval_score": 177.90434095304377,
+                "mean_cumulative_subpixels": -8.732298715419065
+              },
+              "jump_iid": {
+                "coverage_90": 0.9533333333333334,
+                "mean_band_width_subpixels": 36.477,
+                "mean_interval_score": 158.4356666666667,
+                "mean_cumulative_subpixels": -8.761696666666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9713333333333334,
+                "mean_band_width_subpixels": 1.8921333333333332,
+                "mean_interval_score": 39.02413333333334,
+                "mean_cumulative_subpixels": -8.132858666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.988,
+                "mean_band_width_subpixels": 30.69760000000004,
+                "mean_interval_score": 39.910933333333375,
+                "mean_cumulative_subpixels": -11.146945333333333
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -27.932,
+            "observed_sd_cumulative_subpixels": 112.52203062511802,
+            "observed_max_abs_cumulative_subpixels": 555.0,
+            "iid_diffusion_sd_subpixels": 29.848363671778834,
+            "over_dispersion_vs_iid": 3.7697889191663077,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.938,
+                "mean_band_width_subpixels": 98.05971691423608,
+                "mean_interval_score": 557.6039639727123,
+                "mean_cumulative_subpixels": -26.24564605096047
+              },
+              "jump_iid": {
+                "coverage_90": 0.938,
+                "mean_band_width_subpixels": 72.94083333333333,
+                "mean_interval_score": 535.3928333333334,
+                "mean_cumulative_subpixels": -26.256344333333335
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9286666666666666,
+                "mean_band_width_subpixels": 4.645166666666666,
+                "mean_interval_score": 320.78583333333336,
+                "mean_cumulative_subpixels": -30.201785
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9806666666666667,
+                "mean_band_width_subpixels": 59.325433333333415,
+                "mean_interval_score": 131.58143333333342,
+                "mean_cumulative_subpixels": -42.110239
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -48.112,
+            "observed_sd_cumulative_subpixels": 191.19644205894627,
+            "observed_max_abs_cumulative_subpixels": 1080.0,
+            "iid_diffusion_sd_subpixels": 42.21196071927402,
+            "over_dispersion_vs_iid": 4.529437600173967,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9313333333333333,
+                "mean_band_width_subpixels": 138.73973186414875,
+                "mean_interval_score": 912.2511861996147,
+                "mean_cumulative_subpixels": -52.54593491407607
+              },
+              "jump_iid": {
+                "coverage_90": 0.9326666666666666,
+                "mean_band_width_subpixels": 138.4017,
+                "mean_interval_score": 889.4243666666669,
+                "mean_cumulative_subpixels": -52.532529
+              },
+              "markov_geometric": {
+                "coverage_90": 0.874,
+                "mean_band_width_subpixels": 11.384100000000018,
+                "mean_interval_score": 1009.3321000000002,
+                "mean_cumulative_subpixels": -53.49978733333333
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.958,
+                "mean_band_width_subpixels": 105.15793333333355,
+                "mean_interval_score": 430.1892666666668,
+                "mean_cumulative_subpixels": -81.85282133333334
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -119.79333333333334,
+            "observed_sd_cumulative_subpixels": 352.56735709490874,
+            "observed_max_abs_cumulative_subpixels": 1584.0,
+            "iid_diffusion_sd_subpixels": 59.69672734355767,
+            "over_dispersion_vs_iid": 5.905974628489529,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.030666666666666665,
+                "mean_band_width_subpixels": 196.11251207864353,
+                "mean_interval_score": 2193.138705448154,
+                "mean_cumulative_subpixels": -105.03340017894728
+              },
+              "jump_iid": {
+                "coverage_90": 0.298,
+                "mean_band_width_subpixels": 193.0932666666666,
+                "mean_interval_score": 2405.6986000000015,
+                "mean_cumulative_subpixels": -105.050491
+              },
+              "markov_geometric": {
+                "coverage_90": 0.7886666666666666,
+                "mean_band_width_subpixels": 44.17143333333333,
+                "mean_interval_score": 3110.7981000000004,
+                "mean_cumulative_subpixels": -114.431114
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9193333333333333,
+                "mean_band_width_subpixels": 145.31543333333363,
+                "mean_interval_score": 1615.1427666666664,
+                "mean_cumulative_subpixels": -127.71577433333333
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 7.706814360822793,
+          "jump_intensity": 0.04921517331589274,
+          "n_atoms": 5,
+          "chain": {
+            "p_exception_from_clean": 0.0015503875968992248,
+            "p_exception_from_exception": 0.9700996677740864,
+            "p_exception_stationary": 0.04921517331589274
+          },
+          "mean_exception_run_frames": 33.44444444444444,
+          "max_exception_run_frames": 44,
+          "mean_clean_run_frames": 306.05263157894734
+        }
+      }
+    },
+    "sprint": {
+      "lattice": {
+        "n_frames": 7253,
+        "distinct_residue_values": 5,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9340962360402592,
+        "rate_exception": 0.06590376395974079,
+        "atoms": {
+          "+0": 6775,
+          "-36": 213,
+          "-35": 166,
+          "-37": 84,
+          "-16": 15
+        },
+        "largest_gap_between_atoms_subpixels": 19.0,
+        "mean_residue_subpixels": -2.3198676409761476,
+        "mean_abs_residue_px": 0.14499172756100923,
+        "median_abs_exception_subpixels": 36.0,
+        "worst_abs_exception_subpixels": 37.0
+      },
+      "persistence": {
+        "rate_exception": 0.06590376395974079,
+        "rate_exception_after_exception": 0.9560669456066946,
+        "rate_exception_after_clean": 0.0031051308590862043,
+        "persistence_lift": 307.8990834827655,
+        "mean_run_length": 22.761904761904763,
+        "longest_run": 43,
+        "n_runs": 21,
+        "residue_autocorrelation_lag1": 0.9701717948633675,
+        "rate_exception_2_frames_after_exception": 0.9267782426778243,
+        "rate_exception_2_frames_after_clean": 0.005184417123389127,
+        "rate_exception_5_frames_after_exception": 0.8556485355648535,
+        "rate_exception_5_frames_after_clean": 0.010275502606105734,
+        "rate_exception_15_frames_after_exception": 0.6260504201680672,
+        "rate_exception_15_frames_after_clean": 0.027285129604365622
+      },
+      "rules": {
+        "n_exceptions": 478,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.02301255230125523,
+        "rate_exceptions_with_velocity_unchanged": 0.9456066945606695,
+        "rate_exceptions_exactly_one_pixel_short": 0.03138075313807531,
+        "exception_rate_when_velocity_zeroed": 0.01687116564417178,
+        "rate_any_contact_flag_among_exceptions": 0.19874476987447698,
+        "rate_any_contact_flag_overall": 0.0813456500758307
+      },
+      "clamp": {
+        "n_exceptions": 478,
+        "n_exceptions_in_episode": 478,
+        "n_exceptions_pinned_in_episode": 463,
+        "rate_pinned": 0.06383565421205019,
+        "share_of_exceptions_pinned": 0.9686192468619247,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.0022130421953378576,
+        "exception_rate_when_not_pinned_over_marginal": 0.033524348402597125,
+        "n_exceptions_left_after_the_clamp": 15,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 15
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 472,
+          "share_of_recording": 0.06507652006066456,
+          "rate_exception": 0.09110169491525423,
+          "mean_residue_subpixels": -3.2796610169491527,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 348,
+          "share_of_recording": 0.04798014614642217,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 6433,
+          "share_of_recording": 0.8869433337929132,
+          "rate_exception": 0.06762008394217317,
+          "mean_residue_subpixels": -2.374941706824188,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 6663,
+          "share_of_recording": 0.9186543499241693,
+          "rate_exception": 0.0574816148881885,
+          "mean_residue_subpixels": -2.0390214618039924,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 580,
+          "share_of_recording": 0.07996691024403695,
+          "rate_exception": 0.15689655172413794,
+          "mean_residue_subpixels": -5.475862068965517,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 590,
+          "share_of_recording": 0.0813456500758307,
+          "rate_exception": 0.16101694915254236,
+          "mean_residue_subpixels": -5.491525423728813,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 653,
+          "share_of_recording": 0.09003171101613125,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 6600,
+          "share_of_recording": 0.9099682889838687,
+          "rate_exception": 0.07242424242424242,
+          "mean_residue_subpixels": -2.5493939393939393,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 7253,
+        "base_rate": 0.06590376395974079,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.6425416480106224
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.9851994009479844
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -2.194,
+            "observed_sd_cumulative_subpixels": 8.546287537092738,
+            "observed_max_abs_cumulative_subpixels": 37.0,
+            "iid_diffusion_sd_subpixels": 8.780610376373696,
+            "over_dispersion_vs_iid": 0.9733136047225761,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.94,
+                "mean_band_width_subpixels": 28.84437663982374,
+                "mean_interval_score": 51.803739148665976,
+                "mean_cumulative_subpixels": -2.313850533185946
+              },
+              "jump_iid": {
+                "coverage_90": 0.962,
+                "mean_band_width_subpixels": 34.79233333333333,
+                "mean_interval_score": 36.26166666666666,
+                "mean_cumulative_subpixels": -2.3161863333333335
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9953333333333333,
+                "mean_band_width_subpixels": 1.3586666666666667,
+                "mean_interval_score": 3.1186666666666665,
+                "mean_cumulative_subpixels": -2.214633666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.994,
+                "mean_band_width_subpixels": 0.12533333333333332,
+                "mean_interval_score": 3.3653333333333344,
+                "mean_cumulative_subpixels": -2.2068333333333334
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -12.700666666666667,
+            "observed_sd_cumulative_subpixels": 45.1562516848135,
+            "observed_max_abs_cumulative_subpixels": 185.0,
+            "iid_diffusion_sd_subpixels": 19.634041685511598,
+            "over_dispersion_vs_iid": 2.2998958853252978,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9266666666666666,
+                "mean_band_width_subpixels": 64.36460348998082,
+                "mean_interval_score": 251.10638365069622,
+                "mean_cumulative_subpixels": -11.573581980316167
+              },
+              "jump_iid": {
+                "coverage_90": 0.9266666666666666,
+                "mean_band_width_subpixels": 37.02903333333334,
+                "mean_interval_score": 233.61570000000006,
+                "mean_cumulative_subpixels": -11.603253
+              },
+              "markov_geometric": {
+                "coverage_90": 0.954,
+                "mean_band_width_subpixels": 3.160666666666666,
+                "mean_interval_score": 57.91266666666669,
+                "mean_cumulative_subpixels": -12.557395666666666
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9833333333333333,
+                "mean_band_width_subpixels": 77.23683333333334,
+                "mean_interval_score": 86.67683333333333,
+                "mean_cumulative_subpixels": -16.804947333333335
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -36.70733333333333,
+            "observed_sd_cumulative_subpixels": 126.51140796869751,
+            "observed_max_abs_cumulative_subpixels": 555.0,
+            "iid_diffusion_sd_subpixels": 34.00715775723136,
+            "over_dispersion_vs_iid": 3.720140591337594,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9186666666666666,
+                "mean_band_width_subpixels": 111.72244815164902,
+                "mean_interval_score": 680.0259870862676,
+                "mean_cumulative_subpixels": -34.77628820511162
+              },
+              "jump_iid": {
+                "coverage_90": 0.9186666666666666,
+                "mean_band_width_subpixels": 106.79530000000001,
+                "mean_interval_score": 648.5413000000001,
+                "mean_cumulative_subpixels": -34.78466133333333
+              },
+              "markov_geometric": {
+                "coverage_90": 0.8793333333333333,
+                "mean_band_width_subpixels": 11.524366666666683,
+                "mean_interval_score": 492.51703333333336,
+                "mean_cumulative_subpixels": -36.624704666666666
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9833333333333333,
+                "mean_band_width_subpixels": 429.01363333333336,
+                "mean_interval_score": 439.4649666666667,
+                "mean_cumulative_subpixels": -53.197937333333336
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -70.486,
+            "observed_sd_cumulative_subpixels": 229.05538879784805,
+            "observed_max_abs_cumulative_subpixels": 1110.0,
+            "iid_diffusion_sd_subpixels": 48.093383718038,
+            "over_dispersion_vs_iid": 4.762721420076294,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9053333333333333,
+                "mean_band_width_subpixels": 158.04442982806367,
+                "mean_interval_score": 1244.9035889420084,
+                "mean_cumulative_subpixels": -69.66708299918695
+              },
+              "jump_iid": {
+                "coverage_90": 0.9053333333333333,
+                "mean_band_width_subpixels": 146.85253333333333,
+                "mean_interval_score": 1237.3212,
+                "mean_cumulative_subpixels": -69.57863233333333
+              },
+              "markov_geometric": {
+                "coverage_90": 0.8133333333333334,
+                "mean_band_width_subpixels": 44.742266666666666,
+                "mean_interval_score": 1395.1729333333335,
+                "mean_cumulative_subpixels": -76.087837
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9826666666666667,
+                "mean_band_width_subpixels": 953.2220333333333,
+                "mean_interval_score": 964.5367,
+                "mean_cumulative_subpixels": -115.24342533333333
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -129.86533333333333,
+            "observed_sd_cumulative_subpixels": 362.24883602052086,
+            "observed_max_abs_cumulative_subpixels": 1591.0,
+            "iid_diffusion_sd_subpixels": 68.01431551446272,
+            "over_dispersion_vs_iid": 5.326067509177409,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.051333333333333335,
+                "mean_band_width_subpixels": 223.34629075549753,
+                "mean_interval_score": 2560.0695299542826,
+                "mean_cumulative_subpixels": -139.25268894796457
+              },
+              "jump_iid": {
+                "coverage_90": 0.04,
+                "mean_band_width_subpixels": 216.9985333333333,
+                "mean_interval_score": 2685.9485333333337,
+                "mean_cumulative_subpixels": -139.10036966666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.6933333333333334,
+                "mean_band_width_subpixels": 52.14966666666667,
+                "mean_interval_score": 3791.110333333334,
+                "mean_cumulative_subpixels": -131.35286133333332
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9753333333333334,
+                "mean_band_width_subpixels": 1485.1450666666665,
+                "mean_interval_score": 1512.2443999999998,
+                "mean_cumulative_subpixels": -199.25222666666667
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 8.780610376373696,
+          "jump_intensity": 0.06590376395974079,
+          "n_atoms": 4,
+          "chain": {
+            "p_exception_from_clean": 0.0031051308590862043,
+            "p_exception_from_exception": 0.9560669456066946,
+            "p_exception_stationary": 0.06590376395974079
+          },
+          "mean_exception_run_frames": 22.761904761904763,
+          "max_exception_run_frames": 43,
+          "mean_clean_run_frames": 205.3030303030303
+        }
+      }
+    },
+    "multi_entity": {
+      "lattice": {
+        "n_frames": 19702,
+        "distinct_residue_values": 11,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9810171556187189,
+        "rate_exception": 0.01898284438128109,
+        "atoms": {
+          "+0": 19328,
+          "-16": 84,
+          "-29": 43,
+          "+10": 43,
+          "-32": 41,
+          "-22": 41,
+          "-21": 41,
+          "-19": 41,
+          "-35": 20,
+          "-34": 14,
+          "+16": 6
+        },
+        "largest_gap_between_atoms_subpixels": 16.0,
+        "mean_residue_subpixels": -0.36011572429195005,
+        "mean_abs_residue_px": 0.025844457415490813,
+        "median_abs_exception_subpixels": 21.0,
+        "worst_abs_exception_subpixels": 35.0
+      },
+      "persistence": {
+        "rate_exception": 0.01898284438128109,
+        "rate_exception_after_exception": 0.7580645161290323,
+        "rate_exception_after_clean": 0.004612593936252915,
+        "persistence_lift": 164.3466835810076,
+        "mean_run_length": 4.155555555555556,
+        "longest_run": 43,
+        "n_runs": 90,
+        "residue_autocorrelation_lag1": 0.8702809977583875,
+        "rate_exception_2_frames_after_exception": 0.7371273712737128,
+        "rate_exception_2_frames_after_clean": 0.005295125369880081,
+        "rate_exception_5_frames_after_exception": 0.7016574585635359,
+        "rate_exception_5_frames_after_clean": 0.006261414036003131,
+        "rate_exception_15_frames_after_exception": 0.4897959183673469,
+        "rate_exception_15_frames_after_clean": 0.010937665923330148
+      },
+      "rules": {
+        "n_exceptions": 374,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.016042780748663103,
+        "rate_exceptions_with_velocity_unchanged": 0.7433155080213903,
+        "rate_exceptions_exactly_one_pixel_short": 0.22459893048128343,
+        "exception_rate_when_velocity_zeroed": 0.011644832605531296,
+        "rate_any_contact_flag_among_exceptions": 0.339572192513369,
+        "rate_any_contact_flag_overall": 0.31458735153791495
+      },
+      "clamp": {
+        "n_exceptions": 374,
+        "n_exceptions_in_episode": 371,
+        "n_exceptions_pinned_in_episode": 282,
+        "rate_pinned": 0.014313267688559537,
+        "share_of_exceptions_pinned": 0.7540106951871658,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.004591178746453444,
+        "exception_rate_when_not_pinned_over_marginal": 0.24338197414150908,
+        "n_exceptions_left_after_the_clamp": 89,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 83,
+          "+16": 6
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 972,
+          "share_of_recording": 0.04933509288397117,
+          "rate_exception": 0.006172839506172839,
+          "mean_residue_subpixels": 0.09876543209876543,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 854,
+          "share_of_recording": 0.043345853212871786,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 17876,
+          "share_of_recording": 0.907319053903157,
+          "rate_exception": 0.020586260908480643,
+          "mean_residue_subpixels": -0.4022712016110987,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 13504,
+          "share_of_recording": 0.685412648462085,
+          "rate_exception": 0.018290876777251185,
+          "mean_residue_subpixels": -0.3800355450236967,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 6195,
+          "share_of_recording": 0.3144350827327175,
+          "rate_exception": 0.02050040355125101,
+          "mean_residue_subpixels": -0.3168684422921711,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 6198,
+          "share_of_recording": 0.31458735153791495,
+          "rate_exception": 0.020490480800258146,
+          "mean_residue_subpixels": -0.31671506937721844,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 716,
+          "share_of_recording": 0.03634148817378946,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 18986,
+          "share_of_recording": 0.9636585118262105,
+          "rate_exception": 0.019698725376593278,
+          "mean_residue_subpixels": -0.37369640787949016,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 19702,
+        "base_rate": 0.01898284438128109,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.6360378503824768
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.8371799135442859
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -0.3293333333333333,
+            "observed_sd_cumulative_subpixels": 3.1274387106526786,
+            "observed_max_abs_cumulative_subpixels": 35.0,
+            "iid_diffusion_sd_subpixels": 3.1568316681291204,
+            "over_dispersion_vs_iid": 0.9906890957243022,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9786666666666667,
+                "mean_band_width_subpixels": 10.370514586064774,
+                "mean_interval_score": 16.675436590627974,
+                "mean_cumulative_subpixels": -0.357970233322565
+              },
+              "jump_iid": {
+                "coverage_90": 0.9786666666666667,
+                "mean_band_width_subpixels": 0.0,
+                "mean_interval_score": 8.613333333333335,
+                "mean_cumulative_subpixels": -0.3586606666666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9946666666666667,
+                "mean_band_width_subpixels": 0.88,
+                "mean_interval_score": 2.3866666666666667,
+                "mean_cumulative_subpixels": -0.37624066666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9953333333333333,
+                "mean_band_width_subpixels": 0.8953333333333333,
+                "mean_interval_score": 2.3886666666666665,
+                "mean_cumulative_subpixels": -0.380803
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -1.546,
+            "observed_sd_cumulative_subpixels": 13.3483538560628,
+            "observed_max_abs_cumulative_subpixels": 175.0,
+            "iid_diffusion_sd_subpixels": 7.05889020346077,
+            "over_dispersion_vs_iid": 1.8909989348635128,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9666666666666667,
+                "mean_band_width_subpixels": 23.145407050410427,
+                "mean_interval_score": 49.7126457351483,
+                "mean_cumulative_subpixels": -1.79145846801829
+              },
+              "jump_iid": {
+                "coverage_90": 0.9833333333333333,
+                "mean_band_width_subpixels": 19.791300000000003,
+                "mean_interval_score": 44.33596666666667,
+                "mean_cumulative_subpixels": -1.8001643333333333
+              },
+              "markov_geometric": {
+                "coverage_90": 0.968,
+                "mean_band_width_subpixels": 2.598466666666666,
+                "mean_interval_score": 23.75846666666667,
+                "mean_cumulative_subpixels": -1.652538
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9866666666666667,
+                "mean_band_width_subpixels": 49.77106666666667,
+                "mean_interval_score": 58.78106666666667,
+                "mean_cumulative_subpixels": -12.519173333333333
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -4.922,
+            "observed_sd_cumulative_subpixels": 37.34855529557557,
+            "observed_max_abs_cumulative_subpixels": 435.0,
+            "iid_diffusion_sd_subpixels": 12.226356477444263,
+            "over_dispersion_vs_iid": 3.0547575939306104,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.96,
+                "mean_band_width_subpixels": 40.16191029612172,
+                "mean_interval_score": 131.99690985039086,
+                "mean_cumulative_subpixels": -5.394347591962613
+              },
+              "jump_iid": {
+                "coverage_90": 0.966,
+                "mean_band_width_subpixels": 32.108866666666664,
+                "mean_interval_score": 120.09420000000001,
+                "mean_cumulative_subpixels": -5.398226666666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9406666666666667,
+                "mean_band_width_subpixels": 20.699700000000007,
+                "mean_interval_score": 109.28236666666668,
+                "mean_cumulative_subpixels": -5.442666666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9866666666666667,
+                "mean_band_width_subpixels": 187.2863666666667,
+                "mean_interval_score": 208.75770000000003,
+                "mean_cumulative_subpixels": -34.70791833333333
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -9.874666666666666,
+            "observed_sd_cumulative_subpixels": 77.49200576977101,
+            "observed_max_abs_cumulative_subpixels": 960.0,
+            "iid_diffusion_sd_subpixels": 17.290679148809815,
+            "over_dispersion_vs_iid": 4.48172134262899,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9406666666666667,
+                "mean_band_width_subpixels": 56.8234657951413,
+                "mean_interval_score": 264.85382980614133,
+                "mean_cumulative_subpixels": -10.829331238969814
+              },
+              "jump_iid": {
+                "coverage_90": 0.9466666666666667,
+                "mean_band_width_subpixels": 47.24733333333333,
+                "mean_interval_score": 251.90133333333333,
+                "mean_cumulative_subpixels": -10.805141
+              },
+              "markov_geometric": {
+                "coverage_90": 0.8793333333333333,
+                "mean_band_width_subpixels": 33.16223333333334,
+                "mean_interval_score": 278.5142333333334,
+                "mean_cumulative_subpixels": -11.46531
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9813333333333333,
+                "mean_band_width_subpixels": 435.2149666666667,
+                "mean_interval_score": 498.8183,
+                "mean_cumulative_subpixels": -60.525531
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -19.903333333333332,
+            "observed_sd_cumulative_subpixels": 109.04844484091565,
+            "observed_max_abs_cumulative_subpixels": 1312.0,
+            "iid_diffusion_sd_subpixels": 24.452712954888526,
+            "over_dispersion_vs_iid": 4.459564263568348,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9166666666666666,
+                "mean_band_width_subpixels": 80.31526962872861,
+                "mean_interval_score": 424.39097660856663,
+                "mean_cumulative_subpixels": -21.628901896832218
+              },
+              "jump_iid": {
+                "coverage_90": 0.9306666666666666,
+                "mean_band_width_subpixels": 74.80323333333332,
+                "mean_interval_score": 413.84256666666676,
+                "mean_cumulative_subpixels": -21.579458
+              },
+              "markov_geometric": {
+                "coverage_90": 0.788,
+                "mean_band_width_subpixels": 48.006166666666665,
+                "mean_interval_score": 494.96416666666676,
+                "mean_cumulative_subpixels": -20.273078333333334
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9833333333333333,
+                "mean_band_width_subpixels": 783.3671666666667,
+                "mean_interval_score": 835.0571666666667,
+                "mean_cumulative_subpixels": -91.53337266666666
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 3.1568316681291204,
+          "jump_intensity": 0.01898284438128109,
+          "n_atoms": 10,
+          "chain": {
+            "p_exception_from_clean": 0.004612593936252915,
+            "p_exception_from_exception": 0.7580645161290323,
+            "p_exception_stationary": 0.01898284438128109
+          },
+          "mean_exception_run_frames": 4.155555555555556,
+          "max_exception_run_frames": 43,
+          "mean_clean_run_frames": 158.4262295081967
+        }
+      }
+    },
+    "tilemap": {
+      "lattice": {
+        "n_frames": 10357,
+        "distinct_residue_values": 10,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9271024427923144,
+        "rate_exception": 0.07289755720768562,
+        "atoms": {
+          "+0": 9602,
+          "-36": 299,
+          "-20": 125,
+          "-35": 86,
+          "-21": 82,
+          "-19": 43,
+          "-5": 43,
+          "-13": 41,
+          "-16": 24,
+          "+16": 12
+        },
+        "largest_gap_between_atoms_subpixels": 16.0,
+        "mean_residue_subpixels": -1.9072125132760451,
+        "mean_abs_residue_px": 0.1215180554214541,
+        "median_abs_exception_subpixels": 35.0,
+        "worst_abs_exception_subpixels": 36.0
+      },
+      "persistence": {
+        "rate_exception": 0.07289755720768562,
+        "rate_exception_after_exception": 0.9364238410596026,
+        "rate_exception_after_clean": 0.005014625992478061,
+        "persistence_lift": 186.73852097130245,
+        "mean_run_length": 15.729166666666666,
+        "longest_run": 43,
+        "n_runs": 48,
+        "residue_autocorrelation_lag1": 0.9615053852940922,
+        "rate_exception_2_frames_after_exception": 0.909933774834437,
+        "rate_exception_2_frames_after_clean": 0.0071263885977782436,
+        "rate_exception_5_frames_after_exception": 0.8423841059602649,
+        "rate_exception_5_frames_after_clean": 0.012589928057553957,
+        "rate_exception_15_frames_after_exception": 0.6158940397350994,
+        "rate_exception_15_frames_after_clean": 0.031687062937062936
+      },
+      "rules": {
+        "n_exceptions": 755,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.022516556291390728,
+        "rate_exceptions_with_velocity_unchanged": 0.9324503311258279,
+        "rate_exceptions_exactly_one_pixel_short": 0.031788079470198675,
+        "exception_rate_when_velocity_zeroed": 0.012682308180088777,
+        "rate_any_contact_flag_among_exceptions": 0.9350993377483444,
+        "rate_any_contact_flag_overall": 0.5835666698851019
+      },
+      "clamp": {
+        "n_exceptions": 755,
+        "n_exceptions_in_episode": 755,
+        "n_exceptions_pinned_in_episode": 719,
+        "rate_pinned": 0.06942164719513373,
+        "share_of_exceptions_pinned": 0.952317880794702,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.003746877601998335,
+        "exception_rate_when_not_pinned_over_marginal": 0.05125033774283021,
+        "n_exceptions_left_after_the_clamp": 36,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 24,
+          "+16": 12
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 471,
+          "share_of_recording": 0.04547648933088732,
+          "rate_exception": 0.025477707006369428,
+          "mean_residue_subpixels": 0.40764331210191085,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 286,
+          "share_of_recording": 0.02761417398860674,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 9600,
+          "share_of_recording": 0.9269093366805059,
+          "rate_exception": 0.07739583333333333,
+          "mean_residue_subpixels": -2.0776041666666667,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 4313,
+          "share_of_recording": 0.41643333011489814,
+          "rate_exception": 0.011361001623000232,
+          "mean_residue_subpixels": -0.3366566195223742,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 6038,
+          "share_of_recording": 0.5829873515496765,
+          "rate_exception": 0.11692613448161643,
+          "mean_residue_subpixels": -3.030970520039748,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 6044,
+          "share_of_recording": 0.5835666698851019,
+          "rate_exception": 0.11681005956320317,
+          "mean_residue_subpixels": -3.0279616148246196,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 1590,
+          "share_of_recording": 0.1535193588877088,
+          "rate_exception": 0.0012578616352201257,
+          "mean_residue_subpixels": 0.02012578616352201,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 8767,
+          "share_of_recording": 0.8464806411122912,
+          "rate_exception": 0.08589027033192655,
+          "mean_residue_subpixels": -2.256758298163568,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 10357,
+        "base_rate": 0.07289755720768562,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.85661582644896
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.9717902313397733
+          },
+          "state + action + tile_patches": {
+            "n_features": 60,
+            "auc": 0.9265424835609579
+          },
+          "state + action + next_tile_patches": {
+            "n_features": 60,
+            "auc": 0.9271605943022356
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -2.0633333333333335,
+            "observed_sd_cumulative_subpixels": 7.875573347735107,
+            "observed_max_abs_cumulative_subpixels": 36.0,
+            "iid_diffusion_sd_subpixels": 7.44511526815486,
+            "over_dispersion_vs_iid": 1.0578175171338788,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9346666666666666,
+                "mean_band_width_subpixels": 24.457964377014576,
+                "mean_interval_score": 46.459519322670495,
+                "mean_cumulative_subpixels": -1.902152557835557
+              },
+              "jump_iid": {
+                "coverage_90": 0.948,
+                "mean_band_width_subpixels": 19.996233333333336,
+                "mean_interval_score": 34.509566666666665,
+                "mean_cumulative_subpixels": -1.905919
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9973333333333333,
+                "mean_band_width_subpixels": 2.616,
+                "mean_interval_score": 4.069333333333334,
+                "mean_cumulative_subpixels": -1.904951
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.994,
+                "mean_band_width_subpixels": 2.252666666666667,
+                "mean_interval_score": 4.039333333333333,
+                "mean_cumulative_subpixels": -1.9028906666666667
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -7.350666666666666,
+            "observed_sd_cumulative_subpixels": 31.73336361343093,
+            "observed_max_abs_cumulative_subpixels": 180.0,
+            "iid_diffusion_sd_subpixels": 16.647783839915842,
+            "over_dispersion_vs_iid": 1.9061614397794433,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.946,
+                "mean_band_width_subpixels": 54.58829359997278,
+                "mean_interval_score": 157.45686461457936,
+                "mean_cumulative_subpixels": -9.514554579406658
+              },
+              "jump_iid": {
+                "coverage_90": 0.9406666666666667,
+                "mean_band_width_subpixels": 36.0373,
+                "mean_interval_score": 141.3033,
+                "mean_cumulative_subpixels": -9.540107
+              },
+              "markov_geometric": {
+                "coverage_90": 0.93,
+                "mean_band_width_subpixels": 5.546533333333333,
+                "mean_interval_score": 66.02186666666668,
+                "mean_cumulative_subpixels": -7.470243
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9613333333333334,
+                "mean_band_width_subpixels": 61.622733333333336,
+                "mean_interval_score": 81.26006666666667,
+                "mean_cumulative_subpixels": -15.423120333333333
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -30.898666666666667,
+            "observed_sd_cumulative_subpixels": 109.38972102025349,
+            "observed_max_abs_cumulative_subpixels": 540.0,
+            "iid_diffusion_sd_subpixels": 28.83480744415834,
+            "over_dispersion_vs_iid": 3.793669204557661,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9053333333333333,
+                "mean_band_width_subpixels": 94.72317002217565,
+                "mean_interval_score": 570.0455084708585,
+                "mean_cumulative_subpixels": -28.590060856120665
+              },
+              "jump_iid": {
+                "coverage_90": 0.904,
+                "mean_band_width_subpixels": 81.34696666666669,
+                "mean_interval_score": 549.4716333333334,
+                "mean_cumulative_subpixels": -28.598171
+              },
+              "markov_geometric": {
+                "coverage_90": 0.8526666666666667,
+                "mean_band_width_subpixels": 31.985166666666668,
+                "mean_interval_score": 466.9385000000001,
+                "mean_cumulative_subpixels": -28.638946666666666
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9506666666666667,
+                "mean_band_width_subpixels": 330.01893333333334,
+                "mean_interval_score": 411.8062666666668,
+                "mean_cumulative_subpixels": -59.621123
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -59.564,
+            "observed_sd_cumulative_subpixels": 192.50950947247603,
+            "observed_max_abs_cumulative_subpixels": 1080.0,
+            "iid_diffusion_sd_subpixels": 40.778575755945404,
+            "over_dispersion_vs_iid": 4.720849267140201,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.878,
+                "mean_band_width_subpixels": 134.01788218833732,
+                "mean_interval_score": 1034.4327156249565,
+                "mean_cumulative_subpixels": -57.27558481437399
+              },
+              "jump_iid": {
+                "coverage_90": 0.8813333333333333,
+                "mean_band_width_subpixels": 130.15813333333335,
+                "mean_interval_score": 1020.4854666666668,
+                "mean_cumulative_subpixels": -57.199387
+              },
+              "markov_geometric": {
+                "coverage_90": 0.752,
+                "mean_band_width_subpixels": 54.559466666666665,
+                "mean_interval_score": 1354.6268000000002,
+                "mean_cumulative_subpixels": -55.98282666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.958,
+                "mean_band_width_subpixels": 727.9613333333333,
+                "mean_interval_score": 825.372,
+                "mean_cumulative_subpixels": -124.697162
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -136.244,
+            "observed_sd_cumulative_subpixels": 343.0234070691581,
+            "observed_max_abs_cumulative_subpixels": 1548.0,
+            "iid_diffusion_sd_subpixels": 57.66961488831668,
+            "over_dispersion_vs_iid": 5.948078684649781,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.050666666666666665,
+                "mean_band_width_subpixels": 189.37299299228297,
+                "mean_interval_score": 2467.409389257563,
+                "mean_cumulative_subpixels": -114.48362698898023
+              },
+              "jump_iid": {
+                "coverage_90": 0.056,
+                "mean_band_width_subpixels": 187.32029999999997,
+                "mean_interval_score": 2596.863633333334,
+                "mean_cumulative_subpixels": -114.36656533333333
+              },
+              "markov_geometric": {
+                "coverage_90": 0.5873333333333334,
+                "mean_band_width_subpixels": 71.77723333333331,
+                "mean_interval_score": 3196.3219000000004,
+                "mean_cumulative_subpixels": -113.93818666666667
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9233333333333333,
+                "mean_band_width_subpixels": 1192.2089666666666,
+                "mean_interval_score": 1406.5683000000001,
+                "mean_cumulative_subpixels": -206.13512433333332
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 7.44511526815486,
+          "jump_intensity": 0.07289755720768562,
+          "n_atoms": 9,
+          "chain": {
+            "p_exception_from_clean": 0.005014625992478061,
+            "p_exception_from_exception": 0.9364238410596026,
+            "p_exception_stationary": 0.07289755720768562
+          },
+          "mean_exception_run_frames": 15.729166666666666,
+          "max_exception_run_frames": 43,
+          "mean_clean_run_frames": 123.1025641025641
+        }
+      }
+    },
+    "set_multi_entity": {
+      "lattice": {
+        "n_frames": 3580,
+        "distinct_residue_values": 6,
+        "max_off_integer_deviation_subpixels": 0.0,
+        "rate_exactly_zero": 0.9578212290502793,
+        "rate_exception": 0.04217877094972067,
+        "atoms": {
+          "+0": 3429,
+          "-36": 43,
+          "-22": 41,
+          "-19": 41,
+          "-16": 15,
+          "+16": 11
+        },
+        "largest_gap_between_atoms_subpixels": 16.0,
+        "mean_residue_subpixels": -0.9198324022346369,
+        "mean_abs_residue_px": 0.06363477653631285,
+        "median_abs_exception_subpixels": 22.0,
+        "worst_abs_exception_subpixels": 36.0
+      },
+      "persistence": {
+        "rate_exception": 0.04217877094972067,
+        "rate_exception_after_exception": 0.8211920529801324,
+        "rate_exception_after_clean": 0.007897045919859609,
+        "persistence_lift": 103.98724552366936,
+        "mean_run_length": 5.592592592592593,
+        "longest_run": 43,
+        "n_runs": 27,
+        "residue_autocorrelation_lag1": 0.9118537382844359,
+        "rate_exception_2_frames_after_exception": 0.8013245033112583,
+        "rate_exception_2_frames_after_clean": 0.00880023467292461,
+        "rate_exception_5_frames_after_exception": 0.7350993377483444,
+        "rate_exception_5_frames_after_clean": 0.011837821840781295,
+        "rate_exception_15_frames_after_exception": 0.5298013245033113,
+        "rate_exception_15_frames_after_clean": 0.02165294297041781
+      },
+      "rules": {
+        "n_exceptions": 151,
+        "rate_exceptions_explained_by_next_velocity_rule": 0.019867549668874173,
+        "rate_exceptions_with_velocity_unchanged": 0.8145695364238411,
+        "rate_exceptions_exactly_one_pixel_short": 0.09933774834437085,
+        "exception_rate_when_velocity_zeroed": 0.01327433628318584,
+        "rate_any_contact_flag_among_exceptions": 0.9933774834437086,
+        "rate_any_contact_flag_overall": 0.6184357541899441
+      },
+      "clamp": {
+        "n_exceptions": 151,
+        "n_exceptions_in_episode": 151,
+        "n_exceptions_pinned_in_episode": 125,
+        "rate_pinned": 0.034916201117318434,
+        "share_of_exceptions_pinned": 0.8278145695364238,
+        "rate_residue_exactly_minus_velocity_on_pinned": 1.0,
+        "rate_exception_when_pinned": 1.0,
+        "rate_exception_when_not_pinned": 0.007547169811320755,
+        "exception_rate_when_not_pinned_over_marginal": 0.17843308759215293,
+        "n_exceptions_left_after_the_clamp": 26,
+        "leftover_rate_exactly_one_pixel_off_velocity": 1.0,
+        "leftover_max_abs_residue_subpixels": 16.0,
+        "leftover_atoms": {
+          "-16": 15,
+          "+16": 11
+        },
+        "leftover_mean_abs_residue_subpixels": 16.0
+      },
+      "strata": [
+        {
+          "stratum": "screen left edge (x mod 256 < 16)",
+          "n_frames": 238,
+          "share_of_recording": 0.0664804469273743,
+          "rate_exception": 0.046218487394957986,
+          "mean_residue_subpixels": 0.7394957983193278,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen right edge (x mod 256 >= 240)",
+          "n_frames": 156,
+          "share_of_recording": 0.04357541899441341,
+          "rate_exception": 0.0,
+          "mean_residue_subpixels": 0.0,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "screen interior",
+          "n_frames": 3186,
+          "share_of_recording": 0.8899441340782123,
+          "rate_exception": 0.04394224733207784,
+          "mean_residue_subpixels": -1.088826114249843,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "no contact flag set",
+          "n_frames": 1366,
+          "share_of_recording": 0.3815642458100559,
+          "rate_exception": 0.0007320644216691069,
+          "mean_residue_subpixels": -0.01171303074670571,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "ground flag set",
+          "n_frames": 2214,
+          "share_of_recording": 0.6184357541899441,
+          "rate_exception": 0.06775067750677506,
+          "mean_residue_subpixels": -1.480126467931346,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "any contact flag set",
+          "n_frames": 2214,
+          "share_of_recording": 0.6184357541899441,
+          "rate_exception": 0.06775067750677506,
+          "mean_residue_subpixels": -1.480126467931346,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "standing still (|vx| < 0.5)",
+          "n_frames": 458,
+          "share_of_recording": 0.12793296089385475,
+          "rate_exception": 0.002183406113537118,
+          "mean_residue_subpixels": -0.034934497816593885,
+          "median_abs_residue_subpixels": 0.0
+        },
+        {
+          "stratum": "moving (|vx| >= 0.5)",
+          "n_frames": 3122,
+          "share_of_recording": 0.8720670391061452,
+          "rate_exception": 0.048046124279308135,
+          "mean_residue_subpixels": -1.049647661755285,
+          "median_abs_residue_subpixels": 0.0
+        }
+      ],
+      "conditioning": {
+        "n_frames": 3580,
+        "base_rate": 0.04217877094972067,
+        "rankers": {
+          "state + action": {
+            "n_features": 11,
+            "auc": 0.9111203814754943
+          },
+          "state + action + previous residue": {
+            "n_features": 12,
+            "auc": 0.9541425975174737
+          },
+          "state + action + entities": {
+            "n_features": 20,
+            "auc": 0.9269842925263481
+          },
+          "state + action + next_entities": {
+            "n_features": 20,
+            "auc": 0.9272894420206305
+          }
+        }
+      },
+      "calibration": {
+        "available": true,
+        "horizons": {
+          "h1": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -0.7786666666666666,
+            "observed_sd_cumulative_subpixels": 4.71780438575215,
+            "observed_max_abs_cumulative_subpixels": 36.0,
+            "iid_diffusion_sd_subpixels": 5.124156611335917,
+            "over_dispersion_vs_iid": 0.9206987107527482,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.964,
+                "mean_band_width_subpixels": 16.83289622513205,
+                "mean_interval_score": 27.445866736034315,
+                "mean_cumulative_subpixels": -0.9163209603937321
+              },
+              "jump_iid": {
+                "coverage_90": 0.964,
+                "mean_band_width_subpixels": 0.11893333333333415,
+                "mean_interval_score": 17.398933333333336,
+                "mean_cumulative_subpixels": -0.9194096666666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.9933333333333333,
+                "mean_band_width_subpixels": 1.976,
+                "mean_interval_score": 4.456,
+                "mean_cumulative_subpixels": -0.8463446666666666
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9933333333333333,
+                "mean_band_width_subpixels": 1.976,
+                "mean_interval_score": 4.456,
+                "mean_cumulative_subpixels": -0.82951
+              }
+            }
+          },
+          "h5": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -4.615333333333333,
+            "observed_sd_cumulative_subpixels": 24.557267048450015,
+            "observed_max_abs_cumulative_subpixels": 180.0,
+            "iid_diffusion_sd_subpixels": 11.45796251030208,
+            "over_dispersion_vs_iid": 2.143249031088214,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9506666666666667,
+                "mean_band_width_subpixels": 37.56166079258491,
+                "mean_interval_score": 111.27879464685026,
+                "mean_cumulative_subpixels": -4.58413128748446
+              },
+              "jump_iid": {
+                "coverage_90": 0.9546666666666667,
+                "mean_band_width_subpixels": 35.93223333333333,
+                "mean_interval_score": 102.50490000000002,
+                "mean_cumulative_subpixels": -4.603617
+              },
+              "markov_geometric": {
+                "coverage_90": 0.94,
+                "mean_band_width_subpixels": 5.2443,
+                "mean_interval_score": 47.64296666666667,
+                "mean_cumulative_subpixels": -4.416754
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.974,
+                "mean_band_width_subpixels": 42.87946666666667,
+                "mean_interval_score": 65.55613333333334,
+                "mean_cumulative_subpixels": -14.731435
+              }
+            }
+          },
+          "h15": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -14.613333333333333,
+            "observed_sd_cumulative_subpixels": 71.00121939484951,
+            "observed_max_abs_cumulative_subpixels": 540.0,
+            "iid_diffusion_sd_subpixels": 19.84577321906264,
+            "over_dispersion_vs_iid": 3.5776494375462313,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9233333333333333,
+                "mean_band_width_subpixels": 65.19857923218049,
+                "mean_interval_score": 314.29656142353315,
+                "mean_cumulative_subpixels": -13.784807014605754
+              },
+              "jump_iid": {
+                "coverage_90": 0.9286666666666666,
+                "mean_band_width_subpixels": 55.095533333333336,
+                "mean_interval_score": 299.70420000000007,
+                "mean_cumulative_subpixels": -13.779835
+              },
+              "markov_geometric": {
+                "coverage_90": 0.8553333333333333,
+                "mean_band_width_subpixels": 33.0274,
+                "mean_interval_score": 297.7187333333334,
+                "mean_cumulative_subpixels": -13.907708666666666
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.9706666666666667,
+                "mean_band_width_subpixels": 238.2906,
+                "mean_interval_score": 297.45193333333333,
+                "mean_cumulative_subpixels": -44.039645
+              }
+            }
+          },
+          "h30": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -29.936666666666667,
+            "observed_sd_cumulative_subpixels": 133.7014310153618,
+            "observed_max_abs_cumulative_subpixels": 1080.0,
+            "iid_diffusion_sd_subpixels": 28.06616164217914,
+            "over_dispersion_vs_iid": 4.763794662054146,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.9073333333333333,
+                "mean_band_width_subpixels": 92.23299979427463,
+                "mean_interval_score": 610.0242046923745,
+                "mean_cumulative_subpixels": -27.63646639012631
+              },
+              "jump_iid": {
+                "coverage_90": 0.9073333333333333,
+                "mean_band_width_subpixels": 78.363,
+                "mean_interval_score": 596.8856666666668,
+                "mean_cumulative_subpixels": -27.588334
+              },
+              "markov_geometric": {
+                "coverage_90": 0.7773333333333333,
+                "mean_band_width_subpixels": 52.75233333333333,
+                "mean_interval_score": 707.3776666666666,
+                "mean_cumulative_subpixels": -26.810758333333332
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.962,
+                "mean_band_width_subpixels": 564.6757666666667,
+                "mean_interval_score": 667.0064333333335,
+                "mean_cumulative_subpixels": -88.06136733333334
+              }
+            }
+          },
+          "h60": {
+            "n_starts": 1500,
+            "observed_mean_cumulative_subpixels": -57.38066666666667,
+            "observed_sd_cumulative_subpixels": 216.55827797513433,
+            "observed_max_abs_cumulative_subpixels": 1548.0,
+            "iid_diffusion_sd_subpixels": 39.69154643812528,
+            "over_dispersion_vs_iid": 5.4560302484743115,
+            "kernels": {
+              "gaussian_iid": {
+                "coverage_90": 0.86,
+                "mean_band_width_subpixels": 130.34117606842736,
+                "mean_interval_score": 1133.067707024858,
+                "mean_cumulative_subpixels": -55.22533528931267
+              },
+              "jump_iid": {
+                "coverage_90": 0.8626666666666667,
+                "mean_band_width_subpixels": 128.2956333333333,
+                "mean_interval_score": 1122.5809666666669,
+                "mean_cumulative_subpixels": -55.17260866666667
+              },
+              "markov_geometric": {
+                "coverage_90": 0.5886666666666667,
+                "mean_band_width_subpixels": 75.4195,
+                "mean_interval_score": 1476.242833333334,
+                "mean_cumulative_subpixels": -56.69969233333333
+              },
+              "run_length_renewal": {
+                "coverage_90": 0.946,
+                "mean_band_width_subpixels": 976.3424666666666,
+                "mean_interval_score": 1144.1678,
+                "mean_cumulative_subpixels": -155.93718
+              }
+            }
+          }
+        },
+        "fitted": {
+          "gaussian_sigma_subpixels": 5.124156611335917,
+          "jump_intensity": 0.04217877094972067,
+          "n_atoms": 5,
+          "chain": {
+            "p_exception_from_clean": 0.007897045919859609,
+            "p_exception_from_exception": 0.8211920529801324,
+            "p_exception_stationary": 0.04217877094972067
+          },
+          "mean_exception_run_frames": 5.592592592592593,
+          "max_exception_run_frames": 43,
+          "mean_clean_run_frames": 92.67567567567568
+        }
+      }
+    }
+  },
+  "summary": {
+    "recordings": 6,
+    "transitions": 55085,
+    "atoms_per_recording": [
+      13,
+      6,
+      5,
+      11,
+      10,
+      6
+    ],
+    "max_off_integer_deviation_subpixels": 0.0,
+    "rate_exactly_zero_range": [
+      0.9271024427923144,
+      0.9810171556187189
+    ],
+    "persistence_lift_range": [
+      103.98724552366936,
+      625.7142857142858
+    ],
+    "persistence_lift_median": 178.16337436374272,
+    "mean_run_length_median": 14.827997967479675,
+    "coverage_mean_90": {
+      "gaussian_iid": 0.8111111111111111,
+      "jump_iid": 0.8237333333333334,
+      "markov_geometric": 0.8606666666666667,
+      "run_length_renewal": 0.972311111111111
+    },
+    "proper_score_winner_by_recording": {
+      "gameplay": "run_length_renewal",
+      "jump": "run_length_renewal",
+      "sprint": "run_length_renewal",
+      "multi_entity": "jump_iid",
+      "tilemap": "run_length_renewal",
+      "set_multi_entity": "jump_iid"
+    },
+    "share_of_exceptions_pinned": [
+      0.9492119089316988,
+      0.9933554817275747,
+      0.9686192468619247,
+      0.7540106951871658,
+      0.952317880794702,
+      0.8278145695364238
+    ],
+    "residue_is_minus_velocity_on_pinned_min": 1.0,
+    "exception_rate_when_not_pinned_range": [
+      0.00034441191665231615,
+      0.007547169811320755
+    ],
+    "exceptions_left_after_the_clamp": 197,
+    "over_dispersion_vs_iid_range": [
+      0.9206987107527482,
+      5.948078684649781
+    ],
+    "over_dispersion_h60_range": [
+      4.459564263568348,
+      5.948078684649781
+    ],
+    "leftover_are_one_pixel_off_velocity": true,
+    "leftover_max_abs_residue_subpixels": 16.0,
+    "coverage_by_horizon": {
+      "h1": {
+        "gaussian_iid": 0.9497777777777777,
+        "jump_iid": 0.9611111111111112,
+        "markov_geometric": 0.9953333333333334,
+        "run_length_renewal": 0.9937777777777778
+      },
+      "h5": {
+        "gaussian_iid": 0.9458888888888889,
+        "jump_iid": 0.9483333333333333,
+        "markov_geometric": 0.9483333333333333,
+        "run_length_renewal": 0.9757777777777777
+      },
+      "h15": {
+        "gaussian_iid": 0.9237777777777779,
+        "jump_iid": 0.9254444444444444,
+        "markov_geometric": 0.8794444444444444,
+        "run_length_renewal": 0.9717777777777777
+      },
+      "h30": {
+        "gaussian_iid": 0.9076666666666666,
+        "jump_iid": 0.9096666666666667,
+        "markov_geometric": 0.8081111111111111,
+        "run_length_renewal": 0.9673333333333333
+      },
+      "h60": {
+        "gaussian_iid": 0.3284444444444445,
+        "jump_iid": 0.3741111111111111,
+        "markov_geometric": 0.6721111111111111,
+        "run_length_renewal": 0.9528888888888888
+      }
+    }
+  },
+  "verdict": {
+    "residue_is_on_the_sub_pixel_lattice": true,
+    "residue_is_persistent": true,
+    "a_diffusion_term_is_defensible": false,
+    "an_iid_jump_measure_is_defensible": false,
+    "a_persistent_reset_process_is_defensible": true,
+    "coverage_mean_90": {
+      "gaussian_iid": 0.8111111111111111,
+      "jump_iid": 0.8237333333333334,
+      "markov_geometric": 0.8606666666666667,
+      "run_length_renewal": 0.972311111111111
+    },
+    "best_covered_by": "markov_geometric",
+    "best_proper_score_by_recording": {
+      "gameplay": "run_length_renewal",
+      "jump": "run_length_renewal",
+      "sprint": "run_length_renewal",
+      "multi_entity": "jump_iid",
+      "tilemap": "run_length_renewal",
+      "set_multi_entity": "jump_iid"
+    },
+    "over_dispersion_vs_iid_range": [
+      0.9206987107527482,
+      5.948078684649781
+    ],
+    "the_clamp_explains_the_exceptions": true,
+    "share_of_exceptions_pinned_min": 0.7540106951871658,
+    "rate_exception_when_not_pinned_range": [
+      0.00034441191665231615,
+      0.007547169811320755
+    ],
+    "exceptions_left_after_the_clamp": 197,
+    "leftover_are_one_pixel_off_velocity": true,
+    "over_dispersion_h60_range": [
+      4.459564263568348,
+      5.948078684649781
+    ],
+    "reading": "The residual of section 4.1 takes 5-13 distinct values per recording and never leaves the sub-pixel grid (largest off-integer deviation 0.000000 sub-pixels), so no density over the reals is the right object; and the exception persists (104.0x to 625.7x the rate after a clean frame, median run 14.83 frames), so it is not white noise either. Of the four propagators the mean 90% coverage is 0.811 for drift plus iid diffusion, 0.824 for an iid jump measure, 0.861 for a two-state chain with geometric runs and 0.972 for the renewal process that samples run lengths from the recording itself. The reason none of them is needed: 75.4% of the exceptions at minimum are frames where the position does not move while the velocity byte is held, and there the residue is exactly the negative velocity."
+  }
+}

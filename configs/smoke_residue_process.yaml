@@ -1,0 +1,6 @@
+# Seconds-scale version of the README 10.58 residue study (`make smoke-all`).
+# Two recordings and a thin Monte Carlo: the point is that the lattice, the clamp and the
+# calibration all run and the artifact is written, not that a coverage figure reproduces.
+recordings: gameplay,jump
+samples: 200
+horizons: 1,15
