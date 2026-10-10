@@ -141,8 +141,14 @@ def test_display_math_is_never_a_paragraph_continuation() -> None:
 
 
 def test_no_macro_githubs_katex_build_refuses() -> None:
-    """GitHub's KaTeX runs with a macro allowlist, and `\\operatorname` is not on it."""
-    forbidden = ("\\operatorname", "\\middle", "\\bigl(", "\\relax")
+    """GitHub's KaTeX runs with a macro allowlist, and `\\operatorname` is not on it.
+
+    `\\\\[2pt]` is on no allowlist either but fails differently: the row break renders and the
+    spacing argument is printed as the literal text `[ 2 p t ]` inside the formula, so the page
+    shows a rendered equation that carries its own markup. That is how the DOM probe in README
+    Section 12 found it - no error box, and every source-level rule still green.
+    """
+    forbidden = ("\\operatorname", "\\middle", "\\bigl(", "\\relax", "\\\\[")
     found = [
         f"line {span['line']}: {token}"
         for span in math_spans(README.read_text(encoding="utf-8"))

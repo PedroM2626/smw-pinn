@@ -628,6 +628,27 @@ numbers* - those are reported here and in README Section 12, never applied silen
   itself recorded in README Section 12 rather than smoothed over. The fix is known and not
   enforceable locally: keep a subscript off a closing brace (`\hat X_{t+1}`, not
   `\hat{X}_{t+1}`), which needs a rendered-page check to verify.
+- **That check has now been done, and the class is closed at its cause.** An underscore after `}`,
+  `)` or `]` is left-flanking, so it *opens* an emphasis run; a subscript hung on a letter is
+  right-flanking only and cannot. 55 spans were rewritten onto letters (`\hat{X}_{t+1}` to
+  `\hat X_{t+1}`, `\mathcal{L}_{\text{data}}` to `\mathcal L_{\text{data}}`, `\mathbf{u}_{0:H-1}` to
+  `\mathbf u_{0:H-1}`), and where the base is a word rather than a letter the parameter moved into an
+  argument list: `\text{MLP}_\theta(z_t)` to `\text{MLP}(\theta, z_t)`, `\text{NN}_{\text{force}}(z_t)`
+  to `\text{NN}(z_t)`, and the DeepONet display formula's `\underbrace` labels into the sentence that
+  already names the branch and the trunk. The §4.1 claim string in `physics_claim_audit.py` went with
+  them and its artifact was re-run - the diff is that string, the verdict line echoing it, and the
+  provenance fields, with every measured cell byte-identical.
+  `test_no_math_span_holds_an_underscore_that_can_open_emphasis` replaces the two-on-one-line rule,
+  which had a blind spot: it paired the four `$` of a `$$…$$` line into two empty spans and never read
+  the formula between them, and `test_the_opener_rule_fires_on_the_shape_it_exists_for` is the new
+  rule's negative control. Re-measured on the rendered page afterwards: emphasis runs holding LaTeX 25
+  to 0, rendered math elements 1,129 to 1,152, `<msub>` subscripts 669 to 745, accents 85 to 113,
+  error boxes 0 before and after.
+- **A formula that printed its own markup, found by reading the rendered MathML back.** Section
+  10.40's analytic integrator broke its `cases` rows with `\\[2pt]`: GitHub honours the row break and
+  prints the spacing argument as the literal text `[ 2 p t ]` *inside* the finished equation - no
+  error box, valid LaTeX, and invisible to every source rule in `tests/test_readme_math_rendering.py`.
+  The argument is gone and `\\[` joins the refused macros.
 - **The table of contents was missing five sections, and one entry was in the wrong place.** The
   10.57 ToC line had been pasted onto the prose of Section 12 instead of into the contents, so the
   section had no entry and Section 12 had a stray bullet in the middle of a sentence; Sections
