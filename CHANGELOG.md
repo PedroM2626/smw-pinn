@@ -11,6 +11,33 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
+  emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
+  the integer horizontal shift that best matches it and compare that with the change in the recorded
+  x, with a synthetic control that slides a frame by 1, 2 and 3 px to prove the alignment sees a
+  scroll when one exists. Writes `results/pixel_frame_probe_metrics.json` and the paragraph README
+  10.31.1 quotes from it.
+- **The horizontal camera, identified from the console instead of assumed from a memory map.**
+  `scripts/scan_scroll_address.py` (with `src/environment/scroll_scan.py` behind it) dumps all 128 KB
+  of WRAM on every frame of a scripted run, ranks each of the 16-bit words by how well it follows
+  Mario's x, and keeps only the words that satisfy the axioms of a layer scroll - never ahead of the
+  body, the screen position inside the 256 px window on every frame, still while Mario walks the dead
+  zone, moving both ways, zero at the level start. Two pass: `$7E:001A` and its mirror `$7E:1462`; the
+  word four bytes away holds exactly half of it, which is the parallax layer. `wram.ADDR_CAMERA_X` and
+  `SnesLibretroEmulator.get_camera_x()` publish it, and `tests/test_boundary_channel_study.py` refuses
+  a map that disagrees with the artifact.
+- **`scripts/record_boundary_gameplay.py`** (`make record-boundary`) records
+  `data/raw/smw_boundary_dataset.npz`: the published 8D state, the camera, the 7x7 terrain patch, the
+  engine mode byte and a CRC of all of WRAM - the last two because a stopped body and a paused
+  simulation are indistinguishable in the first.
+- **README 10.59, `src/evaluation/boundary_channel_study.py`** (`make boundary-channel`,
+  `smw-pinn boundary-channel`, emulator-free): 10.58's prediction, tested and refuted. The screen-edge
+  channel names at most 1.00% of exception frames at any margin from 8 to 32 px and moves the identity
+  by 0.05 pp; the exceptions are instead whole player records repeating (86.14% here, 74.39-97.01% on
+  the six committed recordings) on a console the WRAM CRC proves was still running, and dropping them
+  leaves section 4.1 exact on 99.16-99.85% of frames rather than the 92.69-98.11% 10.58 printed. The
+  section is generated from its artifact including the prose, and the gates re-derive both directions
+  of the claim from the recording: the channel's failure, and the pause's explanation.
 - **README 10.58, `src/evaluation/residue_process_study.py`** (`make residue-process`,
   `smw-pinn residue-process`, emulator-free, ~3 min over the six committed recordings): the residue of
   section 4.1 measured as a *process* rather than as an error bar - the lattice it lives on, its

@@ -1,0 +1,6 @@
+# Seconds-scale version of the README 10.59 boundary-channel study (`make smoke-all`).
+# The study is already fast - it reads one recording and the six committed ones - so the smoke
+# variant only thins the margin sweep. The point is that the accounting and the identification
+# run and the artifact is written, not that a coverage figure reproduces.
+margins: 8,16
+primary_margin: 16.0

@@ -1086,12 +1086,21 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "not a stochastic formulation but a ninth state channel - the boundary the position is "
         "pinned against, or the camera offset that implies it - and the prediction this section "
         "supplies for it is sharp: adding it should remove the residue that §10.53 called the "
-        "console's own, and leave the whole-pixel repositions as the only exception left.",
+        "console's own, and leave the whole-pixel repositions as the only exception left. "
+        "**10.59 built that channel, tested the prediction, and it failed**: the camera address was "
+        "identified from the console and recorded next to the state, the screen-edge channel covers "
+        "1.00% of the exception frames, and the frames this section read as a clamp turn out to be "
+        "whole player records repeating on a console that is still running - a paused simulation, not "
+        "a stopped body. The numbers in this section are what the recordings measure and stand; the "
+        "word *clamp* is what 10.59 withdraws.",
         "",
         "**Limitations.** The clamp is inferred from the recorded position not moving while the "
         "velocity byte holds, not read from the engine's collision response, so its mechanism "
         "(level edge, camera lock, pipe or warp) is attributed rather than observed - the recordings "
         "carry no camera or level-bound channel, which is the same observation gap this section names. "
+        "10.59 closed that gap and the attribution did not survive it: with the camera, the mode byte "
+        "and a WRAM CRC recorded, the mechanism reads as the engine not processing the player object "
+        "rather than as a boundary acting on it. "
         "The vertical identity is not scored here: §4.3.5's clamp is its own mechanism, measured by "
         "10.52/10.54/10.56, and the horizontal residue is what the 0.1056 px figure came from. The "
         "residue is computed on the carried velocity, the convention §10.53 measured and §10.54 "

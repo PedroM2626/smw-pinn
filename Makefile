@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -38,6 +38,10 @@ help:
 	@echo "record-sprint      Excitation-targeted WRAM recording that saturates the speed bound (README 10.45, needs core + ROM)"
 	@echo "sprint-excitation  The velocity ceiling measured on both recordings (README 10.45)"
 	@echo "learned-probes     Fixed-point and gravity-gate probes on the learned models (README 10.46)"
+	@echo "scroll-scan        Identify the horizontal camera from WRAM dumps (README 10.59, needs core + ROM)"
+	@echo "record-boundary    Record camera + engine mode + WRAM CRC beside the 8D state (README 10.59, needs core + ROM)"
+	@echo "boundary-channel   Test 10.58's boundary-channel prediction on that recording (README 10.59)"
+	@echo "pixel-frame-probe  Do the committed RGB frames scroll with the player (README 10.31.1)"
 	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "metric-decomposition  Split the rollout violation figure into consistency/smoothness (10.48)"
 	@echo "velocity-classes  Which documented speed constant the telemetry supports (README 10.49)"
@@ -202,6 +206,22 @@ corrected-physics:
 residue-process:
 	$(PY) -m src.evaluation.residue_process_study
 
+# Identify the layer-1 scroll from WRAM instead of trusting a memory map (10.59; hardware)
+scroll-scan:
+	$(PY) scripts/scan_scroll_address.py
+
+# Record the camera, engine mode and WRAM CRC beside the published state (10.59; hardware)
+record-boundary:
+	$(PY) scripts/record_boundary_gameplay.py
+
+# Test 10.58's boundary-channel prediction on that recording (10.59, emulator-free)
+boundary-channel:
+	$(PY) -m src.evaluation.boundary_channel_study
+
+# Audit whether the pixel recording's frames follow the player (10.31.1, emulator-free)
+pixel-frame-probe:
+	$(PY) -m src.evaluation.pixel_frame_probe
+
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
 
@@ -232,6 +252,8 @@ smoke-all:
 	$(PY) -m src.evaluation.sindy_identification_benchmark --config $(CONFIG_DIR)/smoke_sindy.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.corrected_physics_ablation --config $(CONFIG_DIR)/smoke_corrected_physics.yaml --output-dir $(SMOKE_DIR)
 	$(PY) -m src.evaluation.residue_process_study --config $(CONFIG_DIR)/smoke_residue_process.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.boundary_channel_study --config $(CONFIG_DIR)/smoke_boundary_channel.yaml --output-dir $(SMOKE_DIR)
+	$(PY) -m src.evaluation.pixel_frame_probe --output-dir $(SMOKE_DIR)
 
 smoke: smoke-all
 

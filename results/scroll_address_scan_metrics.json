@@ -1,0 +1,297 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-10T03:01:17+00:00",
+    "git_sha": "6b1fec1e73c96bb0c285b5a4c5baead3c155591c",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python scripts/scan_scroll_address.py",
+    "dataset": "in-memory WRAM dumps; nothing but the artifact is written"
+  },
+  "frames_dumped": 541,
+  "wram_bytes": 131072,
+  "x_travel_px": [
+    16.0,
+    944.125
+  ],
+  "words_ranked": 7,
+  "candidates": [
+    {
+      "addr": "$7E:0094",
+      "addr_int": 148,
+      "corr_with_x": 23.259396,
+      "first": 16,
+      "last": 827,
+      "max": 944,
+      "frac_steps_still": 0.0278,
+      "max_step_px": 3,
+      "median_x_minus_value": 0.5,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 1.0,
+        "screen_min": 0.0,
+        "screen_max": 0.9375,
+        "starts_at_zero": false,
+        "frac_steps_still": 0.027777777777777776,
+        "px_moved_while_still_mean": 0.3458333333333333,
+        "px_moved_while_still_max": 0.875,
+        "max_step_px": 3,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.7888888888888889,
+        "frac_steps_backward": 0.18333333333333332,
+        "camera_max": 944,
+        "n_moving_steps": 525
+      },
+      "passes": false
+    },
+    {
+      "addr": "$7E:001A",
+      "addr_int": 26,
+      "corr_with_x": 23.203206,
+      "first": 0,
+      "last": 696,
+      "max": 838,
+      "frac_steps_still": 0.1833,
+      "max_step_px": 5,
+      "median_x_minus_value": 108.688,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 1.0,
+        "screen_min": 16.0,
+        "screen_max": 144.4375,
+        "starts_at_zero": true,
+        "frac_steps_still": 0.18333333333333332,
+        "px_moved_while_still_mean": 1.558712121212121,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 5,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.6722222222222223,
+        "frac_steps_backward": 0.14444444444444443,
+        "camera_max": 838,
+        "n_moving_steps": 441
+      },
+      "passes": true
+    },
+    {
+      "addr": "$7E:1462",
+      "addr_int": 5218,
+      "corr_with_x": 23.203206,
+      "first": 0,
+      "last": 696,
+      "max": 838,
+      "frac_steps_still": 0.1833,
+      "max_step_px": 5,
+      "median_x_minus_value": 108.688,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 1.0,
+        "screen_min": 16.0,
+        "screen_max": 144.4375,
+        "starts_at_zero": true,
+        "frac_steps_still": 0.18333333333333332,
+        "px_moved_while_still_mean": 1.558712121212121,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 5,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.6722222222222223,
+        "frac_steps_backward": 0.14444444444444443,
+        "camera_max": 838,
+        "n_moving_steps": 441
+      },
+      "passes": true
+    },
+    {
+      "addr": "$7E:001E",
+      "addr_int": 30,
+      "corr_with_x": 23.20263,
+      "first": 0,
+      "last": 348,
+      "max": 419,
+      "frac_steps_still": 0.2296,
+      "max_step_px": 3,
+      "median_x_minus_value": 350.938,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 0.3438077634011091,
+        "screen_min": 16.0,
+        "screen_max": 526.125,
+        "starts_at_zero": true,
+        "frac_steps_still": 0.22962962962962963,
+        "px_moved_while_still_mean": 1.4616935483870968,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 3,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.6666666666666666,
+        "frac_steps_backward": 0.1037037037037037,
+        "camera_max": 419,
+        "n_moving_steps": 416
+      },
+      "passes": false
+    },
+    {
+      "addr": "$7E:1466",
+      "addr_int": 5222,
+      "corr_with_x": 23.20263,
+      "first": 0,
+      "last": 348,
+      "max": 419,
+      "frac_steps_still": 0.2296,
+      "max_step_px": 3,
+      "median_x_minus_value": 350.938,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 0.3438077634011091,
+        "screen_min": 16.0,
+        "screen_max": 526.125,
+        "starts_at_zero": true,
+        "frac_steps_still": 0.22962962962962963,
+        "px_moved_while_still_mean": 1.4616935483870968,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 3,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.6666666666666666,
+        "frac_steps_backward": 0.1037037037037037,
+        "camera_max": 419,
+        "n_moving_steps": 416
+      },
+      "passes": false
+    },
+    {
+      "addr": "$7E:0496",
+      "addr_int": 1174,
+      "corr_with_x": 14.50446,
+      "first": 0,
+      "last": 3,
+      "max": 3,
+      "frac_steps_still": 0.9944,
+      "max_step_px": 3,
+      "median_x_minus_value": 591.938,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 0.22181146025878004,
+        "screen_min": 16.0,
+        "screen_max": 942.125,
+        "starts_at_zero": true,
+        "frac_steps_still": 0.9944444444444445,
+        "px_moved_while_still_mean": 1.9343575418994414,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 3,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.003703703703703704,
+        "frac_steps_backward": 0.001851851851851852,
+        "camera_max": 3,
+        "n_moving_steps": 3
+      },
+      "passes": false
+    },
+    {
+      "addr": "$7E:007E",
+      "addr_int": 126,
+      "corr_with_x": 10.561636,
+      "first": 16,
+      "last": 132,
+      "max": 142,
+      "frac_steps_still": 0.763,
+      "max_step_px": 3,
+      "median_x_minus_value": 485.938,
+      "axioms": {
+        "never_ahead_of_mario": true,
+        "screen_inside_window_share": 0.31053604436229204,
+        "screen_min": 0.0,
+        "screen_max": 838.625,
+        "starts_at_zero": false,
+        "frac_steps_still": 0.762962962962963,
+        "px_moved_while_still_mean": 1.9942354368932038,
+        "px_moved_while_still_max": 2.3125,
+        "max_step_px": 3,
+        "moves_both_ways": true,
+        "frac_steps_forward": 0.1648148148148148,
+        "frac_steps_backward": 0.07222222222222222,
+        "camera_max": 142,
+        "n_moving_steps": 128
+      },
+      "passes": false
+    }
+  ],
+  "passing": [
+    "$7E:001A",
+    "$7E:1462"
+  ],
+  "chosen": "$7E:001A",
+  "chosen_addr_int": 26,
+  "mirrors": [
+    "$7E:1462"
+  ],
+  "parallax_sibling": {
+    "addr": "$7E:001E",
+    "addr_int": 30,
+    "max": 419
+  },
+  "screen_width_px": 256.0,
+  "thresholds": {
+    "corr_min": 0.97,
+    "step_max_px": 5,
+    "value_max_px": 2000
+  },
+  "study": "Identify the horizontal camera in WRAM from the console rather than from a memory map: rank every 16-bit word by how well it follows Mario's world coordinate, then require the winner to satisfy the axioms of a layer scroll - never ahead of the body, the screen position inside the window on every frame, still while he walks the dead zone, moving both ways, zero at the level start.",
+  "protocol": {
+    "savestate": "smw_yoshi_island_1.state",
+    "forward_frames": 420,
+    "back_frames": 120,
+    "cadences_tried": [
+      {
+        "cadence": 24,
+        "frames": 541,
+        "travel_px": 928.125
+      },
+      {
+        "cadence": 32,
+        "frames": 174,
+        "travel_px": 115.0
+      },
+      {
+        "cadence": 16,
+        "frames": 174,
+        "travel_px": 115.0
+      },
+      {
+        "cadence": 44,
+        "frames": 518,
+        "travel_px": 816.375
+      },
+      {
+        "cadence": 8,
+        "frames": 488,
+        "travel_px": 808.625
+      },
+      {
+        "cadence": 12,
+        "frames": 488,
+        "travel_px": 817.5625
+      },
+      {
+        "cadence": 20,
+        "frames": 488,
+        "travel_px": 808.625
+      },
+      {
+        "cadence": 28,
+        "frames": 174,
+        "travel_px": 115.0
+      }
+    ],
+    "kept_cadence": 24,
+    "kept_frames": 541,
+    "kept_x_px": [
+      16.0,
+      944.125
+    ],
+    "wram_bytes": 131072,
+    "deterministic": "the emulator is fed a fixed button schedule, so the trace repeats"
+  }
+}

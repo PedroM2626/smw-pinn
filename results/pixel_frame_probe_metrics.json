@@ -1,0 +1,59 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-10T04:02:50+00:00",
+    "git_sha": "6b1fec1e73c96bb0c285b5a4c5baead3c155591c",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m src.evaluation.pixel_frame_probe"
+  },
+  "study": "Do the committed RGB frames translate when the recorded player moves? If they are the level, they must; the alignment is measured per consecutive pair with no model involved.",
+  "protocol": {
+    "dataset": "smw_pixel_dataset.npz",
+    "margin_px": 6,
+    "band_top_px": 14,
+    "max_shift_px": 4,
+    "stride": 1,
+    "frame_pairs": "consecutive frames of the recording"
+  },
+  "probe": {
+    "frames": 2720,
+    "frame_shape": [
+      112,
+      128
+    ],
+    "pairs_tested": 2719,
+    "max_shift_px": 4,
+    "mean_abs_dx_px": 3.942947774917249,
+    "mean_abs_picture_shift_px": 0.0,
+    "share_of_pairs_best_shift_zero": 1.0,
+    "pairs_where_picture_shifted": 0,
+    "corr_shift_with_dx_on_moving_pairs": null,
+    "moving_pairs": 2324,
+    "shift_histogram": {
+      "0": 2719
+    },
+    "detector_control": {
+      "true_shift_1px": {
+        "recovered_mode": 1,
+        "share_recovering_exactly": 1.0,
+        "trials": 136
+      },
+      "true_shift_2px": {
+        "recovered_mode": 2,
+        "share_recovering_exactly": 1.0,
+        "trials": 136
+      },
+      "true_shift_3px": {
+        "recovered_mode": 3,
+        "share_recovering_exactly": 1.0,
+        "trials": 136
+      }
+    }
+  }
+}

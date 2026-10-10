@@ -328,6 +328,16 @@ class SnesLibretroEmulator:
             "powerup": powerup,
         }
 
+    def get_camera_x(self) -> float:
+        """Layer 1's horizontal scroll in pixels ($7E:001A).
+
+        Not part of the published 8D state: adding a channel to `get_smw_state` would silently
+        invalidate every recording, checkpoint and table this repository has already published.
+        Callers that want the boundary observables read them alongside the state, which is what
+        `scripts/record_boundary_gameplay.py` records and README section 10.59 measures.
+        """
+        return float(self.read_wram_u16_le(wram.ADDR_CAMERA_X))
+
     def get_active_sprites(self) -> List[Dict]:
         """
         Extracts active dynamic entities/sprites from WRAM sprite tables:

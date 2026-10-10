@@ -1,0 +1,282 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-10T03:48:22+00:00",
+    "git_sha": "6b1fec1e73c96bb0c285b5a4c5baead3c155591c",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m src.evaluation.boundary_channel_study"
+  },
+  "study": "Test 10.58's prediction that a camera/boundary channel closes the exceptions to section 4.1, on a recording that carries the layer 1 scroll, the engine mode and a CRC of all 128 KB of WRAM - the last two because a stopped body and a paused simulation look identical in the first.",
+  "protocol": {
+    "recording": "smw_boundary_dataset.npz",
+    "subpixels_per_pixel": 16.0,
+    "exact_tolerance_subpixels": 0.5,
+    "screen_width_px": 256.0,
+    "margins_px": [
+      8.0,
+      12.0,
+      16.0,
+      20.0,
+      24.0,
+      32.0
+    ],
+    "primary_margin_px": 16.0,
+    "wall_row_offsets": [
+      -1,
+      0,
+      1,
+      2
+    ],
+    "camera_address": "$7E:001A",
+    "camera_identified_by": "scripts/scan_scroll_address.py",
+    "camera_evidence": "scroll_address_scan_metrics.json",
+    "classes": [
+      "paused",
+      "screen_bound",
+      "wall_ahead",
+      "camera_step",
+      "unexplained"
+    ],
+    "interactive_mode": 20
+  },
+  "identification": {
+    "chosen": "$7E:001A",
+    "words_ranked": 7,
+    "passing": [
+      "$7E:001A",
+      "$7E:1462"
+    ],
+    "mirrors": [
+      "$7E:1462"
+    ],
+    "parallax_sibling": "$7E:001E",
+    "frames_dumped": 541,
+    "x_travel_px": [
+      16.0,
+      944.125
+    ],
+    "screen_min": 16.0,
+    "screen_max": 144.4375,
+    "frac_steps_still": 0.18333333333333332
+  },
+  "summary": {
+    "exact_rate_all_frames": 0.9278987851340665,
+    "exact_rate_off_channel": 0.9284375900835976,
+    "exact_rate_off_paused": 0.989346209856672,
+    "n_frames_removed_by_channel": 35,
+    "exception_rate_all_frames": 0.07189448785033331,
+    "pinned_rate": 0.06343631280911763,
+    "share_of_pinned_that_repeat": 0.976271186440678,
+    "primary_margin_px": 16.0,
+    "sweep": [
+      {
+        "margin_px": 8.0,
+        "channel_fires_on_share": 0.00035839724750913915,
+        "exceptions_covered": 5,
+        "share_of_all_exceptions": 0.004985044865403789,
+        "share_of_live_exceptions": 0.03597122302158273,
+        "lift": 13.86939182452642
+      },
+      {
+        "margin_px": 12.0,
+        "channel_fires_on_share": 0.0017919862375456958,
+        "exceptions_covered": 10,
+        "share_of_all_exceptions": 0.009970089730807577,
+        "share_of_live_exceptions": 0.07194244604316546,
+        "lift": 5.547756729810569
+      },
+      {
+        "margin_px": 16.0,
+        "channel_fires_on_share": 0.002508780732563974,
+        "exceptions_covered": 10,
+        "share_of_all_exceptions": 0.009970089730807577,
+        "share_of_live_exceptions": 0.07194244604316546,
+        "lift": 3.96268337843612
+      },
+      {
+        "margin_px": 20.0,
+        "channel_fires_on_share": 0.003225575227582252,
+        "exceptions_covered": 10,
+        "share_of_all_exceptions": 0.009970089730807577,
+        "share_of_live_exceptions": 0.07194244604316546,
+        "lift": 3.082087072116982
+      },
+      {
+        "margin_px": 24.0,
+        "channel_fires_on_share": 0.004229087520607842,
+        "exceptions_covered": 10,
+        "share_of_all_exceptions": 0.009970089730807577,
+        "share_of_live_exceptions": 0.07194244604316546,
+        "lift": 2.3507443770383762
+      },
+      {
+        "margin_px": 32.0,
+        "channel_fires_on_share": 0.006379471005662676,
+        "exceptions_covered": 10,
+        "share_of_all_exceptions": 0.009970089730807577,
+        "share_of_live_exceptions": 0.07194244604316546,
+        "lift": 1.5583586319692608
+      }
+    ],
+    "accounting": {
+      "margin_px": 16.0,
+      "n_exceptions": 1003,
+      "classes": {
+        "paused": 864,
+        "screen_bound": 10,
+        "wall_ahead": 124,
+        "camera_step": 0,
+        "unexplained": 5
+      },
+      "shares": {
+        "paused": 0.8614157527417746,
+        "screen_bound": 0.009970089730807577,
+        "wall_ahead": 0.12362911266201396,
+        "camera_step": 0.0,
+        "unexplained": 0.004985044865403789
+      },
+      "fire_rates": {
+        "screen_bound": 0.002508780732563974,
+        "wall_ahead": 0.6326428213031324,
+        "camera_step": 0.4120851551860082
+      },
+      "classes_sum_equals_exceptions": true,
+      "live_exceptions": 139,
+      "live_exception_atoms": {
+        "-16.0": 97,
+        "+16.0": 21,
+        "-31.0": 4,
+        "-24.0": 3,
+        "-37.0": 2,
+        "-36.0": 2
+      },
+      "live_share_exactly_one_pixel": 0.8489208633093526,
+      "unexplained_atoms": {
+        "-37.0": 1,
+        "-34.0": 1,
+        "-33.0": 1,
+        "+16.0": 2
+      },
+      "unexplained_share_exactly_one_pixel": 0.4,
+      "wall_ahead_fire_rate": 0.6326428213031324
+    },
+    "liveness": {
+      "repeat_frames": 864,
+      "repeat_share": 0.06193104436957924,
+      "share_of_repeats_where_wram_changed": 1.0,
+      "share_of_exceptions_that_repeat": 0.8614157527417746,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "repeats_in_interactive_mode": 864,
+      "modes_seen": [
+        20
+      ],
+      "wram_identical_frames": 0
+    },
+    "pause_structure": {
+      "runs": 21,
+      "mean_run_frames": 41.142857142857146,
+      "max_run_frames": 42,
+      "episodes_with_a_pause": 21,
+      "episodes": 40
+    },
+    "camera": {
+      "screen_min": 7.0625,
+      "screen_max": 158.25,
+      "screen_inside_window_share": 1.0,
+      "camera_never_ahead_of_mario": true,
+      "camera_values": 755,
+      "camera_min": 0.0,
+      "camera_max": 851.0,
+      "episodes": 40,
+      "transitions": 13951,
+      "adjacent_pairs": 13911
+    }
+  },
+  "committed_recordings": {
+    "gameplay": {
+      "channels": 8,
+      "transitions": 8077,
+      "exceptions": 571,
+      "share_of_exceptions_repeating": 0.9264448336252189,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "exact_rate_all": 0.9291739022575043,
+      "exact_rate_off_repeats": 0.9944245320589407
+    },
+    "jump": {
+      "channels": 8,
+      "transitions": 6116,
+      "exceptions": 301,
+      "share_of_exceptions_repeating": 0.9700996677740864,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "exact_rate_all": 0.9507042253521126,
+      "exact_rate_off_repeats": 0.9984520123839009
+    },
+    "sprint": {
+      "channels": 8,
+      "transitions": 7253,
+      "exceptions": 478,
+      "share_of_exceptions_repeating": 0.9456066945606695,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "exact_rate_all": 0.9339870183676288,
+      "exact_rate_off_repeats": 0.9961702754455737
+    },
+    "multi_entity": {
+      "channels": 12,
+      "transitions": 19702,
+      "exceptions": 371,
+      "share_of_exceptions_repeating": 0.7439353099730458,
+      "share_of_repeats_that_are_exceptions": 0.9928057553956835,
+      "exact_rate_all": 0.981135912950628,
+      "exact_rate_off_repeats": 0.9951008199680264
+    },
+    "tilemap": {
+      "channels": 8,
+      "transitions": 10357,
+      "exceptions": 755,
+      "share_of_exceptions_repeating": 0.9298013245033112,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "exact_rate_all": 0.9268906749297957,
+      "exact_rate_off_repeats": 0.9944935064935065
+    },
+    "set_multi_entity": {
+      "channels": 8,
+      "transitions": 3580,
+      "exceptions": 151,
+      "share_of_exceptions_repeating": 0.8079470198675497,
+      "share_of_repeats_that_are_exceptions": 1.0,
+      "exact_rate_all": 0.957703081232493,
+      "exact_rate_off_repeats": 0.9915893271461717
+    }
+  },
+  "verdict": {
+    "prediction": "10.58 predicted that a ninth channel carrying the boundary or the camera offset removes the exceptions to section 4.1.",
+    "prediction_holds": false,
+    "channel_covers_share_of_exceptions": 0.009970089730807577,
+    "exact_rate_before": 0.9278987851340665,
+    "exact_rate_with_channel_removed": 0.9284375900835976,
+    "exact_gain_from_the_channel": 0.0005388049495310687,
+    "exact_rate_with_the_pause_removed": 0.989346209856672,
+    "exact_gain_from_the_pause": 0.06144742472260545,
+    "exceptions_paused": 864,
+    "exceptions_total": 1003,
+    "exceptions_unexplained": 5,
+    "committed_share_of_exceptions_repeating": [
+      0.7439353099730458,
+      0.9700996677740864
+    ],
+    "committed_exact_before": [
+      0.9268906749297957,
+      0.981135912950628
+    ],
+    "committed_exact_after": [
+      0.9915893271461717,
+      0.9984520123839009
+    ]
+  }
+}

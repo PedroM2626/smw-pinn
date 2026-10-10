@@ -123,7 +123,14 @@ def test_only_a_kernel_with_run_duration_covers_at_length() -> None:
 
 
 def test_the_state_has_no_channel_for_the_boundary_it_clamps_against() -> None:
-    """The section's actionable claim is that the missing variable is not in the state vector."""
+    """Two halves now: the eight published channels still say nothing about a boundary, and the
+    question 10.58 left open has been measured rather than left standing.
+
+    The earlier version of this gate refused a camera address anywhere in the map, because the
+    section's prediction was untested. 10.59 built the channel and the prediction failed, so the map
+    is allowed to name one - but only with the re-measurement on the record, which is what the last
+    two assertions require.
+    """
     from src.environment.wram import ADDR_PLAYER_X, ADDR_PLAYER_X_SUB
 
     assert ADDR_PLAYER_X != ADDR_PLAYER_X_SUB, (
@@ -133,10 +140,19 @@ def test_the_state_has_no_channel_for_the_boundary_it_clamps_against() -> None:
     source = (REPO / "src" / "environment" / "wram.py").read_text(encoding="utf-8")
     for channel in ("ADDR_PLAYER_X", "ADDR_VX", "ADDR_COLLISION"):
         assert channel in source, f"the WRAM map lost {channel}"
-    assert "camera" not in source.lower(), (
-        "the section says no channel of the eight exposes the camera or the level bound; if the map "
-        "grows one, the prediction it makes about the residue has to be re-measured"
+    emulator = (REPO / "src" / "environment" / "snes_emulator.py").read_text(encoding="utf-8")
+    state_body = emulator.split("def get_smw_state")[1].split("def get_camera_x")[0]
+    assert "CAMERA" not in state_body, (
+        "the published 8D state is what every model in this repository is given and what 10.58's "
+        "claim is about; a camera channel has to arrive as a new observation with its own study, not "
+        "by widening the vector under the existing checkpoints"
     )
+    if "ADDR_CAMERA_X" in source:
+        assert (REPO / "results" / "boundary_channel_metrics.json").is_file(), (
+            "the map names a camera address, so the study that measured what it explains has to be "
+            "in results/ or the README cannot quote it"
+        )
+        assert "### 10.59" in _readme(), "the camera channel is named in the map but never reported"
 
 
 def test_section_12_quotes_the_counts_it_reinterprets() -> None:

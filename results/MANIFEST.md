@@ -119,6 +119,9 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `corrected_physics_ablation_metrics.json` | `src/evaluation/corrected_physics_ablation.py` | no | 10.57 |
 | `corrected_physics_mpc_metrics.json` | `src/evaluation/physics_injection_mpc_benchmark.py --study corrected` | yes | 10.57 |
 | `residue_process_metrics.json` | `src/evaluation/residue_process_study.py` | no | 10.58 |
+| `scroll_address_scan_metrics.json` | `scripts/scan_scroll_address.py` | yes | 10.59 |
+| `boundary_channel_metrics.json` | `src/evaluation/boundary_channel_study.py` | no | 10.59 |
+| `pixel_frame_probe_metrics.json` | `src/evaluation/pixel_frame_probe.py` | no | 10.31.1 |
 
 ## Input freshness
 

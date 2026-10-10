@@ -38,6 +38,17 @@ COLLISION_LEFT = 0x02
 COLLISION_GROUND = 0x04
 COLLISION_CEILING = 0x08
 
+# --- Camera (layer 1 scroll) --------------------------------------------------
+# Identified from the console, not from a memory map: `scripts/scan_scroll_address.py` dumps all
+# 128 KB of WRAM every frame of a scripted run, ranks every 16-bit word by how well it follows
+# Mario's x, and keeps only the words that satisfy the axioms of a layer scroll. Two pass - this
+# address and its mirror at $7E:1462, byte for byte - and the word two slots away holds exactly
+# half of it, which is the parallax layer. See ``results/scroll_address_scan_metrics.json``.
+ADDR_CAMERA_X = 0x001A  # $7E:001A - layer 1 horizontal scroll, pixels (u16 little-endian)
+ADDR_CAMERA_X_MIRROR = 0x1462  # $7E:1462 - the same series, in the mirror page
+ADDR_CAMERA_X_PARALLAX = 0x001E  # $7E:001E - floor(camera / 2): the background layer's scroll
+SCREEN_WIDTH_PX = 256.0  # the SNES playfield is 256 px wide, so x - camera is in [0, 256]
+
 # --- Dynamic sprite tables (12 engine slots) ----------------------------------
 NUM_SPRITE_SLOTS = 12
 ADDR_SPRITE_STATUS = 0x14C8  # $7E:14C8 + slot - spawn/status byte (>= 8 is live)

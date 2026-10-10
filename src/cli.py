@@ -89,6 +89,8 @@ MODULE_COMMANDS: dict[str, str] = {
     "neural-ode": "src.evaluation.neural_ode_integrator_benchmark",
     "sindy": "src.evaluation.sindy_identification_benchmark",
     "residue-process": "src.evaluation.residue_process_study",
+    "boundary-channel": "src.evaluation.boundary_channel_study",
+    "pixel-frame-probe": "src.evaluation.pixel_frame_probe",
     "corrected-physics": "src.evaluation.corrected_physics_ablation",
     "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
     "learned-probes": "src.evaluation.learned_structure_probe_benchmark",
