@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-09T00:41:42+00:00",
-    "git_sha": "5240225f6809a956ee1986b9f4552e27b2aa9bda",
+    "generated_utc": "2026-10-10T02:41:52+00:00",
+    "git_sha": "8388dfa7ebc0c2ef1400fb922e1d28e98fdf9b0d",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -64,7 +64,7 @@
       "telemetry_evidence": "median 0.0000 px, exact on 93.82% of frames"
     },
     "4.1_violation_defined_with_carried_velocity": {
-      "claim": "\\hat{X}_{t+1} \\ne X_t + \\frac{v_{x, t}}{16.0}",
+      "claim": "\\hat X_{t+1} \\ne X_t + \\frac{v_{x, t}}{16.0}",
       "readme_marker": "### 4.1 Fixed-Point Arithmetic",
       "claim_quoted_from_the_readme": true,
       "declared_sites": 2,
@@ -362,7 +362,7 @@
     "prose_and_code_disagree": [
       {
         "claim": "4.1_violation_defined_with_carried_velocity",
-        "as_stated_in_section_4": "\\hat{X}_{t+1} \\ne X_t + \\frac{v_{x, t}}{16.0}",
+        "as_stated_in_section_4": "\\hat X_{t+1} \\ne X_t + \\frac{v_{x, t}}{16.0}",
         "sites_implementing_a_different_rule": [
           "src/models/residual_dynamics.py: position_velocity: str = NEXT",
           "src/models/output_projection.py: position_velocity: str = NEXT",

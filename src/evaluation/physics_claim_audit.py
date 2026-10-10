@@ -89,7 +89,7 @@ CLAIMS: Dict[str, Dict[str, Any]] = {
     },
     "4.1_violation_defined_with_carried_velocity": {
         "readme_marker": "### 4.1 Fixed-Point Arithmetic",
-        "claim": r"\hat{X}_{t+1} \ne X_t + \frac{v_{x, t}}{16.0}",
+        "claim": r"\hat X_{t+1} \ne X_t + \frac{v_{x, t}}{16.0}",
         "convention": "carried",
         "asserts": "next_velocity_definition_would_flag_the_engine_itself",
         "sites": [

@@ -157,7 +157,7 @@ def test_the_detector_leaves_correct_markup_alone() -> None:
     good = (
         "| arm | 635.61 $\\pm$ 14.18 | $+15.71$, $0.3125$, $\\lt 10^{-3}$, $+0.50$ |\n"
         "addresses (`$7E:C800`, status $\\ge 8$) and mode `$7E:0100 = 0x08`\n"
-        "$$\\hat{X}_{t+1} = X_t + \\frac{v_{x, t}}{16.0}$$\n"
+        "$$\\hat X_{t+1} = X_t + \\frac{v_{x, t}}{16.0}$$\n"
         "```\nshell $ NOT a delimiter\n```\n"
     )
     assert not violations(good)
@@ -319,42 +319,40 @@ def test_no_span_is_written_where_github_cannot_form_it() -> None:
     assert not defects, "spans GitHub leaves as raw LaTeX:\n" + "\n".join(defects[:12])
 
 
-# An underscore can satisfy CommonMark's emphasis flanking inside a formula, so the parser pairs it
-# with another underscore on the same line and the page renders an expression whose subscripts have
-# been eaten - no raw LaTeX, no error box, nothing that looks broken. Measured on the live page:
-# 25 emphasis runs still hold LaTeX fragments. This rule states a *source* property - two subscripts
-# written as `}_{` or `}_\` sharing one line - and is deliberately not a claim about rendering: the four
-# lines it flagged were restructured onto separate lines and still render wrong, because an openable `_`
-# and a closable `_` inside a single formula pair on their own. The fix is known and not enforceable
-# locally - keep a subscript off a closing brace, `\hat X_{t+1}` rather than `\hat{X}_{t+1}` - because
-# "renders correctly" is only observable on GitHub's page, which is why README Section 12 publishes the
-# count instead of this file pretending the class is closed. To count the symptom, render the README and
-# evaluate: [...document.querySelectorAll('article em')]
-#   .filter(e => /\\[a-z]{2,}|_[{\\]/.test(e.textContent)).length
-FLANKING_UNDERSCORE = re.compile(r"[}{)\]]_(?=[}{[(\\])")
+# An underscore directly after `}`, `)` or `]` is left-flanking for CommonMark, so GitHub's emphasis
+# pass can *open* a run inside a formula and pair it with any closable `_` on the same line - inside
+# the same formula, or across the prose boundary. The page then renders italic text with the
+# subscripts eaten: no raw LaTeX, no error box, nothing a source-only check looks at. A subscript
+# hung on a letter (`\hat X_{t+1}`) is right-flanking only and cannot open, so the document now hangs
+# every subscript on a letter: `\hat X_{t+1}`, `\mathcal L_{\text{data}}`, `\mathbf u_{0:H-1}`, and
+# where the base is a multi-letter `\text{...}` with no letter to hang on, the parameter moved into
+# an argument list (`\text{MLP}(\theta, z_t)`). This gate is the enforceable half - it states a
+# property of the source. That the source property implies a rendered page is a claim about GitHub's
+# parser, and it is measured on the page, not here.
+OPENABLE_UNDERSCORE = re.compile(r"[}{)\]]_")
 
 
-def test_no_two_flanking_underscores_share_a_line() -> None:
-    """The assertable half of the subscript-eating rule: two `}_{` spans on one line is the shape."""
-    text = README.read_text(encoding="utf-8")
-    in_fence = False
-    offenders = []
-    for number, line in enumerate(text.split("\n"), 1):
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        masked = [False] * len(line)
-        for code in CODE_SPAN.finditer(line):
-            for k in range(code.start(), code.end()):
-                masked[k] = True
-        dollars = [k for k, char in enumerate(line) if char == "$" and not masked[k]]
-        risky = sum(
-            1
-            for a, b in zip(dollars[0::2], dollars[1::2])
-            if FLANKING_UNDERSCORE.search(line[a + 1 : b])
-        )
-        if risky >= 2:
-            offenders.append((number, risky, line.strip()[:60]))
-    assert not offenders, f"lines whose subscripts can pair as emphasis: {offenders[:6]}"
+def test_no_math_span_holds_an_underscore_that_can_open_emphasis() -> None:
+    """Every subscript in the README hangs on a letter, so no `_` in a span can start emphasis."""
+    defects = [
+        f"line {span['line']}: ${span['content']}$"
+        for span in math_spans(README.read_text(encoding="utf-8"))
+        if OPENABLE_UNDERSCORE.search(str(span["content"]))
+    ]
+    assert not defects, "emphasis openers inside math:\n" + "\n".join(defects[:12])
+
+
+def test_the_opener_rule_fires_on_the_shape_it_exists_for() -> None:
+    r"""A gate that never fires is not a gate: both `}_{` and `}_x` open, `\hat X_{` does not."""
+    risky = "$\\hat{X}_{t+1} = \\bar{v}_x$ and $\\mathcal{L}_{\\text{kin}}$ agree\n"
+    assert [
+        span["content"]
+        for span in math_spans(risky)
+        if OPENABLE_UNDERSCORE.search(str(span["content"]))
+    ] == [r"\hat{X}_{t+1} = \bar{v}_x", r"\mathcal{L}_{\text{kin}}"]
+    safe = "$\\hat X_{t+1} = \\bar v_x$ and $\\mathcal L_{\\text{kin}}$ agree\n"
+    assert [
+        span["content"]
+        for span in math_spans(safe)
+        if OPENABLE_UNDERSCORE.search(str(span["content"]))
+    ] == []
