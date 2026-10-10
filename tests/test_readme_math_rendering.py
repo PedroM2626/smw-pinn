@@ -322,12 +322,14 @@ def test_no_span_is_written_where_github_cannot_form_it() -> None:
 # An underscore can satisfy CommonMark's emphasis flanking inside a formula, so the parser pairs it
 # with another underscore on the same line and the page renders an expression whose subscripts have
 # been eaten - no raw LaTeX, no error box, nothing that looks broken. Measured on the live page:
-# 25 emphasis runs still hold LaTeX fragments. This rule states the shape that can be asserted
-# locally - two subscripts written as `}_{` or `}_\` sharing one line - which covers four of those
-# 25, all four fixed by giving each formula its own line. The other 21 pair an underscore inside a
-# formula with one outside it; no local grammar for that shape has been derived, and README
-# Section 12 publishes the count instead of this file pretending the class is closed. To see the
-# symptom, render the README on GitHub and evaluate: [...document.querySelectorAll('article em')]
+# 25 emphasis runs still hold LaTeX fragments. This rule states a *source* property - two subscripts
+# written as `}_{` or `}_\` sharing one line - and is deliberately not a claim about rendering: the four
+# lines it flagged were restructured onto separate lines and still render wrong, because an openable `_`
+# and a closable `_` inside a single formula pair on their own. The fix is known and not enforceable
+# locally - keep a subscript off a closing brace, `\hat X_{t+1}` rather than `\hat{X}_{t+1}` - because
+# "renders correctly" is only observable on GitHub's page, which is why README Section 12 publishes the
+# count instead of this file pretending the class is closed. To count the symptom, render the README and
+# evaluate: [...document.querySelectorAll('article em')]
 #   .filter(e => /\\[a-z]{2,}|_[{\\]/.test(e.textContent)).length
 FLANKING_UNDERSCORE = re.compile(r"[}{)\]]_(?=[}{[(\\])")
 

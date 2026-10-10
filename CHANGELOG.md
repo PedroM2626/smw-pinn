@@ -602,19 +602,6 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
-- **Four of the twenty-five formulas GitHub renders with their subscripts eaten.** An underscore
-  can satisfy CommonMark's emphasis flanking *inside* a formula, so the parser pairs it with another
-  underscore on the same line and the page shows a rendered expression that no longer says what the
-  source says - no raw LaTeX, no error box, nothing that looks broken. Counted on the live page:
-  **25 emphasis runs still hold LaTeX fragments**, so 25 formulas are silently wrong on the rendered
-  README. Four were fixed in this pass, chosen because their shape is the one a local rule can
-  state - two `}_{` / `}_\` subscripts sharing a line (the Section 5.4 LSTM formulation, the
-  gradient-stiffness bullet, the PPO physical-residual charge, the hybrid actor's four integration
-  rules); each formula now has a line of its own and
-  `test_no_two_flanking_underscores_share_a_line` reports exactly those four on the previous commit
-  and none on this one. The remaining 21 pair an underscore in a formula with one outside it, a
-  shape no local grammar of GitHub's parser has been derived for; they are recorded in README
-  Section 12 with their count, because a defect you cannot assert is a defect you have to publish.
 - **Twenty-four expressions the page showed as source, with no error box to say so.** Two rules of
   GitHub's renderer, both measured on this repository's own page rather than assumed: it forms no
   math inside emphasis (317 `<em>` runs, 0 of them holding a formula), and it does not read a `$`
@@ -627,6 +614,20 @@ numbers* - those are reported here and in README Section 12, never applied silen
   writes Section 4's measured qualifiers emits the new form, so the document and its citation gate
   changed together. `test_no_span_is_written_where_github_cannot_form_it` refuses both shapes and
   was validated against the previous commit's README, where it reports 30 sites.
+- **Twenty-five formulas GitHub renders with their subscripts eaten - four of them moved, none of
+  them fixed.** An underscore can satisfy CommonMark's emphasis flanking *inside* a formula, so the
+  parser pairs it with another underscore and the page shows a rendered expression that no longer
+  says what the source says - no raw LaTeX, no error box, nothing that looks broken. Counted on the
+  live page: **25 emphasis runs still hold LaTeX fragments.** Four lines were restructured (the
+  Section 5.4 LSTM formulation, the gradient-stiffness bullet, the PPO physical-residual charge, the
+  hybrid actor's four integration rules) and the re-render shows all four still broken: separating
+  formulas removes the pairing *between* them, but each of those formulas contains an openable `}_{`
+  and a closable `_{` on its own. What the new gate really asserts is therefore a source property -
+  `test_no_two_flanking_underscores_share_a_line` flags exactly those four lines on the previous
+  commit and none on this one - and the gap between that green check and the still-wrong page is
+  itself recorded in README Section 12 rather than smoothed over. The fix is known and not
+  enforceable locally: keep a subscript off a closing brace (`\hat X_{t+1}`, not
+  `\hat{X}_{t+1}`), which needs a rendered-page check to verify.
 - **The table of contents was missing five sections, and one entry was in the wrong place.** The
   10.57 ToC line had been pasted onto the prose of Section 12 instead of into the contents, so the
   section had no entry and Section 12 had a stray bullet in the middle of a sentence; Sections
