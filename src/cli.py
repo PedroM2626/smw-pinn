@@ -95,6 +95,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "dashboard-study": "src.evaluation.dashboard_study",
     "stage-identity": "src.evaluation.stage_identity_study",
     "pixel-level-recheck": "src.evaluation.pixel_level_recheck",
+    "pause-hygiene": "src.evaluation.pause_hygiene_study",
     "corrected-physics": "src.evaluation.corrected_physics_ablation",
     "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
     "learned-probes": "src.evaluation.learned_structure_probe_benchmark",

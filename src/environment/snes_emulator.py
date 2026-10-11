@@ -591,6 +591,22 @@ class SnesLibretroEmulator:
             self.step_frame()
         return self.get_smw_state()
 
+    def forced_mode_start_state(self, settle_frames: int = 410, warmup_frames: int = 30) -> bytes:
+        """Boot, force interactive mode, and return the bytes every episode should restore.
+
+        This is the preamble §10.38.1 documents and every committed telemetry recording uses: step
+        `settle_frames` from reset, write `0x14` into whatever mode the boot left, settle again, and
+        serialise. The result has live engine physics and valid WRAM telemetry, and a PPU still
+        drawing the title and file-select composite - 10.31.1 and 10.62 measure both halves of that
+        trade-off against the level-entry savestate of 10.36.3.
+        """
+        for _ in range(settle_frames):
+            self.step_frame()
+        self.enable_gameplay_mode()
+        for _ in range(warmup_frames):
+            self.step_frame()
+        return self.save_state()
+
     def set_input(self, actions: Dict[str, bool]):
         """
         Maps semantic actions to SNES controller buttons.

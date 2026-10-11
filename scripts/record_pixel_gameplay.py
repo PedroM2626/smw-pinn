@@ -18,10 +18,12 @@ import argparse
 import os
 import sys
 import time
+from typing import List
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.environment.episode_hygiene import PlayerHold  # noqa: E402
 from src.environment.snes_emulator import SnesLibretroEmulator  # noqa: E402
 from src.utils.paths import CORE_PATH, DATASET_PIXEL, ROM_PATH  # noqa: E402
 from src.utils.seed import set_global_seed  # noqa: E402
@@ -87,12 +89,7 @@ def record_pixel_dataset(
             initial_savestate = fh.read()
         print(f"  restoring {state_path} for every episode")
     else:
-        for _ in range(410):
-            emu.step_frame()
-        emu.enable_gameplay_mode()
-        for _ in range(30):
-            emu.step_frame()
-        initial_savestate = emu.save_state()
+        initial_savestate = emu.forced_mode_start_state()
 
     action_behaviors = [
         {"RIGHT": True, "Y": True},
@@ -108,14 +105,14 @@ def record_pixel_dataset(
     frames_t, states_t, actions_t, held_t, camera_t = [], [], [], [], []
     total, t0 = 0, time.time()
     boxes_cleared = 0
-    operator_frames = 0
+    holds: List[PlayerHold] = []
 
     for ep in range(num_episodes):
         emu.load_state(initial_savestate)
-        set_global_seed(5000 + ep)
+        set_global_seed(5000 + ep)  # parity: the published recording's stream
         curr_pattern, pattern_duration, pattern_timer = 0, 30, 0
-        prev_vec: np.ndarray | None = None
-        paused = 0
+        hold = PlayerHold()
+        holds.append(hold)
 
         for f in range(frames_per_episode):
             if pattern_timer >= pattern_duration:
@@ -123,18 +120,14 @@ def record_pixel_dataset(
                 pattern_duration = np.random.randint(10, 50)
                 pattern_timer = 0
             action_dict = dict(action_behaviors[curr_pattern])
-            held = False
-            if clear_boxes and prev_vec is not None:
-                held = bool(np.all(np.abs(prev_vec - extract_vector(emu.get_smw_state())) < 1e-9))
-            paused = paused + 1 if held else 0
-            if paused >= PAUSE_TRIGGER:
-                if operator_frames >= OPERATOR_A_LIMIT:
+            vector = extract_vector(emu.get_smw_state())
+            held = hold.observe(vector) if clear_boxes else False
+            if clear_boxes:
+                if hold.exhausted():
                     break
-                action_dict["A"] = (paused % 8) < 4
-                operator_frames += 1
-                if paused == PAUSE_TRIGGER:
+                if hold.run == PAUSE_TRIGGER:
                     boxes_cleared += 1
-            prev_vec = extract_vector(emu.get_smw_state())
+                action_dict = hold.buttons(action_dict)
             emu.set_input(action_dict)
             emu.step_frame()
             next_state_dict = emu.get_smw_state()
@@ -156,6 +149,7 @@ def record_pixel_dataset(
                 break
         print(f"Episode {ep + 1}/{num_episodes} | transitions: {total}")
 
+    hold_total = sum(h.operator_frames for h in holds)
     emu.close()
     elapsed = time.time() - t0
     np.savez_compressed(
@@ -169,13 +163,13 @@ def record_pixel_dataset(
     print(f"Saved {output_path} | N={total} | {elapsed:.1f}s")
     print(
         f"  held frames: {int(np.asarray(held_t).sum())} of {total} "
-        f"| boxes cleared: {boxes_cleared} | operator A frames: {operator_frames}"
+        f"| boxes cleared: {boxes_cleared} | operator A frames: {hold_total}"
     )
     return {
         "transitions": total,
         "held_frames": int(np.asarray(held_t).sum()),
         "boxes_cleared": boxes_cleared,
-        "operator_A_frames": operator_frames,
+        "operator_A_frames": hold_total if clear_boxes else 0,
         "seconds": round(elapsed, 1),
         "output": output_path,
         "source_state": state_path,

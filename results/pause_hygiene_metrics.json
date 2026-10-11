@@ -1,0 +1,148 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-11T17:39:40+00:00",
+    "git_sha": "22798b1ec0c01699266566de59a15d596e1307ed",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "make pause-hygiene"
+  },
+  "study": "What the held player of 10.59 actually is, split by the velocity byte it freezes with, and what clearing it at capture costs the section-4.1 identity.",
+  "protocol": {
+    "identity": "16*(x'-x) - v_x, exact under the published |residue| < 0.5 sub-pixel tolerance",
+    "repeat_definition": "every channel of the next state equals the current one (10.59)",
+    "death_apex_definition": "a repeat whose frozen v_y is exactly -112.0 sub-pixels per frame",
+    "tail_definition": "the run of repeats that ends an episode",
+    "hygiene_rule": "PlayerHold: A pulsed after 10 identical records, 4 on / 4 off, up to 240 frames",
+    "recorder": "scripts/record_boundary_gameplay.py",
+    "episodes": 40,
+    "frames_per_episode": 500,
+    "seed_base": 4000,
+    "behaviour_vocabulary": "the tilemap recorder's random forward/retreat patterns"
+  },
+  "arms": [
+    {
+      "arm": "published_forced_mode",
+      "dataset": "data/raw/smw_boundary_dataset.npz",
+      "hygiene": "no",
+      "note": "the recording 10.59 measured",
+      "transitions": 13951,
+      "episodes": 40,
+      "exact_share": 0.9280338327001648,
+      "repeat_share": 0.06193104436957924,
+      "repeats": 864,
+      "death_apex_repeats": 864,
+      "death_apex_share_of_repeats": 1.0,
+      "other_repeats": 0,
+      "other_repeat_vy_values": [],
+      "exact_share_excluding_repeats": 0.9893023611217239,
+      "exceptions": 1004,
+      "non_repeat_exceptions": 140,
+      "non_repeat_exception_share": 0.010035122930255895,
+      "frames_in_holds": 864,
+      "operator_A_frames": 0,
+      "x_travel_px": 952.1875,
+      "camera_travel_px": 851.0,
+      "mode_bytes": [
+        20
+      ]
+    },
+    {
+      "arm": "level_entry_no_hygiene",
+      "dataset": "data/raw/smw_boundary_level_dataset.npz",
+      "hygiene": "no",
+      "note": "same recorder, entered level",
+      "transitions": 18780,
+      "episodes": 40,
+      "exact_share": 0.9608626198083067,
+      "repeat_share": 0.03668796592119276,
+      "repeats": 689,
+      "death_apex_repeats": 668,
+      "death_apex_share_of_repeats": 0.969521044992743,
+      "other_repeats": 21,
+      "other_repeat_vy_values": [
+        -58.0,
+        -52.0,
+        -48.0,
+        -36.0,
+        -30.0,
+        -24.0
+      ],
+      "exact_share_excluding_repeats": 0.9974572992095517,
+      "exceptions": 735,
+      "non_repeat_exceptions": 46,
+      "non_repeat_exception_share": 0.0024494142705005326,
+      "frames_in_holds": 668,
+      "operator_A_frames": 0,
+      "x_travel_px": 928.9375,
+      "camera_travel_px": 828.0,
+      "mode_bytes": [
+        20
+      ]
+    },
+    {
+      "arm": "level_entry_hygiene",
+      "dataset": "data/raw/smw_boundary_level_clear_dataset.npz",
+      "hygiene": "yes",
+      "note": "operator A pulsed at a held player",
+      "transitions": 18780,
+      "episodes": 40,
+      "exact_share": 0.9608626198083067,
+      "repeat_share": 0.03668796592119276,
+      "repeats": 689,
+      "death_apex_repeats": 668,
+      "death_apex_share_of_repeats": 0.969521044992743,
+      "other_repeats": 21,
+      "other_repeat_vy_values": [
+        -58.0,
+        -52.0,
+        -48.0,
+        -36.0,
+        -30.0,
+        -24.0
+      ],
+      "exact_share_excluding_repeats": 0.9974572992095517,
+      "exceptions": 735,
+      "non_repeat_exceptions": 46,
+      "non_repeat_exception_share": 0.0024494142705005326,
+      "frames_in_holds": 668,
+      "operator_A_frames": 524,
+      "x_travel_px": 928.9375,
+      "camera_travel_px": 828.0,
+      "mode_bytes": [
+        20
+      ]
+    }
+  ],
+  "arm_parity": {
+    "simulation_channels_identical": true,
+    "channels": {
+      "states": true,
+      "next_states": true,
+      "actions": true,
+      "camera": true,
+      "next_camera": true,
+      "mode": true,
+      "next_mode": true,
+      "tile_patches": true,
+      "next_tile_patches": true,
+      "episodes": true,
+      "held": true
+    },
+    "crc_frames_differing": 268
+  },
+  "verdict": {
+    "holds_are_one_mechanism": false,
+    "published_repeats_that_are_the_death_apex": 1.0,
+    "level_repeats_that_are_the_death_apex": 0.969521044992743,
+    "hygiene_changed_the_trajectory": false,
+    "exact_rate_gain_from_dropping_holds_pp": 3.6594679401245056,
+    "session_changes_the_identity_pp": 3.2828787108141855,
+    "reposition_residue_after_hygiene": 46
+  }
+}

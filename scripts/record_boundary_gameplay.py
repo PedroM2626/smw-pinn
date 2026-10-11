@@ -29,6 +29,7 @@ from typing import Any, Dict, List
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.environment.episode_hygiene import PlayerHold  # noqa: E402
 from src.environment.snes_emulator import SnesLibretroEmulator  # noqa: E402
 from src.utils.paths import (  # noqa: E402
     CORE_PATH,
@@ -113,6 +114,7 @@ def record(
     state_path: str,
     output_path: str,
     seed_base: int = 4000,
+    clear_boxes: bool = False,
 ) -> Dict[str, Any]:
     print("=" * 60)
     print("  RECORDING STATE + CAMERA + TERRAIN (WRAM $0094/$001A/$C800)")
@@ -142,6 +144,8 @@ def record(
     next_patches: List[np.ndarray] = []
     episode_ids: List[int] = []
     travel: List[float] = []
+    held: List[float] = []
+    holds: List[PlayerHold] = []
     t0 = time.time()
 
     for ep in range(episodes):
@@ -151,6 +155,8 @@ def record(
         duration = int(np.random.randint(15, 60))
         timer = 0
         prev_b = False
+        hold = PlayerHold()
+        holds.append(hold)
         obs = observe(emu)
         xs: List[float] = []
 
@@ -167,6 +173,15 @@ def record(
                 prev_b = action["B"]
             else:
                 prev_b = False
+
+            # The hold is always observed - it is a channel of the recording, not an action - and
+            # only acted on when the caller asked for the hygiene, so turning the flag off changes
+            # what the console receives and nothing else.
+            is_held = hold.observe(obs["vector"])
+            if clear_boxes:
+                if hold.exhausted():
+                    break
+                action = hold.buttons(action)
 
             emu.set_input(action)
             emu.step_frame()
@@ -185,6 +200,7 @@ def record(
                 patches.append(obs["patch"])
                 next_patches.append(nxt["patch"])
                 episode_ids.append(ep)
+                held.append(1.0 if is_held else 0.0)
             obs = nxt
             timer += 1
             if nxt["vector"][1] > 500.0 or nxt["vector"][1] < 0.0:
@@ -211,6 +227,9 @@ def record(
         "tile_patches": np.asarray(patches, dtype=np.int64),
         "next_tile_patches": np.asarray(next_patches, dtype=np.int64),
         "episodes": np.asarray(episode_ids, dtype=np.int32),
+        "held": np.asarray(held, dtype=np.float32),
+        "hold_happened": np.asarray([1.0 if h.operator_frames else 0.0 for h in holds]),
+        "hold_operator_frames": np.asarray([float(h.operator_frames) for h in holds]),
     }
     np.savez_compressed(output_path, **arrays)
     print("\nRecording complete:")
@@ -218,7 +237,19 @@ def record(
     print(f"Throughput: {len(states) / elapsed:.1f} FPS (elapsed {elapsed:.1f}s)")
     print(f"Camera range: {arrays['camera'].min():.0f} to {arrays['camera'].max():.0f} px")
     print(f"Saved to: {output_path}")
-    return {"transitions": len(states), "output": output_path, "elapsed_s": elapsed}
+    print(
+        f"Held frames recorded: {int(np.asarray(held).sum())} of {len(states)} "
+        f"| holds cleared: {int(np.sum([h.holds for h in holds]))} "
+        f"| operator A frames: {int(np.sum([h.operator_frames for h in holds]))}"
+    )
+    return {
+        "transitions": len(states),
+        "held_frames": int(np.asarray(held).sum()),
+        "holds_cleared": int(np.sum([h.holds for h in holds])),
+        "operator_A_frames": int(np.sum([h.operator_frames for h in holds])),
+        "output": output_path,
+        "elapsed_s": elapsed,
+    }
 
 
 def main(argv: List[str] | None = None) -> int:
@@ -229,6 +260,12 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--core", default=CORE_PATH)
     parser.add_argument("--state", default=STATE_YOSHI_ISLAND_1)
     parser.add_argument("--output", default=DATASET_BOUNDARY)
+    parser.add_argument(
+        "--clear-boxes",
+        action="store_true",
+        help="pulse A at a player the engine is holding (10.59/10.60); off by default "
+        "so the published recording stays the one 10.59 measured",
+    )
     args = parser.parse_args(argv)
     record(
         episodes=args.episodes,
@@ -237,6 +274,7 @@ def main(argv: List[str] | None = None) -> int:
         core_path=args.core,
         state_path=args.state,
         output_path=args.output,
+        clear_boxes=args.clear_boxes,
     )
     return 0
 

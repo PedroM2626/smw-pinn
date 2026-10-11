@@ -51,6 +51,19 @@ numbers* - those are reported here and in README Section 12, never applied silen
   `results/pixel_level_recheck_metrics.json`; `tests/test_pixel_level_recheck.py` also asserts the
   new frames are full-width pictures, which is 10.60's decoder fix checked on data rather than on a
   synthetic buffer.
+- **The held player, split by what it freezes with** (README 10.63). `PlayerHold`
+  (`src/environment/episode_hygiene.py`) is now the shared decision - detect 10.59's repeating-record
+  signature, pulse A at it - and `scripts/record_boundary_gameplay.py` gains a `held` channel plus an
+  opt-in `--clear-boxes`, with its default behaviour verified element-for-element against the
+  committed arrays. `src/evaluation/pause_hygiene_study.py` (`make pause-hygiene`) scores three arms
+  of that recorder with 10.59's own definitions: the published boundary file, the entered level with
+  no hygiene, and the same walk with the hold cleared. Every held frame of the published recording,
+  and 96.95% of the entered level's, freezes at the death jump's apex (`v_y = -112.0`), which nothing
+  releases; the message box of 10.60 is a different signature and the random behaviour vocabulary
+  never reaches one. The hygiene arm changed no simulation channel across 18,780 transitions and
+  moved only the WRAM CRC, on the frames where the button latch was written. Writes
+  `data/raw/smw_boundary_level_dataset.npz`, `data/raw/smw_boundary_level_clear_dataset.npz` and
+  `results/pause_hygiene_metrics.json`; the published recording is untouched.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded
