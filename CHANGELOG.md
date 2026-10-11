@@ -629,6 +629,31 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **`scripts/navigate_to_level.py --level 1` saved a savestate it had never verified, and the state
+  it reached was not a playable level.** The control-response gate built for stage 2 (§10.36.2) now
+  runs for stage 1 too. Under it the old schedule fails: the mode byte walks to `0x14`, the PPU draws
+  a level with the welcome text box, and Mario moves 0.0 px over 400 frames of RIGHT + dash + jump
+  with 0.00% of frame pairs translating - the title screen's attract demo, whose player is scripted.
+  The route that works is the one documented by the MIT-licensed `araujoviana/burn-mario-rl`: pulse
+  START with release gaps until the **world map** (`0x0E`, a mode the old schedule never waits for),
+  enter and leave Yoshi's House with A, then write the map cursor `$7E:1F17/$7E:1F19` and press A -
+  the game derives the level from the cursor at the press, so writing the translevel byte does
+  nothing. Ported, it reaches translevel `0x2A` at x = 16.0 and travels 866.8 px with the camera
+  following to 774 and 71.93% of frame pairs translating; `scripts/verify_level_entry.py` runs both
+  arms and writes the A/B to `results/level_entry_verification.json`, which README 10.36.3 quotes.
+  The gate also caught two bugs in the code that wrote it: a plausibility veto on animation byte 0,
+  which a standing responsive Mario legitimately reads, and a savestate taken *after* the probes had
+  walked Mario 193 px down the stage. `wram.ADDR_MAP_X/ADDR_MAP_Y/ADDR_TRANSLEVEL/ADDR_TIMER_HUNDREDS`
+  and `SnesLibretroEmulator.write_wram_u8/write_wram_u16_le` are new; the verified state is committed
+  as `data/raw/smw_yoshi_island_1_level.state`, and the published one is untouched.
+- **Which stage the telemetry recordings are from is now an open question, not an assumption.** The
+  genuine level's ground profile - top-of-terrain per absolute tile column, reconstructed from the
+  recorded 7x7 patches - agrees with the live level within one row on 32.65% of the 49 columns both
+  cover. The physics constants those files identify are the engine's either way, and every number
+  published from them stands, but the label "Yoshi's Island 1" on the `$7E:C800` buffer of the
+  forced-mode session is no longer supported by anything in the repository. README 10.36.3 states it;
+  resolving it is the next open item.
+
 - **Twenty-four expressions the page showed as source, with no error box to say so.** Two rules of
   GitHub's renderer, both measured on this repository's own page rather than assumed: it forms no
   math inside emphasis (317 `<em>` runs, 0 of them holding a formula), and it does not read a `$`

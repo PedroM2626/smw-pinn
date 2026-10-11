@@ -20,6 +20,17 @@ GAME_MODE_TITLE = 0x07  # Title screen
 GAME_MODE_FILE_SELECT = 0x08  # File selector
 GAME_MODE_WORLD_MAP = 0x0E  # World map / node selection
 ADDR_BUTTON_LATCH = 0x0016  # $7E:0016 - debounced joypad latch byte
+ADDR_BUTTON_HOLD = 0x0015  # $7E:0015 - held joypad bitmask (BYsSUDLR)
+
+# --- Overworld cursor and level identity --------------------------------------
+# Cross-checked against the console on 2026-10-11 while repairing `navigate_to_level.py`, and the
+# route (write the cursor, press A, wait for 0x14) is the one documented by the MIT-licensed
+# araujoviana/burn-mario-rl (`src/ram.rs`), which notes that writing the translevel byte instead
+# does nothing because the game derives the level from the cursor position at the press.
+ADDR_MAP_X = 0x1F17  # $7E:1F17 - world-map cursor X, pixels (u16 little-endian)
+ADDR_MAP_Y = 0x1F19  # $7E:1F19 - world-map cursor Y, pixels (u16 little-endian)
+ADDR_TRANSLEVEL = 0x13BF  # $7E:13BF - the level loaded after the entry (informational)
+ADDR_TIMER_HUNDREDS = 0x0F31  # $7E:0F31 - in-game timer, hundreds digit (0 on a blank level)
 
 # --- Player physics -----------------------------------------------------------
 ADDR_PLAYER_X = 0x0094  # $7E:0094 - Mario X, integer pixels (u16 little-endian)

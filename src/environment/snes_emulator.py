@@ -285,6 +285,22 @@ class SnesLibretroEmulator:
         b1 = self.read_wram_u8(addr + 1)
         return b0 | (b1 << 8)
 
+    def write_wram_u8(self, addr: int, value: int) -> None:
+        """Writes one byte to WRAM (offset 0x0000 to 0x1FFFF)."""
+        if self.wram_buffer is None:
+            raise RuntimeError("ROM not loaded: cannot write WRAM.")
+        self.wram_buffer[addr & 0x1FFFF] = value & 0xFF
+
+    def write_wram_u16_le(self, addr: int, value: int) -> None:
+        """Writes a 16-bit little-endian word to WRAM.
+
+        Public because the level-entry route pokes the world-map cursor ($7E:1F17/1F19): the game
+        derives the level from wherever the cursor is when the button is pressed, so writing the
+        translevel byte instead does nothing.
+        """
+        self.write_wram_u8(addr, value & 0xFF)
+        self.write_wram_u8(addr + 1, (value >> 8) & 0xFF)
+
     def get_smw_state(self) -> Dict[str, float]:
         """
         Extracts fundamental physical state variables directly from RAM.

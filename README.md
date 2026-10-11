@@ -1272,6 +1272,56 @@ savestate and `results/yi2_capture_attempt.json` is refreshed to
 a frozen frame is explicitly refused - the same integrity rule that keeps every
 other blocked result honest. The OOD-with-danger holdout that was still deferred when this paragraph was written has since been delivered, as Section 10.35.
 
+#### 10.36.3 The Same Gate Applied to Yoshi's Island 1 (2026-10-11): the Old Schedule Was the Attract Demo
+
+The control-response gate above was written for stage 2, and stage 1 had been saving its savestate
+with no behavioural verification at all. Applying the gate to `--level 1` made it raise, and chasing
+why turned up a route that works - so this section records both, with the A/B in
+`results/level_entry_verification.json` (`python scripts/verify_level_entry.py`).
+
+**What the old schedule actually reaches.** Polled frame by frame, the schedule that holds START for
+20 frames and then B walks the mode byte `0x08 -> 0x0B -> 0x11 -> 0x13 -> 0x14`, the PPU draws a real
+level with the welcome text box (confirmed by exporting the frame), and Mario sits at $X = 128$:
+0.0 px of travel over 400 frames of RIGHT + dash + jump, and **0.00% of consecutive frame pairs
+translate at all**. With no input whatsoever the mode stops at `0x07`, so the walk to `0x14` is
+caused by the presses - it is just the wrong gesture: this is the title screen's attract demo, a
+rendered level played by recorded input, and the controller is not connected to it.
+
+**What reaches a playable level.** The route is the one documented by the MIT-licensed
+[araujoviana/burn-mario-rl](https://github.com/araujoviana/burn-mario-rl) (`src/env.rs`,
+`src/ram.rs`): sit out the black intro, pulse **START with release gaps** until the *world map*
+(`0x0E`) is live - a mode the old schedule never waits for - enter Yoshi's House with **A** rather
+than B, walk back out, and then write the map cursor `$7E:1F17/$7E:1F19` and press A, because the
+game derives the level from wherever the cursor is on the frame the button is read; writing the
+translevel byte does nothing. Ported into `navigate_to_level.py`, that reaches the node at cursor
+(152,136), translevel `0x2A`, and the A/B measures the difference:
+
+| Arm | Final mode | x over 400 frames | Camera travel | Pairs of frames that translate |
+| :--- | :---: | :---: | :---: | :---: |
+| old schedule | `0x14` | 128.0 -> 128.0 (0.0 px) | 0 -> 0 | 0.00% |
+| measured route | `0x14` | 16.0 -> 882.8 (866.8 px) | 0 -> 774 | 71.93% |
+
+So the emulator's own frames *can* show this player in this level, and `data/raw/
+smw_yoshi_island_1_level.state` is the verified state for it - saved at $X = 16$, the coordinate every
+committed recording starts from, after the gate below.
+
+**Two bugs the gate caught in the code that wrote it.** First, the plausibility check vetoed
+animation byte 0, inherited from the stage-2 investigation; a Mario standing on solid ground in a
+level that responds to input reads exactly 0, so the byte is now recorded and no longer decides
+anything - the behavioural probe is the evidence. Second, the savestate was being taken *after* the
+verification walked Mario 193 px down the stage, so the "level start" it produced was not the level
+start; the state is now captured before the probes and restored afterwards.
+
+**What this does not settle.** The genuine level's terrain does not match the terrain the committed
+recordings walked: reconstructing the top-of-ground per absolute tile column from the recorded 7x7
+patches and comparing it with the live level buffer agrees within one row on 32.65% of the 49 columns
+both cover. That is not enough to call them the same stage, and it leaves an open question this
+repository has been assuming away: which level the forced-mode session - the one every telemetry
+file here comes from - actually has loaded in its `$7E:C800` buffer. The physics constants identified
+from those files are the engine's (16.000001 sub-pixels per pixel, gravity +3.0/+6.0), which is what
+every study in sections 10.37 onward measures; the *stage* is now unresolved, and §10.31.1's frames
+are the menu either way.
+
 ---
 
 ### 10.37 Analytical and Oracle-Model Baselines
@@ -3013,6 +3063,7 @@ smw-pinn/
 │   └── raw/
 │       ├── smw_usa.sfc                    # Original retail game ROM (SHA-1 verified)
 │       ├── smw_yoshi_island_1.state       # Interactive savestate for Stage A (Yoshi's Island 1)
+│       ├── smw_yoshi_island_1_level.state # Verified in-level savestate, entered from the world map (§10.36.3)
 │       ├── smw_yoshi_house.state          # Interactive savestate for Stage B (Yoshi's House)
 │       ├── smw_gameplay_dataset.npz       # 8,077 genuine interactive transitions (8D)
 │       ├── smw_multi_entity_dataset.npz   # 19,702 genuine interactive transitions (12D)
@@ -3030,6 +3081,7 @@ smw-pinn/
 ├── scripts/
 │   ├── inspect_physics.py                 # 60 Hz WRAM telemetry inspector
 │   ├── navigate_to_level.py               # Boot & savestate generator (--level 1/2, movement gate)
+│   ├── verify_level_entry.py              # A/B the two boot schedules: attract demo vs the map route
 │   ├── record_gameplay.py                 # 8D Mario telemetry recorder
 │   ├── record_multi_entity_gameplay.py    # 12D Mario + Sprite telemetry recorder
 │   ├── record_set_multi_entity_gameplay.py # Full 12-slot sprite-set recorder
@@ -3566,6 +3618,13 @@ python -m src.evaluation.boundary_channel_study
 #     Emulator-free; reads data/raw/smw_pixel_dataset.npz. Writes
 #     results/pixel_frame_probe_metrics.json and the paragraph README 10.31.1 quotes.
 python -m src.evaluation.pixel_frame_probe
+
+# 69. A/B the level-entry schedules on the console (§10.36.3): the old START/B holds reach a rendered
+#     level whose player moves 0.0 px, the world-map route reaches one that travels 866.8 px with the
+#     camera following. Needs core + ROM; ~1 min. Writes results/level_entry_verification.json, and
+#     `python scripts/navigate_to_level.py --level 1` now saves only a state that passes the
+#     control-response gate.
+python scripts/verify_level_entry.py
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

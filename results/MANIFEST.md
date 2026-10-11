@@ -90,6 +90,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `pixel_mpc_metrics.json` | `src/evaluation/evaluate_pixel_mpc.py` | yes | 10.31 |
 | `hierarchical_mpc_metrics.json` | `src/evaluation/evaluate_hierarchical_mpc.py` | yes | 10.32 |
 | `yi2_capture_attempt.json` | `scripts/navigate_to_level.py` | yes | 10.36 |
+| `level_entry_verification.json` | `scripts/verify_level_entry.py` | yes | 10.36.3 |
 | `obstacle_1000_diagnosis.json` | `src/evaluation/diagnose_obstacle_1000.py` | yes | 10.24 (X~1000 plateau) |
 | `piml_mfrl_metrics.json` | `src/evaluation/piml_mfrl_study.py` | yes | 10.39.1 |
 | `inverse_identification_metrics.json` | `src/evaluation/inverse_transfer_benchmark.py` | no | 10.40 |

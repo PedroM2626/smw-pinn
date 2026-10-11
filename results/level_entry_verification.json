@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-11T14:46:45+00:00",
+    "git_sha": "9c2cf8ba60ad564d45add40eda5645bc4c7c88b4",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python scripts/verify_level_entry.py"
+  },
+  "study": "Which boot schedule lands on a rendered, controllable level, measured by whether the picture translates when the recorded position does.",
+  "protocol": {
+    "rom": "smw_usa.sfc",
+    "probe_frames": 400,
+    "first_node_cursor": [
+      152,
+      136
+    ],
+    "picture_shift_search_px": 4,
+    "hud_rows_excluded": 14,
+    "published_pixel_recording_reference": "results/pixel_frame_probe_metrics.json"
+  },
+  "arms": {
+    "naive_schedule": {
+      "final_mode": "0x14",
+      "reached_level_mode": true,
+      "x_at_entry": 128.0,
+      "y_at_entry": 317.125,
+      "right_response_px": 0.0,
+      "plausible": true,
+      "session": {
+        "frames_captured": 400,
+        "x_start": 128.0,
+        "x_end": 128.0,
+        "x_travel_px": 0.0,
+        "camera_start": 0.0,
+        "camera_end": 0.0,
+        "share_of_pairs_picture_shifts": 0.0,
+        "mean_abs_picture_shift_px": 0.0,
+        "mean_abs_dx_px": 0.0,
+        "corr_picture_shift_with_dx": null
+      }
+    },
+    "measured_route": {
+      "reached_world_map": true,
+      "world_map_frames": 214,
+      "house_entry_frames": 26,
+      "house_exit_frames": 12,
+      "entered_node": true,
+      "map_cursor": [
+        152,
+        136
+      ],
+      "translevel": "0x2A",
+      "final_mode": "0x14",
+      "x_at_entry": 16.0,
+      "y_at_entry": 352.8125,
+      "right_response_px": 39.0625,
+      "session": {
+        "frames_captured": 400,
+        "x_start": 16.0,
+        "x_end": 882.8125,
+        "x_travel_px": 866.8125,
+        "camera_start": 0.0,
+        "camera_end": 774.0,
+        "share_of_pairs_picture_shifts": 0.7192982456140351,
+        "mean_abs_picture_shift_px": 0.7343358395989975,
+        "mean_abs_dx_px": 2.1724624060150375,
+        "corr_picture_shift_with_dx": 0.32642398989541727
+      }
+    }
+  },
+  "comparison": {
+    "naive_share_of_pairs_picture_shifts": 0.0,
+    "measured_share_of_pairs_picture_shifts": 0.7192982456140351,
+    "naive_right_response_px": 0.0,
+    "measured_right_response_px": 39.0625
+  }
+}
