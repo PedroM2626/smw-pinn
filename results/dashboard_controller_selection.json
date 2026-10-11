@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-11T15:59:14+00:00",
+    "git_sha": "5078ea284d070d0e8809851923a81a799dcf7395",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python scripts/record_dashboard_run.py"
+  },
+  "study": "Which actor the dashboard video features. Both arms are probed on the same savestate for the same horizon with the published override loop; the rule is the largest forward progress reached within the probe. The losing arm is reported as measured, not dropped, and the winning actor is re-probed with the override layer off so the reflexes' own contribution is on the record next to the run that keeps them.",
+  "protocol": {
+    "savestate": "smw_yoshi_island_1_level.state",
+    "probe_frames": 600,
+    "selection_rule": "max(max_progress_px) over the arms",
+    "device": "cuda"
+  },
+  "arms": [
+    {
+      "arm": "ppo",
+      "published_overrides": true,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": -7.5625,
+      "max_progress_px": 0.0,
+      "most_frequent_actions": [
+        [
+          "RUN_LEFT",
+          600
+        ]
+      ],
+      "mean_top_probability": 0.1957,
+      "frames_where_reflex_overrode": 0,
+      "wall_clock_s": 0.76
+    },
+    {
+      "arm": "dagger",
+      "published_overrides": true,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": 1032.5,
+      "max_progress_px": 1032.5,
+      "most_frequent_actions": [
+        [
+          "Y/RIGHT",
+          267
+        ],
+        [
+          "Y",
+          154
+        ],
+        [
+          "B/Y/RIGHT",
+          88
+        ]
+      ],
+      "mean_top_probability": 0.9068,
+      "frames_where_reflex_overrode": 13,
+      "wall_clock_s": 0.81
+    }
+  ],
+  "override_control": [
+    {
+      "arm": "dagger",
+      "published_overrides": false,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": 1102.375,
+      "max_progress_px": 1102.375,
+      "most_frequent_actions": [
+        [
+          "Y/RIGHT",
+          277
+        ],
+        [
+          "B/RIGHT",
+          174
+        ],
+        [
+          "B/Y/RIGHT",
+          78
+        ]
+      ],
+      "mean_top_probability": 0.916,
+      "frames_where_reflex_overrode": 0,
+      "wall_clock_s": 1.05
+    }
+  ],
+  "selected": "dagger",
+  "selected_by_rule": "dagger",
+  "rule_agrees_with_override": true
+}

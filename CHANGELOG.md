@@ -11,6 +11,23 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The README hero dashboard, and the episode behind it.** `scripts/record_dashboard_run.py`
+  (`make record-dashboard`) probes both actor checkpoints on the verified level-entry savestate,
+  keeps the arm the written rule selects, and records one episode with the actor's per-button
+  probabilities, the terminal-value critic's V(s), the buttons the console actually received after
+  the published reflex vaults and jump pulse, the tile patch and camera, an RGB frame, the
+  section-4.1 residue of every step, a liveness flag and an operator channel.
+  `src/evaluation/dashboard_video.py` (`make dashboard-video`) renders that recording into
+  `results/figures/dashboard_run.mp4` and the GIF the file opens with; `src/evaluation/dashboard_study.py`
+  (`make dashboard-study`) gathers the three artifacts, cuts the message-box evidence figure out of
+  the recording, re-measures the forced-mode picture claim with the corrected decoder, and emits
+  README 10.60. Two findings come with it: the PPO primitive actor walks backwards on the live
+  console while the DAgger actor traverses, and 10.59's frozen player record is the engine's own
+  message box - which asks for the A button, a channel no action set in this repository has.
+- **`src/evaluation/dashboard_video.py` and `src/evaluation/dashboard_study.py`** join the
+  `smw-pinn` catalogue as `dashboard-video` and `dashboard-study`, and
+  `tests/test_dashboard_pipeline.py` gates the hero caption, the generated section, the media sizes,
+  the arm-selection rule, the held-frame reading of the residue, and the operator channel.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded
@@ -629,6 +646,17 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **The frame capture decoded every RGB surface as 32-bit while the core delivers 16-bit.** The core
+  answers `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT` with RGB888 and then hands back RGB565 rows - pitch
+  2048 for a 256-px row, the second half of every row zero, and the lane a 0x00RRGGBB word keeps at
+  zero carrying picture data - so `_convert_frame_bytes` squeezed each frame to half width with a
+  scrambled palette. `src/environment/snes_emulator.py` now checks the request against the two facts
+  a genuine buffer cannot violate (`refine_pixel_format`), `tests/test_pixel_perception.py` holds a
+  positive and a negative control plus a hardware test, and the frame-capture roundtrip test asserts
+  the picture reaches the right edge of the buffer instead of only checking its shape. No telemetry
+  number moves - none of them comes from the pixel path - and §10.60 re-measures the two claims that
+  were made about picture content (10.31's pixel probe, 10.36.3's rendered level) on the fixed
+  decoder rather than leaving them standing on a garbled one.
 - **`scripts/navigate_to_level.py --level 1` saved a savestate it had never verified, and the state
   it reached was not a playable level.** The control-response gate built for stage 2 (§10.36.2) now
   runs for stage 1 too. Under it the old schedule fails: the mode byte walks to `0x14`, the PPU draws

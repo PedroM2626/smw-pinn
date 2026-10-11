@@ -123,6 +123,10 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `scroll_address_scan_metrics.json` | `scripts/scan_scroll_address.py` | yes | 10.59 |
 | `boundary_channel_metrics.json` | `src/evaluation/boundary_channel_study.py` | no | 10.59 |
 | `pixel_frame_probe_metrics.json` | `src/evaluation/pixel_frame_probe.py` | no | 10.31.1 |
+| `dashboard_run_metrics.json` | `scripts/record_dashboard_run.py` | yes | 10.60 |
+| `dashboard_controller_selection.json` | `scripts/record_dashboard_run.py` | yes | 10.60 |
+| `dashboard_video_metrics.json` | `src/evaluation/dashboard_video.py` | no | 10.60 |
+| `dashboard_study_metrics.json` | `src/evaluation/dashboard_study.py` | yes | 10.60 |
 
 ## Input freshness
 

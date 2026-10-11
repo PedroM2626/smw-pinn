@@ -91,6 +91,8 @@ MODULE_COMMANDS: dict[str, str] = {
     "residue-process": "src.evaluation.residue_process_study",
     "boundary-channel": "src.evaluation.boundary_channel_study",
     "pixel-frame-probe": "src.evaluation.pixel_frame_probe",
+    "dashboard-video": "src.evaluation.dashboard_video",
+    "dashboard-study": "src.evaluation.dashboard_study",
     "corrected-physics": "src.evaluation.corrected_physics_ablation",
     "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
     "learned-probes": "src.evaluation.learned_structure_probe_benchmark",

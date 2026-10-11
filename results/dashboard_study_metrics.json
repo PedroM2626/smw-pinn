@@ -1,0 +1,216 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-11T16:15:45+00:00",
+    "git_sha": "5078ea284d070d0e8809851923a81a799dcf7395",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "make dashboard-study"
+  },
+  "study": "The README hero dashboard: the arm probe that chose which actor flies it, the episode the recording holds, the engine's message box as the cause of 10.59's frozen player record, and the pixel format the frame buffer actually carried.",
+  "protocol": {
+    "recorder": "scripts/record_dashboard_run.py",
+    "renderer": "src/evaluation/dashboard_video.py",
+    "savestate": "smw_yoshi_island_1_level.state",
+    "controller": "dagger",
+    "checkpoint": "dagger_policy_best.pt",
+    "value_critic": {
+      "checkpoint": "terminal_value_best.pt",
+      "reads": [
+        "x",
+        "y",
+        "vx",
+        "vy"
+      ],
+      "units": "px of discounted future progress",
+      "gamma": 0.99
+    },
+    "operator_rule": "once the 12D record has been identical for 130 frames the operator pulses A (4 on, 4 off) up to 120 frames; A is not in the six-button action set, so this is an outside-the-policy takeover and it is recorded per frame, not folded into the actor's actions",
+    "operator_delay_frames": 120,
+    "pause_trigger_frames": 10,
+    "frame_capture": {
+      "requested_pixel_format": 2,
+      "decoded_as_pixel_format": 1,
+      "note": "0 = 0RGB1555, 1 = RGB565, 2 = RGB888; the two differ because the core asks for a 32-bit buffer and hands back a 16-bit one"
+    },
+    "probe_frames": 600,
+    "selection_rule": "max(max_progress_px) over the arms"
+  },
+  "arms": [
+    {
+      "arm": "ppo",
+      "published_overrides": true,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": -7.5625,
+      "max_progress_px": 0.0,
+      "most_frequent_actions": [
+        [
+          "RUN_LEFT",
+          600
+        ]
+      ],
+      "mean_top_probability": 0.1957,
+      "frames_where_reflex_overrode": 0,
+      "wall_clock_s": 0.76
+    },
+    {
+      "arm": "dagger",
+      "published_overrides": true,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": 1032.5,
+      "max_progress_px": 1032.5,
+      "most_frequent_actions": [
+        [
+          "Y/RIGHT",
+          267
+        ],
+        [
+          "Y",
+          154
+        ],
+        [
+          "B/Y/RIGHT",
+          88
+        ]
+      ],
+      "mean_top_probability": 0.9068,
+      "frames_where_reflex_overrode": 13,
+      "wall_clock_s": 0.81
+    }
+  ],
+  "override_control": [
+    {
+      "arm": "dagger",
+      "published_overrides": false,
+      "frames": 600,
+      "ended": "probe_frames",
+      "progress_px": 1102.375,
+      "max_progress_px": 1102.375,
+      "most_frequent_actions": [
+        [
+          "Y/RIGHT",
+          277
+        ],
+        [
+          "B/RIGHT",
+          174
+        ],
+        [
+          "B/Y/RIGHT",
+          78
+        ]
+      ],
+      "mean_top_probability": 0.916,
+      "frames_where_reflex_overrode": 0,
+      "wall_clock_s": 1.05
+    }
+  ],
+  "selected": "dagger",
+  "episode": {
+    "frames": 1268,
+    "ended": "death",
+    "progress_px": 1615.5,
+    "wall_clock_s": 8.12,
+    "fps": 156.2,
+    "share_of_frames_live": 0.8470031545741324,
+    "camera_travel_px": 1525.0,
+    "screen_x_range_px": [
+      16.0,
+      141.375
+    ],
+    "mean_max_button_probability": 0.9001203140343778,
+    "frames_with_no_button_above_half": 0,
+    "frames_where_reflex_overrode": 126,
+    "frames_where_pulse_released_B": 69,
+    "frames_under_operator_A": 23,
+    "pauses_observed": 2,
+    "pauses_cleared_by_the_operator": 2,
+    "first_pause_at_progress_px": 1034.125,
+    "value_start_px": 201.3985898854777,
+    "value_end_px": 211.17524784450552,
+    "value_max_px": 211.17545370514227,
+    "residue_exact_share": 0.8430599369085173,
+    "residue_abs_max_subpixels": 26.0,
+    "mode_bytes_seen": [
+      20
+    ]
+  },
+  "pauses": [
+    {
+      "frame": 674,
+      "progress_px": 1034.125,
+      "mode_byte": 20,
+      "held_frames": 152,
+      "operator_frames": 23,
+      "resumed": true
+    },
+    {
+      "frame": 1204,
+      "progress_px": 1615.5,
+      "mode_byte": 20,
+      "held_frames": 42,
+      "operator_frames": 0,
+      "resumed": true
+    }
+  ],
+  "video": {
+    "mp4": "results/figures/dashboard_run.mp4",
+    "bytes": 4842882,
+    "frames_written": 634,
+    "fps": 30.0,
+    "duration_s": 21.13
+  },
+  "gif": {
+    "gif": "results/figures/dashboard_run.gif",
+    "bytes": 5313896,
+    "gif_fps": 12.0,
+    "gif_width_px": 900,
+    "gif_palette_colors": 96
+  },
+  "caption": {
+    "episode_frames": 1268,
+    "progress_px": 1615.5,
+    "camera_travel_px": 1525.0,
+    "mean_max_button_probability": 0.9001203140343778,
+    "residue_exact_share": 0.8430599369085173,
+    "operator_A_frames": 23,
+    "value_first_px": 201.39859008789062,
+    "value_last_px": 211.1752471923828,
+    "subscreens_reached": 7
+  },
+  "evidence_figure": {
+    "figure": "results/figures/dashboard_message_box.png",
+    "frame": 650,
+    "progress_px": 1032.5,
+    "source_shape": [
+      224,
+      256
+    ],
+    "scale": 2,
+    "bytes": 9780
+  },
+  "forced_mode_check": {
+    "savestate": "smw_yoshi_island_1.state",
+    "frames_driven": 150,
+    "state_dx_px": 115.0,
+    "pairs_compared": 4,
+    "pairs_that_translated": 0,
+    "shifts_px": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "figure": "results/figures/dashboard_forced_mode.png",
+    "requested_pixel_format": 2,
+    "decoded_as_pixel_format": 1
+  },
+  "dataset": "data\\raw\\smw_dashboard_run.npz"
+}
