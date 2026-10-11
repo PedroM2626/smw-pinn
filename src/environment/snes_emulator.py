@@ -16,7 +16,10 @@ from typing import Dict, List
 import numpy as np
 
 from src.environment import wram
+from src.utils.logging import get_logger
 from src.utils.paths import REPO_ROOT, require_core, require_rom
+
+logger = get_logger(__name__)
 
 # Libretro API Constants (libretro.h)
 RETRO_DEVICE_JOYPAD = 1
@@ -63,6 +66,42 @@ class RetroGameInfo(ctypes.Structure):
         ("size", ctypes.c_size_t),
         ("meta", ctypes.c_char_p),
     ]
+
+
+def refine_pixel_format(raw: np.ndarray, width: int, height: int, pitch: int, claimed: int) -> int:
+    """Return the format the buffer actually holds, which is not always the one requested.
+
+    Pure function (no emulator needed) so it is unit-testable with synthetic buffers. A core may
+    answer `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT` with RGB888 and still hand back 16-bit rows: the
+    Snes9x core this repository drives does exactly that (pitch 2048 for a 256-px row, the second
+    half of every row zero, and the lane a 0x00RRGGBB word keeps at zero carrying picture data).
+    Decoding those rows as 4-byte pixels squeezes the frame to half width and scrambles the
+    palette, so the request is checked against two facts a genuine buffer cannot violate: a
+    0x00RRGGBB word has a zero fourth byte, and a 0RGB1555 word has a zero top bit.
+
+    Args:
+        raw: the row buffer as uint8, `pitch * height` bytes.
+        width: pixels per row as reported by the core.
+        height: rows as reported by the core.
+        pitch: bytes per row.
+        claimed: the format the core requested.
+
+    Returns:
+        One of the three `RETRO_PIXEL_FORMAT_*` constants.
+    """
+    if pitch < width * 2 or height == 0:
+        return claimed
+    rows = raw.reshape(height, pitch)
+    if claimed == RETRO_PIXEL_FORMAT_RGB888:
+        if pitch < width * 4:
+            return RETRO_PIXEL_FORMAT_RGB565
+        alpha = rows[:, 3 : width * 4 : 4]
+        if not bool((alpha == 0).all()):
+            claimed = RETRO_PIXEL_FORMAT_0RGB1555  # 16-bit rows; the bit test below decides
+    u16 = rows.view(np.uint16)[:, :width]
+    if claimed == RETRO_PIXEL_FORMAT_0RGB1555 and bool(((u16 >> 15) != 0).any()):
+        return RETRO_PIXEL_FORMAT_RGB565
+    return claimed
 
 
 def _convert_frame_bytes(
@@ -112,6 +151,9 @@ class SnesLibretroEmulator:
         self._capture_frames = False
         self._last_frame = None  # np.ndarray uint8 [H, W, 3] RGB, or None
         self._pixel_format = RETRO_PIXEL_FORMAT_0RGB1555  # libretro default
+        #: format the buffer actually held on the last captured frame
+        self._frame_pixel_format = RETRO_PIXEL_FORMAT_0RGB1555
+        self._format_warning_shown = False
 
         # Joypad 1 button state (id -> 1 or 0)
         self.current_input: Dict[int, int] = {i: 0 for i in range(12)}
@@ -201,8 +243,20 @@ class SnesLibretroEmulator:
                 n_bytes = int(pitch) * int(height)
                 buf = (ctypes.c_uint8 * n_bytes).from_address(int(data))
                 raw = np.frombuffer(buf, dtype=np.uint8).copy()
-                self._last_frame = _convert_frame_bytes(
+                fmt = refine_pixel_format(
                     raw, int(width), int(height), int(pitch), self._pixel_format
+                )
+                if fmt != self._pixel_format and not self._format_warning_shown:
+                    self._format_warning_shown = True
+                    logger.warning(
+                        "Core requested pixel format %d but the buffer is format %d; "
+                        "decoding as the latter.",
+                        self._pixel_format,
+                        fmt,
+                    )
+                self._frame_pixel_format = fmt
+                self._last_frame = _convert_frame_bytes(
+                    raw, int(width), int(height), int(pitch), fmt
                 )
             except (ValueError, OSError):
                 pass
@@ -598,7 +652,9 @@ class SnesLibretroEmulator:
 
         When enabled, every `step_frame()` stores the latest rendered frame,
         retrievable via `get_frame()`. SNES frames are natively 256x224
-        (up to 512x448 in hires modes).
+        (up to 512x448 in hires modes). The buffer is decoded through
+        `refine_pixel_format`, because the format a core requests is not always
+        the format it delivers.
         """
         self._capture_frames = bool(enabled)
         if not enabled:
@@ -613,3 +669,13 @@ class SnesLibretroEmulator:
         if self._last_frame is None:
             return None
         return self._last_frame.copy()
+
+    @property
+    def frame_pixel_format(self) -> int:
+        """The `RETRO_PIXEL_FORMAT_*` the last captured buffer actually held."""
+        return self._frame_pixel_format
+
+    @property
+    def requested_pixel_format(self) -> int:
+        """The format the core asked for through `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT`."""
+        return self._pixel_format

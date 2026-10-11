@@ -9,6 +9,7 @@ from src.environment.snes_emulator import (
     RETRO_PIXEL_FORMAT_RGB565,
     RETRO_PIXEL_FORMAT_RGB888,
     _convert_frame_bytes,
+    refine_pixel_format,
 )
 from src.perception.pixel_encoder import PixelStateEstimator, StateNormalizer, preprocess_frame
 from src.perception.vision_dataset import FrameStateDataset, create_vision_loaders
@@ -67,14 +68,90 @@ def test_frame_capture_roundtrip():
         assert emu.get_frame() is None  # capture off by default
         emu.load_rom(ROM_PATH)
         emu.enable_frame_capture(True)
-        for _ in range(30):
+        frame = None
+        for _ in range(300):  # the boot draws nothing until the core starts the PPU sequence
             emu.step_frame()
-        frame = emu.get_frame()
-        assert frame is not None
+            candidate = emu.get_frame()
+            if candidate is not None and int(candidate.sum()) > 0:
+                frame = candidate
+                break
+        assert frame is not None, "300 frames produced no drawn picture at all"
         assert frame.ndim == 3 and frame.shape[2] == 3 and frame.dtype == np.uint8
         assert frame.shape[0] in (224, 448) and frame.shape[1] in (256, 512)
+        # A shape check passes on a half-width, palette-scrambled decode, so the geometry is
+        # asserted too: the picture must reach the right edge of the frame, not stop at the middle.
+        assert int(frame[:, frame.shape[1] // 2 :].sum()) > 0
         emu.enable_frame_capture(False)
         assert emu.get_frame() is None
+    finally:
+        emu.close()
+
+
+def _padded_row_buffer(words, width, height, pitch_bytes):
+    """Rows of `width` 16-bit words padded to `pitch_bytes`, as the Snes9x core delivers them."""
+    rows = np.zeros((height, pitch_bytes), dtype=np.uint8)
+    packed = np.asarray(words, dtype=np.uint16).reshape(height, width).view(np.uint8)
+    rows[:, : width * 2] = packed
+    return rows.reshape(-1)
+
+
+def test_refine_reads_16bit_rows_the_core_claimed_as_32bit():
+    # The shape the real core sends: 4-px rows, pitch 16 (a 32-bit claim), 8 bytes of data + 8 of
+    # padding, and a set top bit - impossible in 0x00RRGGBB, whose fourth byte is always zero.
+    raw = _padded_row_buffer([0xF800, 0x07E0, 0x001F, 0xFFFF], 4, 1, 16)
+    assert (
+        refine_pixel_format(raw, 4, 1, 16, RETRO_PIXEL_FORMAT_RGB888) == RETRO_PIXEL_FORMAT_RGB565
+    )
+
+
+def test_refine_leaves_a_genuine_32bit_buffer_alone():
+    # Negative control: the same geometry with a clean alpha lane must not be demoted, or the
+    # refinement would be a format guess that always says 565.
+    words = np.array([0x00FF0000, 0x0000FF00, 0x000000FF, 0x00FFFFFF], dtype=np.uint32)
+    raw = words.view(np.uint8).copy()
+    assert (
+        refine_pixel_format(raw, 4, 1, 16, RETRO_PIXEL_FORMAT_RGB888) == RETRO_PIXEL_FORMAT_RGB888
+    )
+
+
+def test_refine_splits_1555_from_565_on_the_top_bit():
+    with_top = _padded_row_buffer([0xF800, 0x07E0, 0x001F, 0x7FFF], 4, 1, 8)
+    without = _padded_row_buffer([0x7C00, 0x03E0, 0x001F, 0x7FFF], 4, 1, 8)
+    assert refine_pixel_format(with_top, 4, 1, 8, RETRO_PIXEL_FORMAT_0RGB1555) == (
+        RETRO_PIXEL_FORMAT_RGB565
+    )
+    assert refine_pixel_format(without, 4, 1, 8, RETRO_PIXEL_FORMAT_0RGB1555) == (
+        RETRO_PIXEL_FORMAT_0RGB1555
+    )
+
+
+def test_refine_decodes_the_claimed_geometry_back_to_the_same_picture():
+    # The consequence the dashboard depends on: after the refinement the frame is full width and
+    # the primaries are the primaries, where the raw claim gave a half-width magenta frame.
+    raw = _padded_row_buffer([0xF800, 0x07E0, 0x001F, 0xFFFF], 4, 1, 16)
+    fmt = refine_pixel_format(raw, 4, 1, 16, RETRO_PIXEL_FORMAT_RGB888)
+    rgb = _convert_frame_bytes(raw, 4, 1, 16, fmt)
+    assert rgb.shape == (1, 4, 3)
+    assert rgb[0, 0].tolist() == [255, 0, 0]
+    assert rgb[0, 3].tolist() == [255, 255, 255]
+
+
+@requires_emulator
+def test_real_core_delivers_16bit_rows_under_a_32bit_request():
+    """The defect this guards: the core asks for RGB888 and sends RGB565."""
+    from src.environment.snes_emulator import SnesLibretroEmulator
+
+    emu = SnesLibretroEmulator(CORE_PATH)
+    try:
+        emu.load_rom(ROM_PATH)
+        emu.enable_frame_capture(True)
+        for _ in range(300):
+            emu.step_frame()
+            if emu.get_frame() is not None and int(emu.get_frame().sum()) > 0:
+                break
+        assert emu.get_frame() is not None and int(emu.get_frame().sum()) > 0
+        assert emu.frame_pixel_format == RETRO_PIXEL_FORMAT_RGB565
+        assert emu.requested_pixel_format == RETRO_PIXEL_FORMAT_RGB888
     finally:
         emu.close()
 
