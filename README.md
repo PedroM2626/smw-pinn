@@ -24,11 +24,14 @@
 ---
 
 
+---
+
+
 ## 🏆 Direct Answer: Which Model Performed Best in the Benchmark?
 
 Within **the four architectures of the canonical Section 8 benchmark**, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)** achieved the lowest reported prediction error and the strongest kinematic consistency. That scope is load-bearing and the repository now measures two things outside it: Section 10.42 fits two operators on the same split and seed and both reach a lower single-step error (`FNO` 0.4025 and `PhysicsConstrained_DeepONet` 0.5766 against 0.5783), and Section 10.37's hand-written engine rules carry an **identically zero** kinematic residual with **no learned parameters at all**. Section 10.53 narrows the consistency claim too: the 0.0% violation rate below is a result *inside the published 0.2 px tolerance*, and at 0.002 px the same shells are flagged on 0.9345-0.9578 of their rollout frames while a model that integrates position the way the console does stays at exactly zero.
 
-Sections 10.37-10.61 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, and the terrain comparison that says which level the recordings walk - so this table is the canonical comparison, not the set of models this repository has measured.
+Sections 10.37-10.62 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, the terrain comparison that says which level the recordings walk, and the pixel re-recording that turns that reading into a measured discrimination - so this table is the canonical comparison, not the set of models this repository has measured.
 
 ### Key Factors in the Performance of the Hard Residual PINN
 1. **Single-Step Predictive Accuracy (Test MSE) - the four Section 8 architectures:**
@@ -125,6 +128,7 @@ Sections 10.37-10.61 train and score the rest of the repository's models against
    * [10.59 The Boundary Channel 10.58 Predicted, Built, and Refuted](#1059-the-boundary-channel-1058-predicted-built-and-refuted)
    * [10.60 The Dashboard at the Top of This File, and the Two Instruments It Needed](#1060-the-dashboard-at-the-top-of-this-file-and-the-two-instruments-it-needed)
    * [10.61 Which Level the Committed Recordings Actually Walk](#1061-which-level-the-committed-recordings-actually-walk)
+   * [10.62 The Pixel Recording, Re-made From a Level That Is Really Entered](#1062-the-pixel-recording-re-made-from-a-level-that-is-really-entered)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -1150,7 +1154,7 @@ MPC advances **108.94 px in 202 frames** before falling in a pit, against **571.
 in 300 frames** for the same planner driven by WRAM truth (§10.6), with a mean
 estimation error of 84.27 units over $(x, y, v_x, v_y)$.
 
-**An audit of the frames themselves, added later.** Whether the imagery is the level Mario is walking through is testable without a model: align each consecutive pair by the integer horizontal shift that best matches them, and compare that shift with the change in the recorded x. The alignment does see a scroll when there is one - sliding a frame by two pixels is recovered as two pixels on 100.00% of 136 synthetic trials - and on this file it finds nothing: the best shift is zero on 100.00% of the 2,719 consecutive pairs, the picture moves 0.00 px per frame while the state moves 3.94 px, and the correlation between the two is undefined, because the picture never shifts at all. The frames are therefore not the scrolling level: the savestate this repository records from restores into engine mode `0x08` and the harness writes `0x14` to force interactive physics (§10.38.1), so the WRAM player is simulated while the PPU keeps drawing the title and file-select composite - which is what the exported frames show. The estimator numbers above are what that model achieved on that imagery and they stand as measurements of it; what is withdrawn is the reading beside the first row, position recoverable from the scroll of the background, because there is no background scroll in these frames to recover. `python -m src.evaluation.pixel_frame_probe` re-derives this paragraph from `results/pixel_frame_probe_metrics.json`.
+**An audit of the frames themselves, added later.** Whether the imagery is the level Mario is walking through is testable without a model: align each consecutive pair by the integer horizontal shift that best matches them, and compare that shift with the change in the recorded x. The alignment does see a scroll when there is one - sliding a frame by two pixels is recovered as two pixels on 100.00% of 136 synthetic trials - and on this file it finds nothing: the best shift is zero on 100.00% of the 2,719 consecutive pairs, the picture moves 0.00 px per frame while the state moves 3.94 px, and the correlation between the two is undefined, because the picture never shifts at all. The frames are therefore not the scrolling level: the savestate this repository records from restores into engine mode `0x08` and the harness writes `0x14` to force interactive physics (§10.38.1), so the WRAM player is simulated while the PPU keeps drawing the title and file-select composite - which is what the exported frames show. The estimator numbers above are what that model achieved on that imagery and they stand as measurements of it; what is withdrawn is the reading beside the first row, position recoverable from the scroll of the background, because there is no background scroll in these frames to recover. `python -m src.evaluation.pixel_frame_probe` re-derives this paragraph from `results/pixel_frame_probe_metrics.json`. §10.62 later re-makes this recording from the level-entry savestate of §10.36.3 and shows the same alignment reporting movement when the camera scrolls and stillness when it does not: the null was the imagery, not the instrument.
 
 ### 10.32 Hierarchical Global + Local Planning (A* + CEM-MPC)
 
@@ -3115,6 +3119,24 @@ The two live arms run the identical scripted walk - hold right and dash, jump ev
 
 **Limitations.** The profile is measured from Mario's own tile row, so it answers "what is under him" rather than "what does the level look like", and the window is only 7 tiles deep: a column is observed only while its ground is inside that window, which is why the three sides see different column counts. Two walks over the same terrain can still disagree where one Mario stands on a block and the other on the ground, so every share here is a floor on the similarity, not an estimate of it - and the forced-mode arm ended its walk in mode 0x17 while the level arm was still in 0x14, which is geometry, not sampling.
 
+### 10.62 The Pixel Recording, Re-made From a Level That Is Really Entered
+
+10.31.1's finding was a null: the committed RGB frames never translate while the recorded player moves. A null measured on a recording nobody chose is weak evidence - the alignment might simply be blind - so this adds the positive control the old file could not contain: the same instrument, applied to a recording made from the verified level-entry savestate of 10.36.3, with the camera stored alongside the state.
+
+| recording | frames | pairs | picture shifted on | mean |dx| px/frame |
+| --- | --- | --- | --- | --- |
+| `data/raw/smw_pixel_dataset.npz` (forced-mode, published) | 2,720 | 2,719 | 0.00% | 3.9429 |
+| `data/raw/smw_pixel_level_dataset.npz` (level entry, new) | 4,112 | 4,111 | 36.37% | 3.3552 |
+
+The second row's aggregate is not the interesting one, because inside the camera's dead zone the player moves and the scene must not - scoring a pixel recording against the player's own x asks the wrong question. Split by the camera instead, on the new recording's 1,628 pairs where it moved by at least 2 level px:
+
+* the picture holds still on 11.55% of them, and agrees in sign with the camera on 88.39% -
+* while on the pairs where the camera did not move, and the player was not one of the 145 frames the engine was holding, the picture holds still on 97.86%.
+
+That is the discrimination the null needed: the same alignment that reports zero shift on 100.00% of the published recording's pairs reports movement on 88.45% of the pairs where a level really is scrolling, and stillness where the camera says there is nothing to scroll. The synthetic control rides along unchanged - a frame slid by 1, 2 and 3 px is recovered exactly on 100.00% of its trials at each depth.
+
+**What this changes, and what it does not.** It confirms 10.31.1's reading rather than replacing it: the committed frames are the menu, and the estimator trained on them was trained on the menu. Those published numbers stand as measurements of the file they name, and retraining on this recording is a separate piece of work, not a consequence of this one. What is new is that the repository now holds a pixel recording of a genuinely entered, genuinely rendered, controllable level - 787.62 px of travel, 688.00 px of camera, 145 held frames the recorder cleared with the operator rule of 10.60 - and an instrument that can tell the two recordings apart. The recording is a new file: `data/raw/smw_pixel_level_dataset.npz`, written by `python scripts/record_pixel_gameplay.py --state data/raw/smw_yoshi_island_1_level.state`, and the published `data/raw/smw_pixel_dataset.npz` is untouched.
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -3269,6 +3291,7 @@ smw-pinn/
 │       ├── dashboard_video.py                # Render the README hero: RGB + tilemap + probabilities (10.60)
 │       ├── dashboard_study.py                # Which actor flies the hero, and the frame-buffer defect (10.60)
 │       ├── stage_identity_study.py             # Which terrain the committed recordings actually walk (10.61)
+│       ├── pixel_level_recheck.py              # The pixel recording re-made from the level entry (10.62)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -3728,6 +3751,14 @@ python -m src.evaluation.dashboard_study
 #     from the forced-mode session it came from and from the verified world-map level entry, under an
 #     identical scripted walk. Needs core + ROM; ~20 s. Writes results/stage_identity_metrics.json.
 python -m src.evaluation.stage_identity_study
+
+# 74. Re-make the pixel recording from the verified level entry (10.62) and score it against the
+#     camera rather than the player. The recorder needs core + ROM (~15 s); the recheck is
+#     emulator-free. Writes data/raw/smw_pixel_level_dataset.npz (a NEW file - the published
+#     smw_pixel_dataset.npz is left as §10.31 measured it) and
+#     results/pixel_level_recheck_metrics.json.
+python scripts/record_pixel_gameplay.py --state data/raw/smw_yoshi_island_1_level.state     --output data/raw/smw_pixel_level_dataset.npz --clear-boxes --episodes 12 --frames 700
+python -m src.evaluation.pixel_level_recheck
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

@@ -128,6 +128,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `dashboard_video_metrics.json` | `src/evaluation/dashboard_video.py` | no | 10.60 |
 | `dashboard_study_metrics.json` | `src/evaluation/dashboard_study.py` | yes | 10.60 |
 | `stage_identity_metrics.json` | `src/evaluation/stage_identity_study.py` | yes | 10.61 |
+| `pixel_level_recheck_metrics.json` | `src/evaluation/pixel_level_recheck.py` | no | 10.62 |
 
 ## Input freshness
 

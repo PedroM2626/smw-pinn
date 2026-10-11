@@ -39,6 +39,18 @@ numbers* - those are reported here and in README Section 12, never applied silen
   Writes `results/stage_identity_metrics.json` and README 10.61; the unreproducible 32.65% figure that
   10.36.3 carried is withdrawn in favour of it, and the gate that demanded the old number now
   demands the question and the pointer instead.
+- **A pixel recording of a level that is really entered** (README 10.62).
+  `scripts/record_pixel_gameplay.py` gains opt-in `--state`, `--output` and `--clear-boxes` flags and
+  a `camera` channel - its defaults are the published boot-and-force preamble unchanged, so
+  `smw_pixel_dataset.npz` stays reproducible - and `src/evaluation/pixel_level_recheck.py`
+  (`make pixel-level-recheck`) scores the new recording against the camera rather than the player's
+  own x. The published file shows the picture shifting on 0.00% of its pairs; the new one shifts on
+  88.45% of the pairs where the camera moved and holds still on 97.86% of those where it did not,
+  which is the positive control 10.31.1's null needed. Writes
+  `data/raw/smw_pixel_level_dataset.npz` (a new file) and
+  `results/pixel_level_recheck_metrics.json`; `tests/test_pixel_level_recheck.py` also asserts the
+  new frames are full-width pictures, which is 10.60's decoder fix checked on data rather than on a
+  synthetic buffer.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded

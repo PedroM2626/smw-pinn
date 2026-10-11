@@ -99,7 +99,9 @@ def test_the_superseded_scratch_figure_is_not_left_quoted() -> None:
     )
     assert "10.61" in entry, "the paragraph that raised the question must name the answer"
     elsewhere = text.replace(text[text.index("## 12.") :], "")
-    assert "32.65" not in elsewhere, "a withdrawn figure belongs in the retraction log, not in prose"
+    assert "32.65" not in elsewhere, (
+        "a withdrawn figure belongs in the retraction log, not in prose"
+    )
 
 
 def test_compare_scores_only_the_columns_both_sides_see() -> None:
