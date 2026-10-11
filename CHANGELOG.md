@@ -28,6 +28,17 @@ numbers* - those are reported here and in README Section 12, never applied silen
   `smw-pinn` catalogue as `dashboard-video` and `dashboard-study`, and
   `tests/test_dashboard_pipeline.py` gates the hero caption, the generated section, the media sizes,
   the arm-selection rule, the held-frame reading of the residue, and the operator channel.
+- **`src/evaluation/stage_identity_study.py`** (`make stage-identity`, `smw-pinn stage-identity`,
+  needs core + ROM): answers the question 10.36.3 left open - which terrain the committed telemetry
+  recordings walk. One instrument (the first non-air tile at or below Mario's own tile row, inside the
+  7x7 window the recordings carry, modal per absolute tile column) is applied three times: to the
+  recording, and live to both the forced-mode session it came from and the verified world-map level
+  entry, under an identical scripted walk. The recording reproduces its own session on 95.08% of the
+  columns both cover and the two live sessions agree on 53.52%, so the recordings are faithful to the
+  session they were made in and that session's `$7E:C800` buffer is not the entered stage's terrain.
+  Writes `results/stage_identity_metrics.json` and README 10.61; the unreproducible 32.65% figure that
+  10.36.3 carried is withdrawn in favour of it, and the gate that demanded the old number now
+  demands the question and the pointer instead.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded

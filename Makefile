@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -45,6 +45,7 @@ help:
 	@echo "record-dashboard     Record the hero episode: probabilities, V(s), RGB, operator A (10.60, needs core + ROM)"
 	@echo "dashboard-video      Render the README hero MP4 + GIF from that recording (10.60)"
 	@echo "dashboard-study      Gather the dashboard artifacts and write README 10.60 (10.60)"
+	@echo "stage-identity       Which terrain the committed recordings walk (README 10.61, needs core + ROM)"
 	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "metric-decomposition  Split the rollout violation figure into consistency/smoothness (10.48)"
 	@echo "velocity-classes  Which documented speed constant the telemetry supports (README 10.49)"
@@ -236,6 +237,10 @@ dashboard-video:
 # Write README 10.60 from the recording, the render and the arm probe (10.60)
 dashboard-study:
 	$(PY) -m src.evaluation.dashboard_study
+
+# Reconstruct the recorded terrain and score it against both sessions live (10.61; hardware)
+stage-identity:
+	$(PY) -m src.evaluation.stage_identity_study
 
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py

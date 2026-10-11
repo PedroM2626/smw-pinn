@@ -100,7 +100,8 @@ def test_the_credit_and_the_open_question_are_both_in_print() -> None:
     text = _readme()
     section = text.split("#### 10.36.3")[1].split("## 11.")[0]
     assert "burn-mario-rl" in section, "the route is not ours and the section must say so"
-    assert "32.65%" in section or _payload() is None, (
+    assert "does not settle" in section and "10.61" in section, (
         "the terrain mismatch between the genuine level and the committed recordings is the open "
-        "item this section leaves; dropping the number drops the question"
+        "item this section leaves; it may lose its unreproducible number now that 10.61 measures it, "
+        "but not the question or the pointer to where it is answered"
     )

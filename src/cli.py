@@ -93,6 +93,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "pixel-frame-probe": "src.evaluation.pixel_frame_probe",
     "dashboard-video": "src.evaluation.dashboard_video",
     "dashboard-study": "src.evaluation.dashboard_study",
+    "stage-identity": "src.evaluation.stage_identity_study",
     "corrected-physics": "src.evaluation.corrected_physics_ablation",
     "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
     "learned-probes": "src.evaluation.learned_structure_probe_benchmark",
