@@ -192,14 +192,14 @@ def wait_for_map(emu: SnesLibretroEmulator) -> Dict[str, Any]:
 
 def main() -> Dict[str, Any]:
     parser = argparse.ArgumentParser(description="Clear a stage and survey what the map opens.")
-    parser.add_argument("--rounds", type=int, default=4, help="levels to try to clear in sequence")
-    parser.add_argument("--attempts", type=int, default=3)
-    parser.add_argument("--max-frames", type=int, default=3000)
+    parser.add_argument("--rounds", type=int, default=2, help="levels to try to clear in sequence")
+    parser.add_argument("--attempts", type=int, default=2)
+    parser.add_argument("--max-frames", type=int, default=8000)
     parser.add_argument("--max-nodes", type=int, default=40)
     parser.add_argument(
         "--seed",
         type=int,
-        default=None,
+        default=7,
         help="seed the controller's sampling per attempt; unseeded, the attempts are draws",
     )
     parser.add_argument("--output", default=results_file("world_map_clearance.json"))

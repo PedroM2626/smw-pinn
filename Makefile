@@ -270,9 +270,11 @@ pixel-retrain:
 survey-map:
 	$(PY) -m scripts.survey_world_map
 
-# Fly the clearance controller at the entered stage and read the mode byte (10.66; hardware)
+# Fly the clearance controller at the entered stage and read the mode byte (10.66; hardware). The
+# flags are the run that produced results/world_map_clearance.json: a frame budget that fits the
+# level, and the seed whose clear the section quotes, so the target reproduces the artifact.
 unlock-map:
-	$(PY) -m scripts.unlock_world_map
+	$(PY) -m scripts.unlock_world_map --rounds 2 --attempts 2 --max-frames 8000 --seed 7
 
 # One dashboard episode per stage, with the rightward walk and the MPC's best draw (10.66; hardware)
 record-level-dashboards:
