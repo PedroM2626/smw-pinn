@@ -13,7 +13,7 @@ import torch.nn as nn
 
 from src.evaluation.per_variable_metrics import compute_per_variable_metrics
 from src.perception.pixel_encoder import PixelStateEstimator
-from src.perception.vision_dataset import create_vision_loaders
+from src.perception.vision_dataset import create_vision_loaders, create_vision_pair_loaders
 from src.utils.config import parse_args_with_config
 from src.utils.logging import get_logger
 from src.utils.paths import (
@@ -33,25 +33,39 @@ def run_training(
     learning_rate: float = 1e-3,
     seed: int = 42,
     output_dir: str = RESULTS_DIR,
+    input_kind: str = "single",
+    tag: str | None = None,
+    metrics_name: str = "pixel_estimator_metrics.json",
 ):
+    """Train one estimator.
+
+    `input_kind="pair"` stacks each frame with the one before it and widens the first convolution to
+    six channels; `tag` renames the checkpoint so a second arm cannot overwrite the published
+    `pixel_estimator_best.pt`. The defaults are the published run, unchanged.
+    """
+    if input_kind not in ("single", "pair"):
+        raise ValueError(f"unknown input kind {input_kind!r}")
     set_global_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Device: {device}")
 
     data = np.load(dataset_path)
-    train_loader, val_loader, normalizer = create_vision_loaders(
+    in_channels = 3 if input_kind == "single" else 6
+    loaders = create_vision_loaders if input_kind == "single" else create_vision_pair_loaders
+    train_loader, val_loader, normalizer = loaders(
         data["frames"], data["states"], batch_size=batch_size, seed=seed
     )
     logger.info(f"Frames: {data['frames'].shape} | train batches: {len(train_loader)}")
 
-    model = PixelStateEstimator().to(device)
+    model = PixelStateEstimator(in_channels=in_channels).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="min", factor=0.5, patience=3)
     loss_fn = nn.SmoothL1Loss()
 
     best_val, patience, bad = float("inf"), 6, 0
     os.makedirs(os.path.join(output_dir, "checkpoints"), exist_ok=True)
-    ckpt = os.path.join(output_dir, "checkpoints", "pixel_estimator_best.pt")
+    stem = "pixel_estimator_best.pt" if tag is None else f"pixel_estimator_{tag}_best.pt"
+    ckpt = os.path.join(output_dir, "checkpoints", stem)
 
     def _validate() -> tuple:
         """Denormalized validation predictions of the model currently in `model`."""
@@ -100,19 +114,30 @@ def run_training(
 
     # Report the metrics of the *restored best* checkpoint: without this reload the
     # numbers describe the last (worse, early-stopped) epoch instead of the shipped model.
-    payload = torch.load(ckpt, map_location=device, weights_only=False)
+    payload = torch.load(ckpt, map_location=device, weights_only=True)
     model.load_state_dict(payload["model"])
     _, preds, targets = _validate()
     per_var = compute_per_variable_metrics(torch.cat(preds), torch.cat(targets))
-    metrics = {"best_val_loss": best_val, "per_variable": per_var}
+    metrics = {
+        "best_val_loss": best_val,
+        "per_variable": per_var,
+        "protocol": {
+            "input": input_kind,
+            "in_channels": in_channels,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "checkpoint": os.path.basename(ckpt),
+        },
+    }
     write_metrics(
-        os.path.join(output_dir, "pixel_estimator_metrics.json"),
+        os.path.join(output_dir, metrics_name),
         metrics,
         seed=seed,
         command="python -m src.training.train_pixel_estimator",
         extra_meta={"dataset": os.path.basename(dataset_path), "samples": int(len(data["frames"]))},
     )
-    logger.info(f"Saved {ckpt} + pixel_estimator_metrics.json")
+    logger.info(f"Saved {ckpt} + {metrics_name}")
     return metrics
 
 
@@ -125,6 +150,11 @@ if __name__ == "__main__":
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", default=RESULTS_DIR)
+    parser.add_argument("--input", choices=["single", "pair"], default="single")
+    parser.add_argument(
+        "--tag", default=None, help="checkpoint suffix, so a second arm is a new file"
+    )
+    parser.add_argument("--metrics-name", default="pixel_estimator_metrics.json")
     args = parse_args_with_config(parser)
     run_training(
         dataset_path=args.dataset_path,
@@ -133,4 +163,7 @@ if __name__ == "__main__":
         learning_rate=args.learning_rate,
         seed=args.seed,
         output_dir=args.output_dir,
+        input_kind=args.input,
+        tag=args.tag,
+        metrics_name=args.metrics_name,
     )

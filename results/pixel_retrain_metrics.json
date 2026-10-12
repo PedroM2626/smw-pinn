@@ -1,0 +1,252 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T00:37:39+00:00",
+    "git_sha": "37e728e1f8875f95acd99b4750f757b8de76b374",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "make pixel-retrain"
+  },
+  "study": "10.31's claim that velocity is not a function of a single RGB frame, re-measured as a 2x2 of recording (title composite, scrolling level) by input (one frame, two frames).",
+  "protocol": {
+    "architecture": "PixelStateEstimator, base_channels default, first convolution widened to six channels for the two-frame cells",
+    "epochs": 20,
+    "seed": 42,
+    "split": "the published seeded 85/15 random split of frame indices",
+    "pairing": "stack_consecutive_frames: each frame beside its predecessor in the recording's own order, built before the split",
+    "metrics": "compute_per_variable_metrics on denormalized validation predictions"
+  },
+  "cells": {
+    "published_single": {
+      "dataset": "data/raw/smw_pixel_dataset.npz",
+      "input": "single",
+      "in_channels": 3,
+      "checkpoint": "pixel_estimator_best.pt",
+      "metrics_file": "pixel_estimator_metrics.json",
+      "best_val_loss": 0.15658529102802277,
+      "per_variable": {
+        "x": {
+          "mse": 1040.033447265625,
+          "mae": 22.77901840209961,
+          "r2": 0.948206889573401
+        },
+        "y": {
+          "mse": 518.0834350585938,
+          "mae": 14.589576721191406,
+          "r2": 0.4347947266539912
+        },
+        "vx": {
+          "mse": 422.34765625,
+          "mae": 16.459619522094727,
+          "r2": 0.11601856463757487
+        },
+        "vy": {
+          "mse": 1406.3148193359375,
+          "mae": 23.53396987915039,
+          "r2": -0.0052012937811785065
+        },
+        "c_ground": {
+          "accuracy": 0.8774509803921569,
+          "f1": 0.9038461538461539
+        },
+        "c_ceiling": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_left": {
+          "accuracy": 0.9926470588235294,
+          "f1": 0.0
+        },
+        "c_right": {
+          "accuracy": 1.0,
+          "f1": null
+        }
+      },
+      "samples": 2720,
+      "source": "the published run of 10.31, read from its own artifact"
+    },
+    "published_pair": {
+      "dataset": "data/raw/smw_pixel_dataset.npz",
+      "input": "pair",
+      "in_channels": 6,
+      "checkpoint": "pixel_estimator_retrain_published_pair_best.pt",
+      "metrics_file": "pixel_estimator_retrain_published_pair_metrics.json",
+      "best_val_loss": 0.17990344762802124,
+      "per_variable": {
+        "x": {
+          "mse": 1332.4947509765625,
+          "mae": 28.548364639282227,
+          "r2": 0.9336424674001144
+        },
+        "y": {
+          "mse": 730.80224609375,
+          "mae": 19.733251571655273,
+          "r2": 0.20272828774850837
+        },
+        "vx": {
+          "mse": 336.15087890625,
+          "mae": 13.705148696899414,
+          "r2": 0.2964299896070477
+        },
+        "vy": {
+          "mse": 1396.1732177734375,
+          "mae": 23.86274528503418,
+          "r2": 0.002047647411780651
+        },
+        "c_ground": {
+          "accuracy": 0.7377450980392157,
+          "f1": 0.8183361629881154
+        },
+        "c_ceiling": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_left": {
+          "accuracy": 0.9926470588235294,
+          "f1": 0.0
+        },
+        "c_right": {
+          "accuracy": 1.0,
+          "f1": null
+        }
+      },
+      "samples": 2720,
+      "source": "trained for this section"
+    },
+    "level_single": {
+      "dataset": "data/raw/smw_pixel_level_dataset.npz",
+      "input": "single",
+      "in_channels": 3,
+      "checkpoint": "pixel_estimator_retrain_level_single_best.pt",
+      "metrics_file": "pixel_estimator_retrain_level_single_metrics.json",
+      "best_val_loss": 0.07569407485425472,
+      "per_variable": {
+        "x": {
+          "mse": 564.4948120117188,
+          "mae": 19.03325843811035,
+          "r2": 0.9778590805766946
+        },
+        "y": {
+          "mse": 71.92049407958984,
+          "mae": 5.702695369720459,
+          "r2": 0.9372495835488356
+        },
+        "vx": {
+          "mse": 206.25367736816406,
+          "mae": 10.895988464355469,
+          "r2": 0.5268345667886605
+        },
+        "vy": {
+          "mse": 916.007080078125,
+          "mae": 19.799488067626953,
+          "r2": 0.45325878207142034
+        },
+        "c_ground": {
+          "accuracy": 0.9724473257698542,
+          "f1": 0.9761570827489481
+        },
+        "c_ceiling": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_left": {
+          "accuracy": 0.9983792544570502,
+          "f1": 0.0
+        },
+        "c_right": {
+          "accuracy": 1.0,
+          "f1": null
+        }
+      },
+      "samples": 4112,
+      "source": "trained for this section"
+    },
+    "level_pair": {
+      "dataset": "data/raw/smw_pixel_level_dataset.npz",
+      "input": "pair",
+      "in_channels": 6,
+      "checkpoint": "pixel_estimator_retrain_level_pair_best.pt",
+      "metrics_file": "pixel_estimator_retrain_level_pair_metrics.json",
+      "best_val_loss": 0.03763427063822746,
+      "per_variable": {
+        "x": {
+          "mse": 228.08062744140625,
+          "mae": 11.160303115844727,
+          "r2": 0.9910540990030229
+        },
+        "y": {
+          "mse": 62.21835708618164,
+          "mae": 4.9575018882751465,
+          "r2": 0.9457146693508559
+        },
+        "vx": {
+          "mse": 82.62964630126953,
+          "mae": 6.680956840515137,
+          "r2": 0.8104397854817191
+        },
+        "vy": {
+          "mse": 268.6296081542969,
+          "mae": 10.265819549560547,
+          "r2": 0.8396618529758955
+        },
+        "c_ground": {
+          "accuracy": 0.9756888168557536,
+          "f1": 0.9789029535864979
+        },
+        "c_ceiling": {
+          "accuracy": 1.0,
+          "f1": null
+        },
+        "c_left": {
+          "accuracy": 0.9983792544570502,
+          "f1": 0.0
+        },
+        "c_right": {
+          "accuracy": 1.0,
+          "f1": null
+        }
+      },
+      "samples": 4112,
+      "source": "trained for this section"
+    }
+  },
+  "verdict": {
+    "single_frame_velocity_r2_level": {
+      "vx": 0.5268345667886605,
+      "vy": 0.45325878207142034
+    },
+    "single_frame_velocity_r2_published": {
+      "vx": 0.11601856463757487,
+      "vy": -0.0052012937811785065
+    },
+    "two_frame_velocity_r2_level": {
+      "vx": 0.8104397854817191,
+      "vy": 0.8396618529758955
+    },
+    "best_velocity_single_frame_level": 0.5268345667886605,
+    "best_velocity_two_frames_level": 0.8396618529758955,
+    "strong_form_survives": false,
+    "two_frames_beat_one": true,
+    "two_frame_gain_vx": 0.28360521869305866,
+    "two_frame_gain_vy": 0.3864030709044751,
+    "one_frame_gain_over_menu_vx": 0.4108160021510856,
+    "position_r2_published_vs_level": [
+      0.948206889573401,
+      0.9778590805766946
+    ],
+    "pose_regresses_with_pairs_on_menu": true,
+    "vx_mae_subpixels_per_frame": {
+      "published_single": 16.459619522094727,
+      "published_pair": 13.705148696899414,
+      "level_single": 10.895988464355469,
+      "level_pair": 6.680956840515137
+    },
+    "parity_samples_match_the_published_artifact": true,
+    "largest_velocity_gap_r2": 0.45846007585259885
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T00:35:39+00:00",
+    "git_sha": "37e728e1f8875f95acd99b4750f757b8de76b374",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "seed": 42,
+    "command": "python -m src.training.train_pixel_estimator",
+    "dataset": "smw_pixel_dataset.npz",
+    "samples": 2720
+  },
+  "best_val_loss": 0.17990344762802124,
+  "per_variable": {
+    "x": {
+      "mse": 1332.4947509765625,
+      "mae": 28.548364639282227,
+      "r2": 0.9336424674001144
+    },
+    "y": {
+      "mse": 730.80224609375,
+      "mae": 19.733251571655273,
+      "r2": 0.20272828774850837
+    },
+    "vx": {
+      "mse": 336.15087890625,
+      "mae": 13.705148696899414,
+      "r2": 0.2964299896070477
+    },
+    "vy": {
+      "mse": 1396.1732177734375,
+      "mae": 23.86274528503418,
+      "r2": 0.002047647411780651
+    },
+    "c_ground": {
+      "accuracy": 0.7377450980392157,
+      "f1": 0.8183361629881154
+    },
+    "c_ceiling": {
+      "accuracy": 1.0,
+      "f1": null
+    },
+    "c_left": {
+      "accuracy": 0.9926470588235294,
+      "f1": 0.0
+    },
+    "c_right": {
+      "accuracy": 1.0,
+      "f1": null
+    }
+  },
+  "protocol": {
+    "input": "pair",
+    "in_channels": 6,
+    "epochs": 20,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "checkpoint": "pixel_estimator_retrain_published_pair_best.pt"
+  }
+}

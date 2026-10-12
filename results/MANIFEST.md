@@ -131,6 +131,10 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `pixel_level_recheck_metrics.json` | `src/evaluation/pixel_level_recheck.py` | no | 10.62 |
 | `pause_hygiene_metrics.json` | `src/evaluation/pause_hygiene_study.py` | no | 10.63 |
 | `forced_mode_buffer_metrics.json` | `src/evaluation/forced_mode_buffer_study.py` | yes | 10.64 |
+| `pixel_retrain_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
+| `pixel_estimator_retrain_published_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
+| `pixel_estimator_retrain_level_single_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
+| `pixel_estimator_retrain_level_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
 
 ## Input freshness
 

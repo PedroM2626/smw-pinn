@@ -13,10 +13,10 @@ from src.utils.seed import seed_worker
 
 
 class FrameStateDataset(Dataset):
-    """Frames uint8 [N, H, W, 3] + states float32 [N, 8].
+    """Frames uint8 [N, H, W, C] with C in (3, 6) + states float32 [N, 8].
 
     Returns:
-        frame: float32 [3, H, W] in [0, 1].
+        frame: float32 [C, H, W] in [0, 1].
         state: float32 [8] (optionally standardized via `normalizer`).
     """
 
@@ -28,8 +28,8 @@ class FrameStateDataset(Dataset):
     ):
         frames = np.asarray(frames, dtype=np.uint8)
         states = np.asarray(states, dtype=np.float32)
-        if frames.ndim != 4 or frames.shape[-1] != 3:
-            raise ValueError(f"Expected frames [N, H, W, 3], got {frames.shape}")
+        if frames.ndim != 4 or frames.shape[-1] not in (3, 6):
+            raise ValueError(f"Expected frames [N, H, W, 3 or 6], got {frames.shape}")
         if states.ndim != 2 or states.shape[1] != 8 or len(states) != len(frames):
             raise ValueError(f"Expected states [N, 8] matching frames, got {states.shape}")
         self.frames = frames
@@ -80,3 +80,40 @@ def create_vision_loaders(
     )
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return train_loader, val_loader, normalizer
+
+
+def stack_consecutive_frames(frames: np.ndarray) -> np.ndarray:
+    """[N, H, W, 3] -> [N, H, W, 6], the earlier frame first; frame 0 is paired with itself.
+
+    The first frame has no predecessor, and repeating it is the honest degenerate sample: dropping
+    it would silently shorten the recording and shift which frames land in which split.
+    """
+    frames = np.asarray(frames, dtype=np.uint8)
+    if frames.ndim != 4 or frames.shape[-1] != 3:
+        raise ValueError(f"Expected frames [N, H, W, 3], got {frames.shape}")
+    previous = np.concatenate([frames[:1], frames[:-1]], axis=0)
+    return np.concatenate([previous, frames], axis=-1)
+
+
+def create_vision_pair_loaders(
+    frames: np.ndarray,
+    states: np.ndarray,
+    batch_size: int = 64,
+    train_ratio: float = 0.85,
+    seed: int = 42,
+    num_workers: int = 0,
+) -> Tuple[DataLoader, DataLoader, StateNormalizer]:
+    """Two-frame inputs: each frame stacked with the one that preceded it.
+
+    The pairs are built from the recording's own order *before* the split, because "the frame before
+    this one" is a fact about the recording; shuffling first and reaching backwards would pair a
+    frame with an unrelated one and call it history.
+    """
+    return create_vision_loaders(
+        stack_consecutive_frames(frames),
+        states,
+        batch_size=batch_size,
+        train_ratio=train_ratio,
+        seed=seed,
+        num_workers=num_workers,
+    )

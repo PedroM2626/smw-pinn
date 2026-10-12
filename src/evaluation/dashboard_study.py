@@ -262,7 +262,9 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
         f"still, which 10.60 "
         f"identifies as the level's own message box. Full quality: "
         f"[`{mp4}`]({mp4}) ({payload['video']['bytes'] / 1e6:.2f} MB, "
-        f"{payload['video']['duration_s']:.2f} s). 10.60 says which actor flies this, and why.*",
+        f"{payload['video']['duration_s']:.2f} s) - a download, not a player: GitHub serves a "
+        f"committed `.mp4` as a file, which is why the inline copy above is a GIF. 10.60 says "
+        f"which actor flies this, and why.*",
         "",
     ]
 

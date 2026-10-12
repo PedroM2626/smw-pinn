@@ -97,6 +97,7 @@ MODULE_COMMANDS: dict[str, str] = {
     "pixel-level-recheck": "src.evaluation.pixel_level_recheck",
     "pause-hygiene": "src.evaluation.pause_hygiene_study",
     "forced-mode-buffer": "src.evaluation.forced_mode_buffer_study",
+    "pixel-retrain": "src.evaluation.pixel_retrain_study",
     "corrected-physics": "src.evaluation.corrected_physics_ablation",
     "sprint-excitation": "src.evaluation.sprint_excitation_benchmark",
     "learned-probes": "src.evaluation.learned_structure_probe_benchmark",

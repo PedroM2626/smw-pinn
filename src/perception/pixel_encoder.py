@@ -71,13 +71,16 @@ class PixelStateEstimator(nn.Module):
     Args:
         state_dim: 8 (WRAM kinematics + contact flags).
         base_channels: width multiplier (16 ≈ 150k params; use 4-8 in tests).
+        in_channels: 3 for a single frame, 6 for two consecutive frames stacked on the channel
+            axis - the input `FramePairDataset` produces, and the only way to ask whether velocity
+            is recoverable from imagery at all rather than from one frame of it.
     """
 
-    def __init__(self, state_dim: int = 8, base_channels: int = 16):
+    def __init__(self, state_dim: int = 8, base_channels: int = 16, in_channels: int = 3):
         super().__init__()
         b = base_channels
         self.features = nn.Sequential(
-            nn.Conv2d(3, b, kernel_size=5, stride=2, padding=2),
+            nn.Conv2d(in_channels, b, kernel_size=5, stride=2, padding=2),
             nn.ReLU(),
             nn.Conv2d(b, 2 * b, kernel_size=5, stride=2, padding=2),
             nn.ReLU(),

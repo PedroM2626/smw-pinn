@@ -77,6 +77,21 @@ numbers* - those are reported here and in README Section 12, never applied silen
   otherwise take. This corrects the header's dataset line, which claimed the recordings were made "on
   stage Yoshi's Island 1": no measured number moves, but the terrain the tile-conditioned results are
   conditioned on belongs to the demo, not to a level the harness chose.
+- **10.31's velocity conclusion, re-measured on frames that move** (README 10.65).
+  `src/evaluation/pixel_retrain_study.py` (`make pixel-retrain`, `smw-pinn pixel-retrain`,
+  emulator-free) runs the published protocol as a 2x2 - the title composite and the scrolling
+  recording of 10.62, each fed one frame and each fed a frame stacked against its predecessor - with
+  10.31's own run reused as a parity cell rather than re-trained. `PixelStateEstimator` gains an
+  `in_channels` argument (default 3, so the published checkpoint still loads) and
+  `vision_dataset.stack_consecutive_frames` builds the pairs from the recording's own order before
+  the split, because reaching backwards after shuffling would pair a frame with an unrelated one and
+  call it history. On moving frames a single frame already carries speed ($v_x$ 0.5268 against 0.1160
+  on the menu), so the strong form of the published sentence does not survive; the second frame lifts
+  $v_x$ to 0.8104 and $v_y$ to 0.8397, which is the first measurement this repository has made of the
+  gain §10.31 only asked for. The new cells are `pixel_estimator_retrain_*` files; the published
+  checkpoint, its artifact and its numbers are read and not rewritten, which
+  `tests/test_pixel_retrain_study.py` checks with git and with a shape-only comparison of the two
+  architectures.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded
