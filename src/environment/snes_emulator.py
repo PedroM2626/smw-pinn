@@ -496,23 +496,12 @@ class SnesLibretroEmulator:
     def tilemap_addr(tile_x: int, tile_y: int) -> int | None:
         """The WRAM address of one tile in the horizontal level buffer, or None if out of range.
 
-        SMW horizontal level buffer formula: `$7E:C800 + subscreen * 0x01B0 + row * 16 + col`. The
-        tile coordinates are absolute within the level, so column 17 is the second column of the
-        second subscreen; `get_local_tilemap_patch` and any reader of raw tile IDs share this one
-        mapping, because two implementations of an address formula is how a terrain comparison ends
-        up measuring the difference between them.
+        The formula lives in `src.environment.wram.tilemap_addr` so that the emulator, the raw-ID
+        reader and any picture of a patch all resolve a tile to the same byte - two implementations
+        of an address formula is how a terrain comparison ends up measuring the difference between
+        them.
         """
-        if tile_x < 0 or tile_y < 0 or tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN:
-            return None
-        subscreen = tile_x // wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-        col_in_sub = tile_x % wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-        addr = (
-            wram.ADDR_TILEMAP_BASE
-            + subscreen * wram.TILEMAP_SUBSCREEN_STRIDE
-            + tile_y * wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-            + col_in_sub
-        )
-        return None if addr > wram.WRAM_SIZE_BYTES - 1 else addr
+        return wram.tilemap_addr(tile_x, tile_y)
 
     def read_tile_ids(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
         """The raw tile IDs around Mario, as the buffer stores them, before any classification.

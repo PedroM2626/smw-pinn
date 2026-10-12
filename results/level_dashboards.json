@@ -1,0 +1,318 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T03:06:49+00:00",
+    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m scripts.record_level_dashboards"
+  },
+  "study": "One dashboard episode per stage the world map hands over, with the distance a rightward walk reaches in that stage and what the clearance controller does there.",
+  "protocol": {
+    "recorder": "scripts/record_dashboard_run.py, through scripts/record_level_dashboards.py",
+    "controller": "dagger",
+    "frames_per_episode": 1268,
+    "frontier_rule": "RIGHT+Y with the B pulse, stopped at 90 frames of no advance, a spent hold, death, or the frame budget",
+    "mpc_attempts": 3,
+    "mpc_frames": 2000,
+    "goal_proxy_px": 1900.0,
+    "clear_definition": "none claimed: 10.66 showed the engine returns to the map at the same node when the run ends, which is a game over",
+    "device": "cuda"
+  },
+  "stages": [
+    {
+      "savestate": "smw_map_node_152_136_t2a.state",
+      "map_node": [
+        152,
+        136
+      ],
+      "identity": {
+        "mode_at_start": "0x14",
+        "translevel": "0x2A",
+        "timer_hundreds": 3,
+        "x_at_start": 16.0,
+        "y_at_start": 352.5
+      },
+      "survey": {
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      },
+      "walk_right_frontier": {
+        "frames": 539,
+        "frontier_px": 974.125,
+        "ended": "stall",
+        "final_mode": "0x14",
+        "operator_A_frames": 80
+      },
+      "mpc": {
+        "attempts": [
+          {
+            "frames": 2000,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              }
+            ],
+            "max_progress_px": 3998.0625,
+            "final_mode": "0x14",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00084,
+            "attempt": 0
+          },
+          {
+            "frames": 1011,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 1010,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 1315.875,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00068,
+            "attempt": 1
+          },
+          {
+            "frames": 1271,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 1270,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 2193.0,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00068,
+            "attempt": 2
+          }
+        ],
+        "best_progress_px": 3998.0625,
+        "end_modes": [
+          "0x0B",
+          "0x14"
+        ]
+      },
+      "episode": {
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
+        "frames": 1268,
+        "progress_px": 1573.125,
+        "progress_after_last_step_px": 1573.8125,
+        "ended": "max_frames",
+        "share_of_frontier": 1.614910817400231,
+        "repeats_the_measured_attempt_px": 0.0
+      },
+      "goal_proxy_px": 1900.0
+    },
+    {
+      "savestate": "smw_map_node_116_126_t28.state",
+      "map_node": [
+        116,
+        126
+      ],
+      "identity": {
+        "mode_at_start": "0x14",
+        "translevel": "0x28",
+        "timer_hundreds": 0,
+        "x_at_start": 128.0,
+        "y_at_start": 352.5
+      },
+      "survey": {
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      },
+      "walk_right_frontier": {
+        "frames": 206,
+        "frontier_px": 126.1875,
+        "ended": "stall",
+        "final_mode": "0x0C",
+        "operator_A_frames": 107
+      },
+      "mpc": {
+        "attempts": [
+          {
+            "frames": 118,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 117,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 124.6875,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00098,
+            "attempt": 0
+          },
+          {
+            "frames": 121,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 120,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 125.875,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00057,
+            "attempt": 1
+          },
+          {
+            "frames": 118,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 117,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 125.375,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00057,
+            "attempt": 2
+          }
+        ],
+        "best_progress_px": 125.875,
+        "end_modes": [
+          "0x0B"
+        ]
+      },
+      "episode": {
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
+        "frames": 317,
+        "progress_px": -128.0,
+        "progress_after_last_step_px": -115.0,
+        "ended": "death",
+        "share_of_frontier": -1.0143635463100544,
+        "repeats_the_measured_attempt_px": 0.0
+      },
+      "goal_proxy_px": 1900.0
+    },
+    {
+      "savestate": "smw_map_node_68_135_t29.state",
+      "map_node": [
+        68,
+        135
+      ],
+      "identity": {
+        "mode_at_start": "0x14",
+        "translevel": "0x29",
+        "timer_hundreds": 2,
+        "x_at_start": 16.0,
+        "y_at_start": 352.5
+      },
+      "survey": {
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      },
+      "walk_right_frontier": {
+        "frames": 288,
+        "frontier_px": 412.5625,
+        "ended": "stall",
+        "final_mode": "0x14",
+        "operator_A_frames": 32
+      },
+      "mpc": {
+        "attempts": [
+          {
+            "frames": 408,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 407,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 427.6875,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00106,
+            "attempt": 0
+          },
+          {
+            "frames": 428,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 427,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 471.8125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00078,
+            "attempt": 1
+          },
+          {
+            "frames": 400,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 399,
+                "mode": "0x0B"
+              }
+            ],
+            "max_progress_px": 405.9375,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.001,
+            "attempt": 2
+          }
+        ],
+        "best_progress_px": 471.8125,
+        "end_modes": [
+          "0x0B"
+        ]
+      },
+      "episode": {
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
+        "frames": 308,
+        "progress_px": 406.4375,
+        "progress_after_last_step_px": 406.4375,
+        "ended": "death",
+        "share_of_frontier": 0.985153764581124,
+        "repeats_the_measured_attempt_px": 0.0
+      },
+      "goal_proxy_px": 1900.0
+    }
+  ],
+  "stages_recorded": 3
+}

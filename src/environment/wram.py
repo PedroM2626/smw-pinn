@@ -87,6 +87,32 @@ TILE_SOLID = (0x00, 0x3F, 0x73, 0x74, 0x75, 0x76)  # ground, fill, pipes
 TILE_SLOPE = (0x80, 0x81, 0x82)
 TILE_HAZARD_SPIKES = (0x8C,)
 
+
+def tilemap_addr(tile_x: int, tile_y: int) -> "int | None":
+    """The WRAM address of one tile of the horizontal level buffer, or None where there is no cell.
+
+    SMW horizontal level buffer formula: `$7E:C800 + subscreen * 0x01B0 + row * 16 + col`. The tile
+    coordinates are absolute within the level, so column 17 is the second column of the second
+    subscreen. This is the one mapping every reader shares - the emulator's patch, its raw-ID read,
+    and any picture of a patch - because two implementations of an address formula is how a terrain
+    comparison ends up measuring the difference between them.
+
+    A `None` is not a tile: it is a cell the buffer does not have, and a reader that stores the
+    terrain class cannot tell it apart from air. Pictures of the buffer should say so out loud.
+    """
+    if tile_x < 0 or tile_y < 0 or tile_y >= TILEMAP_ROWS_PER_SUBSCREEN:
+        return None
+    subscreen = tile_x // TILEMAP_COLUMNS_PER_SUBSCREEN
+    col_in_sub = tile_x % TILEMAP_COLUMNS_PER_SUBSCREEN
+    addr = (
+        ADDR_TILEMAP_BASE
+        + subscreen * TILEMAP_SUBSCREEN_STRIDE
+        + tile_y * TILEMAP_COLUMNS_PER_SUBSCREEN
+        + col_in_sub
+    )
+    return None if addr > WRAM_SIZE_BYTES - 1 else addr
+
+
 # --- Engine-fixed scalar constants -------------------------------------------
 SUBPIXELS_PER_PIXEL = 16.0  # 1/16 px velocity units, from the fixed-point engine
 FRAMES_PER_SECOND = 60.0  # SNES refresh rate

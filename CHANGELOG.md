@@ -92,6 +92,34 @@ numbers* - those are reported here and in README Section 12, never applied silen
   checkpoint, its artifact and its numbers are read and not rewritten, which
   `tests/test_pixel_retrain_study.py` checks with git and with a shape-only comparison of the two
   architectures.
+- **The dashboard on every stage the map will give** (README 10.66).
+  `scripts/survey_world_map.py` (`make survey-map`) walks the world-map cursor in all four
+  directions from the node 10.36.3 measured, replays a recorded direction sequence to stand on each
+  position again, presses A, and saves the state of every session that reaches interactive mode and
+  walks; `scripts/unlock_world_map.py` (`make unlock-map`) flies the published clearance controller
+  at the entered stage with the mode byte sampled every frame, and only calls a run a clear if the
+  engine puts the cursor on a node other than the one it left; `scripts/record_level_dashboards.py`
+  (`make record-level-dashboards`) records one 10.60-channel episode per stage, with the distance a
+  held RIGHT+Y walk reaches there and the best of three MPC draws; and
+  `src/evaluation/level_dashboard_study.py` (`make level-dashboard-study`) renders the hero plus one
+  MP4, GIF and still per stage. Three findings come out of it: writing $7E:1F17 is not a teleport
+  (the engine keeps its own node index, which is why 10.36.3's `warp_on_map` looked like it worked),
+  nothing in this repository clears a stage - every exit is `0x0B` to `0x0E` at the same node, a game
+  over - and the published `goal_reached` is a distance test the engine does not corroborate, since
+  one draw reached 4340 px of forward progress without ever leaving interactive mode.
+  `src/environment/wram.py` gains the level-buffer address formula as `tilemap_addr`, which
+  `SnesLibretroEmulator.tilemap_addr` now delegates to, so the emulator, the raw-ID reader and the
+  rendered tile panel all resolve a tile to the same byte.
+- **The hero redrawn, and two defects in the picture it replaced** (README 10.60).
+  `src/evaluation/dashboard_video.py` now lays the dashboard out as one large console window beside
+  the tile window, the eight named actions as percentage bars, an SNES controller, the critic's
+  $V(s)$ and the stage progress bar, with the twelve numbers the actor is given under the window.
+  Two claims the first version made visually were wrong: the tile panel's `extent` flipped the array
+  vertically, so the sky was drawn under Mario's feet, and the class patch's zeros conflated air with
+  cells the buffer does not have - the panel now derives that fifth class from `wram.tilemap_addr`
+  and says so in its legend. The renderer also writes a still of the middle frame
+  (`results/figures/dashboard_run_still.png`), which is what `tests/test_dashboard_pipeline.py`
+  checks the orientation on, because a flipped panel has exactly the same pixels as an upright one.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded

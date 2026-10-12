@@ -260,6 +260,10 @@ def record(
     rgb_width: int,
     rgb_height: int,
     operator_limit: int = OPERATOR_A_LIMIT,
+    keep_frames: bool = True,
+    savestate_route: str = (
+        "entered through the world map with the control-handoff gate of 10.36.3 satisfied"
+    ),
     dataset_path: str = DATASET_PATH,
     output_dir: str = "results",
 ) -> Dict[str, Any]:
@@ -272,6 +276,10 @@ def record(
     with open(state_path, "rb") as fh:
         savestate = fh.read()
     emu.start_episode(savestate)
+    stage_identity = {
+        "mode_at_start": f"0x{emu.get_game_mode():02X}",
+        "translevel": f"0x{emu.read_wram_u8(wram.ADDR_TRANSLEVEL):02X}",
+    }
 
     keys = (
         "frame",
@@ -358,13 +366,17 @@ def record(
         emu.step_frame()
         nxt = emu.get_smw_state()
         residue = SUBPIXELS_PER_PIXEL * (float(nxt["x"]) - float(state["x"])) - float(state["vx"])
-        shot = emu.get_frame()
+        shot = emu.get_frame() if keep_frames else None
         rgb = (
             downscale(shot, rgb_width, rgb_height)
             if shot is not None
             else np.zeros((rgb_height, rgb_width, 3), np.uint8)
         )
-        patch = emu.get_local_tilemap_patch(state["x"], state["y"], radius=PATCH_RADIUS)
+        patch = (
+            emu.get_local_tilemap_patch(state["x"], state["y"], radius=PATCH_RADIUS)
+            if keep_frames
+            else None
+        )
 
         rows["frame"].append(frame)
         rows["state"].append(s_vec)
@@ -379,8 +391,9 @@ def record(
         rows["operator"].append(1.0 if operator else 0.0)
         rows["camera"].append(emu.get_camera_x())
         rows["mode"].append(float(emu.get_game_mode()))
-        rows["patch"].append(patch)
-        rows["frame_rgb"].append(rgb)
+        if keep_frames:
+            rows["patch"].append(patch)
+            rows["frame_rgb"].append(rgb)
         rows["live"].append(1.0 if live else 0.0)
         rows["residue"].append(float(residue))
         after = nxt
@@ -410,14 +423,16 @@ def record(
         "operator": np.asarray(rows["operator"], dtype=np.float32),
         "camera": camera.astype(np.float32),
         "mode": np.asarray(rows["mode"], dtype=np.uint8),
-        "patches": np.asarray(rows["patch"], dtype=np.int8),
-        "rgb": np.asarray(rows["frame_rgb"], dtype=np.uint8),
         "live": np.asarray(rows["live"], dtype=np.float32),
         "residue_subpixels": residue.astype(np.float32),
     }
+    if keep_frames:
+        save["patches"] = np.asarray(rows["patch"], dtype=np.int8)
+        save["rgb"] = np.asarray(rows["frame_rgb"], dtype=np.uint8)
     if primitive_probs:
         save["primitive_probs"] = np.asarray(primitive_probs, dtype=np.float32)
-    np.savez_compressed(dataset_path, **save)
+    if keep_frames:
+        np.savez_compressed(dataset_path, **save)
 
     probs = np.asarray(rows["button_probs"], dtype=np.float64)
     summary: Dict[str, Any] = {
@@ -431,9 +446,8 @@ def record(
         ),
         "protocol": {
             "savestate": os.path.basename(state_path),
-            "savestate_route": (
-                "entered through the world map with the control-handoff gate of 10.36.3 satisfied"
-            ),
+            "stage_identity": stage_identity,
+            "savestate_route": savestate_route,
             "controller": kind,
             "controller_kind": actor.kind,
             "checkpoint": actor.checkpoint,

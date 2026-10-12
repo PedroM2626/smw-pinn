@@ -1,0 +1,1100 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T02:33:20+00:00",
+    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m scripts.survey_world_map"
+  },
+  "study": "Which nodes of the Super Mario World map the engine will actually hand over: the cursor positions reachable from the first node, and for each one whether A leaves the map, loads a level with a timer, and gives control to a player that walks.",
+  "protocol": {
+    "route": "walk_to_overworld of 10.36.3, from a power-on boot",
+    "start_node": [
+      152,
+      136
+    ],
+    "cursor_at_start": [
+      152,
+      136
+    ],
+    "step_frames": 16,
+    "settle_frames": 30,
+    "entry_budget_frames": 900,
+    "entry_settle_frames": 180,
+    "gate": "walkable = interactive mode + plausible coordinates + right-press dx > 6 px; level = walkable and a nonzero timer",
+    "savestate_dir": "data/raw",
+    "saved_states": true,
+    "cursor_write_is_a_teleport": false
+  },
+  "discovery": {
+    "start": [
+      152,
+      136
+    ],
+    "positions": [
+      [
+        152,
+        136
+      ],
+      [
+        116,
+        126
+      ],
+      [
+        104,
+        120
+      ],
+      [
+        68,
+        135
+      ],
+      [
+        141,
+        135
+      ],
+      [
+        56,
+        136
+      ],
+      [
+        93,
+        126
+      ]
+    ],
+    "paths": {
+      "152|136": [],
+      "116|126": [
+        "LEFT"
+      ],
+      "104|120": [
+        "LEFT",
+        "UP"
+      ],
+      "68|135": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "141|135": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "56|136": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "93|126": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ]
+    },
+    "edges": [
+      {
+        "from": [
+          152,
+          136
+        ],
+        "to": [
+          116,
+          126
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          116,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          116,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          116,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          116,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          104,
+          120
+        ],
+        "to": [
+          68,
+          135
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          104,
+          120
+        ],
+        "to": [
+          141,
+          135
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          56,
+          136
+        ],
+        "to": [
+          93,
+          126
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "RIGHT"
+      }
+    ],
+    "max_nodes": 40,
+    "truncated": false
+  },
+  "nodes": [
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 166,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_152_136_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        116,
+        126
+      ],
+      "path": [
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        116,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_116_126_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        104,
+        120
+      ],
+      "path": [
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        104,
+        120
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 154,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_104_120_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_68_135_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_141_135_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_56_136_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        93,
+        126
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        93,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_93_126_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "walkable": [
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 166,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_152_136_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        116,
+        126
+      ],
+      "path": [
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        116,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_116_126_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        104,
+        120
+      ],
+      "path": [
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        104,
+        120
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 154,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_104_120_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_68_135_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_141_135_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_56_136_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        93,
+        126
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        93,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_map_node_93_126_t28.state",
+        "bytes": 823407,
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "levels": [
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 166,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_152_136_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_68_135_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_141_135_t2a.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 15.8125,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_map_node_56_136_t29.state",
+        "bytes": 823407,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 15.8125,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "translevels_seen": [
+    "0x28",
+    "0x29",
+    "0x2A"
+  ]
+}

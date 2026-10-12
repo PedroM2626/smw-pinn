@@ -132,6 +132,10 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `pause_hygiene_metrics.json` | `src/evaluation/pause_hygiene_study.py` | no | 10.63 |
 | `forced_mode_buffer_metrics.json` | `src/evaluation/forced_mode_buffer_study.py` | yes | 10.64 |
 | `pixel_retrain_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
+| `world_map_survey.json` | `scripts/survey_world_map.py` | yes | 10.66 |
+| `world_map_progression.json` | `scripts/unlock_world_map.py` | yes | 10.66 |
+| `level_dashboards.json` | `scripts/record_level_dashboards.py` | yes | 10.66 |
+| `level_dashboard_study_metrics.json` | `src/evaluation/level_dashboard_study.py` | no | 10.66 |
 | `pixel_estimator_retrain_published_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
 | `pixel_estimator_retrain_level_single_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
 | `pixel_estimator_retrain_level_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |

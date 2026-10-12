@@ -1,0 +1,302 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T02:39:58+00:00",
+    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m scripts.unlock_world_map"
+  },
+  "study": "What the engine does when the clearance controller is flown at the level entered through the world map, and what the map reaches afterwards.",
+  "protocol": {
+    "controller": "mpc",
+    "checkpoint": "pinn_multi_entity_best.pt",
+    "rounds": 2,
+    "attempts_per_round": 4,
+    "max_frames_per_attempt": 3000,
+    "exit_budget_frames": 1800,
+    "clear_definition": "the engine reached the world map (0x0E) with the cursor on a node other than the one entered; reaching 0x0E at the same node is a game over, which is what 0x0B -> 0x0C -> 0x0D -> 0x0E is",
+    "savestate_dir": "data/raw",
+    "device": "cuda"
+  },
+  "map_before": {
+    "cursor": [
+      152,
+      136
+    ],
+    "positions": [
+      [
+        152,
+        136
+      ],
+      [
+        116,
+        126
+      ],
+      [
+        104,
+        120
+      ],
+      [
+        68,
+        135
+      ],
+      [
+        141,
+        135
+      ],
+      [
+        56,
+        136
+      ],
+      [
+        93,
+        126
+      ]
+    ],
+    "paths": {
+      "152|136": [],
+      "116|126": [
+        "LEFT"
+      ],
+      "104|120": [
+        "LEFT",
+        "UP"
+      ],
+      "68|135": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "141|135": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "56|136": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "93|126": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ]
+    }
+  },
+  "rounds": [
+    {
+      "round": 0,
+      "node": [
+        152,
+        136
+      ],
+      "entered": true,
+      "entry_frame": 166,
+      "translevel": "0x2A",
+      "timer_hundreds": 3,
+      "x_at_entry": 16.0,
+      "y_at_entry": 352.125,
+      "plausible_at_entry": false,
+      "savestate": "smw_map_round_0_152_136_t2a.state",
+      "attempts": [
+        {
+          "frames": 3000,
+          "mode_transitions": [
+            {
+              "frame": 0,
+              "mode": "0x14"
+            }
+          ],
+          "max_progress_px": 4340.0,
+          "final_mode": "0x14",
+          "on_map_at_exit": false,
+          "wall_seconds_per_frame": 0.00059,
+          "attempt": 0
+        },
+        {
+          "frames": 1308,
+          "mode_transitions": [
+            {
+              "frame": 0,
+              "mode": "0x14"
+            },
+            {
+              "frame": 1307,
+              "mode": "0x0B"
+            }
+          ],
+          "max_progress_px": 2186.75,
+          "final_mode": "0x0B",
+          "on_map_at_exit": false,
+          "wall_seconds_per_frame": 0.00061,
+          "attempt": 1,
+          "after_exit": {
+            "on_map": true,
+            "frames": 131,
+            "modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ]
+          },
+          "map_cursor": [
+            152,
+            136
+          ]
+        },
+        {
+          "frames": 935,
+          "mode_transitions": [
+            {
+              "frame": 0,
+              "mode": "0x14"
+            },
+            {
+              "frame": 934,
+              "mode": "0x0B"
+            }
+          ],
+          "max_progress_px": 1319.625,
+          "final_mode": "0x0B",
+          "on_map_at_exit": false,
+          "wall_seconds_per_frame": 0.00064,
+          "attempt": 2,
+          "after_exit": {
+            "on_map": true,
+            "frames": 130,
+            "modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ]
+          },
+          "map_cursor": [
+            152,
+            136
+          ]
+        },
+        {
+          "frames": 1027,
+          "mode_transitions": [
+            {
+              "frame": 0,
+              "mode": "0x14"
+            },
+            {
+              "frame": 1026,
+              "mode": "0x0B"
+            }
+          ],
+          "max_progress_px": 1319.125,
+          "final_mode": "0x0B",
+          "on_map_at_exit": false,
+          "wall_seconds_per_frame": 0.00071,
+          "attempt": 3,
+          "after_exit": {
+            "on_map": true,
+            "frames": 131,
+            "modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ]
+          },
+          "map_cursor": [
+            152,
+            136
+          ]
+        }
+      ],
+      "cleared": null,
+      "returned_to_map_same_node": {
+        "attempt": 3,
+        "exit_modes": [
+          "0x0B",
+          "0x0C",
+          "0x0D",
+          "0x0E"
+        ]
+      }
+    }
+  ],
+  "cleared_rounds": 0,
+  "map_after": {
+    "positions": [
+      [
+        152,
+        136
+      ],
+      [
+        116,
+        126
+      ],
+      [
+        104,
+        120
+      ],
+      [
+        68,
+        135
+      ],
+      [
+        141,
+        135
+      ],
+      [
+        56,
+        136
+      ],
+      [
+        93,
+        126
+      ]
+    ],
+    "paths": {
+      "152|136": [],
+      "116|126": [
+        "LEFT"
+      ],
+      "104|120": [
+        "LEFT",
+        "UP"
+      ],
+      "68|135": [
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "141|135": [
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "56|136": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "93|126": [
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ]
+    },
+    "new_positions": []
+  }
+}

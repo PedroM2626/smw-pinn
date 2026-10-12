@@ -19,14 +19,24 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from src.environment import wram
 from src.evaluation.dashboard_study import render_caption, render_section
-from src.planning.mpc_planner import ACTION_BUTTONS
+from src.evaluation.dashboard_video import (
+    FLOOR_RGB,
+    RECT_TILE,
+    VOID_CLASS,
+    VOID_RGB,
+    action_probabilities,
+    patch_view,
+)
+from src.planning.mpc_planner import ACTION_BUTTONS, ACTION_MATRIX
 
 REPO = Path(__file__).resolve().parents[1]
 STUDY_ARTIFACT = REPO / "results" / "dashboard_study_metrics.json"
 RUN_ARTIFACT = REPO / "results" / "dashboard_run_metrics.json"
 SELECTION_ARTIFACT = REPO / "results" / "dashboard_controller_selection.json"
 RECORDING = REPO / "data" / "raw" / "smw_dashboard_run.npz"
+STILL = REPO / "results" / "figures" / "dashboard_run_still.png"
 
 
 def _payload():
@@ -190,3 +200,83 @@ def test_the_frame_buffer_defect_is_recorded_as_a_fact() -> None:
     assert capture["requested_pixel_format"] != capture["decoded_as_pixel_format"], (
         "if the core ever starts honouring its own request, the section's sentence about it is stale"
     )
+
+
+def test_patch_view_marks_only_the_cells_the_buffer_lacks() -> None:
+    """The fifth class is derived from the address formula, not from the patch's own zeros.
+
+    Air and out-of-range share the byte 0 in the array the level models read, so a panel that
+    painted what it was given would call the rows below the subscreen empty space. This checks the
+    mask against `wram.tilemap_addr` cell by cell and that no other cell was touched.
+    """
+    states = np.zeros((1, 12), dtype=np.float64)
+    states[0, 0] = 637.0
+    states[0, 1] = 353.0
+    radius = 16
+    patches = np.ones((1, 2 * radius + 1, 2 * radius + 1), dtype=np.int8)
+    view = patch_view(patches, states)
+    centre_x = int(states[0, 0]) // wram.TILE_SIZE_PX
+    centre_y = int(states[0, 1]) // wram.TILE_SIZE_PX
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            missing = wram.tilemap_addr(centre_x + dx, centre_y + dy) is None
+            assert bool(view[0, dy + radius, dx + radius] == VOID_CLASS) is missing
+    assert int((view[0] == VOID_CLASS).sum()) > 0, "a window centred on the floor must run off it"
+    assert int((view[0] == VOID_CLASS).sum()) < view[0].size, "and must not be all void"
+
+
+def test_the_tile_panel_draws_the_ground_below_mario() -> None:
+    """The orientation, checked on the rendered pixels rather than on the code that renders them.
+
+    The first version of this panel used `extent=(0, 1, 1, 0)`, which put the array's first row - the
+    tiles above Mario - at the bottom of the picture, and every shape check in the suite passed on
+    it because a flipped panel has the same pixels as an upright one.
+
+    The floor band is not the tell: Mario runs along the top of it, so it legitimately straddles the
+    centre. The cells the buffer does not have are - a window centred on the floor of a 27-row
+    subscreen can only run out of it downwards, so one pixel of that colour above the centre means
+    the panel is upside down again.
+    """
+    if not STILL.is_file():
+        pytest.skip("the dashboard render has not been run")
+    import imageio.v2 as imageio
+
+    canvas = imageio.imread(STILL)[:, :, :3].astype(int)
+    height, width, _ = canvas.shape
+    x0, y1, w, h = RECT_TILE
+    left, right = int(x0 * width), int((x0 + w) * width)
+    top, bottom = int((1.0 - (y1 + h)) * height), int((1.0 - y1) * height)
+    middle = (top + bottom) // 2
+    panel = canvas[top:bottom, left:right]
+
+    def pixels(block: np.ndarray, colour: tuple) -> int:
+        distance = np.abs(block.reshape(-1, 3) - np.asarray(colour)).sum(axis=1)
+        return int((distance < 12).sum())
+
+    upper = canvas[top:middle, left:right]
+    lower = canvas[middle:bottom, left:right]
+    assert pixels(lower, VOID_RGB) > 200, "the panel has no out-of-buffer colour under Mario"
+    assert pixels(upper, VOID_RGB) == 0, (
+        f"{pixels(upper, VOID_RGB)} out-of-buffer pixels sit above the centre: the panel is flipped"
+    )
+    assert pixels(lower, FLOOR_RGB) > 50, "the panel has no floor colour under Mario at all"
+    mask = np.abs(panel - np.asarray(FLOOR_RGB)).sum(axis=2) < 12
+    counts = mask.sum(axis=1)
+    centroid = float((np.arange(panel.shape[0]) * counts).sum() / counts.sum())
+    assert centroid > panel.shape[0] / 2.0, "the floor band's centre of mass is above Mario"
+
+
+@pytest.mark.parametrize("head", ["primitive", "marginal"])
+def test_the_action_panel_shows_a_distribution_that_exists(head: str) -> None:
+    """A button-headed actor does not emit primitive probabilities; the joint that stands in for
+    them is derived from its own marginals and labelled, and either way the bars must sum to one."""
+    rng = np.random.default_rng(0)
+    marginals = rng.uniform(0.0, 1.0, size=(4, len(ACTION_BUTTONS)))
+    data = {"button_probs": marginals}
+    if head == "primitive":
+        raw = rng.uniform(0.0, 1.0, size=(4, len(ACTION_MATRIX)))
+        data["primitive_probs"] = raw / raw.sum(axis=1, keepdims=True)
+    actions, source = action_probabilities(data)
+    np.testing.assert_allclose(actions.sum(axis=1), 1.0, atol=1e-9)
+    assert (actions >= 0.0).all()
+    assert ("actor's own" if head == "primitive" else "marginals") in source

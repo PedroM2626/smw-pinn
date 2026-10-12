@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain survey-map unlock-map record-level-dashboards level-dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -50,6 +50,10 @@ help:
 	@echo "pause-hygiene        Split 10.59's held player by what it freezes with (README 10.63)"
 	@echo "forced-mode-buffer   Name whose tile buffer the telemetry reads (README 10.64, needs core + ROM)"
 	@echo "pixel-retrain        Re-measure 10.31 on frames that move: 2x2 of recording x input (10.65)"
+	@echo "survey-map           Walk the world map and save every stage the engine hands over (README 10.66, needs core + ROM)"
+	@echo "unlock-map           Fly the clearance controller and read the mode byte at the end of a stage (README 10.66, needs core + ROM)"
+	@echo "record-level-dashboards  One dashboard episode per stage the survey captured (README 10.66, needs core + ROM)"
+	@echo "level-dashboard-study  Render the hero and one dashboard per stage, write README 10.66 (10.66)"
 	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "metric-decomposition  Split the rollout violation figure into consistency/smoothness (10.48)"
 	@echo "velocity-classes  Which documented speed constant the telemetry supports (README 10.49)"
@@ -261,6 +265,22 @@ forced-mode-buffer:
 # Re-measure the pixel-to-state conclusion on the scrolling recording (10.65, emulator-free)
 pixel-retrain:
 	$(PY) -m src.evaluation.pixel_retrain_study
+
+# Walk the world map cursor and save every stage the engine hands over (10.66; hardware)
+survey-map:
+	$(PY) -m scripts.survey_world_map
+
+# Fly the clearance controller at the entered stage and read the mode byte (10.66; hardware)
+unlock-map:
+	$(PY) -m scripts.unlock_world_map
+
+# One dashboard episode per stage, with the rightward walk and the MPC's best draw (10.66; hardware)
+record-level-dashboards:
+	$(PY) -m scripts.record_level_dashboards
+
+# Render the hero and one dashboard per stage, and write README 10.66 (10.66, emulator-free)
+level-dashboard-study:
+	$(PY) -m src.evaluation.level_dashboard_study
 
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py

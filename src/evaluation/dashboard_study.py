@@ -236,6 +236,27 @@ def gather(
         "evidence_figure": evidence,
         "forced_mode_check": forced_mode,
         "dataset": run["dataset"],
+        "levels": _levels(),
+    }
+
+
+def _levels() -> Dict[str, Any] | None:
+    """How many stages the map turns out to give, read from 10.66's artifact if it exists.
+
+    The hero is one recording of one stage, and a reader who likes it will ask what else there is.
+    The answer belongs next to the picture rather than forty sections away, and it belongs only once
+    it has been measured - so this reads the survey's artifact when there is one and says nothing
+    when there is not.
+    """
+    path = results_file("level_dashboards.json")
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    stages = payload.get("stages", [])
+    return {
+        "stages": len(stages),
+        "translevels": sorted({str(s["identity"]["translevel"]) for s in stages}),
     }
 
 
@@ -245,13 +266,22 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
     gif = _rel(payload["gif"]["gif"])
     mp4 = _rel(payload["video"]["mp4"])
     modes = ", ".join(f"`0x{m:02X}`" for m in ep["mode_bytes_seen"])
+    levels = payload.get("levels")
+    elsewhere = ""
+    if levels and levels["stages"] > 1:
+        others = ", ".join(f"`{t}`" for t in levels["translevels"])
+        elsewhere = (
+            f" It is one of {levels['stages']} stages - {others} - that the world map actually hands "
+            f"over, and 10.66 shows the rest and says why there are only that many."
+        )
     return [
         "## What the Actor Sees, and What It Believed",
         "",
-        "![One DAgger-actor episode on the live console: the emulator's own RGB picture at the left, "
-        "the tilemap the level-conditioned models read at the right, and between them the actor's "
-        "per-button probabilities, the terminal-value critic's prediction, the section-4.1 identity "
-        f"residue and the stage progress bar]({gif})",
+        "![One DAgger-actor episode on the live console: the emulator's own RGB picture filling the "
+        "left, and on the right the tile window the level-conditioned models read, what the actor "
+        "thinks as eight named actions, the buttons the console actually received, the terminal-value "
+        "critic's prediction, and along the bottom the twelve numbers the actor sees and the stage "
+        f"progress bar]({gif})",
         "",
         f"*One episode of the `{payload['protocol']['controller']}` actor, recorded frame by frame from "
         f"the verified level entry of 10.36.3: {ep['frames']} frames, {ep['progress_px']:.4f} px of "
@@ -264,7 +294,7 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
         f"[`{mp4}`]({mp4}) ({payload['video']['bytes'] / 1e6:.2f} MB, "
         f"{payload['video']['duration_s']:.2f} s) - a download, not a player: GitHub serves a "
         f"committed `.mp4` as a file, which is why the inline copy above is a GIF. 10.60 says "
-        f"which actor flies this, and why.*",
+        f"which actor flies this, and why.{elsewhere}*",
         "",
     ]
 
@@ -285,18 +315,31 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
     forced = payload["forced_mode_check"]
     gif_mb = payload["gif"]["bytes"] / 1e6
     mp4_mb = payload["video"]["bytes"] / 1e6
+    void_share = payload["caption"]["tile_void_cell_share"]
 
     lines: List[str] = [
         "### 10.60 The Dashboard at the Top of This File, and the Two Instruments It Needed",
         "",
         f"The repository had telemetry plots and a schematic GIF, and neither could be looked at "
         f"while the console ran. The hero above is the fix: one episode, the emulator's own RGB "
-        f"picture on the left and the tilemap the level-conditioned models read on the right, with "
-        f"the actor's per-button probabilities, the terminal-value critic's prediction, the section-4.1 "
-        f"identity residue, the engine mode byte and the stage progress bar around them. "
+        f"picture filling the left half and, down the right, the tile window the level-conditioned "
+        f"models read, what the actor thinks as eight named actions, the buttons the console actually "
+        f"received drawn on a controller, and the critic's $V(s)$; along the bottom, the twelve "
+        f"numbers the actor really is given and the stage progress bar. "
         f"`scripts/record_dashboard_run.py` records it, `src/evaluation/dashboard_video.py` renders it "
         f"({mp4_mb:.2f} MB MP4, {gif_mb:.2f} MB GIF), and every number in this section is read out of "
         f"the artifacts those two write.",
+        "",
+        "**Two things the first version of that picture got wrong.** The tile window was drawn with "
+        "`extent=(0, 1, 1, 0)`, which puts the array's first row - the tiles *above* Mario - at the "
+        "bottom of the panel, so the committed video showed sky under his feet and ground above his "
+        "head. And the class patch cannot distinguish air from a cell the buffer does not have: "
+        "`get_local_tilemap_patch` stores both as 0, because that is what the level-conditioned "
+        "models are given. The panel now asks `wram.tilemap_addr` for the address of every cell and "
+        f"draws the ones that have none in a fifth colour - {_pct(void_share)} of the cells it paints "
+        "for this episode, all of them below the ground, because Mario runs along the floor of a "
+        "27-row subscreen. Both are the same defect as everywhere else in this file: a picture is a "
+        "claim, and a claim drawn from an array has to say which cells the array actually has.",
         "",
         "**Which actor flies it.** Two checkpoints claim to be the repository's controller, so both "
         "were probed on the verified level-entry savestate for the same "
@@ -348,8 +391,9 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         f"`{_md(evidence['figure'])}` (frame {evidence['frame']}, "
         f"{evidence['progress_px']:.4f} px into the level). The second pause in that table is not a "
         f"box: it is the death sequence, which holds the player record the same way and releases it "
-        f"on its own - which is also how the episode ends. The residue panel is where both are "
-        f"visible: {_pct(ep['residue_exact_share'])} of the episode's frames satisfy §4.1 exactly, "
+        f"on its own - which is also how the episode ends. The residue is no longer drawn as a panel; "
+        f"it is in the recording, and {_pct(ep['residue_exact_share'])} of the episode's frames "
+        f"satisfy §4.1 exactly, "
         f"and the rest are held frames, where the identity is exactly minus the velocity because "
         f"nothing moved. 10.58 called the residue a clamp with a memory; here it is a picture that "
         f"does not change.",

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-11T16:15:45+00:00",
-    "git_sha": "5078ea284d070d0e8809851923a81a799dcf7395",
+    "generated_utc": "2026-10-12T03:10:30+00:00",
+    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -162,22 +162,24 @@
   ],
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 4842882,
+    "bytes": 6441263,
     "frames_written": 634,
     "fps": 30.0,
     "duration_s": 21.13
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 5313896,
+    "bytes": 7290872,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "caption": {
     "episode_frames": 1268,
+    "tile_void_cell_share": 0.3154443778189118,
     "progress_px": 1615.5,
     "camera_travel_px": 1525.0,
+    "mean_top_action_probability": 0.15619760421887777,
     "mean_max_button_probability": 0.9001203140343778,
     "residue_exact_share": 0.8430599369085173,
     "operator_A_frames": 23,
@@ -212,5 +214,13 @@
     "requested_pixel_format": 2,
     "decoded_as_pixel_format": 1
   },
-  "dataset": "data\\raw\\smw_dashboard_run.npz"
+  "dataset": "data\\raw\\smw_dashboard_run.npz",
+  "levels": {
+    "stages": 3,
+    "translevels": [
+      "0x28",
+      "0x29",
+      "0x2A"
+    ]
+  }
 }
