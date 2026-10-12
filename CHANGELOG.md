@@ -97,16 +97,22 @@ numbers* - those are reported here and in README Section 12, never applied silen
   directions from the node 10.36.3 measured, replays a recorded direction sequence to stand on each
   position again, presses A, and saves the state of every session that reaches interactive mode and
   walks; `scripts/unlock_world_map.py` (`make unlock-map`) flies the published clearance controller
-  at the entered stage with the mode byte sampled every frame, and only calls a run a clear if the
-  engine puts the cursor on a node other than the one it left; `scripts/record_level_dashboards.py`
-  (`make record-level-dashboards`) records one 10.60-channel episode per stage, with the distance a
-  held RIGHT+Y walk reaches there and the best of three MPC draws; and
+  at the entered stage with the mode byte sampled every frame and calls a run a clear only when the
+  engine reaches the map without passing through the death mode `0x0B`, re-flying a seeded clear
+  once to prove it reproduces; `scripts/record_level_dashboards.py`
+  (`make record-level-dashboards`) records one 10.60-channel episode per stage - surveyed or
+  unlocked - with the terrain the stage's own buffer holds, the distance a held RIGHT+Y walk reaches
+  there, and how many of six seeded draws of the clearance controller finish it; and
   `src/evaluation/level_dashboard_study.py` (`make level-dashboard-study`) renders the hero plus one
-  MP4, GIF and still per stage. Three findings come out of it: writing $7E:1F17 is not a teleport
-  (the engine keeps its own node index, which is why 10.36.3's `warp_on_map` looked like it worked),
-  nothing in this repository clears a stage - every exit is `0x0B` to `0x0E` at the same node, a game
-  over - and the published `goal_reached` is a distance test the engine does not corroborate, since
-  one draw reached 4340 px of forward progress without ever leaving interactive mode.
+  MP4, GIF and still per stage. Four findings come out of it. Writing `$7E:1F17` is not a teleport
+  (the engine keeps its own node index, which is why 10.36.3's `warp_on_map` looked like it worked).
+  The level buffer says how wide a stage is, and Yoshi's Island 1 is 5120 px of terrain against the
+  1900 px `goal_reached` the published benchmark treats as its end. Given a frame budget that fits
+  the level rather than cutting it short, the controller **does finish the stage** - 5010.6250 px in
+  4375 frames, `0x14` to `0x0C` with no death mode in between, the map settling on a node a fresh
+  file cannot reach, and the same seed re-flown to the same 5010.6250 px - which opened a fourth
+  stage, `0x27`, for the dashboard to be drawn on. And the clear is rare: one of six seeded draws
+  finishes Yoshi's Island 1 and none of six finishes any of the other three.
   `src/environment/wram.py` gains the level-buffer address formula as `tilemap_addr`, which
   `SnesLibretroEmulator.tilemap_addr` now delegates to, so the emulator, the raw-ID reader and the
   rendered tile panel all resolve a tile to the same byte.

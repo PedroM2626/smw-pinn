@@ -135,6 +135,36 @@ def discover_nodes(
     }
 
 
+def terrain_width(emu: SnesLibretroEmulator, subscreens: int = 40) -> Dict[str, Any]:
+    """How far the level's own terrain goes, read from the buffer rather than inferred from a run.
+
+    The buffer at $7E:C800 stores one subscreen (16 columns x 27 rows) after another, so the last
+    subscreen holding anything but air bounds the stage's width. This is the measurement the
+    clearance question needed: a controller stopped at 4340 px has not met the end of a level that
+    is 20 subscreens - 5120 px - wide, and it was the frame budget that ended the run.
+
+    The count is the leading run of non-empty subscreens, so a stage with a genuinely empty
+    subscreen in the middle would read short; the per-subscreen profile is returned beside it for
+    exactly that reason.
+    """
+    cells = wram.TILEMAP_ROWS_PER_SUBSCREEN * wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+    profile: List[int] = []
+    for sub in range(subscreens):
+        base = wram.ADDR_TILEMAP_BASE + sub * wram.TILEMAP_SUBSCREEN_STRIDE
+        if base + cells > wram.WRAM_SIZE_BYTES:
+            break
+        ids = [emu.read_wram_u8(base + i) for i in range(cells)]
+        profile.append(sum(1 for tile in ids if tile != wram.TILE_AIR))
+    leading = 0
+    while leading < len(profile) and profile[leading] > 0:
+        leading += 1
+    return {
+        "terrain_subscreens": leading,
+        "terrain_px": leading * 256,
+        "non_air_cells_by_subscreen": profile,
+    }
+
+
 def try_enter(
     emu: SnesLibretroEmulator, map_state: bytes, path: Path, node: Position
 ) -> Dict[str, Any]:
@@ -161,6 +191,7 @@ def try_enter(
         out.update({"level": False, "reason": "the engine never reached interactive mode"})
         return out
     hold(emu, {}, ENTRY_SETTLE_FRAMES)
+    out["terrain"] = terrain_width(emu)
     state = emu.get_smw_state()
     dx = _right_response(emu)
     out.update(
@@ -222,6 +253,14 @@ def main() -> Dict[str, Any]:
         "--no-save", action="store_true", help="survey the map without capturing states"
     )
     parser.add_argument("--output", default=results_file("world_map_survey.json"))
+    parser.add_argument(
+        "--from-map-state",
+        default=None,
+        help=(
+            "survey a saved world-map state instead of booting to one - what 10.67 needs, because "
+            "the map after a cleared stage is not the map a fresh file opens on"
+        ),
+    )
     args = parser.parse_args()
 
     emu = SnesLibretroEmulator(CORE_PATH)
@@ -229,12 +268,28 @@ def main() -> Dict[str, Any]:
     trace: Dict[str, Any] = {"target_level": 1, "node_round": None, "entry_frame": None}
     for _ in range(220):
         emu.step_frame()
-    if not walk_to_overworld(emu, trace):
-        raise RuntimeError(f"the world map was never reached (mode 0x{emu.get_game_mode():02X})")
-    hold(emu, {}, 60)
-    map_state = emu.save_state()
+    if args.from_map_state:
+        with open(args.from_map_state, "rb") as handle:
+            map_state = handle.read()
+        emu.load_state(map_state)
+        hold(emu, {}, 60)
+        if emu.get_game_mode() != wram.GAME_MODE_WORLD_MAP:
+            raise RuntimeError(
+                f"{args.from_map_state} is not a world map "
+                f"(mode 0x{emu.get_game_mode():02X}); the survey reads the cursor from 0x0E"
+            )
+        map_state = emu.save_state()
+        route = f"loaded from {os.path.basename(args.from_map_state)}"
+    else:
+        if not walk_to_overworld(emu, trace):
+            raise RuntimeError(
+                f"the world map was never reached (mode 0x{emu.get_game_mode():02X})"
+            )
+        hold(emu, {}, 60)
+        map_state = emu.save_state()
+        route = "walk_to_overworld of 10.36.3, from a power-on boot"
     start = cursor(emu)
-    print(f"World map live; cursor at {start}.")
+    print(f"World map live ({route}); cursor at {start}.")
 
     discovery = discover_nodes(emu, map_state, start, args.max_nodes)
     print(f"Cursor walk reached {len(discovery['positions'])} positions.")
@@ -262,7 +317,10 @@ def main() -> Dict[str, Any]:
             "loads a level with a timer, and gives control to a player that walks."
         ),
         "protocol": {
-            "route": "walk_to_overworld of 10.36.3, from a power-on boot",
+            "route": route,
+            "from_map_state": (
+                os.path.basename(args.from_map_state) if args.from_map_state else None
+            ),
             "start_node": [MAP_X_FIRST_LEVEL, MAP_Y_FIRST_LEVEL],
             "cursor_at_start": list(start),
             "step_frames": STEP_FRAMES,

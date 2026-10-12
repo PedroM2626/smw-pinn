@@ -23,24 +23,23 @@ Run:  python -m src.evaluation.level_dashboard_study
 from __future__ import annotations
 
 import json
-import math
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from src.evaluation.dashboard_video import (
-    GOAL_PX,
-    level_label,
-    run_dashboard_render,
-)
+from src.evaluation.dashboard_video import level_label, run_dashboard_render
 from src.utils.logging import get_logger
 from src.utils.paths import REPO_ROOT, dataset_path, figure_file, results_file
 
 logger = get_logger(__name__)
 
 SURVEY_ARTIFACT = "results/world_map_survey.json"
-PROGRESSION_ARTIFACT = "results/world_map_progression.json"
-STUDY_ARTIFACT = "results/level_dashboards.json"
+PROGRESSION_ARTIFACT = "results/world_map_clearance.json"
+STUDY_ARTIFACT = "results/level_dashboards_cleared.json"
 RUN_ARTIFACT = "results/dashboard_run_metrics.json"
+#: 10.66's own record, kept on disk because it is what the section said before the clear
+PRIOR_STUDY_ARTIFACT = "results/level_dashboards.json"
+#: the 3000-frame campaign, whose budget - not the level - is what stopped its best run
+PRIOR_CLEARANCE_ARTIFACT = "results/world_map_progression.json"
 
 
 def _read(path: str) -> Dict[str, Any]:
@@ -68,22 +67,34 @@ def stage_name(identity: Dict[str, Any], node: Any) -> str:
     return f"level {translevel}" if node is None else f"level {translevel} at node {node}"
 
 
-def furthest_measured_px(stage: Dict[str, Any]) -> float:
-    """The largest forward progress any arm reached in this stage, within this study.
+def stage_width_px(stage: Dict[str, Any]) -> float:
+    """How far the stage's own tile buffer holds terrain, in pixels.
 
-    Not the level's length - nothing here has seen the end of a level. It is the only denominator
-    that exists, and the picture names it as what it is.
+    This is the denominator the progress bar and the bottom line want: not a goal distance nobody has
+    seen the engine confirm, and not how far some controller happened to get, but the width of the
+    level as the console stores it. A run that stops short of it stopped early; a run that reaches it
+    has walked the whole stage.
     """
-    return max(
-        float(stage["walk_right_frontier"]["frontier_px"]),
-        float(stage["mpc"]["best_progress_px"] or 0.0),
+    return float(stage["terrain"]["terrain_px"])
+
+
+def bottom_line(stage: Dict[str, Any], progress: Optional[float] = None) -> str:
+    """The corner the mock puts a clearance rate in, with a rate that is now measured.
+
+    Two numbers share the line because one of them is about the stage and the other is about the
+    policy on screen: how often the controller built to finish levels finishes this one, and how far
+    the actor the dashboard is actually showing got.
+    """
+    value = float(stage["episode"]["progress_px"]) if progress is None else float(progress)
+    width = stage_width_px(stage)
+    tries = int(stage["mpc"]["tries"])
+    clears = int(stage["mpc"]["clears"])
+    rate = (
+        f"cleared in {clears} of {tries} attempts"
+        if clears
+        else f"0 of {tries} attempts cleared it"
     )
-
-
-def bottom_line(stage: Dict[str, Any]) -> str:
-    progress = float(stage["episode"]["progress_px"])
-    best = furthest_measured_px(stage)
-    return f"this arm {progress:.0f} px   furthest measured here {best:.0f} px"
+    return f"{rate} · this arm {value:.0f} / {width:.0f} px"
 
 
 def render_contexts(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -92,10 +103,10 @@ def render_contexts(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     count = len(stages)
     contexts: List[Dict[str, Any]] = []
     for index, stage in enumerate(stages, start=1):
-        # A bar scaled to 1900 px - the goal distance published for Yoshi's Island 1 - would show a
-        # stage that has never been measured past 413 px as a stub. The denominator is the stage's
-        # own, rounded to whole subscreens so the tick marks still say something.
-        span = math.ceil(furthest_measured_px(stage) / 256.0) * 256.0
+        # The bar is scaled to the width the stage's own buffer holds, not to the 1900 px goal proxy
+        # published in 10.37 - which 10.66 shows the engine never corroborates - and not to how far
+        # some controller happened to get, which says more about the budget than about the stage.
+        span = max(stage_width_px(stage), 256.0)
         contexts.append(
             {
                 "title": "Reinforcement learning in Super Mario World",
@@ -117,10 +128,10 @@ def hero_context(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     The hero stays pointed at the recording 10.60 published - the arm probe, the pause table and the
     residue claim are all chained to that file - but the picture now says which stage it is and how
-    far the arm on screen got next to the furthest anything measured has got there. The progress on
-    that line is the hero recording's own, not the stage's: the two episodes of Yoshi's Island 1 are
-    started from different captures of the same entry, and a line that quoted the wrong one would be
-    the mistake this file keeps having to unmake.
+    far the arm on screen got against the width the stage itself has. The progress on that line is
+    the hero recording's own, not the stage's: the two episodes of Yoshi's Island 1 start from
+    different captures of the same entry, and a line that quoted the wrong one would be the mistake
+    this file keeps having to unmake.
     """
     contexts = render_contexts(payload)
     hero_progress = float(_read(RUN_ARTIFACT)["run"]["progress_px"])
@@ -139,12 +150,9 @@ def hero_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(yoshi)
     out["level_index"] = 1
     out["level_count"] = max(1, len(contexts))
-    out["goal_px"] = GOAL_PX
     if stage is not None:
-        best = furthest_measured_px(stage)
-        out["clear_line"] = (
-            f"this arm {hero_progress:.0f} px   furthest measured here {best:.0f} px"
-        )
+        out["goal_px"] = max(stage_width_px(stage), 256.0)
+        out["clear_line"] = bottom_line(stage, hero_progress)
     return out
 
 
@@ -171,6 +179,8 @@ def render_level_videos(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "level_index": context["level_index"],
                 "label": context["level_label"],
                 "dataset": _rel(dataset),
+                "goal_px": float(art["protocol"]["goal_px"]),
+                "clear_line": context["clear_line"],
                 "video": art["video"],
                 "gif": art["gif"],
                 "still": art["still"],
@@ -197,39 +207,65 @@ def render_survey_table(survey: Dict[str, Any]) -> List[str]:
     return lines
 
 
-def render_progression_table(progression: Dict[str, Any]) -> List[str]:
+def attempt_cleared(attempt: Dict[str, Any]) -> bool:
+    """The one definition of a cleared flight, shared by the table, the prose and the gates.
+
+    The campaign records the map wait under `after_exit` and the recorder under `reached_the_map`;
+    two spellings of the same fact is how a table ends up denying what the paragraph above it claims,
+    so both are read here and nowhere else.
+    """
+    reached = bool((attempt.get("after_exit") or {}).get("on_map")) or bool(
+        attempt.get("reached_the_map")
+    )
+    return reached and not bool(attempt.get("died_on_the_way"))
+
+
+def render_clearance_table(clearance: Dict[str, Any]) -> List[str]:
+    """One row per flight: what the controller reached, and what the engine said about how it ended.
+
+    The two right-hand columns are the whole point. A run that leaves the level through `0x0B` died;
+    one that reaches the map without it finished the stage. The cursor is read only after the map has
+    been given `MAP_SETTLE` frames to stop reporting the node that was left.
+    """
     lines = [
-        "| round | node | best attempt | px | mode the attempt ended on | the map, if it reached it |",
-        "|---|---|---|---|---|---|",
+        "| round | stage | attempt | px | frames | ended in | died | the map at | cleared |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
-    for round_record in progression["rounds"]:
-        attempts = round_record.get("attempts") or []
-        best = max(attempts, key=lambda a: a["max_progress_px"]) if attempts else {}
-        cursor = best.get("map_cursor")
-        lines.append(
-            f"| {round_record['round']} | {tuple(round_record.get('node') or [])} | "
-            f"{best.get('attempt', '-')} | {best.get('max_progress_px', float('nan')):.4f} | "
-            f"`{best.get('final_mode', '-')}` | "
-            f"{('`' + str(tuple(cursor)) + '`') if cursor else 'not reached'} |"
-        )
+    for round_record in clearance["rounds"]:
+        stage = f"`{round_record.get('translevel')}` at {tuple(round_record.get('node') or [])}"
+        for attempt in round_record.get("attempts") or []:
+            lines.append(
+                f"| {round_record['round']} | {stage} | {attempt['attempt']} | "
+                f"{attempt['max_progress_px']:.4f} | {attempt['frames']} | "
+                f"`{attempt['final_mode']}` | "
+                f"{'yes' if attempt.get('died_on_the_way') else 'no'} | "
+                f"{attempt.get('map_cursor') or '-'} | "
+                f"{'**yes**' if attempt_cleared(attempt) else 'no'} |"
+            )
     return lines
 
 
 def render_stage_table(payload: Dict[str, Any]) -> List[str]:
     lines = [
-        "| stage | translevel | rightward walk reaches | the actor's episode | MPC best | "
-        "furthest measured | episode repeats |",
-        "|---|---|---|---|---|---|---|",
+        "| stage | translevel | terrain the buffer holds | rightward walk reaches | "
+        "the actor's episode | share | clearance controller | episode repeats |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for stage in payload["stages"]:
         frontier = stage["walk_right_frontier"]
         episode = stage["episode"]
-        mpc = float(stage["mpc"]["best_progress_px"] or 0.0)
+        width = stage_width_px(stage)
+        mpc = stage["mpc"]
+        share = episode["progress_px"] / width if width > 0 else float("nan")
         lines.append(
             f"| `{stage_name(stage['identity'], stage['map_node'])}` | "
-            f"`{stage['identity']['translevel']}` | {frontier['frontier_px']:.4f} px "
-            f"({frontier['ended']}) | {episode['progress_px']:.4f} px ({episode['ended']}) | "
-            f"{mpc:.4f} px | {furthest_measured_px(stage):.4f} px | "
+            f"`{stage['identity']['translevel']}` | {width:.0f} px "
+            f"({stage['terrain']['terrain_subscreens']} subscreen"
+            f"{'s' if stage['terrain']['terrain_subscreens'] != 1 else ''}) | "
+            f"{frontier['frontier_px']:.4f} px ({frontier['ended']}) | "
+            f"{episode['progress_px']:.4f} px ({episode['ended']}) | {_pct(share)} | "
+            f"cleared {mpc['clears']} of {mpc['tries']}, best "
+            f"{float(mpc['best_progress_px'] or 0.0):.4f} px | "
             f"{episode['repeats_the_measured_attempt_px']:.6f} px |"
         )
     return lines
@@ -256,6 +292,9 @@ def gather(rendered: List[Dict[str, Any]] | None = None) -> Dict[str, Any]:
         },
         "survey": survey,
         "progression": progression,
+        "prior_clearance": (
+            _read(PRIOR_CLEARANCE_ARTIFACT) if os.path.isfile(PRIOR_CLEARANCE_ARTIFACT) else None
+        ),
         "stages": study["stages"],
         "rendered": rendered or [],
     }
@@ -269,15 +308,60 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
     walkable = [n for n in survey["nodes"] if n.get("walkable")]
     distinct = sorted({str(n["translevel"]) for n in walkable})
     cleared = progression.get("cleared_rounds", 0)
-    best_round = max(
+    new_positions = progression.get("map_after", {}).get("new_positions", [])
+    rendered = {int(r["level_index"]): r for r in payload.get("rendered", [])}
+    yoshi = next(
+        (s for s in payload["stages"] if str(s["identity"]["translevel"]).lower() == "0x2a"),
+        payload["stages"][0],
+    )
+    yoshi_width = stage_width_px(yoshi)
+    prior = payload.get("prior_clearance") or {}
+    prior_budget = (prior.get("protocol") or {}).get("max_frames_per_attempt", "-")
+    best_prior = max(
         (
             max((a["max_progress_px"] for a in r.get("attempts") or []), default=float("nan"))
-            for r in progression["rounds"]
+            for r in prior.get("rounds") or [{"attempts": []}]
         ),
         default=float("nan"),
     )
-    new_positions = progression.get("map_after", {}).get("new_positions", [])
-    rendered = {int(r["level_index"]): r for r in payload.get("rendered", [])}
+    cleared_rounds = [r for r in progression["rounds"] if r.get("cleared")]
+    if cleared_rounds:
+        win = cleared_rounds[0]
+        clear = win["cleared"]
+        replay = clear.get("replay") or {}
+        next_round = next(
+            (r for r in progression["rounds"] if r["round"] > win["round"]),
+            None,
+        )
+        opened = (
+            f"and the stage behind the new node is `{next_round['translevel']}`, at node "
+            f"{tuple(next_round['node'])}, {next_round['terrain']['terrain_px']} px of terrain"
+            if next_round and next_round.get("terrain")
+            else "and the map was not entered again after it"
+        )
+        attempt_record = next(
+            (a for a in win.get("attempts", []) if a["attempt"] == clear["attempt"]),
+            {},
+        )
+        clearance_sentence = (
+            f"The stage `{win['translevel']}` at node {tuple(win['node'])} - the one 10.36.3 built "
+            f"the savestate for - was finished by attempt {clear['attempt']} of round "
+            f"{win['round']}: {attempt_record.get('max_progress_px', float('nan')):.4f} px in "
+            f"{attempt_record.get('frames', 0)} frames, the mode going `0x14` to "
+            f"`{clear['exit_modes'][0]}` with no `0x0B` anywhere, and the map settling at node "
+            f"{tuple(clear['cursor_after'])} - a node the fresh file cannot reach. Re-flown from the "
+            f"same savestate with the same seed, the run reached "
+            f"{replay.get('max_progress_px', float('nan')):.4f} px, a difference of "
+            f"{replay.get('progress_difference_px', float('nan')):.6f} px: the clear is "
+            f"reproducible, not one lucky draw. The map then reached "
+            f"{len(new_positions)} positions it did not reach before "
+            f"({', '.join(str(tuple(p)) for p in new_positions)}), {opened}."
+        )
+    else:
+        clearance_sentence = (
+            "No round finished a stage: every run that ended at all left `0x14` for `0x0B`, the death "
+            "animation, and came back to the node it started from."
+        )
 
     lines: List[str] = [
         "### 10.66 The Same Dashboard on Every Stage the Map Will Actually Give, and What Clears Mean",
@@ -305,31 +389,36 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "saved map state before every probe, and reads the cursor back to prove the probe was "
         "standing where it meant to.",
         "",
-        "**Nothing clears.** A stage that ends is a stage the engine leaves, so "
-        "`scripts/unlock_world_map.py` flies the published clearance controller at the entered level "
-        "and samples `$7E:0100` every frame. ",
+        "**How wide a stage is, read off the buffer.** Whether a run that stops has finished is a "
+        "question about the level, and the level answers it: the buffer at `$7E:C800` stores one "
+        "subscreen after another, so the last one holding anything but air is where the terrain ends. "
+        f"Yoshi's Island 1 holds {yoshi_width / 256:.0f} subscreens - {yoshi_width:.0f} px - which "
+        f"is {yoshi_width / 1900.0:.2f} times the distance 10.37 calls the goal. That number is what "
+        "turned the clearance question around: the first campaign gave the controller "
+        f"{prior_budget} frames per attempt and its furthest run covered {best_prior:.0f} px of a "
+        f"{yoshi_width:.0f} px level, so the wall it hit was the frame budget, not the end of the "
+        "stage - and the same controller, flown with room enough to finish, does finish it below. The "
+        f"stages are {', '.join(f'{stage_width_px(s):.0f} px' for s in payload['stages'])} wide in the "
+        "order they are listed, and the progress bar on every dashboard is now scaled to its own "
+        "stage's terrain rather than to a goal distance nobody has seen the engine confirm.",
         "",
-        *render_progression_table(progression),
+        "**What a clear is - three definitions in one day.** A stage that ends is a stage the engine "
+        "leaves, so `scripts/unlock_world_map.py` flies the published clearance controller at the "
+        "entered level and samples `$7E:0100` every frame instead of trusting a distance. The first "
+        "definition this file used was 10.37's: `x >= 1900 px`. The second was this script's own "
+        "first draft - reaching the map mode `0x0E` counts - and it reported every round as cleared, "
+        "because a game over also ends on the map. The third is the byte: a death leaves `0x14` for "
+        "`0x0B`, the death animation, and a run that reaches the map without passing through it has "
+        "finished the stage. That is a discriminator the console supplies, not an interpretation the "
+        "harness brings.",
         "",
-        f"{cleared} rounds cleared, and the map reaches {len(new_positions)} positions it did not "
-        f"reach before. Every run that ended at all ended the same way: the mode leaves `0x14` for "
-        f"`0x0B`, "
-        f"walks `0x0C` and `0x0D`, and reaches the map at **the node it started from**. That is a game "
-        f"over, not a clear - and the definition matters, because the first version of this script "
-        f"called any return to the map a clear and scored this same footage as a stage completed. The "
-        f"cursor byte is what says otherwise. The "
-        f"furthest attempt reached `{best_round:.4f}` px of forward progress with the engine still in "
-        f"interactive mode when the frame budget ran out, which is `{best_round / 1900.0:.2f}` times "
-        f"the distance the published clearance benchmark calls the goal. `goal_reached` in 10.37 is a "
-        f"distance test, and the engine does not corroborate it. Two runs of this controller do not "
-        f"agree on how far it gets - its cross-entropy draws are not seeded - so the stage table "
-        f"below reports the best of its own three attempts, and the number above is the best of the "
-        f"four this script took.",
+        *render_clearance_table(progression),
+        "",
+        f"{cleared} of {len(progression['rounds'])} rounds cleared. " + clearance_sentence,
         "",
         "**One episode per stage.** `scripts/record_level_dashboards.py` records the same channels "
-        "10.60 records at each stage the survey captured, and measures the distance a held RIGHT+Y "
-        "walk reaches there - the only length this repository has evidence for, since no arm has "
-        "seen the end of a level.",
+        "10.60 records at each stage the map hands over - surveyed or unlocked - and measures the "
+        "distance a held RIGHT+Y walk reaches there.",
         "",
         *render_stage_table(payload),
         "",

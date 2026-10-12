@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T03:18:04+00:00",
-    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "generated_utc": "2026-10-12T05:53:11+00:00",
+    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -22,14 +22,14 @@
       "title": "Reinforcement learning in Super Mario World",
       "level_label": "Yoshi's Island 1",
       "level_index": 1,
-      "level_count": 3,
-      "clear_line": "this arm 1616 px   furthest measured here 3998 px",
-      "goal_px": 1900.0,
+      "level_count": 4,
+      "clear_line": "cleared in 1 of 6 attempts \u00b7 this arm 1616 / 5120 px",
+      "goal_px": 5120.0,
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
       "output_stem": "dashboard_level_1",
       "progress_px": 1573.125
     },
-    "goal_px": 1900.0,
+    "goal_px": 5120.0,
     "subscreen_px": 256.0,
     "action_panel_source": "joint of the actor's independent button marginals",
     "state_names": [
@@ -63,21 +63,21 @@
   },
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6441263,
+    "bytes": 6420051,
     "frames_written": 634,
     "fps": 30.0,
     "duration_s": 21.13
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 7290872,
+    "bytes": 7260559,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "still": {
     "png": "results/figures/dashboard_run_still.png",
-    "bytes": 108164,
+    "bytes": 107191,
     "frame": 634
   },
   "caption": {

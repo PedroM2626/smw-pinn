@@ -23,8 +23,8 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 SURVEY = REPO / "results" / "world_map_survey.json"
-PROGRESSION = REPO / "results" / "world_map_progression.json"
-STUDY = REPO / "results" / "level_dashboards.json"
+CLEARANCE = REPO / "results" / "world_map_clearance.json"
+STUDY = REPO / "results" / "level_dashboards_cleared.json"
 STUDY_ARTIFACT = REPO / "results" / "level_dashboard_study_metrics.json"
 
 
@@ -49,19 +49,41 @@ def test_readme_10_66_is_the_generated_block() -> None:
     assert lines[0].startswith("### 10.66 "), "the generator must start at the section heading"
 
 
-def test_a_clear_needs_the_cursor_to_have_moved() -> None:
-    """The definition this campaign got wrong once, enforced on its own artifact."""
-    progression = _load(PROGRESSION)
-    for round_record in progression["rounds"]:
-        cleared = round_record.get("cleared")
-        if cleared is None:
+def test_a_clear_never_passed_through_the_death_mode() -> None:
+    """The discriminator the clearance section rests on, enforced on its own artifact.
+
+    A game over also ends on the map, which is the definition this campaign used for exactly one
+    run of itself before the byte was read properly. A cleared round is one whose mode went from
+    `0x14` to the exit sequence without the death animation in between, and whose cursor moved.
+    """
+    clearance = _load(CLEARANCE)
+    for round_record in clearance["rounds"]:
+        clear = round_record.get("cleared")
+        if clear is None:
             continue
-        assert cleared["cursor_after"] != round_record["node"], (
-            "a round that came back to the node it left is a game over, not a clear"
+        attempt = next(a for a in round_record["attempts"] if a["attempt"] == clear["attempt"])
+        assert not attempt["died_on_the_way"], "a run that died is not a stage that finished"
+        assert 0x0B not in [int(m, 16) for m in clear["exit_modes"]]
+        assert clear["cursor_after"] != round_record["node"], (
+            "back at the node it left is a game over, not a clear"
         )
-    assert progression["cleared_rounds"] == sum(
-        1 for r in progression["rounds"] if r.get("cleared") is not None
+    assert clearance["cleared_rounds"] == sum(
+        1 for r in clearance["rounds"] if r.get("cleared") is not None
     )
+
+
+def test_a_seeded_clear_reproduces_itself() -> None:
+    """The headline of the section is one number; it has to survive being flown twice."""
+    clearance = _load(CLEARANCE)
+    assert clearance["protocol"]["seed"] is not None, "an unseeded clear is an anecdote"
+    for round_record in clearance["rounds"]:
+        replay = (round_record.get("cleared") or {}).get("replay")
+        if replay is None:
+            continue
+        assert replay["progress_difference_px"] < 1e-6, (
+            f"the same seed from the same state differs by {replay['progress_difference_px']} px"
+        )
+        assert replay["reached_the_map"], "the replay did not finish the stage"
 
 
 def test_the_walkable_flag_is_the_gate_it_claims() -> None:
@@ -89,6 +111,25 @@ def test_the_survey_walked_the_cursor_rather_than_writing_it() -> None:
     ), "a position must be reached by a direction sequence, not by a byte write"
 
 
+def test_distinct_stages_have_distinct_buffer_profiles() -> None:
+    """Two stages whose terrain profile is identical are one stage reported twice.
+
+    10.64 settled a buffer question by comparing whole columns rather than summary counts, and the
+    same trap is live here: the survey keys stages by the translevel byte, and the byte can differ
+    while the buffer does not. The per-subscreen non-air profile is cheap to compare and is exactly
+    the thing the progress bar's denominator is taken from, so if two stages share it the section
+    must not present them as two levels.
+    """
+    study = _load(STUDY)
+    profiles = {
+        tuple(stage["terrain"]["non_air_cells_by_subscreen"]): stage["identity"]["translevel"]
+        for stage in study["stages"]
+    }
+    assert len(profiles) == len(study["stages"]), "stages share a terrain profile: " + ", ".join(
+        f"{t} -> {len(p)} subscreens" for p, t in profiles.items()
+    )
+
+
 def test_every_stage_has_an_episode_and_the_media_that_shows_it() -> None:
     study = _load(STUDY)
     assert study["stages"], "the study recorded no stage"
@@ -111,13 +152,36 @@ def test_the_kept_episode_is_the_attempt_it_replaces() -> None:
 
 
 def test_the_picture_line_quotes_the_recording() -> None:
-    from src.evaluation.level_dashboard_study import bottom_line, furthest_measured_px
+    """The corner the mock puts a clearance rate in quotes two measurements, and both are checked."""
+    from src.evaluation.level_dashboard_study import bottom_line, stage_width_px
 
     study = _load(STUDY)
     for stage in study["stages"]:
         line = bottom_line(stage)
-        assert f"{stage['episode']['progress_px']:.0f} px" in line
-        assert f"{furthest_measured_px(stage):.0f} px" in line
+        assert f"{stage['episode']['progress_px']:.0f} / {stage_width_px(stage):.0f} px" in line
+        assert f"{stage['mpc']['clears']} of {stage['mpc']['tries']} attempts" in line
+        assert line == bottom_line(stage, stage["episode"]["progress_px"])
+
+
+def test_the_progress_bar_denominator_is_the_stages_own_terrain() -> None:
+    """A bar scaled to a goal nobody has seen the engine confirm is a claim about the level.
+
+    Each render records the denominator it drew, so this compares the picture against the buffer read
+    rather than against a constant someone chose.
+    """
+    from src.evaluation.level_dashboard_study import stage_width_px
+
+    payload = _load(STUDY_ARTIFACT)
+    study = _load(STUDY)
+    by_dataset = {s["episode"]["dataset"]: s for s in study["stages"]}
+    assert payload["rendered"], "the study was gathered without rendering"
+    for record in payload["rendered"]:
+        stage = by_dataset.get(record["dataset"])
+        assert stage is not None, f"{record['dataset']} is drawn but not measured"
+        assert float(record["goal_px"]) == stage_width_px(stage), (
+            f"{record['label']} draws a bar of {record['goal_px']} px against "
+            f"{stage_width_px(stage):.0f} px of terrain"
+        )
 
 
 def test_the_rendered_stage_media_exists_and_is_a_readme_can_carry() -> None:

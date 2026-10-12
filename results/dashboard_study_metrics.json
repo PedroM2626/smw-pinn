@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T03:10:30+00:00",
-    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "generated_utc": "2026-10-12T05:54:18+00:00",
+    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -162,14 +162,14 @@
   ],
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6441263,
+    "bytes": 6420051,
     "frames_written": 634,
     "fps": 30.0,
     "duration_s": 21.13
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 7290872,
+    "bytes": 7260559,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
@@ -216,11 +216,14 @@
   },
   "dataset": "data\\raw\\smw_dashboard_run.npz",
   "levels": {
-    "stages": 3,
+    "stages": 4,
     "translevels": [
+      "0x27",
       "0x28",
       "0x29",
       "0x2A"
-    ]
+    ],
+    "cleared_rounds": 1,
+    "artifact": "level_dashboards_cleared.json"
   }
 }

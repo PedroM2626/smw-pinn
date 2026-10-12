@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T03:04:30+00:00",
-    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "generated_utc": "2026-10-12T05:00:46+00:00",
+    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -73,8 +73,8 @@
     "frames": 317,
     "ended": "death",
     "progress_px": -115.0,
-    "wall_clock_s": 1.15,
-    "fps": 275.2,
+    "wall_clock_s": 0.94,
+    "fps": 336.2,
     "share_of_frames_live": 0.22397476340694006,
     "camera_travel_px": 65519.0,
     "screen_x_range_px": [

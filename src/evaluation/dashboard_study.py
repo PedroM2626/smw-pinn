@@ -241,22 +241,32 @@ def gather(
 
 
 def _levels() -> Dict[str, Any] | None:
-    """How many stages the map turns out to give, read from 10.66's artifact if it exists.
+    """How many stages the map turns out to give, and whether any has been finished.
 
     The hero is one recording of one stage, and a reader who likes it will ask what else there is.
     The answer belongs next to the picture rather than forty sections away, and it belongs only once
-    it has been measured - so this reads the survey's artifact when there is one and says nothing
-    when there is not.
+    it has been measured - so this reads the study's artifact when there is one and says nothing when
+    there is not. The clearance count comes from the campaign that settled what a clear is, not from
+    the run that mistook a game over for one.
     """
-    path = results_file("level_dashboards.json")
+    path = results_file("level_dashboards_cleared.json")
+    if not os.path.isfile(path):
+        path = results_file("level_dashboards.json")
     if not os.path.isfile(path):
         return None
     with open(path, encoding="utf-8") as handle:
         payload = json.load(handle)
     stages = payload.get("stages", [])
+    clearance_path = results_file("world_map_clearance.json")
+    cleared = None
+    if os.path.isfile(clearance_path):
+        with open(clearance_path, encoding="utf-8") as handle:
+            cleared = int(json.load(handle).get("cleared_rounds", 0))
     return {
         "stages": len(stages),
         "translevels": sorted({str(s["identity"]["translevel"]) for s in stages}),
+        "cleared_rounds": cleared,
+        "artifact": os.path.basename(path),
     }
 
 
@@ -270,9 +280,16 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
     elsewhere = ""
     if levels and levels["stages"] > 1:
         others = ", ".join(f"`{t}`" for t in levels["translevels"])
+        cleared = levels.get("cleared_rounds")
+        finish = (
+            f", {cleared} of which the clearance controller has now finished on the console's own "
+            f"terms"
+            if cleared
+            else ", none of which anything in this repository has finished"
+        )
         elsewhere = (
-            f" It is one of {levels['stages']} stages - {others} - that the world map actually hands "
-            f"over, and 10.66 shows the rest and says why there are only that many."
+            f" It is one of {levels['stages']} stages - {others}{finish} - that the world map "
+            f"actually hands over, and 10.66 shows the rest and says what a clear takes."
         )
     return [
         "## What the Actor Sees, and What It Believed",

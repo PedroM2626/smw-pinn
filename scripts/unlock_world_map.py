@@ -9,23 +9,25 @@ stops at `x >= 1900 px`, which is a proxy this repository has never checked agai
 signal - and 10.64 showed the session that proxy was measured in is the title screen's own.
 
 So this flies the MPC controller at the level entered through the world map and records the mode byte
-every frame. A clear is the engine walking the level out and putting the cursor back on the map
-(0x0E); a death is the mode leaving 0x14 and coming back. Either way the answer is a mode sequence,
-not an interpretation, and the map is re-surveyed afterwards so whatever it opened is written down
-with the same gate as before.
+every frame. A death leaves `0x14` for `0x0B` - the death animation - and a run that reaches the map
+without passing through it has finished the stage; that discriminator came out of the byte, not out
+of a distance, and it is what separates the attempt that travelled 5010 px of a 5120 px level from the
+ones that died at 1319 px. The cursor is read only after the map has had time to settle, because the
+fade in reports `0x0E` while the node that was left is still in the two cursor bytes.
 
 Run:  python -m scripts.unlock_world_map
-      python -m scripts.unlock_world_map --attempts 2 --max-frames 3000
+      python -m scripts.unlock_world_map --rounds 3 --attempts 3 --max-frames 8000 --seed 7
 """
 
 import argparse
 import os
 import sys
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 from scripts.navigate_to_level import (  # noqa: E402
@@ -38,6 +40,7 @@ from scripts.survey_world_map import (  # noqa: E402
     hold,
     press_a_until_level,
     replay,
+    terrain_width,
 )
 from src.environment import wram  # noqa: E402
 from src.environment.episode_hygiene import PlayerHold  # noqa: E402
@@ -63,6 +66,14 @@ logger = get_logger(__name__)
 
 #: frames spent on the clear sequence and the walk back to the map
 EXIT_BUDGET = 1800
+#: frames the map is given after the mode byte returns to 0x0E before the cursor is believed. The
+#: fade in reads 0x0E while the pre-level cursor value is still in $7E:1F17, and reading it there
+#: reports the node that was left rather than the node the game arrived at.
+MAP_SETTLE_FRAMES = 600
+#: the mode the death animation owns. A run that leaves 0x14 for it died; a run that reaches the
+#: map's own modes without it finished the stage. This is the discriminator, and it came out of the
+#: byte rather than out of a distance: 0x0B at 1319 px, 0x0C directly at 5010 px.
+DEATH_MODE = 0x0B
 #: how long the operator keeps trying to dismiss whatever is holding the player
 OPERATOR_LIMIT = 240
 
@@ -93,7 +104,10 @@ def build_mpc(device: torch.device) -> ModelPredictiveController:
 
 
 def fly(
-    emu: SnesLibretroEmulator, controller: ModelPredictiveController, max_frames: int
+    emu: SnesLibretroEmulator,
+    controller: ModelPredictiveController,
+    max_frames: int,
+    seed: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Drive one attempt and let the engine decide how it ended.
 
@@ -101,7 +115,19 @@ def fly(
     script exists to answer is what the engine does at the end of a stage - a claim that has to be
     read off the byte, not inferred from a distance. The hygiene of 10.63 is applied so a message box
     cannot be mistaken for a clear that never happens.
+
+    `seed` matters more than it looks: the controller draws its candidates from the global torch RNG,
+    so two attempts from the same savestate reached 1319 px and 4340 px. Seeded, a run is
+    reproducible; unseeded, the honest report is a distribution over draws, which is what the
+    attempt list is for.
     """
+    frames_run = 0
+    if seed is not None:
+        import random
+
+        torch.manual_seed(seed)
+        np.random.seed(seed % (2**32))
+        random.seed(seed)
     start_x = float(emu.get_smw_state()["x"])
     hold_state = PlayerHold(limit=OPERATOR_LIMIT)
     modes: List[Tuple[int, int]] = []
@@ -109,6 +135,7 @@ def fly(
     progress = 0.0
     seconds = 0.0
     for frame in range(max_frames):
+        frames_run = frame + 1
         state = emu.get_smw_state()
         vector = extract_12d_vector(emu.get_smw_extended_state())
         mode = emu.get_game_mode()
@@ -128,19 +155,18 @@ def fly(
         emu.step_frame()
         seconds += time.perf_counter() - t0
     return {
-        "frames": len(modes) and frame + 1,
+        "frames": frames_run,
         "mode_transitions": [{"frame": f, "mode": f"0x{m:02X}"} for f, m in modes],
+        "transitions_raw": [[int(f), int(m)] for f, m in modes],
         "max_progress_px": float(progress),
         "final_mode": f"0x{emu.get_game_mode():02X}",
         "on_map_at_exit": emu.get_game_mode() == wram.GAME_MODE_WORLD_MAP,
-        "wall_seconds_per_frame": round(seconds / max(1, frame + 1), 5),
+        "wall_seconds_per_frame": round(seconds / max(1, frames_run), 5),
     }
 
 
 def np_vector(state: Dict[str, float]):
     """The eight-channel record `PlayerHold` watches, in the order the recorders use."""
-    import numpy as np
-
     keys = ("x", "y", "vx", "vy", "c_ground", "c_ceiling", "c_left", "c_right")
     return np.asarray([state[k] for k in keys], dtype=np.float64)
 
@@ -157,6 +183,7 @@ def wait_for_map(emu: SnesLibretroEmulator) -> Dict[str, Any]:
         if not modes or modes[-1] != mode:
             modes.append(mode)
         if emu.get_game_mode() == wram.GAME_MODE_WORLD_MAP:
+            hold(emu, {}, MAP_SETTLE_FRAMES)
             return {"on_map": True, "frames": frame, "modes": modes}
         emu.set_input({})
         emu.step_frame()
@@ -169,7 +196,13 @@ def main() -> Dict[str, Any]:
     parser.add_argument("--attempts", type=int, default=3)
     parser.add_argument("--max-frames", type=int, default=3000)
     parser.add_argument("--max-nodes", type=int, default=40)
-    parser.add_argument("--output", default=results_file("world_map_progression.json"))
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="seed the controller's sampling per attempt; unseeded, the attempts are draws",
+    )
+    parser.add_argument("--output", default=results_file("world_map_clearance.json"))
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -211,6 +244,7 @@ def main() -> Dict[str, Any]:
             "entered": True,
             "entry_frame": frame,
             "translevel": translevel,
+            "terrain": terrain_width(emu),
             "timer_hundreds": int(emu.read_wram_u8(wram.ADDR_TIMER_HUNDREDS)),
             "x_at_entry": float(entry_state["x"]),
             "y_at_entry": float(entry_state["y"]),
@@ -221,7 +255,12 @@ def main() -> Dict[str, Any]:
         }
         for attempt in range(args.attempts):
             emu.load_state(level_start)
-            report = fly(emu, controller, args.max_frames)
+            report = fly(
+                emu,
+                controller,
+                args.max_frames,
+                None if args.seed is None else args.seed + round_index * 1000 + attempt,
+            )
             report["attempt"] = attempt
             record["attempts"].append(report)
             logger.info(
@@ -229,19 +268,58 @@ def main() -> Dict[str, Any]:
                 f"final mode {report['final_mode']}, on map at exit={report['on_map_at_exit']}"
             )
             if report["final_mode"] != "0x14":
+                died = any(m == DEATH_MODE for _, m in report["transitions_raw"])
                 waited = wait_for_map(emu)
                 report["after_exit"] = waited
                 after = list(cursor(emu)) if waited["on_map"] else None
                 report["map_cursor"] = after
-                if waited["on_map"] and after != list(node):
+                report["died_on_the_way"] = died
+                if waited["on_map"] and not died:
                     record["cleared"] = {
                         "attempt": attempt,
                         "map_wait_frames": waited["frames"],
                         "exit_modes": waited["modes"],
                         "cursor_after": after,
+                        "cursor_moved": after != list(node),
                         "transitions": report["mode_transitions"],
                     }
                     map_state = emu.save_state()
+                    map_name = (
+                        f"smw_world_map_after_round_{round_index}_"
+                        f"{node[0]}_{node[1]}_{translevel.lower().replace('0x', 't')}.state"
+                    )
+                    (data_dir() / map_name).write_bytes(map_state)
+                    record["cleared"]["map_savestate"] = map_name
+                    if args.seed is not None:
+                        # The clear is the headline of this script, and a headline that only happens
+                        # once is an anecdote. The same seed from the same savestate is flown again:
+                        # if the controller and the console are deterministic, the distance and the
+                        # outcome reproduce to the subpixel, and that is what the next section can
+                        # build a rate on.
+                        emu.load_state(level_start)
+                        replay_run = fly(
+                            emu,
+                            controller,
+                            args.max_frames,
+                            seed=args.seed + round_index * 1000 + attempt,
+                        )
+                        replay_waited = wait_for_map(emu)
+                        record["cleared"]["replay"] = {
+                            "max_progress_px": replay_run["max_progress_px"],
+                            "final_mode": replay_run["final_mode"],
+                            "reached_the_map": replay_waited["on_map"],
+                            "progress_difference_px": round(
+                                abs(replay_run["max_progress_px"] - report["max_progress_px"]), 6
+                            ),
+                        }
+                        logger.info(
+                            f"  replay of the clear: {replay_run['max_progress_px']:.1f} px, "
+                            f"difference "
+                            f"{record['cleared']['replay']['progress_difference_px']:.6f} px"
+                        )
+                        if replay_waited["on_map"]:
+                            map_state = emu.save_state()
+                            (data_dir() / map_name).write_bytes(map_state)
                     break
                 if waited["on_map"]:
                     record["returned_to_map_same_node"] = {
@@ -253,7 +331,8 @@ def main() -> Dict[str, Any]:
             break
         rounds.append(record)
 
-    final = discover_nodes(emu, map_state, cursor(emu), args.max_nodes)
+    standing = replay(emu, map_state, [])
+    final = discover_nodes(emu, map_state, standing, args.max_nodes)
     new_positions = [p for p in final["positions"] if tuple(p) not in known]
     logger.info(
         f"{sum(1 for r in rounds if r.get('cleared'))} rounds cleared; "
@@ -270,12 +349,15 @@ def main() -> Dict[str, Any]:
             "rounds": args.rounds,
             "attempts_per_round": args.attempts,
             "max_frames_per_attempt": args.max_frames,
+            "seed": args.seed,
             "exit_budget_frames": EXIT_BUDGET,
             "clear_definition": (
-                "the engine reached the world map (0x0E) with the cursor on a node other than the one "
-                "entered; reaching 0x0E at the same node is a game over, which is what 0x0B -> 0x0C "
-                "-> 0x0D -> 0x0E is"
+                "the engine reached the world map (0x0E) without passing through the death mode "
+                "(0x0B) on the way; whether the cursor also moved to another node is reported "
+                "separately, because a clear that leaves the cursor where it was is still a clear"
             ),
+            "death_mode": f"0x{DEATH_MODE:02X}",
+            "map_settle_frames": MAP_SETTLE_FRAMES,
             "savestate_dir": "data/raw",
             "device": str(device),
         },
@@ -293,7 +375,7 @@ def main() -> Dict[str, Any]:
         },
     }
     emu.close()
-    write_metrics(args.output, payload, command="python -m scripts.unlock_world_map")
+    write_metrics(args.output, payload, command="make unlock-map")
     return payload
 
 

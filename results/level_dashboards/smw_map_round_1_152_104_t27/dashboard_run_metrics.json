@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T05:05:28+00:00",
+    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python scripts/record_dashboard_run.py --controller dagger"
+  },
+  "study": "One controller episode recorded with everything the README dashboard shows: the actor's per-button probabilities, the critic V(s) fitted on the published clearance returns, the buttons the emulator actually received after the published reflex overrides and the jump edge-trigger pulse, the tile patch and camera the actor does not see, an RGB frame, the section-4.1 identity residue of each step, and the paused-player flag of 10.59 together with the operator's A presses that clear it.",
+  "protocol": {
+    "savestate": "smw_map_round_1_152_104_t27.state",
+    "stage_identity": {
+      "mode_at_start": "0x14",
+      "translevel": "0x27"
+    },
+    "savestate_route": "entered through the world map; the survey's own capture step saved the state 180 frames after the fade in, before the handoff probes",
+    "controller": "dagger",
+    "controller_kind": "button head",
+    "checkpoint": "dagger_policy_best.pt",
+    "buttons": [
+      "B",
+      "Y",
+      "UP",
+      "DOWN",
+      "LEFT",
+      "RIGHT"
+    ],
+    "primitives": [
+      "NOOP",
+      "WALK_RIGHT",
+      "RUN_RIGHT",
+      "WALK_JUMP_RIGHT",
+      "RUN_JUMP_RIGHT",
+      "JUMP_UP",
+      "WALK_LEFT",
+      "RUN_LEFT"
+    ],
+    "reflex_overrides": "hazard within 75 px and grounded, or a right wall while grounded",
+    "jump_pulse": "B released on every even frame while held and grounded",
+    "value_critic": {
+      "checkpoint": "terminal_value_best.pt",
+      "reads": [
+        "x",
+        "y",
+        "vx",
+        "vy"
+      ],
+      "units": "px of discounted future progress",
+      "gamma": 0.99
+    },
+    "pause_trigger_frames": 10,
+    "operator_delay_frames": 120,
+    "operator_rule": "once the 12D record has been identical for 130 frames the operator pulses A (4 on, 4 off) up to 120 frames; A is not in the six-button action set, so this is an outside-the-policy takeover and it is recorded per frame, not folded into the actor's actions",
+    "patch_radius_tiles": 16,
+    "rgb_shape": [
+      224,
+      256
+    ],
+    "frame_capture": {
+      "requested_pixel_format": 2,
+      "decoded_as_pixel_format": 1,
+      "note": "0 = 0RGB1555, 1 = RGB565, 2 = RGB888; the two differ because the core asks for a 32-bit buffer and hands back a 16-bit one"
+    },
+    "device": "cuda"
+  },
+  "run": {
+    "frames": 352,
+    "ended": "death",
+    "progress_px": 372.875,
+    "wall_clock_s": 1.29,
+    "fps": 273.7,
+    "share_of_frames_live": 0.5681818181818182,
+    "camera_travel_px": 280.0,
+    "screen_x_range_px": [
+      16.0,
+      142.1875
+    ],
+    "mean_max_button_probability": 0.8481654850766063,
+    "frames_with_no_button_above_half": 1,
+    "frames_where_reflex_overrode": 4,
+    "frames_where_pulse_released_B": 1,
+    "frames_under_operator_A": 23,
+    "pauses_observed": 1,
+    "pauses_cleared_by_the_operator": 1,
+    "first_pause_at_progress_px": 256.875,
+    "value_start_px": 201.41863496655105,
+    "value_end_px": 198.3293167058795,
+    "value_max_px": 207.2785286071887,
+    "residue_exact_share": 0.5625,
+    "residue_abs_max_subpixels": 35.0,
+    "mode_bytes_seen": [
+      20
+    ]
+  },
+  "dataset": "data\\raw\\smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
+  "pauses": [
+    {
+      "frame": 299,
+      "progress_px": 256.875,
+      "mode_byte": 20,
+      "held_frames": 152,
+      "operator_frames": 23,
+      "resumed": true
+    }
+  ]
+}

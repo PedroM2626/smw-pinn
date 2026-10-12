@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T03:19:00+00:00",
-    "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
+    "generated_utc": "2026-10-12T05:54:16+00:00",
+    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -41,10 +41,13 @@
       "controller": "mpc",
       "checkpoint": "pinn_multi_entity_best.pt",
       "rounds": 2,
-      "attempts_per_round": 4,
-      "max_frames_per_attempt": 3000,
+      "attempts_per_round": 2,
+      "max_frames_per_attempt": 8000,
+      "seed": 7,
       "exit_budget_frames": 1800,
-      "clear_definition": "the engine reached the world map (0x0E) with the cursor on a node other than the one entered; reaching 0x0E at the same node is a game over, which is what 0x0B -> 0x0C -> 0x0D -> 0x0E is",
+      "clear_definition": "the engine reached the world map (0x0E) without passing through the death mode (0x0B) on the way; whether the cursor also moved to another node is reported separately, because a clear that leaves the cursor where it was is still a clear",
+      "death_mode": "0x0B",
+      "map_settle_frames": 600,
       "savestate_dir": "data/raw",
       "device": "cuda"
     },
@@ -53,10 +56,14 @@
       "controller": "dagger",
       "frames_per_episode": 1268,
       "frontier_rule": "RIGHT+Y with the B pulse, stopped at 90 frames of no advance, a spent hold, death, or the frame budget",
-      "mpc_attempts": 3,
-      "mpc_frames": 2000,
+      "mpc_attempts": 6,
+      "mpc_frames": 8000,
+      "mpc_seed_block": [
+        7,
+        12
+      ],
+      "clear_definition": "the engine left interactive mode without passing through the death mode and put the cursor back on the world map - the discriminator 10.67 read off the byte",
       "goal_proxy_px": 1900.0,
-      "clear_definition": "none claimed: 10.66 showed the engine returns to the map at the same node when the run ends, which is a game over",
       "device": "cuda"
     }
   },
@@ -1162,6 +1169,491 @@
   },
   "progression": {
     "_meta": {
+      "generated_utc": "2026-10-12T04:34:13+00:00",
+      "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
+      "git_dirty": true,
+      "python": "3.10.11",
+      "platform": "Windows 10 (AMD64)",
+      "torch": "2.5.1+cu121",
+      "cuda_available": true,
+      "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "cuda_version": "12.1",
+      "numpy": "1.26.4",
+      "command": "make unlock-map"
+    },
+    "study": "What the engine does when the clearance controller is flown at the level entered through the world map, and what the map reaches afterwards.",
+    "protocol": {
+      "controller": "mpc",
+      "checkpoint": "pinn_multi_entity_best.pt",
+      "rounds": 2,
+      "attempts_per_round": 2,
+      "max_frames_per_attempt": 8000,
+      "seed": 7,
+      "exit_budget_frames": 1800,
+      "clear_definition": "the engine reached the world map (0x0E) without passing through the death mode (0x0B) on the way; whether the cursor also moved to another node is reported separately, because a clear that leaves the cursor where it was is still a clear",
+      "death_mode": "0x0B",
+      "map_settle_frames": 600,
+      "savestate_dir": "data/raw",
+      "device": "cuda"
+    },
+    "map_before": {
+      "cursor": [
+        152,
+        136
+      ],
+      "positions": [
+        [
+          152,
+          136
+        ],
+        [
+          116,
+          126
+        ],
+        [
+          104,
+          120
+        ],
+        [
+          68,
+          135
+        ],
+        [
+          141,
+          135
+        ],
+        [
+          56,
+          136
+        ],
+        [
+          93,
+          126
+        ]
+      ],
+      "paths": {
+        "152|136": [],
+        "116|126": [
+          "LEFT"
+        ],
+        "104|120": [
+          "LEFT",
+          "UP"
+        ],
+        "68|135": [
+          "LEFT",
+          "UP",
+          "LEFT"
+        ],
+        "141|135": [
+          "LEFT",
+          "UP",
+          "RIGHT"
+        ],
+        "56|136": [
+          "LEFT",
+          "UP",
+          "LEFT",
+          "UP"
+        ],
+        "93|126": [
+          "LEFT",
+          "UP",
+          "LEFT",
+          "UP",
+          "RIGHT"
+        ]
+      }
+    },
+    "rounds": [
+      {
+        "round": 0,
+        "node": [
+          152,
+          136
+        ],
+        "entered": true,
+        "entry_frame": 166,
+        "translevel": "0x2A",
+        "terrain": {
+          "terrain_subscreens": 20,
+          "terrain_px": 5120,
+          "non_air_cells_by_subscreen": [
+            94,
+            88,
+            79,
+            63,
+            99,
+            93,
+            83,
+            83,
+            150,
+            82,
+            71,
+            92,
+            112,
+            123,
+            90,
+            92,
+            94,
+            74,
+            95,
+            93,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            352,
+            432,
+            432,
+            432,
+            432,
+            432,
+            432
+          ]
+        },
+        "timer_hundreds": 3,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "plausible_at_entry": false,
+        "savestate": "smw_map_round_0_152_136_t2a.state",
+        "attempts": [
+          {
+            "frames": 4375,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 4374,
+                "mode": "0x0C"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                4374,
+                12
+              ]
+            ],
+            "max_progress_px": 5010.625,
+            "final_mode": "0x0C",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00062,
+            "attempt": 0,
+            "after_exit": {
+              "on_map": true,
+              "frames": 101,
+              "modes": [
+                "0x0C",
+                "0x0D",
+                "0x0E"
+              ]
+            },
+            "map_cursor": [
+              152,
+              104
+            ],
+            "died_on_the_way": false
+          }
+        ],
+        "cleared": {
+          "attempt": 0,
+          "map_wait_frames": 101,
+          "exit_modes": [
+            "0x0C",
+            "0x0D",
+            "0x0E"
+          ],
+          "cursor_after": [
+            152,
+            104
+          ],
+          "cursor_moved": true,
+          "transitions": [
+            {
+              "frame": 0,
+              "mode": "0x14"
+            },
+            {
+              "frame": 4374,
+              "mode": "0x0C"
+            }
+          ],
+          "map_savestate": "smw_world_map_after_round_0_152_136_t2a.state",
+          "replay": {
+            "max_progress_px": 5010.625,
+            "final_mode": "0x0C",
+            "reached_the_map": true,
+            "progress_difference_px": 0.0
+          }
+        }
+      },
+      {
+        "round": 1,
+        "node": [
+          152,
+          104
+        ],
+        "entered": true,
+        "entry_frame": 168,
+        "translevel": "0x27",
+        "terrain": {
+          "terrain_subscreens": 21,
+          "terrain_px": 5376,
+          "non_air_cells_by_subscreen": [
+            190,
+            88,
+            104,
+            113,
+            99,
+            12,
+            180,
+            12,
+            77,
+            65,
+            73,
+            94,
+            14,
+            20,
+            81,
+            51,
+            77,
+            5,
+            78,
+            72,
+            48,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            352,
+            432,
+            432,
+            432,
+            432,
+            432,
+            432
+          ]
+        },
+        "timer_hundreds": 2,
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "plausible_at_entry": false,
+        "savestate": "smw_map_round_1_152_104_t27.state",
+        "attempts": [
+          {
+            "frames": 441,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 440,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                440,
+                11
+              ]
+            ],
+            "max_progress_px": 376.5,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00058,
+            "attempt": 0,
+            "after_exit": {
+              "on_map": true,
+              "frames": 130,
+              "modes": [
+                "0x0B",
+                "0x0C",
+                "0x0D",
+                "0x0E"
+              ]
+            },
+            "map_cursor": [
+              152,
+              104
+            ],
+            "died_on_the_way": true
+          },
+          {
+            "frames": 385,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 384,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                384,
+                11
+              ]
+            ],
+            "max_progress_px": 355.8125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 1,
+            "after_exit": {
+              "on_map": true,
+              "frames": 130,
+              "modes": [
+                "0x0B",
+                "0x0C",
+                "0x0D",
+                "0x0E"
+              ]
+            },
+            "map_cursor": [
+              152,
+              104
+            ],
+            "died_on_the_way": true
+          }
+        ],
+        "cleared": null,
+        "returned_to_map_same_node": {
+          "attempt": 1,
+          "exit_modes": [
+            "0x0B",
+            "0x0C",
+            "0x0D",
+            "0x0E"
+          ]
+        }
+      }
+    ],
+    "cleared_rounds": 1,
+    "map_after": {
+      "positions": [
+        [
+          152,
+          104
+        ],
+        [
+          152,
+          136
+        ],
+        [
+          115,
+          126
+        ],
+        [
+          104,
+          120
+        ],
+        [
+          68,
+          135
+        ],
+        [
+          141,
+          135
+        ],
+        [
+          56,
+          136
+        ],
+        [
+          93,
+          126
+        ]
+      ],
+      "paths": {
+        "152|104": [],
+        "152|136": [
+          "DOWN"
+        ],
+        "115|126": [
+          "DOWN",
+          "LEFT"
+        ],
+        "104|120": [
+          "DOWN",
+          "LEFT",
+          "UP"
+        ],
+        "68|135": [
+          "DOWN",
+          "LEFT",
+          "UP",
+          "LEFT"
+        ],
+        "141|135": [
+          "DOWN",
+          "LEFT",
+          "UP",
+          "RIGHT"
+        ],
+        "56|136": [
+          "DOWN",
+          "LEFT",
+          "UP",
+          "LEFT",
+          "UP"
+        ],
+        "93|126": [
+          "DOWN",
+          "LEFT",
+          "UP",
+          "LEFT",
+          "UP",
+          "RIGHT"
+        ]
+      },
+      "new_positions": [
+        [
+          152,
+          104
+        ],
+        [
+          115,
+          126
+        ]
+      ]
+    }
+  },
+  "prior_clearance": {
+    "_meta": {
       "generated_utc": "2026-10-12T02:39:58+00:00",
       "git_sha": "cafa7a0cc9bd57db7b75ab1fe2c48aded1f7475e",
       "git_dirty": true,
@@ -1476,9 +1968,11 @@
         "x_at_start": 16.0,
         "y_at_start": 352.5
       },
-      "survey": {
+      "entry_evidence": {
+        "source": "the map survey of 10.66",
         "right_response_px": 39.0625,
-        "handoff_gate_of_10_36_3": true
+        "handoff_gate_of_10_36_3": true,
+        "cleared_by_the_seeded_run": null
       },
       "walk_right_frontier": {
         "frames": 539,
@@ -1487,63 +1981,288 @@
         "final_mode": "0x14",
         "operator_A_frames": 80
       },
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
       "mpc": {
         "attempts": [
           {
-            "frames": 2000,
-            "mode_transitions": [
-              {
-                "frame": 0,
-                "mode": "0x14"
-              }
-            ],
-            "max_progress_px": 3998.0625,
-            "final_mode": "0x14",
-            "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00084,
-            "attempt": 0
-          },
-          {
-            "frames": 1011,
+            "frames": 4375,
             "mode_transitions": [
               {
                 "frame": 0,
                 "mode": "0x14"
               },
               {
-                "frame": 1010,
-                "mode": "0x0B"
+                "frame": 4374,
+                "mode": "0x0C"
               }
             ],
-            "max_progress_px": 1315.875,
-            "final_mode": "0x0B",
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                4374,
+                12
+              ]
+            ],
+            "max_progress_px": 5010.625,
+            "final_mode": "0x0C",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00068,
-            "attempt": 1
+            "wall_seconds_per_frame": 0.00064,
+            "attempt": 0,
+            "seed": 7,
+            "died_on_the_way": false,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": true
           },
           {
-            "frames": 1271,
+            "frames": 909,
             "mode_transitions": [
               {
                 "frame": 0,
                 "mode": "0x14"
               },
               {
-                "frame": 1270,
+                "frame": 908,
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 2193.0,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                908,
+                11
+              ]
+            ],
+            "max_progress_px": 1319.1875,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00068,
-            "attempt": 2
+            "wall_seconds_per_frame": 0.00059,
+            "attempt": 1,
+            "seed": 8,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 933,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 932,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                932,
+                11
+              ]
+            ],
+            "max_progress_px": 1318.625,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00059,
+            "attempt": 2,
+            "seed": 9,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 1410,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 1409,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                1409,
+                11
+              ]
+            ],
+            "max_progress_px": 2186.8125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00059,
+            "attempt": 3,
+            "seed": 10,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 855,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 854,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                854,
+                11
+              ]
+            ],
+            "max_progress_px": 1319.625,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00058,
+            "attempt": 4,
+            "seed": 11,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 896,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 895,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                895,
+                11
+              ]
+            ],
+            "max_progress_px": 1319.75,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00059,
+            "attempt": 5,
+            "seed": 12,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           }
         ],
-        "best_progress_px": 3998.0625,
+        "tries": 6,
+        "clears": 1,
+        "best_progress_px": 5010.625,
         "end_modes": [
           "0x0B",
-          "0x14"
+          "0x0C"
         ]
       },
       "episode": {
@@ -1570,9 +2289,11 @@
         "x_at_start": 128.0,
         "y_at_start": 352.5
       },
-      "survey": {
+      "entry_evidence": {
+        "source": "the map survey of 10.66",
         "right_response_px": 39.0625,
-        "handoff_gate_of_10_36_3": true
+        "handoff_gate_of_10_36_3": true,
+        "cleared_by_the_seeded_run": null
       },
       "walk_right_frontier": {
         "frames": 206,
@@ -1580,6 +2301,52 @@
         "ended": "stall",
         "final_mode": "0x0C",
         "operator_A_frames": 107
+      },
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
       },
       "mpc": {
         "attempts": [
@@ -1595,11 +2362,31 @@
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 124.6875,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                117,
+                11
+              ]
+            ],
+            "max_progress_px": 123.9375,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00098,
-            "attempt": 0
+            "wall_seconds_per_frame": 0.00057,
+            "attempt": 0,
+            "seed": 7,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           },
           {
             "frames": 121,
@@ -1613,32 +2400,188 @@
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 125.875,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                120,
+                11
+              ]
+            ],
+            "max_progress_px": 125.1875,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00057,
-            "attempt": 1
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 1,
+            "seed": 8,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           },
           {
-            "frames": 118,
+            "frames": 119,
             "mode_transitions": [
               {
                 "frame": 0,
                 "mode": "0x14"
               },
               {
-                "frame": 117,
+                "frame": 118,
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 125.375,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                118,
+                11
+              ]
+            ],
+            "max_progress_px": 124.8125,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
             "wall_seconds_per_frame": 0.00057,
-            "attempt": 2
+            "attempt": 2,
+            "seed": 9,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 120,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 119,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                119,
+                11
+              ]
+            ],
+            "max_progress_px": 124.875,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00056,
+            "attempt": 3,
+            "seed": 10,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 122,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 121,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                121,
+                11
+              ]
+            ],
+            "max_progress_px": 124.75,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 4,
+            "seed": 11,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 121,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 120,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                120,
+                11
+              ]
+            ],
+            "max_progress_px": 125.3125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00057,
+            "attempt": 5,
+            "seed": 12,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           }
         ],
-        "best_progress_px": 125.875,
+        "tries": 6,
+        "clears": 0,
+        "best_progress_px": 125.3125,
         "end_modes": [
           "0x0B"
         ]
@@ -1667,9 +2610,11 @@
         "x_at_start": 16.0,
         "y_at_start": 352.5
       },
-      "survey": {
+      "entry_evidence": {
+        "source": "the map survey of 10.66",
         "right_response_px": 15.8125,
-        "handoff_gate_of_10_36_3": true
+        "handoff_gate_of_10_36_3": true,
+        "cleared_by_the_seeded_run": null
       },
       "walk_right_frontier": {
         "frames": 288,
@@ -1678,43 +2623,205 @@
         "final_mode": "0x14",
         "operator_A_frames": 32
       },
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
       "mpc": {
         "attempts": [
           {
-            "frames": 408,
+            "frames": 400,
             "mode_transitions": [
               {
                 "frame": 0,
                 "mode": "0x14"
               },
               {
-                "frame": 407,
+                "frame": 399,
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 427.6875,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                399,
+                11
+              ]
+            ],
+            "max_progress_px": 404.25,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00106,
-            "attempt": 0
+            "wall_seconds_per_frame": 0.00056,
+            "attempt": 0,
+            "seed": 7,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           },
           {
-            "frames": 428,
+            "frames": 412,
             "mode_transitions": [
               {
                 "frame": 0,
                 "mode": "0x14"
               },
               {
-                "frame": 427,
+                "frame": 411,
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 471.8125,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                411,
+                11
+              ]
+            ],
+            "max_progress_px": 404.0625,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.00078,
-            "attempt": 1
+            "wall_seconds_per_frame": 0.00058,
+            "attempt": 1,
+            "seed": 8,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 404,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 403,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                403,
+                11
+              ]
+            ],
+            "max_progress_px": 412.4375,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00065,
+            "attempt": 2,
+            "seed": 9,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 540,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 539,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                539,
+                11
+              ]
+            ],
+            "max_progress_px": 695.125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00056,
+            "attempt": 3,
+            "seed": 10,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           },
           {
             "frames": 400,
@@ -1728,14 +2835,74 @@
                 "mode": "0x0B"
               }
             ],
-            "max_progress_px": 405.9375,
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                399,
+                11
+              ]
+            ],
+            "max_progress_px": 405.0625,
             "final_mode": "0x0B",
             "on_map_at_exit": false,
-            "wall_seconds_per_frame": 0.001,
-            "attempt": 2
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 4,
+            "seed": 11,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 412,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 411,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                411,
+                11
+              ]
+            ],
+            "max_progress_px": 439.25,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00056,
+            "attempt": 5,
+            "seed": 12,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
           }
         ],
-        "best_progress_px": 471.8125,
+        "tries": 6,
+        "clears": 0,
+        "best_progress_px": 695.125,
         "end_modes": [
           "0x0B"
         ]
@@ -1750,6 +2917,327 @@
         "repeats_the_measured_attempt_px": 0.0
       },
       "goal_proxy_px": 1900.0
+    },
+    {
+      "savestate": "smw_map_round_1_152_104_t27.state",
+      "map_node": [
+        152,
+        104
+      ],
+      "identity": {
+        "mode_at_start": "0x14",
+        "translevel": "0x27",
+        "timer_hundreds": 2,
+        "x_at_start": 16.0,
+        "y_at_start": 352.5
+      },
+      "entry_evidence": {
+        "source": "the clearance campaign",
+        "right_response_px": null,
+        "handoff_gate_of_10_36_3": null,
+        "cleared_by_the_seeded_run": false
+      },
+      "walk_right_frontier": {
+        "frames": 199,
+        "frontier_px": 369.0,
+        "ended": "death",
+        "final_mode": "0x14",
+        "operator_A_frames": 0
+      },
+      "terrain": {
+        "terrain_subscreens": 21,
+        "terrain_px": 5376,
+        "non_air_cells_by_subscreen": [
+          190,
+          88,
+          104,
+          113,
+          99,
+          12,
+          180,
+          12,
+          77,
+          65,
+          73,
+          94,
+          14,
+          20,
+          81,
+          51,
+          77,
+          5,
+          78,
+          72,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "mpc": {
+        "attempts": [
+          {
+            "frames": 433,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 432,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                432,
+                11
+              ]
+            ],
+            "max_progress_px": 377.75,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 0,
+            "seed": 7,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 445,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 444,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                444,
+                11
+              ]
+            ],
+            "max_progress_px": 364.0,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00054,
+            "attempt": 1,
+            "seed": 8,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 441,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 440,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                440,
+                11
+              ]
+            ],
+            "max_progress_px": 367.0,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00054,
+            "attempt": 2,
+            "seed": 9,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 393,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 392,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                392,
+                11
+              ]
+            ],
+            "max_progress_px": 359.4375,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00054,
+            "attempt": 3,
+            "seed": 10,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 433,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 432,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                432,
+                11
+              ]
+            ],
+            "max_progress_px": 363.0,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 4,
+            "seed": 11,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          },
+          {
+            "frames": 441,
+            "mode_transitions": [
+              {
+                "frame": 0,
+                "mode": "0x14"
+              },
+              {
+                "frame": 440,
+                "mode": "0x0B"
+              }
+            ],
+            "transitions_raw": [
+              [
+                0,
+                20
+              ],
+              [
+                440,
+                11
+              ]
+            ],
+            "max_progress_px": 373.125,
+            "final_mode": "0x0B",
+            "on_map_at_exit": false,
+            "wall_seconds_per_frame": 0.00055,
+            "attempt": 5,
+            "seed": 12,
+            "died_on_the_way": true,
+            "reached_the_map": true,
+            "exit_modes": [
+              "0x0B",
+              "0x0C",
+              "0x0D",
+              "0x0E"
+            ],
+            "cleared": false
+          }
+        ],
+        "tries": 6,
+        "clears": 0,
+        "best_progress_px": 377.75,
+        "end_modes": [
+          "0x0B"
+        ]
+      },
+      "episode": {
+        "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
+        "frames": 352,
+        "progress_px": 370.625,
+        "progress_after_last_step_px": 372.875,
+        "ended": "death",
+        "share_of_frontier": 1.0044037940379404,
+        "repeats_the_measured_attempt_px": 0.0
+      },
+      "goal_proxy_px": 1900.0
     }
   ],
   "rendered": [
@@ -1757,23 +3245,25 @@
       "level_index": 1,
       "label": "Yoshi's Island 1",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
+      "goal_px": 5120.0,
+      "clear_line": "cleared in 1 of 6 attempts \u00b7 this arm 1573 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 6016411,
+        "bytes": 6015660,
         "frames_written": 634,
         "fps": 30.0,
         "duration_s": 21.13
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 7051334,
+        "bytes": 7085596,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 107532,
+        "bytes": 106888,
         "frame": 634
       },
       "caption": {
@@ -1794,23 +3284,25 @@
       "level_index": 2,
       "label": "level 0x28 at node [116, 126]",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
+      "goal_px": 256.0,
+      "clear_line": "0 of 6 attempts cleared it \u00b7 this arm -128 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 605846,
+        "bytes": 605615,
         "frames_written": 159,
         "fps": 30.0,
         "duration_s": 5.3
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 515861,
+        "bytes": 518662,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 108362,
+        "bytes": 108411,
         "frame": 158
       },
       "caption": {
@@ -1831,23 +3323,25 @@
       "level_index": 3,
       "label": "level 0x29 at node [68, 135]",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
+      "goal_px": 5120.0,
+      "clear_line": "0 of 6 attempts cleared it \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 1234674,
+        "bytes": 1225406,
         "frames_written": 154,
         "fps": 30.0,
         "duration_s": 5.13
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1419616,
+        "bytes": 1462508,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 108933,
+        "bytes": 109455,
         "frame": 154
       },
       "caption": {
@@ -1863,6 +3357,45 @@
         "value_last_px": 195.16087341308594,
         "subscreens_reached": 2
       }
+    },
+    {
+      "level_index": 4,
+      "label": "level 0x27 at node [152, 104]",
+      "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
+      "goal_px": 5376.0,
+      "clear_line": "0 of 6 attempts cleared it \u00b7 this arm 371 / 5376 px",
+      "video": {
+        "mp4": "results/figures/dashboard_level_4.mp4",
+        "bytes": 1381496,
+        "frames_written": 176,
+        "fps": 30.0,
+        "duration_s": 5.87
+      },
+      "gif": {
+        "gif": "results/figures/dashboard_level_4.gif",
+        "bytes": 1675800,
+        "gif_fps": 12.0,
+        "gif_width_px": 900,
+        "gif_palette_colors": 96
+      },
+      "still": {
+        "png": "results/figures/dashboard_level_4_still.png",
+        "bytes": 109423,
+        "frame": 176
+      },
+      "caption": {
+        "episode_frames": 352,
+        "tile_void_cell_share": 0.379682673845897,
+        "progress_px": 370.625,
+        "camera_travel_px": 280.0,
+        "mean_top_action_probability": 0.15760791313367573,
+        "mean_max_button_probability": 0.8481654850766063,
+        "residue_exact_share": 0.5625,
+        "operator_A_frames": 23,
+        "value_first_px": 201.41864013671875,
+        "value_last_px": 198.32931518554688,
+        "subscreens_reached": 2
+      }
     }
   ],
   "hero": {
@@ -1876,14 +3409,14 @@
         "title": "Reinforcement learning in Super Mario World",
         "level_label": "Yoshi's Island 1",
         "level_index": 1,
-        "level_count": 3,
-        "clear_line": "this arm 1616 px   furthest measured here 3998 px",
-        "goal_px": 1900.0,
+        "level_count": 4,
+        "clear_line": "cleared in 1 of 6 attempts \u00b7 this arm 1616 / 5120 px",
+        "goal_px": 5120.0,
         "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
         "output_stem": "dashboard_level_1",
         "progress_px": 1573.125
       },
-      "goal_px": 1900.0,
+      "goal_px": 5120.0,
       "subscreen_px": 256.0,
       "action_panel_source": "joint of the actor's independent button marginals",
       "state_names": [
@@ -1917,21 +3450,21 @@
     },
     "video": {
       "mp4": "results/figures/dashboard_run.mp4",
-      "bytes": 6441263,
+      "bytes": 6420051,
       "frames_written": 634,
       "fps": 30.0,
       "duration_s": 21.13
     },
     "gif": {
       "gif": "results/figures/dashboard_run.gif",
-      "bytes": 7290872,
+      "bytes": 7260559,
       "gif_fps": 12.0,
       "gif_width_px": 900,
       "gif_palette_colors": 96
     },
     "still": {
       "png": "results/figures/dashboard_run_still.png",
-      "bytes": 108164,
+      "bytes": 107191,
       "frame": 634
     },
     "caption": {
