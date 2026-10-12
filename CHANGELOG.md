@@ -116,6 +116,28 @@ numbers* - those are reported here and in README Section 12, never applied silen
   `src/environment/wram.py` gains the level-buffer address formula as `tilemap_addr`, which
   `SnesLibretroEmulator.tilemap_addr` now delegates to, so the emulator, the raw-ID reader and the
   rendered tile panel all resolve a tile to the same byte.
+- **The survey run again, and the map a clear opened** (README 10.67).
+  `scripts/survey_world_map.py` gained two routes and a hash: `make survey-opened-map` surveys
+  `smw_world_map_after_round_0_152_136_t2a.state`, the world map that exists only after the clearance
+  controller finished Yoshi's Island 1, and `make survey-map-replay` re-runs the published route into
+  `results/world_map_survey_replay.json`, with every capture now recording the SHA-256 of the bytes it
+  wrote. Both routes capture under their own `--state-prefix`, so neither can rewrite the savestates
+  10.66 published. `src/evaluation/world_map_recheck_study.py` (`make world-map-recheck`) compares the
+  three artifacts and writes README 10.67. Three findings come out of it. The opened map reaches
+  eight cursor positions where the published route reaches seven, and hands over the same four level
+  numbers: the node the clear lands on is `0x27`, a stage 10.66 already records a dashboard for, and
+  the position a fresh file cannot reach, `(115, 126)`, enters `0x28` with a timer of zero and 256 px
+  of terrain - the session the published route found at `(116, 126)`, one column east - so it is a
+  path tile of a counted stage, not a fifth stage. The survey reproduces itself: no difference across
+  the seven shared nodes on the compared probe fields, and seven of seven published savestates hash to
+  the bytes a fresh run writes. The two routes never capture the same console bytes at the same node
+  (none of the six both entered), which is also why the entrance walk at the two `0x29` nodes reads
+  15.8125 px from the boot map and 17.0625 px from the post-clear one. The two new targets are
+  `smw-pinn` subcommands whose injected flags are compared against the Makefile recipes by
+  `tests/test_cli_parity.py`; `tests/test_world_map_recheck_study.py` gates the section's counts,
+  hashes and quoted distances against the three surveys, and `tests/test_level_instruments.py` covers
+  the survey and recorder helpers no artifact can reach - the buffer scan, the two spellings of a
+  cleared flight, the drawing-context strip and the candidate dedupe - without a console.
 - **The hero redrawn, and two defects in the picture it replaced** (README 10.60).
   `src/evaluation/dashboard_video.py` now lays the dashboard out as one large console window beside
   the tile window, the eight named actions as percentage bars, an SNES controller, the critic's

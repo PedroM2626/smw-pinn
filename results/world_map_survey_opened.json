@@ -1,0 +1,2260 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-12T14:12:18+00:00",
+    "git_sha": "d21887f23902405154aa91df1cced84a16e40df0",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m scripts.survey_world_map --from-map-state data/raw/smw_world_map_after_round_0_152_136_t2a.state --state-prefix smw_opened_node --output results/world_map_survey_opened.json"
+  },
+  "study": "Which nodes of the Super Mario World map the engine will actually hand over: the cursor positions reachable from the first node, and for each one whether A leaves the map, loads a level with a timer, and gives control to a player that walks.",
+  "protocol": {
+    "route": "loaded from smw_world_map_after_round_0_152_136_t2a.state",
+    "from_map_state": "smw_world_map_after_round_0_152_136_t2a.state",
+    "start_node": [
+      152,
+      136
+    ],
+    "cursor_at_start": [
+      152,
+      104
+    ],
+    "step_frames": 16,
+    "settle_frames": 30,
+    "entry_budget_frames": 900,
+    "entry_settle_frames": 180,
+    "gate": "walkable = interactive mode + plausible coordinates + right-press dx > 6 px; level = walkable and a nonzero timer",
+    "savestate_dir": "data/raw",
+    "state_prefix": "smw_opened_node",
+    "saved_states": true,
+    "cursor_write_is_a_teleport": false
+  },
+  "discovery": {
+    "start": [
+      152,
+      104
+    ],
+    "positions": [
+      [
+        152,
+        104
+      ],
+      [
+        152,
+        136
+      ],
+      [
+        115,
+        126
+      ],
+      [
+        104,
+        120
+      ],
+      [
+        68,
+        135
+      ],
+      [
+        141,
+        135
+      ],
+      [
+        56,
+        136
+      ],
+      [
+        93,
+        126
+      ]
+    ],
+    "paths": {
+      "152|104": [],
+      "152|136": [
+        "DOWN"
+      ],
+      "115|126": [
+        "DOWN",
+        "LEFT"
+      ],
+      "104|120": [
+        "DOWN",
+        "LEFT",
+        "UP"
+      ],
+      "68|135": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "141|135": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "56|136": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "93|126": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ]
+    },
+    "edges": [
+      {
+        "from": [
+          152,
+          104
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          152,
+          136
+        ],
+        "to": [
+          152,
+          104
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          152,
+          136
+        ],
+        "to": [
+          115,
+          126
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          115,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          115,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          115,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          115,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          104,
+          120
+        ],
+        "to": [
+          68,
+          135
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          104,
+          120
+        ],
+        "to": [
+          141,
+          135
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          68,
+          135
+        ],
+        "to": [
+          56,
+          136
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          141,
+          135
+        ],
+        "to": [
+          152,
+          136
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          56,
+          136
+        ],
+        "to": [
+          93,
+          126
+        ],
+        "direction": "RIGHT"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "UP"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "DOWN"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "LEFT"
+      },
+      {
+        "from": [
+          93,
+          126
+        ],
+        "to": [
+          104,
+          120
+        ],
+        "direction": "RIGHT"
+      }
+    ],
+    "max_nodes": 40,
+    "truncated": false
+  },
+  "nodes": [
+    {
+      "node": [
+        152,
+        104
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        104
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 168,
+      "translevel": "0x27",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 21,
+        "terrain_px": 5376,
+        "non_air_cells_by_subscreen": [
+          190,
+          88,
+          104,
+          113,
+          99,
+          12,
+          180,
+          12,
+          77,
+          65,
+          73,
+          94,
+          14,
+          20,
+          81,
+          51,
+          77,
+          5,
+          78,
+          72,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_104_t27.state",
+        "bytes": 823407,
+        "sha256": "b8f61923a52a34de3c5da412439350c9e9b243ebc29932250f0b9358905f0e9c",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [
+        "DOWN"
+      ],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 167,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_136_t2a.state",
+        "bytes": 823407,
+        "sha256": "40164e479b21fa686effc27fb6ce60abd4a3ea04e3df2fe666e0dcba60abd5f7",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        115,
+        126
+      ],
+      "path": [
+        "DOWN",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        115,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_115_126_t28.state",
+        "bytes": 823407,
+        "sha256": "da3c470cb0fc1ce4924012a4171becb3ca0a1f4674c05ec5a18084602e890a51",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        104,
+        120
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        104,
+        120
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 154,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_104_120_t28.state",
+        "bytes": 823407,
+        "sha256": "4809b389a1346813a6a6bace861a46f6ed247b425c13b7158933b8129b041349",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_68_135_t29.state",
+        "bytes": 823407,
+        "sha256": "531cc24bc7718d9d7bd293c1a248b4013a15363b5f0284c54397ccecc27bd782",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_141_135_t2a.state",
+        "bytes": 823407,
+        "sha256": "1f383215c71b8c0b659687def2626c6bdb7db85c19c4ef4e3a444de7db5e1e68",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_56_136_t29.state",
+        "bytes": 823407,
+        "sha256": "065010fe3de320dc1e38cec468ecb939f4c8d473d46c4a43a6e29a9101874f59",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        93,
+        126
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        93,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_93_126_t28.state",
+        "bytes": 823407,
+        "sha256": "db3f7a3da1cee7b93dfc3e042239bf03d3817ca27686468022808796611bfbbc",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "walkable": [
+    {
+      "node": [
+        152,
+        104
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        104
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 168,
+      "translevel": "0x27",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 21,
+        "terrain_px": 5376,
+        "non_air_cells_by_subscreen": [
+          190,
+          88,
+          104,
+          113,
+          99,
+          12,
+          180,
+          12,
+          77,
+          65,
+          73,
+          94,
+          14,
+          20,
+          81,
+          51,
+          77,
+          5,
+          78,
+          72,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_104_t27.state",
+        "bytes": 823407,
+        "sha256": "b8f61923a52a34de3c5da412439350c9e9b243ebc29932250f0b9358905f0e9c",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [
+        "DOWN"
+      ],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 167,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_136_t2a.state",
+        "bytes": 823407,
+        "sha256": "40164e479b21fa686effc27fb6ce60abd4a3ea04e3df2fe666e0dcba60abd5f7",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        115,
+        126
+      ],
+      "path": [
+        "DOWN",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        115,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_115_126_t28.state",
+        "bytes": 823407,
+        "sha256": "da3c470cb0fc1ce4924012a4171becb3ca0a1f4674c05ec5a18084602e890a51",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        104,
+        120
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        104,
+        120
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 154,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_104_120_t28.state",
+        "bytes": 823407,
+        "sha256": "4809b389a1346813a6a6bace861a46f6ed247b425c13b7158933b8129b041349",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_68_135_t29.state",
+        "bytes": 823407,
+        "sha256": "531cc24bc7718d9d7bd293c1a248b4013a15363b5f0284c54397ccecc27bd782",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_141_135_t2a.state",
+        "bytes": 823407,
+        "sha256": "1f383215c71b8c0b659687def2626c6bdb7db85c19c4ef4e3a444de7db5e1e68",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_56_136_t29.state",
+        "bytes": 823407,
+        "sha256": "065010fe3de320dc1e38cec468ecb939f4c8d473d46c4a43a6e29a9101874f59",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        93,
+        126
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        93,
+        126
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 178,
+      "translevel": "0x28",
+      "timer_hundreds": 0,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 1,
+        "terrain_px": 256,
+        "non_air_cells_by_subscreen": [
+          155,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 128.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": false,
+      "reason": "walks, but the timer reads zero: the blank-level case of 10.36.3",
+      "capture": {
+        "saved": "smw_opened_node_93_126_t28.state",
+        "bytes": 823407,
+        "sha256": "db3f7a3da1cee7b93dfc3e042239bf03d3817ca27686468022808796611bfbbc",
+        "x_at_entry": 128.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "levels": [
+    {
+      "node": [
+        152,
+        104
+      ],
+      "path": [],
+      "cursor_before_A": [
+        152,
+        104
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 168,
+      "translevel": "0x27",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 21,
+        "terrain_px": 5376,
+        "non_air_cells_by_subscreen": [
+          190,
+          88,
+          104,
+          113,
+          99,
+          12,
+          180,
+          12,
+          77,
+          65,
+          73,
+          94,
+          14,
+          20,
+          81,
+          51,
+          77,
+          5,
+          78,
+          72,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_104_t27.state",
+        "bytes": 823407,
+        "sha256": "b8f61923a52a34de3c5da412439350c9e9b243ebc29932250f0b9358905f0e9c",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        152,
+        136
+      ],
+      "path": [
+        "DOWN"
+      ],
+      "cursor_before_A": [
+        152,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 167,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_152_136_t2a.state",
+        "bytes": 823407,
+        "sha256": "40164e479b21fa686effc27fb6ce60abd4a3ea04e3df2fe666e0dcba60abd5f7",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        68,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT"
+      ],
+      "cursor_before_A": [
+        68,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 188,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_68_135_t29.state",
+        "bytes": 823407,
+        "sha256": "531cc24bc7718d9d7bd293c1a248b4013a15363b5f0284c54397ccecc27bd782",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        141,
+        135
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "RIGHT"
+      ],
+      "cursor_before_A": [
+        141,
+        135
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 190,
+      "translevel": "0x2A",
+      "timer_hundreds": 4,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          94,
+          88,
+          79,
+          63,
+          99,
+          93,
+          83,
+          83,
+          150,
+          82,
+          71,
+          92,
+          112,
+          123,
+          90,
+          92,
+          94,
+          74,
+          95,
+          93,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 39.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_141_135_t2a.state",
+        "bytes": 823407,
+        "sha256": "1f383215c71b8c0b659687def2626c6bdb7db85c19c4ef4e3a444de7db5e1e68",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 39.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    },
+    {
+      "node": [
+        56,
+        136
+      ],
+      "path": [
+        "DOWN",
+        "LEFT",
+        "UP",
+        "LEFT",
+        "UP"
+      ],
+      "cursor_before_A": [
+        56,
+        136
+      ],
+      "cursor_reached": true,
+      "mode_sequence": [
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14"
+      ],
+      "entry_frame": 164,
+      "translevel": "0x29",
+      "timer_hundreds": 3,
+      "interactive": true,
+      "terrain": {
+        "terrain_subscreens": 20,
+        "terrain_px": 5120,
+        "non_air_cells_by_subscreen": [
+          74,
+          66,
+          55,
+          96,
+          111,
+          104,
+          54,
+          78,
+          79,
+          62,
+          60,
+          133,
+          53,
+          54,
+          51,
+          55,
+          64,
+          86,
+          85,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          352,
+          432,
+          432,
+          432,
+          432,
+          432,
+          432
+        ]
+      },
+      "x_after_settle": 16.0,
+      "y_after_settle": 352.125,
+      "right_response_px": 17.0625,
+      "plausible": true,
+      "walkable": true,
+      "level": true,
+      "capture": {
+        "saved": "smw_opened_node_56_136_t29.state",
+        "bytes": 823407,
+        "sha256": "065010fe3de320dc1e38cec468ecb939f4c8d473d46c4a43a6e29a9101874f59",
+        "x_at_entry": 16.0,
+        "y_at_entry": 352.125,
+        "right_response_px": 17.0625,
+        "handoff_gate_of_10_36_3": true
+      }
+    }
+  ],
+  "translevels_seen": [
+    "0x27",
+    "0x28",
+    "0x29",
+    "0x2A"
+  ]
+}

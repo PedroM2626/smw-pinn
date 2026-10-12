@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T05:53:11+00:00",
-    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
+    "generated_utc": "2026-10-12T14:53:47+00:00",
+    "git_sha": "d21887f23902405154aa91df1cced84a16e40df0",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -10,7 +10,7 @@
     "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
     "cuda_version": "12.1",
     "numpy": "1.26.4",
-    "command": "make dashboard-video"
+    "command": "make level-dashboard-study"
   },
   "study": "The README hero dashboard, rendered from the recorded episode: the console's own RGB picture beside the tilemap the level-conditioned models read, with the action distribution the actor holds, the buttons the console received on a controller graphic, the terminal-value critic's prediction, and the stage progress bar.",
   "protocol": {
@@ -24,10 +24,7 @@
       "level_index": 1,
       "level_count": 4,
       "clear_line": "cleared in 1 of 6 attempts \u00b7 this arm 1616 / 5120 px",
-      "goal_px": 5120.0,
-      "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
-      "output_stem": "dashboard_level_1",
-      "progress_px": 1573.125
+      "goal_px": 5120.0
     },
     "goal_px": 5120.0,
     "subscreen_px": 256.0,

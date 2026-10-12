@@ -17,7 +17,7 @@ Run:  pytest tests/test_cli_parity.py -q
 import re
 from pathlib import Path
 
-from src.cli import CHECK_COMMANDS, MODULE_COMMANDS
+from src.cli import CHECK_COMMANDS, COMMAND_FLAGS, MODULE_COMMANDS
 
 REPO = Path(__file__).resolve().parents[1]
 # Infrastructure targets, not studies: no module, or a multi-leg recipe whose legs are covered by
@@ -85,6 +85,26 @@ def test_a_subcommand_never_points_at_a_module_that_does_not_exist() -> None:
         ):
             dead.append(f"{name} -> {module}")
     assert not dead, "smw-pinn subcommands pointing at modules that are gone: " + ", ".join(dead)
+
+
+def test_a_command_that_needs_flags_gets_the_ones_the_makefile_passes() -> None:
+    """`smw-pinn survey-opened-map` has to survey the opened map, not the module's own default.
+
+    Two survey targets share `scripts/survey_world_map.py` and its defaults, so the flag list is what
+    distinguishes the runs, and a subcommand that dropped one would produce a different artifact under
+    the same name. The recipe is read out of the Makefile rather than restated here, because the pair
+    drifting apart is exactly the failure this catches.
+    """
+    text = (REPO / "Makefile").read_text(encoding="utf-8")
+    blocks = TARGET.split(text)
+    bodies = dict(zip(blocks[1::2], blocks[2::2]))
+    for name, flags in COMMAND_FLAGS.items():
+        assert name in bodies, f"no Makefile target registered as {name}"
+        first = bodies[name].split("\n\n")[0]
+        recipe = " ".join(line.strip() for line in first.splitlines() if line.strip())
+        tokens = [t for t in recipe.replace("\\", "").split() if t]
+        assert tokens[:2] == ["$(PY)", "-m"], f"{name}: unexpected recipe {recipe}"
+        assert tokens[3:] == flags, f"{name}: the Makefile passes {tokens[3:]}, the CLI {flags}"
 
 
 def test_the_three_two_leg_studies_map_to_their_forward_module() -> None:

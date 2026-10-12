@@ -36,8 +36,6 @@ SURVEY_ARTIFACT = "results/world_map_survey.json"
 PROGRESSION_ARTIFACT = "results/world_map_clearance.json"
 STUDY_ARTIFACT = "results/level_dashboards_cleared.json"
 RUN_ARTIFACT = "results/dashboard_run_metrics.json"
-#: 10.66's own record, kept on disk because it is what the section said before the clear
-PRIOR_STUDY_ARTIFACT = "results/level_dashboards.json"
 #: the 3000-frame campaign, whose budget - not the level - is what stopped its best run
 PRIOR_CLEARANCE_ARTIFACT = "results/world_map_progression.json"
 
@@ -123,6 +121,18 @@ def render_contexts(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     return contexts
 
 
+#: keys the render context carries for the study's own bookkeeping, which the renderer never draws
+#  and which must therefore never reach the render artifact: a `dataset` in the picture's protocol
+#: naming a file other than the one the picture was drawn from is a provenance claim that is false
+#: in the artifact that exists to check provenance against.
+BOOKKEEPING_KEYS = ("dataset", "output_stem", "progress_px")
+
+
+def drawing_context(context: Dict[str, Any]) -> Dict[str, Any]:
+    """The context as the renderer may see it: the drawing keys, and nothing else."""
+    return {k: v for k, v in context.items() if k not in BOOKKEEPING_KEYS}
+
+
 def hero_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     """The README hero's context: the published episode's stage, drawn as one of the set.
 
@@ -147,7 +157,7 @@ def hero_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         None,
     )
-    out = dict(yoshi)
+    out = drawing_context(yoshi)
     out["level_index"] = 1
     out["level_count"] = max(1, len(contexts))
     if stage is not None:
@@ -168,11 +178,7 @@ def render_level_videos(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
             output_gif=figure_file(f"{stem}.gif"),
             output_still=figure_file(f"{stem}_still.png"),
             output_metrics=None,
-            context={
-                k: v
-                for k, v in context.items()
-                if k not in ("output_stem", "dataset", "progress_px")
-            },
+            context=drawing_context(context),
         )
         rendered.append(
             {
@@ -452,7 +458,9 @@ def main() -> Dict[str, Any]:
     from src.utils.provenance import write_metrics
 
     payload = gather()
-    hero = run_dashboard_render(context=hero_context(payload))
+    hero = run_dashboard_render(
+        context=hero_context(payload), metrics_command="make level-dashboard-study"
+    )
     payload["hero"] = hero
     payload["rendered"] = render_level_videos(payload)
     write = results_file("level_dashboard_study_metrics.json")

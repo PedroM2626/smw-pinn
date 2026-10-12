@@ -15,13 +15,22 @@ replays a direction sequence, and the position read back after the replay is wha
 stood where it intended to.
 
 Writes `results/world_map_survey.json` and, for each node that passes the gate, a savestate under
-`data/raw/` named after the node it came from.
+`data/raw/` named after the node it came from. `make survey-map-replay` writes
+`results/world_map_survey_replay.json` and `make survey-opened-map` writes
+`results/world_map_survey_opened.json`; README 10.67 compares the three.
+
+The route is a parameter, because the map is not one thing: `--from-map-state` surveys a saved
+world-map instead of booting to one - which is how the map a cleared stage opens gets surveyed - and
+`--state-prefix` keeps the states such a run captures from overwriting the ones the published survey
+named.
 
 Run:  python -m scripts.survey_world_map
       python -m scripts.survey_world_map --max-nodes 8 --no-save
+      python -m scripts.survey_world_map --from-map-state <state> --state-prefix <prefix>
 """
 
 import argparse
+import hashlib
 import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple
@@ -234,6 +243,8 @@ def capture_level(
     return {
         "saved": os.path.basename(out_path),
         "bytes": len(state_bytes),
+        #: two runs that name the same file and agree here reproduced that capture byte for byte
+        "sha256": hashlib.sha256(state_bytes).hexdigest(),
         "x_at_entry": float(settled["x"]),
         "y_at_entry": float(settled["y"]),
         "right_response_px": float(dx),
@@ -241,9 +252,9 @@ def capture_level(
     }
 
 
-def state_name(node: Position, translevel: Optional[str]) -> str:
+def state_name(node: Position, translevel: Optional[str], prefix: str = "smw_map_node") -> str:
     tag = (translevel or "unknown").lower().replace("0x", "t")
-    return f"smw_map_node_{node[0]}_{node[1]}_{tag}.state"
+    return f"{prefix}_{node[0]}_{node[1]}_{tag}.state"
 
 
 def main() -> Dict[str, Any]:
@@ -251,6 +262,14 @@ def main() -> Dict[str, Any]:
     parser.add_argument("--max-nodes", type=int, default=40)
     parser.add_argument(
         "--no-save", action="store_true", help="survey the map without capturing states"
+    )
+    parser.add_argument(
+        "--state-prefix",
+        default="smw_map_node",
+        help=(
+            "what captured savestates are named after; a second survey of the same map must not "
+            "overwrite the states the first one published"
+        ),
     )
     parser.add_argument("--output", default=results_file("world_map_survey.json"))
     parser.add_argument(
@@ -304,7 +323,9 @@ def main() -> Dict[str, Any]:
             f"timer {report['timer_hundreds']} level={report.get('level')}"
         )
         if report.get("walkable") and not args.no_save:
-            path_out = str(data_dir() / state_name(node, report.get("translevel")))
+            path_out = str(
+                data_dir() / state_name(node, report.get("translevel"), args.state_prefix)
+            )
             report["capture"] = capture_level(emu, map_state, path, node, path_out)
             print(f"  capture: {report['capture']}")
         results.append(report)
@@ -332,6 +353,7 @@ def main() -> Dict[str, Any]:
                 "level = walkable and a nonzero timer"
             ),
             "savestate_dir": "data/raw",
+            "state_prefix": args.state_prefix,
             "saved_states": bool(not args.no_save),
             "cursor_write_is_a_teleport": False,
         },
@@ -341,7 +363,11 @@ def main() -> Dict[str, Any]:
         "levels": [r for r in results if r.get("level")],
         "translevels_seen": sorted({str(r.get("translevel")) for r in results}),
     }
-    write_metrics(args.output, payload, command="python -m scripts.survey_world_map")
+    write_metrics(
+        args.output,
+        payload,
+        command=" ".join(["python -m scripts.survey_world_map", *sys.argv[1:]]),
+    )
     print(f"{len(payload['levels'])} of {len(results)} nodes passed the level gate.")
     return payload
 

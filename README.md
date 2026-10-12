@@ -21,7 +21,7 @@
 
 Within **the four architectures of the canonical Section 8 benchmark**, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)** achieved the lowest reported prediction error and the strongest kinematic consistency. That scope is load-bearing and the repository now measures two things outside it: Section 10.42 fits two operators on the same split and seed and both reach a lower single-step error (`FNO` 0.4025 and `PhysicsConstrained_DeepONet` 0.5766 against 0.5783), and Section 10.37's hand-written engine rules carry an **identically zero** kinematic residual with **no learned parameters at all**. Section 10.53 narrows the consistency claim too: the 0.0% violation rate below is a result *inside the published 0.2 px tolerance*, and at 0.002 px the same shells are flagged on 0.9345-0.9578 of their rollout frames while a model that integrates position the way the console does stays at exactly zero.
 
-Sections 10.37-10.66 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, the terrain comparison that says which level the recordings walk, the pixel re-recording that turns that reading into a measured discrimination, the held-player split that says which mechanism the recorder has been sampling, the buffer identification that says whose terrain the tile-conditioned results are conditioned on, the retraining that re-measures the pixel conclusion on frames that move, and the world-map survey that says how many stages there are to be conditioned on at all - so this table is the canonical comparison, not the set of models this repository has measured.
+Sections 10.37-10.67 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, the terrain comparison that says which level the recordings walk, the pixel re-recording that turns that reading into a measured discrimination, the held-player split that says which mechanism the recorder has been sampling, the buffer identification that says whose terrain the tile-conditioned results are conditioned on, the retraining that re-measures the pixel conclusion on frames that move, and the world-map survey that says how many stages there are to be conditioned on at all, re-run in 10.67 to check that it answers the same way twice - so this table is the canonical comparison, not the set of models this repository has measured.
 
 ### Key Factors in the Performance of the Hard Residual PINN
 1. **Single-Step Predictive Accuracy (Test MSE) - the four Section 8 architectures:**
@@ -123,6 +123,7 @@ Sections 10.37-10.66 train and score the rest of the repository's models against
    * [10.64 The Buffer the Telemetry Reads Is the Title Screen's Own](#1064-the-buffer-the-telemetry-reads-is-the-title-screens-own)
    * [10.65 Velocity From Frames That Actually Move](#1065-velocity-from-frames-that-actually-move)
    * [10.66 The Same Dashboard on Every Stage the Map Will Actually Give, and What Clears Mean](#1066-the-same-dashboard-on-every-stage-the-map-will-actually-give-and-what-clears-mean)
+   * [10.67 Re-running the Map Survey, and the Map a Clear Opens](#1067-re-running-the-map-survey-and-the-map-a-clear-opens)
 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
@@ -3096,6 +3097,7 @@ A is not one of the six channels in `ACTION_BUTTONS`, so no policy in this repos
 
 **What this changes, and what it does not.** It does not move any telemetry result: every state, residue, camera and mode number in this repository comes from WRAM, and WRAM was never decoded through the pixel path. What it does touch is any claim this file has made about what a frame *shows*. The two such claims are the pixel probe of 10.31 and the picture check of 10.36.3, both run on frames decoded as 32-bit, so both were measured again with the fixed decoder on the same forced-mode savestate they were made on: driven for 150 frames the state moves 115.0000 px while 0 of 4 frame pairs translate at all, and the picture is the file-select menu - ![The forced-mode session draws the menu while the physics runs](results/figures/dashboard_forced_mode.png). Both sections' readings were therefore right and for the right reason, and the shift measurement survives the old decode anyway: the same squeeze applied to every frame cannot invent a horizontal translation. What the fix does change is this repository's ability to look at anything it records, which is what the dashboard above is for.
 
+
 ### 10.61 Which Level the Committed Recordings Actually Walk
 
 10.36.3 closed with a question it could not answer: the terrain reconstructed from the recorded 7x7 tile patches did not match the terrain of the genuinely entered level, and that left two explanations - the recordings are of a different stage, or the tile buffer of the forced-mode session is not a level buffer at all. The figure quoted there came from a scratch run with an undefined sampling rule and no artifact, so it is superseded here rather than re-derived. The profile is one instrument applied three times: first non-air tile at or below Mario's own tile row, within the 7x7 window the recording carries, modal value per absolute tile column.
@@ -3250,6 +3252,29 @@ The last column is the recorder's own control: the episode that gets its frames 
 
 **Level 4: level 0x27 at node [152, 104].** 352 frames, 370.6250 px of progress, the tile window's void class on 37.97% of its cells, 1.68 MB GIF / 1.38 MB MP4: `results/figures/dashboard_level_4.mp4`.
 
+
+### 10.67 Re-running the Map Survey, and the Map a Clear Opens
+
+10.66 ended on a map that is not the map a fresh file opens: finishing a stage moves the cursor and unlocks a node. `scripts/survey_world_map.py --from-map-state` surveys a saved map rather than booting to one, and pointed at the state the clearance campaign kept after its clear it reaches 8 cursor positions where the published route reaches 7. The level numbers it hands over are `0x27`, `0x28`, `0x29`, `0x2A`. One of them was not on the published map - `0x27`, the stage the clear itself opened - and none left it. Nothing the opened map hands over is a stage that 10.66 had not already listed.
+
+| map cursor | reached by | translevel | timer | terrain the buffer holds | right-press dx | the timer gate calls it a stage |
+|---|---|---|---|---|---|---|
+| (152, 104) | `(start)` | `0x27` | 3 | 5376 px | 39.0625 | yes |
+| (152, 136) | `DOWN` | `0x2A` | 4 | 5120 px | 39.0625 | yes |
+| (115, 126) | `DOWN+LEFT` | `0x28` | 0 | 256 px | 39.0625 | no |
+| (104, 120) | `DOWN+LEFT+UP` | `0x28` | 0 | 256 px | 39.0625 | no |
+| (68, 135) | `DOWN+LEFT+UP+LEFT` | `0x29` | 3 | 5120 px | 17.0625 | yes |
+| (141, 135) | `DOWN+LEFT+UP+RIGHT` | `0x2A` | 4 | 5120 px | 39.0625 | yes |
+| (56, 136) | `DOWN+LEFT+UP+LEFT+UP` | `0x29` | 3 | 5120 px | 17.0625 | yes |
+| (93, 126) | `DOWN+LEFT+UP+LEFT+UP+RIGHT` | `0x28` | 0 | 256 px | 39.0625 | no |
+
+**The node the clear opened was already a stage; the position it reached was not.** The campaign settled the cursor on (152, 104), and that node enters `0x27` with a timer of 3 hundreds and 5376 px of terrain - the stage 10.66 records a dashboard for. The cursor position the published route could not get to is (115, 126): it is walkable, it loads `0x28`, its timer reads 0 and its buffer holds 256 px. That is the session the published route found at (116, 126) - `0x28` there too, timer 0, x = 128.0 px at entry on both - one column east, so it is a path tile of a stage already counted, not a fifth stage. The survey's answer to *how many stages are there* is unchanged by one having been cleared.
+
+**The survey repeats itself, to the byte.** `make survey-map-replay` runs the published route again into its own artifact. Across 7 shared nodes and 14 compared fields it returns 0 differences - the walk of the cursor, the mode sequences, the entry frames, the timers, the entry coordinates and the right-press distances are all exactly what 10.66 published. Each capture also records the SHA-256 of the bytes it wrote, and hashing the files the published survey names matches that digest for 7 of 7: the console state the survey captures at a node is reproduced exactly. The replay wrote its own states under `smw_replay_node` and they are not kept - 0 of them are on disk against the 7 the published survey names, and the opened route keeps 0 of its 8: the replay's bytes are the committed files, and the opened route's are not, which is the next paragraph.
+
+**Same node, different console.** The two routes agree about what a node *does* and disagree about the bytes it *is*: of the 6 cursor positions both entered, 0 have the same state bytes. A savestate carries the route, not just the level - the map flags, the session that arrived. The probe records it twice over: of the 9 field differences between the two surveys, 6 are `path`, which is a property of the map each route started from rather than of the node it ends at, and the other 3 describe the node itself: `right_response_px` at (56, 136), 15.8125 against 17.0625; `right_response_px` at (68, 135), 15.8125 against 17.0625; `entry_frame` at (152, 136), 166 against 167. None of it changes the stage list - every distance on either side of that comparison clears the gate's 6 px threshold - but a number quoted to the quarter pixel would not survive the change of route. That is why every per-stage distance in 10.66 names the savestate it was recorded from.
+
+
 ## 11. Complete Reproducibility Guide
 
 ### 11.1 Consolidated Repository Structure
@@ -3300,7 +3325,7 @@ smw-pinn/
 │   ├── scan_scroll_address.py             # Identify the layer-1 scroll from WRAM dumps (10.59)
 │   ├── record_boundary_gameplay.py        # 8D + camera + mode + WRAM-CRC recorder (10.59)
 │   ├── record_dashboard_run.py            # Actor episode with probabilities, V(s), RGB and operator A (10.60)
-│   ├── survey_world_map.py                # Walk the map cursor and press A on every node (10.66)
+│   ├── survey_world_map.py                # Walk the map cursor and press A on every node (10.66, 10.67)
 │   ├── unlock_world_map.py                # Fly the clearance controller and read the mode byte (10.66)
 │   └── record_level_dashboards.py         # One dashboard episode per stage the map gives (10.66)
 ├── src/
@@ -3414,6 +3439,7 @@ smw-pinn/
 │       ├── forced_mode_buffer_study.py          # Whose tile buffer the telemetry reads (10.64)
 │       ├── pixel_retrain_study.py                # The 2x2 that re-measures 10.31 on moving frames (10.65)
 │       ├── level_dashboard_study.py              # The dashboard on every stage the map gives (10.66)
+│       ├── world_map_recheck_study.py            # The survey run again, and the map a clear opens (10.67)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES
@@ -3933,6 +3959,22 @@ python -m scripts.record_level_dashboards
 #     results/figures/dashboard_run.*, results/figures/dashboard_level_*.*, the per-render metric
 #     files and results/level_dashboard_study_metrics.json.
 python -m src.evaluation.level_dashboard_study
+
+# 82. Survey the map a cleared stage opened (10.67): the same probe on the world-map state the
+#     clearance campaign kept after its clear, instead of booting to one. Needs core + ROM, ~4 min.
+#     Writes results/world_map_survey_opened.json; its captures use the `smw_opened_node` prefix and
+#     are not committed, because 10.67 compares their bytes rather than recording from them.
+python -m scripts.survey_world_map --from-map-state data/raw/smw_world_map_after_round_0_152_136_t2a.state --state-prefix smw_opened_node --output results/world_map_survey_opened.json
+
+# 83. Re-run the published survey into its own artifact (10.67): the power-on route again, every
+#     capture hashed, so the README can say it repeats and be checked. Needs core + ROM, ~3 min.
+#     Writes results/world_map_survey_replay.json under the discarded `smw_replay_node` prefix.
+python -m scripts.survey_world_map --state-prefix smw_replay_node --output results/world_map_survey_replay.json
+
+# 84. Compare the two survey routes and the replay against the published survey (10.67).
+#     Emulator-free: it reads the three artifacts and hashes the committed savestates. Writes
+#     results/world_map_recheck_metrics.json and the section.
+python -m src.evaluation.world_map_recheck_study
 ```
 
 ### 11.6 Engineering Workflows (CI, Configs, Parity Baselines, Regression Gates)

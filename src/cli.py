@@ -99,6 +99,9 @@ MODULE_COMMANDS: dict[str, str] = {
     "forced-mode-buffer": "src.evaluation.forced_mode_buffer_study",
     "pixel-retrain": "src.evaluation.pixel_retrain_study",
     "survey-map": "scripts.survey_world_map",
+    "survey-opened-map": "scripts.survey_world_map",
+    "survey-map-replay": "scripts.survey_world_map",
+    "world-map-recheck": "src.evaluation.world_map_recheck_study",
     "unlock-map": "scripts.unlock_world_map",
     "record-level-dashboards": "scripts.record_level_dashboards",
     "level-dashboard-study": "src.evaluation.level_dashboard_study",
@@ -114,6 +117,25 @@ CONFIG_FLAGS: dict[str, str] = {
     "sample-efficiency": "configs/sample_efficiency.yaml",
     "multiseed": "configs/multiseed.yaml",
     "piml-mfrl": "configs/piml_mfrl.yaml",
+}
+
+#: The flags that say *which* run an artifact is, for targets that share a module and its defaults:
+#: without them `smw-pinn survey-opened-map` would survey the wrong map. Gated against the Makefile.
+COMMAND_FLAGS: dict[str, list[str]] = {
+    "survey-opened-map": [
+        "--from-map-state",
+        "data/raw/smw_world_map_after_round_0_152_136_t2a.state",
+        "--state-prefix",
+        "smw_opened_node",
+        "--output",
+        "results/world_map_survey_opened.json",
+    ],
+    "survey-map-replay": [
+        "--state-prefix",
+        "smw_replay_node",
+        "--output",
+        "results/world_map_survey_replay.json",
+    ],
 }
 
 # Seconds-scale counterparts of the studies that need a GPU and minutes. They run
@@ -271,6 +293,9 @@ def main(argv: list[str] | None = None) -> int:
         config = CONFIG_FLAGS.get(command)
         if config and not any(a.startswith("--config") for a in rest):
             rest = ["--config", config, *rest]
+        fixed = COMMAND_FLAGS.get(command)
+        if fixed and not any(a.startswith("--") for a in rest):
+            rest = [*fixed, *rest]
         return _run([module, *rest])
 
     print(f"unknown command {command!r}\n", file=sys.stderr)

@@ -136,29 +136,6 @@ def level_label(key: str) -> str:
     return LEVEL_NAMES.get(str(key).lower(), str(key))
 
 
-def context_from_run(
-    run_metrics: str = results_file("dashboard_run_metrics.json"),
-    level_count: int = 1,
-    level_index: int = 1,
-    clear_line: str = "",
-) -> Dict[str, Any]:
-    """The title-bar strings for one recording, read from that recording's own protocol."""
-    import json
-
-    with open(run_metrics, encoding="utf-8") as handle:
-        run = json.load(handle)
-    protocol = run.get("protocol", {})
-    key = str(protocol.get("translevel") or protocol.get("savestate", ""))
-    key = key.split("/")[-1].replace("smw_", "").replace(".state", "").replace("_level", "")
-    return {
-        "title": DEFAULT_TITLE,
-        "level_label": level_label(key),
-        "level_index": level_index,
-        "level_count": level_count,
-        "clear_line": clear_line,
-    }
-
-
 def load_recording(path: str = DATASET_DASHBOARD) -> Dict[str, np.ndarray]:
     """Read the dashboard recording, keeping the keys this renderer needs."""
     with np.load(path) as data:
@@ -613,16 +590,18 @@ def run_dashboard_render(
     context: Dict[str, Any] | None = None,
     output_still: str = figure_file("dashboard_run_still.png"),
     output_metrics: str | None = results_file("dashboard_video_metrics.json"),
+    metrics_command: str = "make dashboard-video",
 ) -> Dict[str, Any]:
     """Render the video and the GIF, then write the artifact the README caption is gated against.
 
     `output_metrics=None` keeps the payload in memory only, which is what the multi-stage study does:
     it embeds each render's numbers in its own artifact rather than publishing three files whose
-    writer is an f-string no gate can find.
+    writer is an f-string no gate can find. `metrics_command` names the target that actually wrote
+    the artifact, which is not always this module's own.
     """
     data = load_recording(dataset_path)
     ctx = dict(context or {})
-    ctx.setdefault("title", "Reinforcement learning in Super Mario World")
+    ctx.setdefault("title", DEFAULT_TITLE)
     ctx.setdefault("level_label", "Yoshi's Island 1")
     ctx.setdefault("level_index", 1)
     ctx.setdefault("level_count", 1)
@@ -685,11 +664,24 @@ def run_dashboard_render(
         },
     }
     if output_metrics is not None:
-        write_metrics(output_metrics, payload, command="make dashboard-video")
+        write_metrics(output_metrics, payload, command=metrics_command)
     logger.info(f"dashboard video: {video}")
     logger.info(f"dashboard gif: {gif}")
     return payload
 
 
+def hero_context() -> Dict[str, Any]:
+    """The README hero's drawing context, read from the study that decides what the hero says.
+
+    Both `make dashboard-video` and `make level-dashboard-study` render this one picture. Rebuilt on
+    its own the standalone one wrote a 1-of-1 title bar and an empty clearance line over the figure
+    the study had published, so the target named by the hero's own artifact did not produce it.
+    """
+    from src.evaluation.level_dashboard_study import gather as gather_study
+    from src.evaluation.level_dashboard_study import hero_context as study_hero_context
+
+    return study_hero_context(gather_study())
+
+
 if __name__ == "__main__":
-    run_dashboard_render(context=context_from_run())
+    run_dashboard_render(context=hero_context())

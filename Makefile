@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain survey-map unlock-map record-level-dashboards level-dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain survey-map survey-opened-map survey-map-replay world-map-recheck unlock-map record-level-dashboards level-dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -51,6 +51,9 @@ help:
 	@echo "forced-mode-buffer   Name whose tile buffer the telemetry reads (README 10.64, needs core + ROM)"
 	@echo "pixel-retrain        Re-measure 10.31 on frames that move: 2x2 of recording x input (10.65)"
 	@echo "survey-map           Walk the world map and save every stage the engine hands over (README 10.66, needs core + ROM)"
+	@echo "survey-opened-map    Walk the map that a cleared stage opened instead (README 10.67, needs core + ROM)"
+	@echo "survey-map-replay    Re-run the published survey and keep the comparison (README 10.67, needs core + ROM)"
+	@echo "world-map-recheck    Report what the two map routes and the replay agree on (README 10.67)"
 	@echo "unlock-map           Fly the clearance controller and read the mode byte at the end of a stage (README 10.66, needs core + ROM)"
 	@echo "record-level-dashboards  One dashboard episode per stage the survey captured (README 10.66, needs core + ROM)"
 	@echo "level-dashboard-study  Render the hero and one dashboard per stage, write README 10.66 (10.66)"
@@ -269,6 +272,25 @@ pixel-retrain:
 # Walk the world map cursor and save every stage the engine hands over (10.66; hardware)
 survey-map:
 	$(PY) -m scripts.survey_world_map
+
+# Survey the map a cleared stage opens (10.67; hardware). The start state is the one the clearance
+# campaign saved after its clear, so this is a committed file, not a run; the states this route
+# captures are named apart so it cannot touch the ones 10.66 published.
+survey-opened-map:
+	$(PY) -m scripts.survey_world_map --from-map-state \
+	  data/raw/smw_world_map_after_round_0_152_136_t2a.state \
+	  --state-prefix smw_opened_node --output results/world_map_survey_opened.json
+
+# Re-run the published survey into a comparison artifact (10.67; hardware). The capture prefix is
+# moved so the published savestates are never written; the artifact still records the bytes each one
+# would have been, and tests/test_world_map_recheck_study.py hashes the published file against it.
+survey-map-replay:
+	$(PY) -m scripts.survey_world_map --state-prefix smw_replay_node \
+	  --output results/world_map_survey_replay.json
+
+# Compare the two survey routes and the replay against the published survey (10.67, emulator-free)
+world-map-recheck:
+	$(PY) -m src.evaluation.world_map_recheck_study
 
 # Fly the clearance controller at the entered stage and read the mode byte (10.66; hardware). The
 # flags are the run that produced results/world_map_clearance.json: a frame budget that fits the
