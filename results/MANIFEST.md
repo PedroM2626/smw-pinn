@@ -130,6 +130,7 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `stage_identity_metrics.json` | `src/evaluation/stage_identity_study.py` | yes | 10.61 |
 | `pixel_level_recheck_metrics.json` | `src/evaluation/pixel_level_recheck.py` | no | 10.62 |
 | `pause_hygiene_metrics.json` | `src/evaluation/pause_hygiene_study.py` | no | 10.63 |
+| `forced_mode_buffer_metrics.json` | `src/evaluation/forced_mode_buffer_study.py` | yes | 10.64 |
 
 ## Input freshness
 

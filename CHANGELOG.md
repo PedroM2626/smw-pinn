@@ -64,6 +64,19 @@ numbers* - those are reported here and in README Section 12, never applied silen
   moved only the WRAM CRC, on the frames where the button latch was written. Writes
   `data/raw/smw_boundary_level_dataset.npz`, `data/raw/smw_boundary_level_clear_dataset.npz` and
   `results/pause_hygiene_metrics.json`; the published recording is untouched.
+- **Whose tile buffer the telemetry reads** (README 10.64).
+  `src/evaluation/forced_mode_buffer_study.py` (`make forced-mode-buffer`, needs core + ROM) samples
+  all 27 rows of every absolute level column in three sessions - the title screen with its attract
+  demo running, the published forced-mode preamble, and the entered level of 10.36.3 - and scores them
+  by whole-column identity of raw tile IDs, by 10.61's class profile, and by the translevel byte. The
+  forced-mode session's buffer is the title screen's: 96.88% of their shared columns are identical row
+  for row against 0.00% with the entered level, and both read translevel `0x00` where the entered
+  level reads `0x2A`. `SnesLibretroEmulator` gains `tilemap_addr` (the one address formula, now
+  shared with `get_local_tilemap_patch`, parity verified cell by cell) and `read_tile_ids`, whose
+  out-of-range sentinel is -1 because 0 is both a real tile ID and the value an unreadable cell would
+  otherwise take. This corrects the header's dataset line, which claimed the recordings were made "on
+  stage Yoshi's Island 1": no measured number moves, but the terrain the tile-conditioned results are
+  conditioned on belongs to the demo, not to a level the harness chose.
 - **`src/evaluation/pixel_frame_probe.py`** (`make pixel-frame-probe`, `smw-pinn pixel-frame-probe`,
   emulator-free): a model-free audit of the 10.31 recording - align every consecutive frame pair by
   the integer horizontal shift that best matches it and compare that with the change in the recorded

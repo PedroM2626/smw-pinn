@@ -492,6 +492,47 @@ class SnesLibretroEmulator:
         base.update(hazard)
         return base
 
+    @staticmethod
+    def tilemap_addr(tile_x: int, tile_y: int) -> int | None:
+        """The WRAM address of one tile in the horizontal level buffer, or None if out of range.
+
+        SMW horizontal level buffer formula: `$7E:C800 + subscreen * 0x01B0 + row * 16 + col`. The
+        tile coordinates are absolute within the level, so column 17 is the second column of the
+        second subscreen; `get_local_tilemap_patch` and any reader of raw tile IDs share this one
+        mapping, because two implementations of an address formula is how a terrain comparison ends
+        up measuring the difference between them.
+        """
+        if tile_x < 0 or tile_y < 0 or tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN:
+            return None
+        subscreen = tile_x // wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+        col_in_sub = tile_x % wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+        addr = (
+            wram.ADDR_TILEMAP_BASE
+            + subscreen * wram.TILEMAP_SUBSCREEN_STRIDE
+            + tile_y * wram.TILEMAP_COLUMNS_PER_SUBSCREEN
+            + col_in_sub
+        )
+        return None if addr > wram.WRAM_SIZE_BYTES - 1 else addr
+
+    def read_tile_ids(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
+        """The raw tile IDs around Mario, as the buffer stores them, before any classification.
+
+        The class patch answers "is it solid"; the ID answers "which tile". For identifying a
+        buffer - whose terrain classes can agree while its tiles do not - the ID is the fingerprint.
+        Cells outside the buffer's rows are -1 rather than 0, because 0 is both a real tile ID (the
+        solid grass top) and the value an unreadable cell would otherwise take.
+        """
+        grid_dim = 2 * radius + 1
+        out = np.full((grid_dim, grid_dim), -1, dtype=np.int64)
+        cx = int(mario_x) // wram.TILE_SIZE_PX
+        cy = int(mario_y) // wram.TILE_SIZE_PX
+        for i, dy in enumerate(range(-radius, radius + 1)):
+            for j, dx in enumerate(range(-radius, radius + 1)):
+                addr = self.tilemap_addr(cx + dx, cy + dy)
+                if addr is not None:
+                    out[i, j] = self.read_wram_u8(addr)
+        return out
+
     def get_local_tilemap_patch(
         self, mario_x: float, mario_y: float, radius: int = 3
     ) -> np.ndarray:
@@ -514,26 +555,11 @@ class SnesLibretroEmulator:
 
         for r_idx, dy in enumerate(range(-radius, radius + 1)):
             target_tile_y = center_tile_y + dy
-            if target_tile_y < 0 or target_tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN:
-                continue
 
             for c_idx, dx in enumerate(range(-radius, radius + 1)):
                 target_tile_x = center_tile_x + dx
-                if target_tile_x < 0:
-                    continue
-
-                subscreen = target_tile_x // wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-                col_in_sub = target_tile_x % wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-                row_in_sub = target_tile_y
-
-                # SMW horizontal level buffer formula: $7E:C800 + subscreen * 0x01B0 + row * 16 + col
-                addr = (
-                    wram.ADDR_TILEMAP_BASE
-                    + subscreen * wram.TILEMAP_SUBSCREEN_STRIDE
-                    + row_in_sub * wram.TILEMAP_COLUMNS_PER_SUBSCREEN
-                    + col_in_sub
-                )
-                if addr > wram.WRAM_SIZE_BYTES - 1:
+                addr = self.tilemap_addr(target_tile_x, target_tile_y)
+                if addr is None:
                     continue
 
                 tile_id = self.read_wram_u8(addr)

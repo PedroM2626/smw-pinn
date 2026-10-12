@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -48,6 +48,7 @@ help:
 	@echo "stage-identity       Which terrain the committed recordings walk (README 10.61, needs core + ROM)"
 	@echo "pixel-level-recheck  Re-score the pixel recording against the camera (README 10.62)"
 	@echo "pause-hygiene        Split 10.59's held player by what it freezes with (README 10.63)"
+	@echo "forced-mode-buffer   Name whose tile buffer the telemetry reads (README 10.64, needs core + ROM)"
 	@echo "physics-injection  Target x mechanism x family grid of world models (README 10.47)"
 	@echo "metric-decomposition  Split the rollout violation figure into consistency/smoothness (10.48)"
 	@echo "velocity-classes  Which documented speed constant the telemetry supports (README 10.49)"
@@ -251,6 +252,10 @@ pixel-level-recheck:
 # Split the held player into death apex and message box, on three arms (10.63, emulator-free)
 pause-hygiene:
 	$(PY) -m src.evaluation.pause_hygiene_study
+
+# Name whose tile buffer the telemetry reads, by sampling three sessions (10.64; hardware)
+forced-mode-buffer:
+	$(PY) -m src.evaluation.forced_mode_buffer_study
 
 record-jump:
 	$(PY) scripts/record_jump_gameplay.py
