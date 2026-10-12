@@ -63,15 +63,18 @@ def test_terrain_width_stops_at_the_first_empty_subscreen_and_says_so() -> None:
     read = terrain_width(buffer_with(6, empty_at=2))
     assert read["terrain_subscreens"] == 2, "the leading run is what the count means"
     assert read["non_air_cells_by_subscreen"][2] == 0
-    assert read["non_air_cells_by_subscreen"][3] == 1, "and the profile still shows what is beyond it"
+    assert read["non_air_cells_by_subscreen"][3] == 1, (
+        "and the profile still shows what is beyond it"
+    )
 
 
 def test_terrain_width_never_reads_past_the_wram_window() -> None:
     """A scan that ran off the end of the window would read the wrong thing, not fail loudly."""
     read = terrain_width(buffer_with(3), subscreens=4000)
-    assert len(read["non_air_cells_by_subscreen"]) <= (
-        wram.WRAM_SIZE_BYTES - wram.ADDR_TILEMAP_BASE
-    ) // CELLS
+    assert (
+        len(read["non_air_cells_by_subscreen"])
+        <= (wram.WRAM_SIZE_BYTES - wram.ADDR_TILEMAP_BASE) // CELLS
+    )
 
 
 def test_a_cleared_attempt_is_the_one_that_never_saw_the_death_mode() -> None:
@@ -144,7 +147,13 @@ def test_two_nodes_of_one_level_are_recorded_as_one_stage(tmp_path) -> None:
         },
     ]
     rounds = [
-        {"round": 1, "node": [152, 104], "translevel": "0x27", "entered": True, "savestate": "d.state"},
+        {
+            "round": 1,
+            "node": [152, 104],
+            "translevel": "0x27",
+            "entered": True,
+            "savestate": "d.state",
+        },
         {"round": 2, "node": [9, 9], "translevel": "0x2A", "entered": True, "savestate": "e.state"},
     ]
     survey, campaign = _stage_json(tmp_path, nodes, rounds)

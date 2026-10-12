@@ -143,9 +143,8 @@ def test_the_two_routes_never_capture_the_same_console_state() -> None:
         node
         for node in shared
         if (a[node].get("capture") or {}).get("sha256")
-        and (a[node].get("capture") or {}).get("sha256") == (b[node].get("capture") or {}).get(
-            "sha256"
-        )
+        and (a[node].get("capture") or {}).get("sha256")
+        == (b[node].get("capture") or {}).get("sha256")
     ]
     assert not same, f"the two routes captured identical bytes at {same}"
 
@@ -160,9 +159,9 @@ def test_the_position_the_clear_opened_is_a_path_tile_of_a_stage_already_counted
     assert record["translevel"] == twin["translevel"] == "0x28"
     assert record["timer_hundreds"] == twin["timer_hundreds"] == 0
     assert record.get("walkable") is True and record.get("level") is False
-    assert (record.get("capture") or {}).get("x_at_entry") == (
-        twin.get("capture") or {}
-    ).get("x_at_entry")
+    assert (record.get("capture") or {}).get("x_at_entry") == (twin.get("capture") or {}).get(
+        "x_at_entry"
+    )
     assert (record.get("terrain") or {}).get("terrain_px") == 256
 
 
@@ -198,8 +197,7 @@ def test_only_the_published_survey_keeps_the_states_it_names() -> None:
         name: sum(
             1
             for n in survey["nodes"]
-            if (n.get("capture") or {}).get("saved")
-            and _saved(n["capture"]["saved"]).is_file()
+            if (n.get("capture") or {}).get("saved") and _saved(n["capture"]["saved"]).is_file()
         )
         for name, survey in (
             ("published", published),

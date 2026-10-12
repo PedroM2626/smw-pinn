@@ -148,9 +148,7 @@ def byte_identity(replay: Dict[str, Any], published: Dict[str, Any]) -> Dict[str
             if state_on_disk(_capture(record).get("saved"))
         ),
         "published_states_kept": sum(
-            1
-            for record in published_nodes.values()
-            if state_on_disk(_capture(record).get("saved"))
+            1 for record in published_nodes.values() if state_on_disk(_capture(record).get("saved"))
         ),
     }
 
@@ -248,12 +246,8 @@ def gather() -> Dict[str, Any]:
             "positions": len(opened["discovery"]["positions"]),
             "walkable": len([n for n in opened["nodes"] if n.get("walkable")]),
             "translevels": translevels(opened),
-            "translevels_new": sorted(
-                set(translevels(opened)) - set(translevels(published))
-            ),
-            "translevels_missing": sorted(
-                set(translevels(published)) - set(translevels(opened))
-            ),
+            "translevels_new": sorted(set(translevels(opened)) - set(translevels(published))),
+            "translevels_missing": sorted(set(translevels(published)) - set(translevels(opened))),
             "level_gate_translevels": translevels(opened, "level"),
             "node_the_clear_lands_on": list(start),
             "what_it_enters": {
@@ -292,9 +286,7 @@ def gather() -> Dict[str, Any]:
 
 def _count(value: int) -> str:
     """A number of findings spelled out, because `1 of them is new` reads like a table cell."""
-    return {0: "none", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}.get(
-        value, str(value)
-    )
+    return {0: "none", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}.get(value, str(value))
 
 
 def render_position_table(survey: Dict[str, Any]) -> List[str]:
@@ -383,7 +375,8 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         f"started from rather than of the node it ends at, and the other {len(node_fields)} "
         f"describe the node itself"
         + (
-            ": " + "; ".join(
+            ": "
+            + "; ".join(
                 f"`{d['field']}` at {tuple(d['node'])}, {d['published']} against {d['other']}"
                 for d in node_fields
             )
@@ -391,10 +384,10 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
             if node_fields
             else ". "
         )
-        + f"None of it changes the stage list - every distance on either side of that comparison "
-        f"clears the gate's 6 px threshold - but a number quoted to the quarter pixel would not "
-        f"survive the change of route. That is why every per-stage distance in 10.66 names the "
-        f"savestate it was recorded from.",
+        + "None of it changes the stage list - every distance on either side of that comparison "
+        "clears the gate's 6 px threshold - but a number quoted to the quarter pixel would not "
+        "survive the change of route. That is why every per-stage distance in 10.66 names the "
+        "savestate it was recorded from.",
         "",
     ]
     return lines
