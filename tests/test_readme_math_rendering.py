@@ -362,3 +362,51 @@ def test_the_opener_rule_fires_on_the_shape_it_exists_for() -> None:
         for span in math_spans(safe)
         if OPENABLE_UNDERSCORE.search(str(span["content"]))
     ] == []
+
+
+def bare_rule_lines(text: str) -> List[int]:
+    """The 1-based line numbers of every thematic break outside a fenced code block."""
+    out: List[int] = []
+    fenced = False
+    for number, line in enumerate(text.split("\n"), start=1):
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if not fenced and line.strip() == "---":
+            out.append(number)
+    return out
+
+
+def adjacent_rule_pairs(text: str) -> List[Tuple[int, int]]:
+    """Consecutive thematic breaks with nothing but blank lines between them."""
+    lines = text.split("\n")
+    rules = bare_rule_lines(text)
+    pairs: List[Tuple[int, int]] = []
+    for first, second in zip(rules, rules[1:]):
+        between = [line for line in lines[first : second - 1]]
+        if all(not line.strip() for line in between):
+            pairs.append((first, second))
+    return pairs
+
+
+def test_no_two_separators_are_adjacent() -> None:
+    """A rule followed by another rule renders as two lines with nothing between them.
+
+    The hero caption is a generated block that ends before the rule closing it, and every session
+    that re-spliced it left the old rule in place and added a new one: eight bare rules stacked up
+    above the first section of the page a reader reaches first. This is the check that keeps the
+    splice honest rather than the fix that has to be noticed.
+    """
+    text = README.read_text(encoding="utf-8")
+    pairs = adjacent_rule_pairs(text)
+    assert not pairs, (
+        f"separators with nothing between them at lines {pairs}; a generated block must end "
+        "before the rule that closes it, not after it"
+    )
+
+
+def test_the_adjacent_separator_check_fires_on_the_defect_it_exists_for() -> None:
+    """Without the positive control this is a test that passes by reading nothing."""
+    assert adjacent_rule_pairs("prose\n\n---\n\n\n---\n\nmore") == [(3, 6)]
+    assert adjacent_rule_pairs("prose\n\n---\n\ntext\n\n---\n\nmore") == []
+    assert adjacent_rule_pairs("```\n---\n\n---\n```") == [], "a rule inside a fence is content"

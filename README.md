@@ -17,28 +17,6 @@
 
 ---
 
-
----
-
-
----
-
-
----
-
-
----
-
-
----
-
-
----
-
-
----
-
-
 ## 🏆 Direct Answer: Which Model Performed Best in the Benchmark?
 
 Within **the four architectures of the canonical Section 8 benchmark**, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)** achieved the lowest reported prediction error and the strongest kinematic consistency. That scope is load-bearing and the repository now measures two things outside it: Section 10.42 fits two operators on the same split and seed and both reach a lower single-step error (`FNO` 0.4025 and `PhysicsConstrained_DeepONet` 0.5766 against 0.5783), and Section 10.37's hand-written engine rules carry an **identically zero** kinematic residual with **no learned parameters at all**. Section 10.53 narrows the consistency claim too: the 0.0% violation rate below is a result *inside the published 0.2 px tolerance*, and at 0.002 px the same shells are flagged on 0.9345-0.9578 of their rollout frames while a model that integrates position the way the console does stays at exactly zero.
@@ -1922,8 +1900,6 @@ The prior remains the only systematically *optimistic* model (+0.26 px), exactly
 *Left:* per-constant recovery error (symlog) for the prior, the symbolic GP + probe estimator and the 10.40 parametric identification - the $\max_{v_x}$ bar is absent for GP because no fixed point was discovered. Centre: held-out R² of the two velocity laws against the GP budget, the control that separates representation limits from search effort. Right: per-channel test MSE on genuine WRAM telemetry.
 
 Regenerate: `python -m src.evaluation.symbolic_inverse_benchmark` (emulator-free, ~20 min on CPU; `--replicates`, `--gp-seeds`, `--population-size`, `--generations`, `--max-train`, `--weight-strengths` and `--no-budget-sweep` control the search budget; `make symbolic-inverse` / `smw-pinn symbolic-inverse`, smoke config `configs/smoke_symbolic_inverse.yaml`).
-
----
 
 ---
 

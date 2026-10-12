@@ -738,6 +738,11 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **Eight bare horizontal rules had accumulated above the first section.** The hero caption is a
+  generated block that ends before the rule closing it, so each session that re-spliced it left the
+  old rule in place and added another. `tests/test_readme_math_rendering.py` now refuses two
+  separators with nothing between them anywhere in the README, with a positive control that proves
+  the check fires on the defect rather than reading nothing.
 - **The frame capture decoded every RGB surface as 32-bit while the core delivers 16-bit.** The core
   answers `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT` with RGB888 and then hands back RGB565 rows - pitch
   2048 for a 256-px row, the second half of every row zero, and the lane a 0x00RRGGBB word keeps at
