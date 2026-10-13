@@ -29,8 +29,10 @@ numbers* - those are reported here and in README Section 12, never applied silen
   (`make probe-sprites`) meets every stage sprite and touches it twice - once with the sprite,
   once with its slot cleared, because a teleport beside the chimney smoke kills by the fall and
   only the difference is the sprite's doing: the Rex and the Koopas are measured stompable, the
-  bouncing block and the smoke are measured neutral - the "enemy" the old panel drew was a
-  measured nothing. `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
+  empty parked shell and the smoke are measured neutral - the "enemy" the old panel drew was a
+  measured nothing. The probe's collector is the seed-7 clearance draw itself, because the
+  held-right walk dies in the first pit and the Koopas of the stage's middle live past it.
+  `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
   33x33 window and every live sprite slot, and the panel draws the seven measured classes and
   every sprite in the class the engine gave it. Yoshi's Island 1 is completed on screen: the
   recorder flies the 10.66 seed-7 clearance draw with every frame kept (4374 frames, 5011 px, the

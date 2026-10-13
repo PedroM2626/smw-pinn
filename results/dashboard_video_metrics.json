@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T22:11:13+00:00",
-    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+    "generated_utc": "2026-10-13T23:37:14+00:00",
+    "git_sha": "f3df8a67794222697cd245d734c3dfaa96a695de",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -60,14 +60,14 @@
   },
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6405848,
+    "bytes": 6405045,
     "frames_written": 634,
     "fps": 30.0,
     "duration_s": 21.13
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 7430382,
+    "bytes": 7421438,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96

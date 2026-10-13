@@ -157,12 +157,15 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "solid-or-slope class every time, and on 1183 frames through decor the engine never once "
         "blocked the run.",
         "",
-        "**The sprites.** The old panel drew one marker - whichever sprite the hazard probe found "
+        f"**The sprites.** The old panel drew one marker - whichever sprite the hazard probe found "
         f"nearest, whatever it held. Measured per id: {sprite_counts.get('stompable', 0)} stompable "
         f"(the Rex `0x05` and the Koopas - stomping bounced Mario and changed the sprite's status "
         f"byte), {sprite_counts.get('hostile', 0)} hostile, {sprite_counts.get('platform', 0)} "
-        f"platform sprites, and {sprite_counts.get('neutral', 0)} neutral - the bouncing block "
-        "`0x2C` and the chimney smoke `0x8A` that the old marker drew as enemies. The panel now "
+        f"platform sprites, and {sprite_counts.get('neutral', 0)} neutral - the empty shell "
+        "`0x01` (a parked shell hurts nobody, whatever it looks like) and the chimney smoke "
+        "`0x8A` that the old marker drew as enemies. The probe's collector is the clearance draw "
+        "itself: the held-right walk dies in the first pit, so the Koopas of the stage's middle "
+        "are met by flying the seed-7 draw that finishes it. The panel now "
         "draws every live slot in the class the engine gave it, and an id the probe has not met "
         "yet draws as unmeasured rather than guessed.",
         "",

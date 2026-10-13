@@ -32,6 +32,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import torch  # noqa: E402
+
 from src.environment import wram  # noqa: E402
 from src.environment.snes_emulator import SnesLibretroEmulator  # noqa: E402
 from src.utils.logging import get_logger  # noqa: E402
@@ -264,25 +266,51 @@ def main() -> Dict[str, Any]:
     emu.load_rom(ROM_PATH)
     frames: Dict[int, Tuple[str, bytes]] = {}
     where: Dict[int, str] = {}
+
+    def note_new_sprites(tag: str) -> None:
+        missing = (wanted - set(frames)) if wanted is not None else None
+        for sprite in sprite_slots(emu, plausible_only=True):
+            sid = sprite["id"]
+            if wanted is not None and sid not in missing:
+                continue
+            if sid in frames:
+                continue
+            frames[sid] = (tag, emu.save_state())
+            where[sid] = tag
+            logger.info(f"met sprite {sid:#04x} in stage {tag} at ({sprite['x']}, {sprite['y']})")
+
+    # The held-right walk dies in the first pit of the stages that have one, so the middle of
+    # Yoshi's Island 1 is unreachable to it - and that is where the Koopas are. The clearance
+    # draw of 10.66 crosses the whole stage, so the probe flies it as its second collector:
+    # the same controller, the same seed, the same preamble the recorder reproduces.
+    from scripts.record_dashboard_run import MpcClearanceActor
+    from src.evaluation.evaluate_full_level_clearance import extract_12d_vector
+
+    clearance_tag, clearance_state = "0x2A-clear-draw", STAGES[0][1]
+    with open(state_path(clearance_state), "rb") as fh:
+        clearance_bytes = fh.read()
+    actor = MpcClearanceActor("cuda" if torch.cuda.is_available() else "cpu", seed=7)
+    emu.load_state(clearance_bytes)
+    for _ in range(10):
+        emu.set_input({})
+        emu.step_frame()
+    for frame in range(9000):
+        note_new_sprites(clearance_tag)
+        state = emu.get_smw_extended_state()
+        mode = emu.get_game_mode()
+        if mode != wram.GAME_MODE_INTERACTIVE:
+            break
+        emu.set_input(actor.act(extract_12d_vector(state), "cpu")[0])
+        emu.step_frame()
+
     for tag, name in STAGES:
         if wanted is not None and not (wanted - set(frames)):
             break
         with open(state_path(name), "rb") as fh:
             state_bytes = fh.read()
         emu.load_state(state_bytes)
-        missing = (wanted - set(frames)) if wanted is not None else None
         for frame in range(WALK_FRAMES):
-            for sprite in sprite_slots(emu, plausible_only=True):
-                sid = sprite["id"]
-                if wanted is not None and sid not in missing:
-                    continue
-                if sid in frames:
-                    continue
-                frames[sid] = (tag, emu.save_state())
-                where[sid] = tag
-                logger.info(
-                    f"met sprite {sid:#04x} in stage {tag} at ({sprite['x']}, {sprite['y']})"
-                )
+            note_new_sprites(tag)
             emu.set_input({"RIGHT": True, "Y": True, "B": frame % 24 == 0})
             emu.step_frame()
             if emu.get_game_mode() != wram.GAME_MODE_INTERACTIVE:

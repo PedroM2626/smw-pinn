@@ -41,9 +41,15 @@ def test_the_classes_the_section_quotes() -> None:
     assert sprite_behavior.behavior_of(0x05) == sprite_behavior.STOMPABLE, (
         "the Rex: stomped, bounces Mario"
     )
+    assert sprite_behavior.behavior_of(0x04) == sprite_behavior.STOMPABLE, (
+        "the Koopa the clear draw passes on screen - met by flying the draw as the collector"
+    )
     assert sprite_behavior.behavior_of(0x9F) == sprite_behavior.STOMPABLE, "the Koopa of stage 0x29"
     assert sprite_behavior.behavior_of(0x8A) == sprite_behavior.NEUTRAL, (
         "the chimney smoke the old panel drew as an enemy"
+    )
+    assert sprite_behavior.behavior_of(0x01) == sprite_behavior.NEUTRAL, (
+        "the empty shell: touching a parked shell hurts nobody, whatever it looks like"
     )
 
 
