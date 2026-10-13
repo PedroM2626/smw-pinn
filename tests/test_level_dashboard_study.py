@@ -137,29 +137,59 @@ def test_every_stage_has_an_episode_and_the_media_that_shows_it() -> None:
         dataset = REPO / stage["episode"]["dataset"]
         assert dataset.is_file(), f"{dataset} is quoted by the README and not committed"
         assert float(stage["walk_right_frontier"]["frontier_px"]) > 0.0
-        assert stage["mpc"]["best_progress_px"] is not None
+        # a stage the campaign flew has its best attempt quoted; one no flight ever finished says
+        # so in `source` instead of inventing a number
+        if int(stage["mpc"]["tries"]) > 0:
+            assert stage["mpc"]["best_progress_px"] is not None
 
 
 def test_the_kept_episode_is_the_attempt_it_replaces() -> None:
-    """The recorder keeps frames only for the selected run, and re-runs it. Both must agree."""
+    """The 0x2A episode is the 10.66 clearance draw itself, re-flown with its frames kept.
+
+    The old recorder flew each episode twice (cheap, then kept) and compared; the 10.68 recorder
+    flies the seeded draw once with everything kept, so the control that replaces the comparison is
+    the seed: the draw that cleared 0x2A in the campaign must clear the recorded episode too.
+    """
     study = _load(STUDY)
-    for stage in study["stages"]:
-        assert stage["episode"]["repeats_the_measured_attempt_px"] < 1e-4, (
-            "the actor and the console were supposed to be deterministic; "
-            f"{stage['identity']['translevel']} disagrees by "
-            f"{stage['episode']['repeats_the_measured_attempt_px']} px"
-        )
+    clearance = _load(CLEARANCE)
+    cleared_round = next(r for r in clearance["rounds"] if r.get("cleared"))
+    attempt = next(
+        a for a in cleared_round["attempts"] if a["attempt"] == cleared_round["cleared"]["attempt"]
+    )
+    recorded = next(
+        s for s in study["stages"] if str(s["identity"]["translevel"]).lower() == "0x2a"
+    )
+    assert recorded["episode"]["controller"] == "mpc", (
+        "the cleared stage is flown by its clearance draw"
+    )
+    assert recorded["episode"]["planner_seed"] == clearance["protocol"]["seed"]
+    assert recorded["clear_evidence"]["cleared"], (
+        "the campaign cleared this stage and the recorded episode did not - the draw is not the draw"
+    )
+    assert abs(recorded["episode"]["frames"] - attempt["frames"]) <= 1, (
+        f"{recorded['episode']['frames']} frames recorded against {attempt['frames']} flown: the "
+        "same seed from the same state is a different run"
+    )
+    assert abs(recorded["episode"]["progress_px"] - attempt["max_progress_px"]) < 1.0, (
+        "the recorded episode and the published attempt disagree about how far the draw went"
+    )
 
 
 def test_the_picture_line_quotes_the_recording() -> None:
-    """The corner the mock puts a clearance rate in quotes two measurements, and both are checked."""
+    """The corner the mock puts a clearance rate in quotes the engine's verdict and the recording."""
     from src.evaluation.level_dashboard_study import bottom_line, stage_width_px
 
     study = _load(STUDY)
     for stage in study["stages"]:
         line = bottom_line(stage)
         assert f"{stage['episode']['progress_px']:.0f} / {stage_width_px(stage):.0f} px" in line
-        assert f"{stage['mpc']['clears']} of {stage['mpc']['tries']} attempts" in line
+        evidence = stage["clear_evidence"]
+        if evidence["cleared"]:
+            assert "cleared: the engine ended the stage" in line
+        elif int(stage["mpc"]["tries"]) > 0:
+            assert f"{stage['mpc']['clears']} of {stage['mpc']['tries']} attempts" in line
+        else:
+            assert "no run has ever finished this session" in line
         assert line == bottom_line(stage, stage["episode"]["progress_px"])
 
 

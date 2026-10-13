@@ -22,12 +22,12 @@ import pytest
 from src.environment import wram
 from src.evaluation.dashboard_study import render_caption, render_section
 from src.evaluation.dashboard_video import (
-    FLOOR_RGB,
+    PLATFORM_RGB,
     RECT_TILE,
     VOID_CLASS,
     VOID_RGB,
     action_probabilities,
-    patch_view,
+    window_view,
 )
 from src.planning.mpc_planner import ACTION_BUTTONS, ACTION_MATRIX
 
@@ -102,13 +102,25 @@ def test_the_recording_carries_every_channel_the_dashboard_draws() -> None:
         "residue_subpixels",
         "operator",
         "mode",
+        "tile_ids",
+        "sprites",
     ):
-        assert key in data, f"the panel set of 10.60 needs a {key} channel"
+        assert key in data, f"the panel set of 10.68 needs a {key} channel"
     n = data["states"].shape[0]
     assert data["states"].shape == (n, 12)
     assert data["button_probs"].shape == (n, len(ACTION_BUTTONS))
     assert data["rgb"].shape[1:] == (224, 256, 3), "the frame must be full width, not half"
     assert data["patches"].shape[1:] == (33, 33)
+    assert data["tile_ids"].shape[1:] == (33, 33), "the recorded window is 33x33 full ids"
+    assert data["sprites"].shape[1:] == (12, 4), (
+        "every sprite slot is recorded, not just the nearest"
+    )
+    assert int(data["tile_ids"].min()) == -1, "out-of-buffer cells are recorded as -1"
+    # the panel classifies the ids through the measured table, so every recorded id must be one
+    # the table knows - an id the probe never measured would draw as unmeasured, and the caption
+    # says it does not
+    inside = data["tile_ids"][data["tile_ids"] >= 0]
+    assert int(inside.max(initial=0)) < 0x200, "per-level ids at 0x200+ would need their own probe"
     # A button-headed actor emits six independent sigmoids, so the channel that must be normalised
     # is a primitive head's, and this recording has one only when the PPO arm was the one recorded.
     probs = np.asarray(data["button_probs"], dtype=np.float64)
@@ -202,21 +214,27 @@ def test_the_frame_buffer_defect_is_recorded_as_a_fact() -> None:
     )
 
 
-def test_patch_view_marks_only_the_cells_the_buffer_lacks() -> None:
-    """The fifth class is derived from the address formula, not from the patch's own zeros.
+def test_window_view_classifies_ids_and_marks_missing_cells() -> None:
+    """The panel's window is the measured table's answer for each recorded 16-bit id.
 
-    Air and out-of-range share the byte 0 in the array the level models read, so a panel that
-    painted what it was given would call the rows below the subscreen empty space. This checks the
-    mask against `wram.tilemap_addr` cell by cell and that no other cell was touched.
+    A cell the buffer does not have is its own class (the model is shown air there, and the panel
+    says both things at once); a cell it does have is classified by `tile_behavior`, never by a
+    second classifier that could drift from the one the probe produced.
     """
-    states = np.zeros((1, 12), dtype=np.float64)
-    states[0, 0] = 637.0
-    states[0, 1] = 353.0
+
     radius = 16
-    patches = np.ones((1, 2 * radius + 1, 2 * radius + 1), dtype=np.int8)
-    view = patch_view(patches, states)
-    centre_x = int(states[0, 0]) // wram.TILE_SIZE_PX
-    centre_y = int(states[0, 1]) // wram.TILE_SIZE_PX
+    ids = np.full((1, 2 * radius + 1, 2 * radius + 1), -1, dtype=np.int64)
+    centre_x, centre_y = 39, 22  # a window centred on the floor of a 27-row subscreen
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            if wram.tilemap_addr(centre_x + dx, centre_y + dy) is not None:
+                ids[0, dy + radius, dx + radius] = 0x0025
+    ids[0, radius + 2, radius] = 0x0100  # the grass top two tiles below the centre
+    ids[0, radius - 2, radius + 1] = 0x0124  # the wall the published episode brushed
+    view = window_view(ids)
+    assert view[0, radius + 2, radius] == 2, "the grass top is a measured platform"
+    assert view[0, radius - 2, radius + 1] == 3, "the stair corner is a measured wall"
+    assert view[0, radius, radius] == 0, "the blank filler is decor the engine ignores"
     for dy in range(-radius, radius + 1):
         for dx in range(-radius, radius + 1):
             missing = wram.tilemap_addr(centre_x + dx, centre_y + dy) is None
@@ -259,11 +277,14 @@ def test_the_tile_panel_draws_the_ground_below_mario() -> None:
     assert pixels(upper, VOID_RGB) == 0, (
         f"{pixels(upper, VOID_RGB)} out-of-buffer pixels sit above the centre: the panel is flipped"
     )
-    assert pixels(lower, FLOOR_RGB) > 50, "the panel has no floor colour under Mario at all"
-    mask = np.abs(panel - np.asarray(FLOOR_RGB)).sum(axis=2) < 12
+    # the ground Mario runs on is the measured platform class - the grass top holds from above
+    # and never blocks a side - and a panel that painted it as the wall colour would be the old
+    # classifier's mistake in new colours
+    assert pixels(lower, PLATFORM_RGB) > 50, "the panel has no platform colour under Mario at all"
+    mask = np.abs(panel - np.asarray(PLATFORM_RGB)).sum(axis=2) < 12
     counts = mask.sum(axis=1)
     centroid = float((np.arange(panel.shape[0]) * counts).sum() / counts.sum())
-    assert centroid > panel.shape[0] / 2.0, "the floor band's centre of mass is above Mario"
+    assert centroid > panel.shape[0] / 2.0, "the platform band's centre of mass is above Mario"
 
 
 @pytest.mark.parametrize("head", ["primitive", "marginal"])

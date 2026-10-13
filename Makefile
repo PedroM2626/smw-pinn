@@ -8,7 +8,7 @@ CONFIG_DIR := configs
 SMOKE_DIR := results_smoke
 
 .PHONY: install install-cuda test test-cov lint format format-check typecheck check-all \
-       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain survey-map survey-opened-map survey-map-replay world-map-recheck unlock-map record-level-dashboards level-dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
+       reproduce benchmark sample-efficiency multiseed piml-mfrl piml-mfrl-study inverse-transfer deeponet operators symbolic-inverse symbolic-tilemap symbolic-engines inverse-mpc sprint-excitation learned-probes physics-injection plateau-provenance projection-cell gate-excitation effective-velocity physics-claims neural-ode sindy corrected-physics residue-process boundary-channel pixel-frame-probe scroll-scan record-boundary record-dashboard dashboard-video dashboard-study stage-identity pixel-level-recheck pause-hygiene forced-mode-buffer pixel-retrain survey-map survey-opened-map survey-map-replay world-map-recheck probe-tiles probe-sprites perception-correction-study unlock-map record-level-dashboards level-dashboard-study record-jump record-sprint metric-decomposition velocity-classes smoke smoke-all run install-info help
 
 help:
 	@echo "install            pip install -e .[dev] (CPU torch)"
@@ -54,6 +54,9 @@ help:
 	@echo "survey-opened-map    Walk the map that a cleared stage opened instead (README 10.67, needs core + ROM)"
 	@echo "survey-map-replay    Re-run the published survey and keep the comparison (README 10.67, needs core + ROM)"
 	@echo "world-map-recheck    Report what the two map routes and the replay agree on (README 10.67)"
+	@echo "probe-tiles          Measure what the engine does with every standard tile id (README 10.68, needs core + ROM)"
+	@echo "probe-sprites         Meet every stage sprite and touch it, with and without it (README 10.68, needs core + ROM)"
+	@echo "perception-correction-study  Report the measured tile and sprite tables and the finished stage (README 10.68)"
 	@echo "unlock-map           Fly the clearance controller and read the mode byte at the end of a stage (README 10.66, needs core + ROM)"
 	@echo "record-level-dashboards  One dashboard episode per stage the survey captured (README 10.66, needs core + ROM)"
 	@echo "level-dashboard-study  Render the hero and one dashboard per stage, write README 10.66 (10.66)"
@@ -292,13 +295,33 @@ survey-map-replay:
 world-map-recheck:
 	$(PY) -m src.evaluation.world_map_recheck_study
 
+# Measure what the engine does with every standard Map16 tile id (10.68; hardware). Each id is
+# written into the level buffer at a controlled rig, Mario is dropped onto it and run into it,
+# and the engine's own collision, death, coin and freeze answers are read back per id. The
+# measured table is emitted as the module the runtime classifies through, and the artifact is
+# what the gates compare that module against.
+probe-tiles:
+	$(PY) -m scripts.probe_tile_behaviors --emit-table
+
+# Meet every sprite the recorded stages spawn and touch it, twice (10.68; hardware): once with
+# the sprite and once with its slot cleared, because a fall past the floor kills both runs and
+# only the difference is the sprite's doing. --emit-table bakes the measured classes.
+probe-sprites:
+	$(PY) -m scripts.probe_sprite_behaviors --emit-table
+
+# Report the corrected perception: the measured tables, the discordances with the old hardcoded
+# guesses, the redrawn panel, and the stage an agent finished on screen (10.68; emulator-free)
+perception-correction-study:
+	$(PY) -m src.evaluation.perception_correction_study
+
 # Fly the clearance controller at the entered stage and read the mode byte (10.66; hardware). The
 # flags are the run that produced results/world_map_clearance.json: a frame budget that fits the
 # level, and the seed whose clear the section quotes, so the target reproduces the artifact.
 unlock-map:
 	$(PY) -m scripts.unlock_world_map --rounds 2 --attempts 2 --max-frames 8000 --seed 7
 
-# One dashboard episode per stage, with the rightward walk and the MPC's best draw (10.66; hardware)
+# One dashboard episode per stage, flown by the agent that can finish that stage (10.66/10.68;
+# hardware). Yoshi's Island 1 is flown by its seed-7 clearance draw until the engine ends it.
 record-level-dashboards:
 	$(PY) -m scripts.record_level_dashboards
 

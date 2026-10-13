@@ -33,7 +33,6 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
-from src.environment import wram
 from src.planning.mpc_planner import ACTION_BUTTONS, ACTION_MATRIX
 from src.utils.logging import get_logger
 from src.utils.paths import DATASET_DASHBOARD, REPO_ROOT, figure_file, results_file
@@ -84,10 +83,46 @@ ACTION_WORDS = (
     "walk left",
     "run left",
 )
-#: the four terrain classes the level buffer stores, plus the one it cannot: a cell that is not there
-TILE_COLOURS = ("#0d1420", "#8a5a2b", "#c8322b", "#c8a02b", "#243352")
-TILE_LEGEND = ("air", "floor / wall", "hazard", "slope", "no cell in the buffer")
-VOID_CLASS = 4
+#: the measured tile classes the window draws, one colour each: 10.68's behaviour table, not a
+#: guess. The old four-way legend called every non-blank tile solid - bushes as walls, ramps as
+#: air - and this is the panel that stops doing it.
+#: 0 decor, 1 coin, 2 platform, 3 solid, 4 slope, 5 harmful, 6 no cell in the buffer
+TILE_COLOURS = (
+    "#141b26",
+    "#e6c84a",
+    "#3a7d44",
+    "#8a5a2b",
+    "#c8a02b",
+    "#c8322b",
+    "#243352",
+)
+TILE_LEGEND = (
+    "decor (no collision)",
+    "coin",
+    "platform (holds from above)",
+    "wall (blocks a run)",
+    "slope",
+    "harmful",
+    "no cell in the buffer",
+)
+VOID_CLASS = 6
+#: the measured sprite classes, drawn as one marker per live slot: hostile and stompable are
+#: what can hurt, neutral is the smoke and the bouncing blocks the old panel drew as enemies
+SPRITE_COLOURS = {
+    "hostile": "#ff6b5e",
+    "stompable": "#ff6b5e",
+    "collectible": "#5aa9e6",
+    "platform": "#63d68a",
+    "neutral": "#8794ab",
+    "unprobed": "#b06fd4",
+}
+SPRITE_LEGEND = (
+    ("hostile", "enemy (hurts or is stompable)"),
+    ("collectible", "collectible"),
+    ("platform", "platform sprite"),
+    ("neutral", "no effect"),
+    ("unprobed", "not yet measured"),
+)
 
 
 def _rgb(colour: str) -> Tuple[int, int, int]:
@@ -96,8 +131,9 @@ def _rgb(colour: str) -> Tuple[int, int, int]:
 
 
 #: the drawn colours a gate can look for in the rendered still, as raw RGB triples
-FLOOR_RGB = _rgb(TILE_COLOURS[1])
-VOID_RGB = _rgb(TILE_COLOURS[4])
+FLOOR_RGB = _rgb(TILE_COLOURS[3])
+PLATFORM_RGB = _rgb(TILE_COLOURS[2])
+VOID_RGB = _rgb(TILE_COLOURS[VOID_CLASS])
 BG = "#0d1220"
 PANEL = "#161d2e"
 PANEL_EDGE = "#26314a"
@@ -139,7 +175,17 @@ def level_label(key: str) -> str:
 def load_recording(path: str = DATASET_DASHBOARD) -> Dict[str, np.ndarray]:
     """Read the dashboard recording, keeping the keys this renderer needs."""
     with np.load(path) as data:
-        missing = {"states", "button_probs", "executed", "values", "camera", "patches", "rgb"}
+        missing = {
+            "states",
+            "button_probs",
+            "executed",
+            "values",
+            "camera",
+            "patches",
+            "rgb",
+            "tile_ids",
+            "sprites",
+        }
         have = set(data.files)
         if missing - have:
             raise KeyError(f"{path} is missing {sorted(missing - have)}")
@@ -162,26 +208,51 @@ def action_probabilities(data: Dict[str, np.ndarray]) -> Tuple[np.ndarray, str]:
     return joint, "joint of the actor's independent button marginals"
 
 
-def patch_view(patches: np.ndarray, states: np.ndarray) -> np.ndarray:
-    """The recorded class patch with a fifth class added: the cells the level buffer does not have.
+def window_view(tile_ids: np.ndarray) -> np.ndarray:
+    """The recorded 16-bit tile ids, drawn as the classes the engine was measured to give them.
 
-    `get_local_tilemap_patch` stores out-of-range and air in the same byte, because that is what the
-    level-conditioned models are given. A picture drawn from the patch alone would therefore call the
-    rows below the subscreen's last one empty space. The mask is recomputed here from the shared
-    address formula rather than read from the patch - the point being that the model really is shown
-    air there, and the panel can say both things at once.
+    `read_tile_ids` stores the full Map16 number of every cell and -1 where the buffer has none.
+    This view is the one source of truth the panel draws: each id through
+    `tile_behavior.behavior_of`, never a second classifier, and cells the buffer does not have
+    keep their own class so the panel can say both things the old one folded together - the model
+    is shown air there, and the buffer simply has no cell.
     """
-    radius = int(patches.shape[1] // 2)
-    view = np.array(patches, dtype=np.int8)
-    offsets = range(-radius, radius + 1)
-    for i in range(view.shape[0]):
-        centre_x = int(states[i, 0]) // wram.TILE_SIZE_PX
-        centre_y = int(states[i, 1]) // wram.TILE_SIZE_PX
-        for dy in offsets:
-            for dx in offsets:
-                if wram.tilemap_addr(centre_x + dx, centre_y + dy) is None:
-                    view[i, dy + radius, dx + radius] = VOID_CLASS
+    from src.environment import tile_behavior
+
+    ids = np.asarray(tile_ids, dtype=np.int64)
+    view = np.full(ids.shape, VOID_CLASS, dtype=np.int8)
+    inside = ids >= 0
+    classes = np.empty(ids.shape, dtype=object)
+    for i in np.ndindex(*ids.shape):
+        classes[i] = tile_behavior.behavior_of(int(ids[i])) if inside[i] else None
+    order = {
+        name: index
+        for index, name in enumerate(
+            ("decor", "coin", "platform", "solid", "slope", "harmful", "interact")
+        )
+    }
+    for i in np.ndindex(*ids.shape):
+        if inside[i]:
+            name = classes[i]
+            index = order.get(name, 0)
+            view[i] = 0 if name == "interact" else index
     return view
+
+
+def sprite_classes(sprites: np.ndarray) -> np.ndarray:
+    """The measured class name of every recorded sprite slot, per frame."""
+    from src.environment import sprite_behavior
+
+    ids = np.asarray(sprites, dtype=np.int64)
+    out = np.empty(ids.shape[:2], dtype=object)
+    for frame in range(ids.shape[0]):
+        for slot in range(ids.shape[1]):
+            out[frame, slot] = (
+                sprite_behavior.behavior_of(int(ids[frame, slot, 2]))
+                if ids[frame, slot, 3] > 0
+                else ""
+            )
+    return out
 
 
 def _panel(fig: Any, rect: List[float], title: str = "", card: bool = True) -> Any:
@@ -215,7 +286,9 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     values = np.asarray(data["values"], dtype=np.float64)
     actions, action_source = action_probabilities(data)
     progress = states[:, 0] - float(states[0, 0])
-    views = patch_view(np.asarray(data["patches"]), states)
+    views = window_view(np.asarray(data["tile_ids"]))
+    sprites = np.asarray(data["sprites"], dtype=np.float64)
+    kinds = sprite_classes(sprites)
     #: the progress bar's denominator: the published goal where one exists, the furthest anything
     #: measured otherwise, because a bar scaled to a goal a stage has never been shown to have is a
     #: claim about the level rather than a picture of the episode
@@ -237,12 +310,12 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         np.zeros(data["rgb"][0].shape, np.uint8), aspect="auto", interpolation="nearest"
     )
 
-    tile = _panel(fig, RECT_TILE, "what the level models see")
+    tile = _panel(fig, RECT_TILE, "the tiles around Mario, as measured")
     tile_img = tile.imshow(
         views[0],
         cmap=ListedColormap(TILE_COLOURS),
         vmin=-0.5,
-        vmax=4.5,
+        vmax=6.5,
         aspect="auto",
         interpolation="nearest",
         extent=(0, 1, 0, 1),
@@ -250,31 +323,41 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     )
     tile.plot([0.5], [0.5], marker="s", color=INK, markersize=7, fillstyle="none")
     tile.text(0.5, 0.44, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
-    enemy_mark = tile.plot([], [], marker="o", color=RED, markersize=6)[0]
+    sprite_marks = [
+        tile.plot([], [], marker="o", color=MUTED, markersize=6, linestyle="none")[0]
+        for _ in range(sprites.shape[1])
+    ]
 
     legend = _panel(fig, RECT_LEGEND, card=False)
+    row = 0.97
+    step = 0.058
     for i, (colour, label) in enumerate(zip(TILE_COLOURS, TILE_LEGEND)):
-        y = 0.96 - 0.085 * i
-        legend.add_patch(Rectangle((0.0, y - 0.032), 0.055, 0.064, color=colour))
-        legend.text(0.095, y, label, color=INK, fontsize=9, va="center")
-    y_mario = 0.96 - 0.085 * 5
-    legend.plot([0.027], [y_mario], marker="s", color=INK, markersize=7, fillstyle="none")
-    legend.text(0.095, y_mario, "Mario (window centre)", color=INK, fontsize=9, va="center")
-    y_enemy = 0.96 - 0.085 * 6
-    legend.plot([0.027], [y_enemy], marker="o", color=RED, markersize=6)
-    legend.text(0.095, y_enemy, "enemy", color=INK, fontsize=9, va="center")
+        y = row - step * i
+        legend.add_patch(Rectangle((0.0, y - 0.020), 0.055, 0.040, color=colour))
+        legend.text(0.095, y, label, color=INK, fontsize=8, va="center")
+    y = row - step * 7
+    legend.plot([0.027], [y], marker="s", color=INK, markersize=7, fillstyle="none")
+    legend.text(0.095, y, "Mario (window centre)", color=INK, fontsize=8, va="center")
+    for j, (kind, label) in enumerate(SPRITE_LEGEND):
+        y = row - step * (8 + j)
+        legend.plot(
+            [0.027], [y], marker="o", color=SPRITE_COLOURS[kind], markersize=6, linestyle="none"
+        )
+        legend.text(0.095, y, label, color=INK, fontsize=8, va="center")
     legend.text(
         0.0,
-        0.38,
-        "33x33 tile window from $7E:C800 - the array the\n"
-        "level models read. The fifth class marks cells the\n"
-        "buffer does not have: the model is shown air there.\n"
-        "The actor sees no picture: only the twelve numbers.",
+        0.30 - step * 2,
+        "33x33 tile window of 16-bit Map16 ids\n"
+        "from $7E:C800 + $7F:C800, classified\n"
+        "by the measured behaviour table of\n"
+        "10.68 - not by a guessed id list. The\n"
+        "actor sees no picture: only the twelve\n"
+        "numbers on the strip below.",
         color=MUTED,
-        fontsize=8,
+        fontsize=7.2,
         va="top",
         family="monospace",
-        linespacing=1.6,
+        linespacing=1.55,
     )
 
     think = _panel(fig, RECT_THINK, "what it thinks")
@@ -420,7 +503,7 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         "level_text": level_text,
         "rgb_img": rgb_img,
         "tile_img": tile_img,
-        "enemy_mark": enemy_mark,
+        "sprite_marks": sprite_marks,
         "think_bars": think_bars,
         "think_values": think_values,
         "pips": pips,
@@ -444,6 +527,8 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         "frames": data["rgb"],
         "patches": data["patches"],
         "views": views,
+        "sprites": sprites,
+        "sprite_kinds": kinds,
         "goal_px": goal_px,
     }
 
@@ -492,15 +577,23 @@ def draw_frame(art: Dict[str, Any], i: int) -> None:
         "state: " + " ".join(f"{name} {state[k]:.0f}" for k, name in enumerate(OBS_SHORT))
     )
 
-    half = art["patches"].shape[1] // 2
+    half = art["views"].shape[1] // 2
     span = (half + 0.5) * 16.0
-    dx_enemy, dy_enemy = float(state[8]), float(state[9])
-    if float(state[11]) > 0.5 and abs(dx_enemy) <= span and abs(dy_enemy) <= span:
-        # The panel is drawn with the array's first row at the top, so a positive `dy_enemy` - an
-        # enemy below Mario - goes to a smaller axis height, not a larger one.
-        art["enemy_mark"].set_data([0.5 + 0.5 * dx_enemy / span], [0.5 - 0.5 * dy_enemy / span])
-    else:
-        art["enemy_mark"].set_data([], [])
+    sprites = art["sprites"][i]
+    kinds = art["sprite_kinds"][i]
+    for slot, mark in enumerate(art["sprite_marks"]):
+        dx, dy, sprite_id, status = sprites[slot]
+        kind = kinds[slot]
+        if status <= 0 or kind == "":
+            mark.set_data([], [])
+            continue
+        if abs(float(dx)) <= span and abs(float(dy)) <= span:
+            # The panel is drawn with the array's first row at the top, so a positive dy - a
+            # sprite below Mario - goes to a smaller axis height, not a larger one.
+            mark.set_data([0.5 + 0.5 * float(dx) / span], [0.5 - 0.5 * float(dy) / span])
+            mark.set_color(SPRITE_COLOURS.get(kind, SPRITE_COLOURS["unprobed"]))
+        else:
+            mark.set_data([], [])
 
 
 def render_video(

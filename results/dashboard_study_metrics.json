@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T14:56:16+00:00",
-    "git_sha": "d21887f23902405154aa91df1cced84a16e40df0",
+    "generated_utc": "2026-10-13T22:12:59+00:00",
+    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -57,7 +57,7 @@
       ],
       "mean_top_probability": 0.1957,
       "frames_where_reflex_overrode": 0,
-      "wall_clock_s": 0.76
+      "wall_clock_s": 1.04
     },
     {
       "arm": "dagger",
@@ -82,7 +82,7 @@
       ],
       "mean_top_probability": 0.9068,
       "frames_where_reflex_overrode": 13,
-      "wall_clock_s": 0.81
+      "wall_clock_s": 0.66
     }
   ],
   "override_control": [
@@ -109,7 +109,7 @@
       ],
       "mean_top_probability": 0.916,
       "frames_where_reflex_overrode": 0,
-      "wall_clock_s": 1.05
+      "wall_clock_s": 0.65
     }
   ],
   "selected": "dagger",
@@ -117,8 +117,8 @@
     "frames": 1268,
     "ended": "death",
     "progress_px": 1615.5,
-    "wall_clock_s": 8.12,
-    "fps": 156.2,
+    "wall_clock_s": 6.97,
+    "fps": 181.8,
     "share_of_frames_live": 0.8470031545741324,
     "camera_travel_px": 1525.0,
     "screen_x_range_px": [
@@ -162,14 +162,14 @@
   ],
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6420051,
+    "bytes": 6405848,
     "frames_written": 634,
     "fps": 30.0,
     "duration_s": 21.13
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 7260559,
+    "bytes": 7430382,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96

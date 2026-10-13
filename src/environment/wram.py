@@ -74,18 +74,23 @@ SPRITE_STATUS_ACTIVE = 8  # Values >= 8 mean the sprite is running normally
 SPRITE_ID_REX = 0x05
 
 # --- Level geometry (tilemap) -------------------------------------------------
-ADDR_TILEMAP_BASE = 0xC800  # $7E:C800 - first subscreen's horizontal level buffer
+# SMW stores the level's layer-1 Map16 tile numbers in two parallel buffer pages: the low byte of
+# each tile at $7E:C800 and the high byte at $7F:C800, which is the same buffer offset +0x10000 in
+# the 128 KB WRAM window the core exposes. One subscreen (16 columns x 27 rows) follows another at
+# a 0x01B0 stride. Reading only the low byte - which is what this repository did before 10.68 -
+# turns the grass top 0x0100 into "0x00" and the ramps 0x0173-0x0176 into "pipes".
+ADDR_TILEMAP_BASE = 0xC800  # $7E:C800 - first subscreen's low-byte page of the level buffer
+ADDR_TILEMAP_HIGH = 0x10000  # the high bytes live at the same offsets in bank $7F
 TILEMAP_SUBSCREEN_STRIDE = 0x01B0  # Bytes between consecutive subscreen buffers
 TILEMAP_COLUMNS_PER_SUBSCREEN = 16  # A subscreen is 16 tiles wide
 TILEMAP_ROWS_PER_SUBSCREEN = 27  # ... and 27 tiles tall (432 px)
 TILE_SIZE_PX = 16  # SMW tiles are 16x16 pixels
 WRAM_SIZE_BYTES = 0x20000  # 128 KB WRAM window exposed by the core
 
-# Tile IDs used by the terrain classifier in `get_local_tilemap_patch`.
+# The buffer's blank filler tile. Whether any other tile is solid, a ramp, harmful or decoration
+# is not a matter of id lists any more: it is measured off the engine itself by
+# `scripts/probe_tile_behaviors` and classified through `src.environment.tile_behavior`.
 TILE_AIR = 0x25
-TILE_SOLID = (0x00, 0x3F, 0x73, 0x74, 0x75, 0x76)  # ground, fill, pipes
-TILE_SLOPE = (0x80, 0x81, 0x82)
-TILE_HAZARD_SPIKES = (0x8C,)
 
 
 def tilemap_addr(tile_x: int, tile_y: int) -> "int | None":
@@ -99,6 +104,10 @@ def tilemap_addr(tile_x: int, tile_y: int) -> "int | None":
 
     A `None` is not a tile: it is a cell the buffer does not have, and a reader that stores the
     terrain class cannot tell it apart from air. Pictures of the buffer should say so out loud.
+    The low-byte page ends at $7E:FFFF - 26 subscreens, 6656 px, more than every stage this
+    repository has surveyed - so addresses past it are no cell even though the WRAM window (and
+    the high-byte page at +0x10000) continues; reading on would report the high bytes of other
+    cells as tiles.
     """
     if tile_x < 0 or tile_y < 0 or tile_y >= TILEMAP_ROWS_PER_SUBSCREEN:
         return None
@@ -110,7 +119,7 @@ def tilemap_addr(tile_x: int, tile_y: int) -> "int | None":
         + tile_y * TILEMAP_COLUMNS_PER_SUBSCREEN
         + col_in_sub
     )
-    return None if addr > WRAM_SIZE_BYTES - 1 else addr
+    return addr if addr <= 0xFFFF else None
 
 
 # --- Engine-fixed scalar constants -------------------------------------------

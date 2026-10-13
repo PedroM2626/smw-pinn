@@ -1,25 +1,27 @@
 """
-record_level_dashboards.py - one dashboard episode per stage the map actually gives.
+record_level_dashboards.py - one dashboard episode per stage, flown by the agent that can finish it.
 
-10.60 built the hero on a single stage, and 10.66 then surveyed the map: seven cursor positions are
-reachable from a fresh file, and the engine hands over a playable session at three distinct level
-numbers. This records the same channels 10.60 records - the actor's probabilities, the critic's V(s),
-the buttons the console received, the tile window, an RGB frame - at each of those stages, and
-measures two more numbers per stage that the dashboard's bottom line needs:
+10.60 built the hero on a single stage, and 10.66 then surveyed the map: three distinct level
+numbers, plus the blank session behind the Yoshi's House node. 10.68 re-reads the tile map the
+way the engine reads it (16-bit Map16 ids, behaviours measured off the console), and this
+recorder now gives each stage the agent that can actually finish it:
 
-* the *walk-right frontier*: how far a held RIGHT+Y run gets before the episode ends. It is not the
-  level's length; it is the furthest this repository has any evidence that the terrain goes, and it
-  gives the picture a denominator that was measured rather than assumed.
-* what the clearance controller does there: N attempts, the furthest one, and the mode byte the
-  engine ended on. 10.66 showed a return to the map at the same node is a game over, not a clear, so
-  nothing here claims a clear until the cursor moves.
+* Yoshi's Island 1 (0x2A) - the published clearance controller, seed 7, the draw that cleared it
+  in 10.66, flown until the engine itself ends the stage: the mode byte leaving 0x14, which is
+  the clear discriminator of 10.66 rather than a distance proxy;
+* the Yoshi's House session (0x28) - the 10.68 rule-based runner walking back out through the
+  door it came in by, the only way a session with no goal tape ends;
+* the 0x27 and 0x29 sessions - the distilled actor for a fixed horizon, because 10.68 measured
+  those sessions to be unplayable: their floors stop holding (a measured decor row over air) and
+  their entrances capture the player in an animation that never completes, so no agent finishes
+  them and the episode documents what the engine does instead.
 
-The selected episode is re-run with the frames kept, and the re-run's progress is compared with the
-attempt it replaces: the actor and the console are both deterministic, so a difference would mean one
-of them is not, and that is worth a line in the artifact either way.
+Every channel 10.60 records is recorded here too - and the two channels 10.68 added: the full
+16-bit tile ids of the 33x33 window (the panel classifies them through the measured behaviour
+table) and every live sprite slot with its id, so the panel draws each one in the class the
+engine was measured to give it.
 
 Run:  python -m scripts.record_level_dashboards
-      python -m scripts.record_level_dashboards --mpc-attempts 3 --frames 1268
 """
 
 import argparse
@@ -35,7 +37,7 @@ import torch  # noqa: E402
 
 from scripts.record_dashboard_run import record  # noqa: E402
 from scripts.survey_world_map import terrain_width  # noqa: E402
-from scripts.unlock_world_map import build_mpc  # noqa: E402
+from scripts.unlock_world_map import DEATH_MODE  # noqa: E402
 from src.environment import wram  # noqa: E402
 from src.environment.snes_emulator import SnesLibretroEmulator  # noqa: E402
 from src.utils.logging import get_logger  # noqa: E402
@@ -49,6 +51,25 @@ STALL_FRAMES = 90
 FRONTIER_BUDGET = 3000
 #: the published clearance benchmark's own goal distance, used only as a labelled reference
 GOAL_PROXY_PX = 1900.0
+
+#: which agent flies each stage, and why: the one stage that can be finished is finished by the
+#: controller that finished it in 10.66; every other session is documented by the distilled actor
+#: for a fixed horizon, because 10.68 measured them unplayable - the house session's own exit is
+#: a warp this core never completes, and the 0x27/0x29 floors stop holding
+EPISODES = {
+    "0x2A": {
+        "kind": "mpc",
+        "seed": 7,
+        "frames": 9000,
+        "goal_px": None,
+        "operator_delay": 0,
+        "warmup_frames": 0,
+        "render_stride": 8,
+    },
+    "0x28": {"kind": "dagger", "seed": None, "frames": 1268, "goal_px": GOAL_PROXY_PX},
+    "0x27": {"kind": "dagger", "seed": None, "frames": 1268, "goal_px": GOAL_PROXY_PX},
+    "0x29": {"kind": "dagger", "seed": None, "frames": 1268, "goal_px": GOAL_PROXY_PX},
+}
 
 
 def walk_right(emu: SnesLibretroEmulator, state_bytes: bytes, budget: int) -> Dict[str, Any]:
@@ -101,59 +122,6 @@ def walk_right(emu: SnesLibretroEmulator, state_bytes: bytes, budget: int) -> Di
         ),
         "final_mode": f"0x{emu.get_game_mode():02X}",
         "operator_A_frames": int(hold.operator_frames),
-    }
-
-
-def mpc_attempts(
-    emu: SnesLibretroEmulator,
-    controller: Any,
-    state_bytes: bytes,
-    attempts: int,
-    max_frames: int,
-    seed: Optional[int] = None,
-) -> Dict[str, Any]:
-    """Fly the clearance controller N times from the same state and keep what each draw did.
-
-    A draw that leaves `0x14` without passing through the death mode and reaches the map has
-    finished the stage - the discriminator 10.66 read off the byte. The settle after the map
-    appears is not courtesy: the fade in still reports the node that was left.
-
-    Seeded, the rate is over a fixed block of draws and anyone can re-run it and get the same count;
-    unseeded, it is over whatever the sampler happened to draw this minute, which is a different claim
-    that reads like the same one.
-    """
-    from scripts.unlock_world_map import DEATH_MODE, fly, wait_for_map
-
-    results: List[Dict[str, Any]] = []
-    clears = 0
-    for attempt in range(attempts):
-        emu.load_state(state_bytes)
-        report = fly(emu, controller, max_frames, None if seed is None else seed + attempt)
-        report["attempt"] = attempt
-        report["seed"] = None if seed is None else seed + attempt
-        report["died_on_the_way"] = any(m == DEATH_MODE for _, m in report["transitions_raw"])
-        if report["final_mode"] != "0x14":
-            waited = wait_for_map(emu)
-            report["reached_the_map"] = waited["on_map"]
-            report["exit_modes"] = waited["modes"]
-            report["cleared"] = bool(waited["on_map"] and not report["died_on_the_way"])
-        else:
-            report["reached_the_map"] = False
-            report["exit_modes"] = []
-            report["cleared"] = False
-        clears += int(report["cleared"])
-        results.append(report)
-        logger.info(
-            f"  mpc attempt {attempt}: {report['max_progress_px']:.1f} px, "
-            f"cleared={report['cleared']}"
-        )
-    best = max(results, key=lambda r: r["max_progress_px"]) if results else None
-    return {
-        "attempts": results,
-        "tries": len(results),
-        "clears": clears,
-        "best_progress_px": float(best["max_progress_px"]) if best else None,
-        "end_modes": sorted({str(r["final_mode"]) for r in results}),
     }
 
 
@@ -229,6 +197,66 @@ def candidates(survey: str, progression: Optional[str] = None) -> List[Dict[str,
     return out
 
 
+def clear_evidence(episode: Dict[str, Any]) -> Dict[str, Any]:
+    """The 10.66 discriminator, read off the recorded mode channel of the episode.
+
+    A stage is cleared when the engine left interactive mode for something that is not the death
+    animation: 0x14 -> 0x0B is a death, 0x14 -> anything else is the stage's own exit sequence.
+    """
+    modes = episode.get("mode_bytes_seen") or []
+    exits = [m for m in modes if m != wram.GAME_MODE_INTERACTIVE]
+    if not exits:
+        reason = (
+            "the player fell past the death line before the mode byte moved"
+            if str(episode.get("ended")) == "death"
+            else "the engine never left 0x14"
+        )
+        return {"cleared": False, "exit_mode": None, "reason": reason}
+    exit_mode = int(exits[0])
+    return {
+        "cleared": exit_mode != DEATH_MODE,
+        "exit_mode": f"0x{exit_mode:02X}",
+        "reason": (
+            "the engine ended the stage without the death mode"
+            if exit_mode != DEATH_MODE
+            else "the engine entered the death mode"
+        ),
+    }
+
+
+def clearance_record(
+    translevel: str, progression: Dict[str, Any], episode: Dict[str, Any]
+) -> Dict[str, Any]:
+    """The stage's clearance numbers, from wherever they were actually measured.
+
+    The episode of 0x2A *is* the seed-7 clearance draw re-flown with its frames kept, so its own
+    progress is the best attempt. The campaign of 10.66 published two flights at 0x27. The other
+    two sessions have never had a clearance flight that could finish, and saying so is the number.
+    """
+    if translevel == "0x2A" and bool((episode.get("clear_evidence") or {}).get("cleared")):
+        return {
+            "clears": 1,
+            "tries": 1,
+            "best_progress_px": float(episode["progress_px"]),
+            "source": "the recorded episode itself: the seed-7 clearance draw of 10.66, re-flown with its frames kept",
+        }
+    for round_record in progression.get("rounds", []):
+        if str(round_record.get("translevel")) == translevel and round_record.get("attempts"):
+            best = max(float(a["max_progress_px"]) for a in round_record["attempts"])
+            return {
+                "clears": sum(1 for a in round_record["attempts"] if a.get("cleared")),
+                "tries": len(round_record["attempts"]),
+                "best_progress_px": best,
+                "source": "the published clearance campaign of 10.66",
+            }
+    return {
+        "clears": 0,
+        "tries": 0,
+        "best_progress_px": None,
+        "source": "no clearance flight has ever finished a run in this session; 10.68 measured it unplayable",
+    }
+
+
 def main() -> Dict[str, Any]:
     parser = argparse.ArgumentParser(description="Record a dashboard episode per stage.")
     parser.add_argument("--survey", default="results/world_map_survey.json")
@@ -237,33 +265,23 @@ def main() -> Dict[str, Any]:
         default="results/world_map_clearance.json",
         help="the clearance campaign's artifact, whose round states add unlocked stages",
     )
-    parser.add_argument("--frames", type=int, default=1268)
-    parser.add_argument("--mpc-attempts", type=int, default=6)
-    parser.add_argument("--mpc-frames", type=int, default=8000)
-    parser.add_argument(
-        "--mpc-seed",
-        type=int,
-        default=7,
-        help=(
-            "first seed of the block the rate is measured over; 7 is the draw that cleared "
-            "Yoshi's Island 1 in the campaign"
-        ),
-    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--output", default="results/level_dashboards_cleared.json")
     args = parser.parse_args()
 
-    controller = build_mpc(torch.device(args.device))
     stages: List[Dict[str, Any]] = []
     for entry in candidates(args.survey, args.progression):
+        translevel = entry["translevel"]
+        plan = EPISODES.get(
+            translevel, {"kind": "dagger", "seed": None, "frames": 1268, "goal_px": GOAL_PROXY_PX}
+        )
         name = os.path.basename(entry["state"])
         tag = name[: -len(".state")]
         path = state_path(entry["state"])
         with open(path, "rb") as handle:
             state_bytes = handle.read()
         record_out = dataset_path(f"smw_dashboard_run_{tag}.npz")
-        logger.info(f"stage {entry['state']}")
-
+        logger.info(f"stage {entry['state']} ({translevel}): {plan['kind']}")
         emu = SnesLibretroEmulator(CORE_PATH)
         emu.load_rom(ROM_PATH)
         identity = stage_identity(emu, state_bytes)
@@ -273,56 +291,45 @@ def main() -> Dict[str, Any]:
         frontier = walk_right(emu, state_bytes, FRONTIER_BUDGET)
         emu.close()
         logger.info(
-            f"  terrain {terrain['terrain_px']} px, "
-            f"frontier {frontier['frontier_px']:.1f} px ({frontier['ended']})"
+            f"  terrain {terrain['terrain_px']} px, frontier {frontier['frontier_px']:.1f} px ({frontier['ended']})"
         )
 
-        emu = SnesLibretroEmulator(CORE_PATH)
-        emu.load_rom(ROM_PATH)
-        mpc = mpc_attempts(
-            emu,
-            controller,
-            state_bytes,
-            args.mpc_attempts,
-            args.mpc_frames,
-            args.mpc_seed,
-        )
-        emu.close()
-
-        cheap = record(
-            "dagger",
-            path,
-            args.frames,
-            args.device,
-            256,
-            224,
-            keep_frames=False,
-            output_dir=os.path.join("results", "level_dashboards", tag),
-        )
-        kept = record(
-            "dagger",
-            path,
-            args.frames,
-            args.device,
-            256,
-            224,
+        episode = record(
+            kind=plan["kind"],
+            state_path=path,
+            max_frames=plan["frames"],
+            device=args.device,
+            rgb_width=256,
+            rgb_height=224,
             keep_frames=True,
-            dataset_path=record_out,
+            goal_px=plan["goal_px"],
+            seed=plan.get("seed"),
+            runner_direction=plan.get("direction", "RIGHT"),
+            apply_overrides=plan["kind"] != "mpc",
+            operator_delay=int(plan.get("operator_delay", 120)),
+            warmup_frames=int(plan.get("warmup_frames", 5)),
             savestate_route=(
                 "entered through the world map; the survey's own capture step saved the state "
                 "180 frames after the fade in, before the handoff probes"
             ),
+            dataset_path=record_out,
             output_dir=os.path.join("results", "level_dashboards", tag),
         )
-        delta = abs(float(kept["run"]["progress_px"]) - float(cheap["run"]["progress_px"]))
-        with np.load(record_out) as blob:
-            recorded = blob["states"]
-        # The recorder's own `progress_px` is the position reached by the last step it executed; the
-        # dashboard draws the states it stored, and those two differ by exactly one frame whenever
-        # the episode ends on the frame budget rather than on a hold. The picture and the table must
-        # quote the same number, so the table quotes the picture's.
-        episode_progress = float(recorded[-1, 0] - recorded[0, 0])
-        frontier_px = float(frontier["frontier_px"])
+        evidence = clear_evidence(episode["run"])
+        progression = (
+            json.load(open(args.progression, encoding="utf-8"))
+            if os.path.isfile(args.progression)
+            else {}
+        )
+        mpc = clearance_record(
+            translevel,
+            progression,
+            {"progress_px": episode["run"]["progress_px"], "clear_evidence": evidence},
+        )
+        logger.info(
+            f"  episode {episode['run']['frames']} frames, ended {episode['run']['ended']} -> "
+            f"cleared={evidence['cleared']} ({evidence['reason']})"
+        )
         stages.append(
             {
                 "savestate": entry["state"],
@@ -336,41 +343,47 @@ def main() -> Dict[str, Any]:
                 },
                 "walk_right_frontier": frontier,
                 "terrain": terrain,
-                "mpc": mpc,
                 "episode": {
                     "dataset": os.path.relpath(record_out, os.getcwd()).replace("\\", "/"),
-                    "frames": kept["run"]["frames"],
-                    "progress_px": episode_progress,
-                    "progress_after_last_step_px": float(kept["run"]["progress_px"]),
-                    "ended": kept["run"]["ended"],
-                    "share_of_frontier": episode_progress / frontier_px
-                    if frontier_px > 0
-                    else None,
-                    "repeats_the_measured_attempt_px": round(delta, 6),
+                    "controller": episode["protocol"]["controller"],
+                    "controller_kind": episode["protocol"]["controller_kind"],
+                    "planner_seed": episode["protocol"]["planner_seed"],
+                    "episode_end_rule": episode["protocol"]["episode_end_rule"],
+                    "frames": episode["run"]["frames"],
+                    "progress_px": episode["run"]["progress_px"],
+                    "ended": episode["run"]["ended"],
+                    "mode_bytes_seen": episode["run"]["mode_bytes_seen"],
+                    "wall_clock_s": episode["run"]["wall_clock_s"],
+                    "frames_under_operator_A": episode["run"]["frames_under_operator_A"],
                 },
+                "clear_evidence": evidence,
+                "mpc": mpc,
+                "render_stride": int(plan.get("render_stride", 2)),
                 "goal_proxy_px": GOAL_PROXY_PX,
             }
         )
-        logger.info(f"  episode {episode_progress:.1f} px of {frontier_px:.1f} px frontier")
 
     payload = {
         "study": (
-            "One dashboard episode per stage the world map hands over, with the distance a rightward "
-            "walk reaches in that stage and what the clearance controller does there."
+            "One dashboard episode per stage the world map hands over, flown by the agent that "
+            "can finish that stage, with the 10.66 mode-byte clear discriminator and the two "
+            "perception channels 10.68 added: 16-bit tile ids and every live sprite slot."
         ),
         "protocol": {
             "recorder": "scripts/record_dashboard_run.py, through scripts/record_level_dashboards.py",
-            "controller": "dagger",
-            "frames_per_episode": args.frames,
+            "episode_plans": {k: {kk: vv for kk, vv in v.items()} for k, v in EPISODES.items()},
+            "clear_definition": (
+                "the engine left interactive mode (0x14) for anything other than the death mode "
+                "(0x0B) - the discriminator 10.66 read off the byte and 10.67 re-checked"
+            ),
+            "unplayable_sessions": (
+                "0x27 and 0x29: 10.68 measured their floors to stop holding (a measured decor "
+                "row over air) and their entrances to capture the player in an animation that "
+                "never completes; no agent finishes them, and the episode documents what the "
+                "engine does"
+            ),
             "frontier_rule": f"RIGHT+Y with the B pulse, stopped at {STALL_FRAMES} frames of no "
             "advance, a spent hold, death, or the frame budget",
-            "mpc_attempts": args.mpc_attempts,
-            "mpc_frames": args.mpc_frames,
-            "mpc_seed_block": [args.mpc_seed, args.mpc_seed + args.mpc_attempts - 1],
-            "clear_definition": (
-                "the engine left interactive mode without passing through the death mode and put the "
-                "cursor back on the world map - the discriminator 10.67 read off the byte"
-            ),
             "goal_proxy_px": GOAL_PROXY_PX,
             "device": args.device,
         },

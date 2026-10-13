@@ -99,12 +99,15 @@ def test_the_class_profile_agrees_with_10_61s_independent_measurement() -> None:
 
 @requires_emulator
 def test_the_raw_id_reader_and_the_classifier_describe_the_same_tiles() -> None:
-    """The new fingerprint must be the old instrument's input, not a second opinion about it.
+    """The raw-ID reader must be the classifier's input, not a second opinion about it.
 
-    The invariant is the one that cannot be re-derived wrong: a cell the classifier calls air is a
-    cell whose ID is the air tile, and a cell it calls terrain has a real ID behind it. Repeating the
-    classifier's table here would only prove that the same author wrote both.
+    The invariant is the one that cannot be re-derived wrong: every cell of the class patch is
+    the measured table's answer for the 16-bit id the raw reader finds at the same buffer
+    address, and a cell the buffer does not have stays air rather than inheriting a neighbour's
+    class. Repeating the classifier's table here would only prove that the same author wrote
+    both; comparing two readers that share one address formula proves the formula itself.
     """
+    from src.environment import tile_behavior
     from src.environment.snes_emulator import SnesLibretroEmulator
 
     emu = SnesLibretroEmulator(CORE_PATH)
@@ -121,13 +124,23 @@ def test_the_raw_id_reader_and_the_classifier_describe_the_same_tiles() -> None:
             ids = emu.read_tile_ids(state["x"], state["y"], radius=radius)
             patch = emu.get_local_tilemap_patch(state["x"], state["y"], radius=radius)
             in_range = ids >= 0
-            assert np.array_equal((patch == 0) & in_range, (ids == wram.TILE_AIR) & in_range), (
-                "air means something different to the two instruments"
+            classes = np.asarray(
+                [tile_behavior.patch_class(int(t)) if t >= 0 else 0 for t in ids.ravel()],
+                dtype=patch.dtype,
+            ).reshape(patch.shape)
+            expected = np.where(in_range, classes, 0)
+            assert np.array_equal(patch, expected), (
+                "the patch and the measured table disagree about the ids the raw reader found"
             )
-            assert np.all((patch > 0) == (in_range & (ids != wram.TILE_AIR)))
+            blanks = (ids == tile_behavior.TILE_BLANK) & in_range
+            assert np.all(patch[blanks] == tile_behavior.PATCH_AIR), (
+                "the blank tile must read as air whatever else changes"
+            )
             column = column_ids(emu, int(state["x"]) // wram.TILE_SIZE_PX)
             assert column.shape == (wram.TILEMAP_ROWS_PER_SUBSCREEN,)
             if 0 <= centre_row < column.shape[0]:
-                assert column[centre_row] == ids[radius, radius]
+                assert column[centre_row] == (ids[radius, radius] & 0xFF), (
+                    "the study's low-byte fingerprint and the raw reader's low byte are the same cell"
+                )
     finally:
         emu.close()

@@ -141,6 +141,9 @@ through the installed console script: `smw-pinn benchmark`, `smw-pinn multiseed`
 | `world_map_survey_replay.json` | `scripts/survey_world_map.py` | yes | 10.67 |
 | `world_map_survey_opened.json` | `scripts/survey_world_map.py` | yes | 10.67 |
 | `world_map_recheck_metrics.json` | `src/evaluation/world_map_recheck_study.py` | no | 10.67 |
+| `tile_behavior_probe_metrics.json` | `scripts/probe_tile_behaviors.py` | yes | 10.68 |
+| `sprite_behavior_probe_metrics.json` | `scripts/probe_sprite_behaviors.py` | yes | 10.68 |
+| `perception_correction_metrics.json` | `src/evaluation/perception_correction_study.py` | no | 10.68 |
 | `pixel_estimator_retrain_published_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
 | `pixel_estimator_retrain_level_single_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |
 | `pixel_estimator_retrain_level_pair_metrics.json` | `src/evaluation/pixel_retrain_study.py` | no | 10.65 |

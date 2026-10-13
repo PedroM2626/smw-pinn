@@ -35,12 +35,16 @@ class FakeBuffer:
 
 
 def buffer_with(subscreens_with_terrain: int, empty_at: int = None) -> FakeBuffer:
-    memory = np.full(wram.WRAM_SIZE_BYTES, wram.TILE_AIR, dtype=np.uint8)
+    # The buffer's blank cell is the 16-bit id 0x0025: low byte 0x25 in $7E, high byte 0 in $7F.
+    memory = np.zeros(wram.WRAM_SIZE_BYTES, dtype=np.uint8)
+    memory[wram.ADDR_TILEMAP_BASE : 0x10000] = wram.TILE_AIR
     for sub in range(subscreens_with_terrain):
         if sub == empty_at:
             continue
         base = wram.ADDR_TILEMAP_BASE + sub * wram.TILEMAP_SUBSCREEN_STRIDE
-        memory[base] = 0x00  # one solid tile is enough to say "this subscreen has terrain"
+        # one 16-bit tile that is not the blank filler: a low byte plus a high byte in $7F
+        memory[base] = 0x00
+        memory[base + wram.ADDR_TILEMAP_HIGH] = 0x01
     return FakeBuffer(memory)
 
 
@@ -51,6 +55,22 @@ def test_terrain_width_counts_the_subscreens_that_hold_terrain() -> None:
     assert read["terrain_px"] == 20 * 256
     assert read["non_air_cells_by_subscreen"][:20] == [1] * 20
     assert set(read["non_air_cells_by_subscreen"][20:]) == {0}
+
+
+def test_terrain_width_ignores_a_tile_whose_high_byte_is_blank_like() -> None:
+    """A tile read as one 16-bit number, not two independent bytes.
+
+    The failure this gates: a low byte equal to the blank filler (0x25) with a high byte set is a
+    real tile (0x0125 is measured decor) and must count as terrain content; the blank filler is
+    the 16-bit value 0x0025 alone.
+    """
+    memory = np.zeros(wram.WRAM_SIZE_BYTES, dtype=np.uint8)
+    memory[wram.ADDR_TILEMAP_BASE : 0x10000] = wram.TILE_AIR
+    base = wram.ADDR_TILEMAP_BASE + 3 * wram.TILEMAP_SUBSCREEN_STRIDE
+    memory[base] = 0x25
+    memory[base + wram.ADDR_TILEMAP_HIGH] = 0x01
+    read = terrain_width(FakeBuffer(memory))
+    assert read["non_air_cells_by_subscreen"][3] == 1
 
 
 def test_terrain_width_stops_at_the_first_empty_subscreen_and_says_so() -> None:
@@ -68,13 +88,15 @@ def test_terrain_width_stops_at_the_first_empty_subscreen_and_says_so() -> None:
     )
 
 
-def test_terrain_width_never_reads_past_the_wram_window() -> None:
-    """A scan that ran off the end of the window would read the wrong thing, not fail loudly."""
+def test_terrain_width_never_reads_past_the_low_byte_page() -> None:
+    """A scan that ran off the low-byte page would read the high bytes of other cells as tiles.
+
+    The buffer's low bytes end at $7E:FFFF - 26 subscreens - and the region past that in the WRAM
+    window is the high-byte page itself, so a scan that continued would count high bytes as
+    terrain: every tile at 0x0100 or above would report a full subscreen of content.
+    """
     read = terrain_width(buffer_with(3), subscreens=4000)
-    assert (
-        len(read["non_air_cells_by_subscreen"])
-        <= (wram.WRAM_SIZE_BYTES - wram.ADDR_TILEMAP_BASE) // CELLS
-    )
+    assert len(read["non_air_cells_by_subscreen"]) <= (0x10000 - wram.ADDR_TILEMAP_BASE) // CELLS
 
 
 def test_a_cleared_attempt_is_the_one_that_never_saw_the_death_mode() -> None:

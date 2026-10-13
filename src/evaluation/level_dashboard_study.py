@@ -77,21 +77,28 @@ def stage_width_px(stage: Dict[str, Any]) -> float:
 
 
 def bottom_line(stage: Dict[str, Any], progress: Optional[float] = None) -> str:
-    """The corner the mock puts a clearance rate in, with a rate that is now measured.
+    """The corner the mock puts a clearance rate in, with the verdict the engine itself gave.
 
     Two numbers share the line because one of them is about the stage and the other is about the
-    policy on screen: how often the controller built to finish levels finishes this one, and how far
-    the actor the dashboard is actually showing got.
+    policy on screen: whether the engine ended the stage without the death mode - the 10.66
+    discriminator, read off the episode's own mode channel - and how far the actor the dashboard
+    is actually showing got against the width the stage's buffer holds.
     """
     value = float(stage["episode"]["progress_px"]) if progress is None else float(progress)
     width = stage_width_px(stage)
-    tries = int(stage["mpc"]["tries"])
-    clears = int(stage["mpc"]["clears"])
-    rate = (
-        f"cleared in {clears} of {tries} attempts"
-        if clears
-        else f"0 of {tries} attempts cleared it"
-    )
+    evidence = stage.get("clear_evidence") or {}
+    if evidence.get("cleared"):
+        rate = "cleared: the engine ended the stage without the death mode"
+    elif int(stage["mpc"]["tries"]) > 0:
+        clears = int(stage["mpc"]["clears"])
+        tries = int(stage["mpc"]["tries"])
+        rate = (
+            f"cleared in {clears} of {tries} attempts"
+            if clears
+            else f"0 of {tries} attempts cleared it"
+        )
+    else:
+        rate = "no run has ever finished this session"
     return f"{rate} · this arm {value:.0f} / {width:.0f} px"
 
 
@@ -169,6 +176,7 @@ def hero_context(payload: Dict[str, Any]) -> Dict[str, Any]:
 def render_level_videos(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Render one MP4, GIF and still per stage, and keep the numbers each one drew."""
     rendered: List[Dict[str, Any]] = []
+    strides = {s["episode"]["dataset"]: int(s.get("render_stride", 2)) for s in payload["stages"]}
     for context in render_contexts(payload):
         dataset = dataset_path(os.path.basename(context["dataset"]))
         stem = context["output_stem"]
@@ -178,6 +186,7 @@ def render_level_videos(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
             output_gif=figure_file(f"{stem}.gif"),
             output_still=figure_file(f"{stem}_still.png"),
             output_metrics=None,
+            stride=strides.get(context["dataset"], 2),
             context=drawing_context(context),
         )
         rendered.append(
@@ -254,25 +263,28 @@ def render_clearance_table(clearance: Dict[str, Any]) -> List[str]:
 def render_stage_table(payload: Dict[str, Any]) -> List[str]:
     lines = [
         "| stage | translevel | terrain the buffer holds | rightward walk reaches | "
-        "the actor's episode | share | clearance controller | episode repeats |",
+        "flown by | the episode | share | the engine's verdict |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for stage in payload["stages"]:
         frontier = stage["walk_right_frontier"]
         episode = stage["episode"]
+        evidence = stage["clear_evidence"]
         width = stage_width_px(stage)
-        mpc = stage["mpc"]
         share = episode["progress_px"] / width if width > 0 else float("nan")
+        verdict = (
+            f"**cleared** (left `0x14` for `{evidence['exit_mode']}`)"
+            if evidence["cleared"]
+            else f"no ({evidence['reason']})"
+        )
         lines.append(
             f"| `{stage_name(stage['identity'], stage['map_node'])}` | "
             f"`{stage['identity']['translevel']}` | {width:.0f} px "
             f"({stage['terrain']['terrain_subscreens']} subscreen"
             f"{'s' if stage['terrain']['terrain_subscreens'] != 1 else ''}) | "
             f"{frontier['frontier_px']:.4f} px ({frontier['ended']}) | "
-            f"{episode['progress_px']:.4f} px ({episode['ended']}) | {_pct(share)} | "
-            f"cleared {mpc['clears']} of {mpc['tries']}, best "
-            f"{float(mpc['best_progress_px'] or 0.0):.4f} px | "
-            f"{episode['repeats_the_measured_attempt_px']:.6f} px |"
+            f"`{episode['controller']}` | {episode['progress_px']:.4f} px in "
+            f"{episode['frames']} frames | {_pct(share)} | {verdict} |"
         )
     return lines
 
@@ -422,16 +434,20 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "",
         f"{cleared} of {len(progression['rounds'])} rounds cleared. " + clearance_sentence,
         "",
-        "**One episode per stage.** `scripts/record_level_dashboards.py` records the same channels "
-        "10.60 records at each stage the map hands over - surveyed or unlocked - and measures the "
-        "distance a held RIGHT+Y walk reaches there.",
+        "**One episode per stage, flown by the agent that can finish it.** "
+        "`scripts/record_level_dashboards.py` records the same channels 10.60 records at each "
+        "stage the map hands over - surveyed or unlocked - plus the two channels 10.68 added: "
+        "the full 16-bit tile ids of the window and every live sprite slot. Yoshi's Island 1 is "
+        "flown by the published clearance controller on its seed-7 draw until the engine itself "
+        "ends the stage; the blank house session is walked back out through its door by the "
+        "rule-based runner of 10.68; the other two sessions are documented by the distilled actor "
+        "for a fixed horizon, because 10.68 measured no agent can finish them at all.",
         "",
         *render_stage_table(payload),
         "",
-        "The last column is the recorder's own control: the episode that gets its frames kept is a "
-        "re-run of the attempt that was selected for its progress without keeping anything, and the "
-        "two must agree to the subpixel because the actor and the console are both deterministic. "
-        "Where they would not, one of those claims would be false.",
+        "The verdict column is the engine's own: the mode byte leaving `0x14` for anything other "
+        "than the death animation is a stage the engine ended without losing the player, and "
+        "`0x0B` is a death. No distance proxy appears in that column, on purpose.",
         "",
     ]
     for index in sorted(rendered):

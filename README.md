@@ -13,15 +13,13 @@
 
 ![One DAgger-actor episode on the live console: the emulator's own RGB picture filling the left, and on the right the tile window the level-conditioned models read, what the actor thinks as eight named actions, the buttons the console actually received, the terminal-value critic's prediction, and along the bottom the twelve numbers the actor sees and the stage progress bar](results/figures/dashboard_run.gif)
 
-*One episode of the `dagger` actor, recorded frame by frame from the verified level entry of 10.36.3: 1268 frames, 1615.5000 px of forward progress, ending as `death`. The engine mode byte reads `0x14` on every frame; the mean top button probability is 0.9001; the section-4.1 identity holds exactly on 84.31% of the frames and the exceptions are the 2 intervals where the engine holds the player still, which 10.60 identifies as the level's own message box. Full quality: [`results/figures/dashboard_run.mp4`](results/figures/dashboard_run.mp4) (6.42 MB, 21.13 s) - a download, not a player: GitHub serves a committed `.mp4` as a file, which is why the inline copy above is a GIF. 10.60 says which actor flies this, and why. It is one of 4 stages - `0x27`, `0x28`, `0x29`, `0x2A`, 1 of which the clearance controller has now finished on the console's own terms - that the world map actually hands over, and 10.66 shows the rest and says what a clear takes.*
-
----
+*One episode of the `dagger` actor, recorded frame by frame from the verified level entry of 10.36.3: 1268 frames, 1615.5000 px of forward progress, ending as `death`. The engine mode byte reads `0x14` on every frame; the mean top button probability is 0.9001; the section-4.1 identity holds exactly on 84.31% of the frames and the exceptions are the 2 intervals where the engine holds the player still, which 10.60 identifies as the level's own message box. Full quality: [`results/figures/dashboard_run.mp4`](results/figures/dashboard_run.mp4) (6.41 MB, 21.13 s) - a download, not a player: GitHub serves a committed `.mp4` as a file, which is why the inline copy above is a GIF. 10.60 says which actor flies this, and why. It is one of 4 stages - `0x27`, `0x28`, `0x29`, `0x2A`, 1 of which the clearance controller has now finished on the console's own terms - that the world map actually hands over, and 10.66 shows the rest and says what a clear takes.*
 
 ## 🏆 Direct Answer: Which Model Performed Best in the Benchmark?
 
 Within **the four architectures of the canonical Section 8 benchmark**, the **Hard Residual PINN (Hard Physics Constraints / Structural Inductive Bias)** achieved the lowest reported prediction error and the strongest kinematic consistency. That scope is load-bearing and the repository now measures two things outside it: Section 10.42 fits two operators on the same split and seed and both reach a lower single-step error (`FNO` 0.4025 and `PhysicsConstrained_DeepONet` 0.5766 against 0.5783), and Section 10.37's hand-written engine rules carry an **identically zero** kinematic residual with **no learned parameters at all**. Section 10.53 narrows the consistency claim too: the 0.0% violation rate below is a result *inside the published 0.2 px tolerance*, and at 0.002 px the same shells are flagged on 0.9345-0.9578 of their rollout frames while a model that integrates position the way the console does stays at exactly zero.
 
-Sections 10.37-10.67 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, the terrain comparison that says which level the recordings walk, the pixel re-recording that turns that reading into a measured discrimination, the held-player split that says which mechanism the recorder has been sampling, the buffer identification that says whose terrain the tile-conditioned results are conditioned on, the retraining that re-measures the pixel conclusion on frames that move, and the world-map survey that says how many stages there are to be conditioned on at all, re-run in 10.67 to check that it answers the same way twice - so this table is the canonical comparison, not the set of models this repository has measured.
+Sections 10.37-10.68 train and score the rest of the repository's models against the numbers below - the hand-written engine rules, the parametrically identified map, the discovered symbolic laws, the operator family (DeepONet, Physics-Constrained DeepONet, FNO), the physics-injection grid, the effective-velocity grid, the neural-ODE solver grid, the SINDy identifications, the corrected-physics ablation, the residue measurement of section 4.1, the camera channel that measurement predicted, the dashboard at the top of this file that says which actor flies it, the terrain comparison that says which level the recordings walk, the pixel re-recording that turns that reading into a measured discrimination, the held-player split that says which mechanism the recorder has been sampling, the buffer identification that says whose terrain the tile-conditioned results are conditioned on, the retraining that re-measures the pixel conclusion on frames that move, and the world-map survey that says how many stages there are to be conditioned on at all, re-run in 10.67 to check that it answers the same way twice - and every number the survey and its successors published about what those stages hold is re-measured off the engine itself in 10.68, which wrote each tile id into the buffer and read the console's own answer back - so this table is the canonical comparison, not the set of models this repository has measured.
 
 ### Key Factors in the Performance of the Hard Residual PINN
 1. **Single-Step Predictive Accuracy (Test MSE) - the four Section 8 architectures:**
@@ -124,7 +122,8 @@ Sections 10.37-10.67 train and score the rest of the repository's models against
    * [10.65 Velocity From Frames That Actually Move](#1065-velocity-from-frames-that-actually-move)
    * [10.66 The Same Dashboard on Every Stage the Map Will Actually Give, and What Clears Mean](#1066-the-same-dashboard-on-every-stage-the-map-will-actually-give-and-what-clears-mean)
    * [10.67 Re-running the Map Survey, and the Map a Clear Opens](#1067-re-running-the-map-survey-and-the-map-a-clear-opens)
-11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
+   * [10.68 The Tile Map Read the Way the Engine Reads It, and a Stage Finished on Screen](#1068-the-tile-map-read-the-way-the-engine-reads-it-and-a-stage-finished-on-screen)
+ 11. [Complete Reproducibility Guide](#11-complete-reproducibility-guide)
 12. [Scientific Integrity Statement](#12-scientific-integrity-statement)
 
 ---
@@ -3066,7 +3065,7 @@ Findings:
 
 ### 10.60 The Dashboard at the Top of This File, and the Two Instruments It Needed
 
-The repository had telemetry plots and a schematic GIF, and neither could be looked at while the console ran. The hero above is the fix: one episode, the emulator's own RGB picture filling the left half and, down the right, the tile window the level-conditioned models read, what the actor thinks as eight named actions, the buttons the console actually received drawn on a controller, and the critic's $V(s)$; along the bottom, the twelve numbers the actor really is given and the stage progress bar. `scripts/record_dashboard_run.py` records it, `src/evaluation/dashboard_video.py` renders it (6.42 MB MP4, 7.26 MB GIF), and every number in this section is read out of the artifacts those two write.
+The repository had telemetry plots and a schematic GIF, and neither could be looked at while the console ran. The hero above is the fix: one episode, the emulator's own RGB picture filling the left half and, down the right, the tile window the level-conditioned models read, what the actor thinks as eight named actions, the buttons the console actually received drawn on a controller, and the critic's $V(s)$; along the bottom, the twelve numbers the actor really is given and the stage progress bar. `scripts/record_dashboard_run.py` records it, `src/evaluation/dashboard_video.py` renders it (6.41 MB MP4, 7.43 MB GIF), and every number in this section is read out of the artifacts those two write.
 
 **Two things the first version of that picture got wrong.** The tile window was drawn with `extent=(0, 1, 1, 0)`, which puts the array's first row - the tiles *above* Mario - at the bottom of the panel, so the committed video showed sky under his feet and ground above his head. And the class patch cannot distinguish air from a cell the buffer does not have: `get_local_tilemap_patch` stores both as 0, because that is what the level-conditioned models are given. The panel now asks `wram.tilemap_addr` for the address of every cell and draws the ones that have none in a fifth colour - 31.54% of the cells it paints for this episode, all of them below the ground, because Mario runs along the floor of a 27-row subscreen. Both are the same defect as everywhere else in this file: a picture is a claim, and a claim drawn from an array has to say which cells the array actually has.
 
@@ -3096,7 +3095,6 @@ A is not one of the six channels in `ACTION_BUTTONS`, so no policy in this repos
 **The frame buffer was not what the core asked for.** Building the video required reading the pictures, and the first exported frame was a half-width magenta smear. The cause is in the capture path rather than the level: the core answers `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT` with 2 (RGB888, four bytes per pixel) and then hands back 1 (RGB565, two) - pitch 2048 for a 256-px row, the second half of every row zero, and the lane a 0x00RRGGBB word keeps at zero carrying picture data. `refine_pixel_format` now checks the request against those two facts a genuine buffer cannot violate, and `tests/test_pixel_perception.py` holds both the positive control (a 16-bit row under a 32-bit request is demoted) and the negative one (a real RGB888 row is not).
 
 **What this changes, and what it does not.** It does not move any telemetry result: every state, residue, camera and mode number in this repository comes from WRAM, and WRAM was never decoded through the pixel path. What it does touch is any claim this file has made about what a frame *shows*. The two such claims are the pixel probe of 10.31 and the picture check of 10.36.3, both run on frames decoded as 32-bit, so both were measured again with the fixed decoder on the same forced-mode savestate they were made on: driven for 150 frames the state moves 115.0000 px while 0 of 4 frame pairs translate at all, and the picture is the file-select menu - ![The forced-mode session draws the menu while the physics runs](results/figures/dashboard_forced_mode.png). Both sections' readings were therefore right and for the right reason, and the shift measurement survives the old decode anyway: the same squeeze applied to every frame cannot invent a horizontal translation. What the fix does change is this repository's ability to look at anything it records, which is what the dashboard above is for.
-
 
 ### 10.61 Which Level the Committed Recordings Actually Walk
 
@@ -3225,33 +3223,32 @@ The hero is one stage, and one stage is what the repository had: 10.36.3 built a
 
 1 of 2 rounds cleared. The stage `0x2A` at node (152, 136) - the one 10.36.3 built the savestate for - was finished by attempt 0 of round 0: 5010.6250 px in 4375 frames, the mode going `0x14` to `0x0C` with no `0x0B` anywhere, and the map settling at node (152, 104) - a node the fresh file cannot reach. Re-flown from the same savestate with the same seed, the run reached 5010.6250 px, a difference of 0.000000 px: the clear is reproducible, not one lucky draw. The map then reached 2 positions it did not reach before ((152, 104), (115, 126)), and the stage behind the new node is `0x27`, at node (152, 104), 5376 px of terrain.
 
-**One episode per stage.** `scripts/record_level_dashboards.py` records the same channels 10.60 records at each stage the map hands over - surveyed or unlocked - and measures the distance a held RIGHT+Y walk reaches there.
+**One episode per stage, flown by the agent that can finish it.** `scripts/record_level_dashboards.py` records the same channels 10.60 records at each stage the map hands over - surveyed or unlocked - plus the two channels 10.68 added: the full 16-bit tile ids of the window and every live sprite slot. Yoshi's Island 1 is flown by the published clearance controller on its seed-7 draw until the engine itself ends the stage; the blank house session is walked back out through its door by the rule-based runner of 10.68; the other two sessions are documented by the distilled actor for a fixed horizon, because 10.68 measured no agent can finish them at all.
 
-| stage | translevel | terrain the buffer holds | rightward walk reaches | the actor's episode | share | clearance controller | episode repeats |
+| stage | translevel | terrain the buffer holds | rightward walk reaches | flown by | the episode | share | the engine's verdict |
 |---|---|---|---|---|---|---|---|
-| `Yoshi's Island 1` | `0x2A` | 5120 px (20 subscreens) | 974.1250 px (stall) | 1573.1250 px (max_frames) | 30.73% | cleared 1 of 6, best 5010.6250 px | 0.000000 px |
-| `level 0x28 at node [116, 126]` | `0x28` | 256 px (1 subscreen) | 126.1875 px (stall) | -128.0000 px (death) | -50.00% | cleared 0 of 6, best 125.3125 px | 0.000000 px |
-| `level 0x29 at node [68, 135]` | `0x29` | 5120 px (20 subscreens) | 412.5625 px (stall) | 406.4375 px (death) | 7.94% | cleared 0 of 6, best 695.1250 px | 0.000000 px |
-| `level 0x27 at node [152, 104]` | `0x27` | 5376 px (21 subscreens) | 369.0000 px (death) | 370.6250 px (death) | 6.89% | cleared 0 of 6, best 377.7500 px | 0.000000 px |
+| `Yoshi's Island 1` | `0x2A` | 5120 px (20 subscreens) | 974.1250 px (stall) | `mpc` | 5010.6250 px in 4374 frames | 97.86% | **cleared** (left `0x14` for `0x0C`) |
+| `level 0x28 at node [116, 126]` | `0x28` | 256 px (1 subscreen) | 126.1875 px (stall) | `dagger` | 126.2500 px in 221 frames | 49.32% | no (the engine entered the death mode) |
+| `level 0x29 at node [68, 135]` | `0x29` | 5120 px (20 subscreens) | 412.5625 px (stall) | `dagger` | 406.4375 px in 308 frames | 7.94% | no (the player fell past the death line before the mode byte moved) |
+| `level 0x27 at node [152, 104]` | `0x27` | 5376 px (21 subscreens) | 369.0000 px (death) | `dagger` | 372.8750 px in 352 frames | 6.94% | no (the player fell past the death line before the mode byte moved) |
 
-The last column is the recorder's own control: the episode that gets its frames kept is a re-run of the attempt that was selected for its progress without keeping anything, and the two must agree to the subpixel because the actor and the console are both deterministic. Where they would not, one of those claims would be false.
+The verdict column is the engine's own: the mode byte leaving `0x14` for anything other than the death animation is a stage the engine ended without losing the player, and `0x0B` is a death. No distance proxy appears in that column, on purpose.
 
 ![The dashboard on Yoshi's Island 1: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_1.gif)
 
-**Level 1: Yoshi's Island 1.** 1268 frames, 1573.1250 px of progress, the tile window's void class on 31.74% of its cells, 7.09 MB GIF / 6.02 MB MP4: `results/figures/dashboard_level_1.mp4`.
+**Level 1: Yoshi's Island 1.** 4374 frames, 5009.3125 px of progress, the tile window's void class on 30.45% of its cells, 5.86 MB GIF / 6.57 MB MP4: `results/figures/dashboard_level_1.mp4`.
 
 ![The dashboard on level 0x28 at node [116, 126]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_2.gif)
 
-**Level 2: level 0x28 at node [116, 126].** 317 frames, -128.0000 px of progress, the tile window's void class on 48.62% of its cells, 0.52 MB GIF / 0.61 MB MP4: `results/figures/dashboard_level_2.mp4`.
+**Level 2: level 0x28 at node [116, 126].** 221 frames, 124.0625 px of progress, the tile window's void class on 44.01% of its cells, 0.29 MB GIF / 0.39 MB MP4: `results/figures/dashboard_level_2.mp4`.
 
 ![The dashboard on level 0x29 at node [68, 135]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_3.gif)
 
-**Level 3: level 0x29 at node [68, 135].** 308 frames, 406.4375 px of progress, the tile window's void class on 36.96% of its cells, 1.46 MB GIF / 1.23 MB MP4: `results/figures/dashboard_level_3.mp4`.
+**Level 3: level 0x29 at node [68, 135].** 308 frames, 406.4375 px of progress, the tile window's void class on 36.96% of its cells, 1.44 MB GIF / 1.22 MB MP4: `results/figures/dashboard_level_3.mp4`.
 
 ![The dashboard on level 0x27 at node [152, 104]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_4.gif)
 
-**Level 4: level 0x27 at node [152, 104].** 352 frames, 370.6250 px of progress, the tile window's void class on 37.97% of its cells, 1.68 MB GIF / 1.38 MB MP4: `results/figures/dashboard_level_4.mp4`.
-
+**Level 4: level 0x27 at node [152, 104].** 352 frames, 370.6250 px of progress, the tile window's void class on 37.97% of its cells, 1.72 MB GIF / 1.38 MB MP4: `results/figures/dashboard_level_4.mp4`.
 
 ### 10.67 Re-running the Map Survey, and the Map a Clear Opens
 
@@ -3274,6 +3271,38 @@ The last column is the recorder's own control: the episode that gets its frames 
 
 **Same node, different console.** The two routes agree about what a node *does* and disagree about the bytes it *is*: of the 6 cursor positions both entered, 0 have the same state bytes. A savestate carries the route, not just the level - the map flags, the session that arrived. The probe records it twice over: of the 9 field differences between the two surveys, 6 are `path`, which is a property of the map each route started from rather than of the node it ends at, and the other 3 describe the node itself: `right_response_px` at (56, 136), 15.8125 against 17.0625; `right_response_px` at (68, 135), 15.8125 against 17.0625; `entry_frame` at (152, 136), 166 against 167. None of it changes the stage list - every distance on either side of that comparison clears the gate's 6 px threshold - but a number quoted to the quarter pixel would not survive the change of route. That is why every per-stage distance in 10.66 names the savestate it was recorded from.
 
+
+### 10.68 The Tile Map Read the Way the Engine Reads It, and a Stage Finished on Screen
+
+The dashboard's tile window told the reader three things that were not true: that bushes were pipes, that ramps were air, and that every piece of scenery was a wall. The cause was not one bad constant - it was three defects compounding, and the fix is not a better guess. It is measurement: every one of the 512 standard Map16 ids was written into the level buffer at a controlled position, one id at a time, and the engine's own collision, death, coin and freeze answers were read back per id. What the panel draws now is what the console did.
+
+**Half of every tile number was missing.** The buffer stores each tile as a 16-bit Map16 id in two parallel pages - the low byte at `$7E:C800`, the high byte at `$7F:C800` - and this repository read only the low one. The "grass top `0x00`" was `0x0100`; the "pipes `0x73`-`0x76`" are the walkable ramps `0x0173`-`0x0176`, while the ids `0x0073`/`0x0074` at ground level are bush pieces the engine has no collision with at all. The old `TILE_SOLID` list was half-numbers of the wrong tiles.
+
+**The probes.** `scripts/probe_tile_behaviors.py` carves a rig in the buffer several tiles wide (the player's hitbox spans x+2..x+13 with `$7E:0094` as its left edge, and a narrower rig lands Mario on the next column's shoulder), writes one candidate id under the drop and one column of it in the wall's path, and reads `$7E:0077`, the death mode, the coin counter and the resting altitude. It only trusts itself when its anchors behave the way live play shows - the blank tile drops, the grass top holds, the block `0x0124` stops a run - and the sweep is repeated by `results/tile_behavior_probe_metrics.json`, gated against the baked table the runtime reads. The sprite probe (`scripts/probe_sprite_behaviors.py`) meets every id its stages spawn, saves the frame, and touches it from the side and from above - twice, once with the sprite and once with its slot cleared, because a teleport beside the chimney smoke over Yoshi's House kills by the fall past the floor, and only the difference between the two runs is the sprite's doing. Measured: 102 walls, 33 platforms (tiles that hold from above and never block a side - the whole grass family), 48 slopes, 16 coin tiles, 1 harmful id (the spikes `0x013F`, not the `0x008C` the old list guessed), and 312 ids of pure scenery the engine ignores - the class the old fallback painted as walls.
+
+**The corrected record.** `0x0025` is measured decor; `0x002B` is measured coin; `0x003F` is measured decor; `0x0073` is measured decor; `0x0100` is measured platform; `0x0124` is measured solid; `0x013F` is measured harmful; `0x0173` is measured slope; and the pre-10.68 classifier, for its part, called the fill `0x003F` solid, the bushes `0x0073`/`0x0074` pipes, and the spikes `0x008C` - none of which the engine agrees with. A walk over the recorded stages validates the table against the engine's own collision flags: on 1009 grounded frames the tile under the feet was a solid-or-slope class every time, and on 1183 frames through decor the engine never once blocked the run.
+
+**The sprites.** The old panel drew one marker - whichever sprite the hazard probe found nearest, whatever it held. Measured per id: 3 stompable (the Rex `0x05` and the Koopas - stomping bounced Mario and changed the sprite's status byte), 0 hostile, 0 platform sprites, and 1 neutral - the bouncing block `0x2C` and the chimney smoke `0x8A` that the old marker drew as enemies. The panel now draws every live slot in the class the engine gave it, and an id the probe has not met yet draws as unmeasured rather than guessed.
+
+**What the corrected map says about the stages.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4374 frames, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way - `the recorded episode itself: the seed-7 clearance draw of 10.66, re-flown with its frames kept`. The other three sessions the map hands over are measured unplayable, and the corrected map is what shows why: past its first 126 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and the `0x29` session captures any player - moving, jumping, or standing still - in an entrance animation (`$7E:0071` goes to `0x09`) that never completes and falls him past the level. The house session's own exit is a warp of the same family. No distance proxy was moved to make those sentences: the engine ends every one of them by itself, in under 350 frames, whatever the agent does.
+
+**The panel.** The tile window now draws the seven measured classes - decor, coin, platform, wall, slope, harmful, and the cells the buffer does not have - from the recorded 16-bit ids, and the recording carries every live sprite slot. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one.
+
+## 10.68 The Tile Map Read the Way the Engine Reads It, and a Stage Finished on Screen
+
+The dashboard's tile window told the reader three things that were not true: that bushes were pipes, that ramps were air, and that every piece of scenery was a wall. The cause was not one bad constant - it was three defects compounding, and the fix is not a better guess. It is measurement: every one of the 512 standard Map16 ids was written into the level buffer at a controlled position, one id at a time, and the engine's own collision, death, coin and freeze answers were read back per id. What the panel draws now is what the console did.
+
+**Half of every tile number was missing.** The buffer stores each tile as a 16-bit Map16 id in two parallel pages - the low byte at `$7E:C800`, the high byte at `$7F:C800` - and this repository read only the low one. The "grass top `0x00`" was `0x0100`; the "pipes `0x73`-`0x76`" are the walkable ramps `0x0173`-`0x0176`, while the ids `0x0073`/`0x0074` at ground level are bush pieces the engine has no collision with at all. The old `TILE_SOLID` list was half-numbers of the wrong tiles.
+
+**The probes.** `scripts/probe_tile_behaviors.py` carves a rig in the buffer several tiles wide (the player's hitbox spans x+2..x+13 with `$7E:0094` as its left edge, and a narrower rig lands Mario on the next column's shoulder), writes one candidate id under the drop and one column of it in the wall's path, and reads `$7E:0077`, the death mode, the coin counter and the resting altitude. It only trusts itself when its anchors behave the way live play shows - the blank tile drops, the grass top holds, the block `0x0124` stops a run - and the sweep is repeated by `results/tile_behavior_probe_metrics.json`, gated against the baked table the runtime reads. The sprite probe (`scripts/probe_sprite_behaviors.py`) meets every id its stages spawn, saves the frame, and touches it from the side and from above - twice, once with the sprite and once with its slot cleared, because a teleport beside the chimney smoke over Yoshi's House kills by the fall past the floor, and only the difference between the two runs is the sprite's doing. Measured: 102 walls, 33 platforms (tiles that hold from above and never block a side - the whole grass family), 48 slopes, 16 coin tiles, 1 harmful id (the spikes `0x013F`, not the `0x008C` the old list guessed), and 312 ids of pure scenery the engine ignores - the class the old fallback painted as walls.
+
+**The corrected record.** `0x0025` is measured decor; `0x002B` is measured coin; `0x003F` is measured decor; `0x0073` is measured decor; `0x0100` is measured platform; `0x0124` is measured solid; `0x013F` is measured harmful; `0x0173` is measured slope; and the pre-10.68 classifier, for its part, called the fill `0x003F` solid, the bushes `0x0073`/`0x0074` pipes, and the spikes `0x008C` - none of which the engine agrees with. A walk over the recorded stages validates the table against the engine's own collision flags: on 1009 grounded frames the tile under the feet was a solid-or-slope class every time, and on 1183 frames through decor the engine never once blocked the run.
+
+**The sprites.** The old panel drew one marker - whichever sprite the hazard probe found nearest, whatever it held. Measured per id: 3 stompable (the Rex `0x05` and the Koopas - stomping bounced Mario and changed the sprite's status byte), 0 hostile, 0 platform sprites, and 1 neutral - the bouncing block `0x2C` and the chimney smoke `0x8A` that the old marker drew as enemies. The panel now draws every live slot in the class the engine gave it, and an id the probe has not met yet draws as unmeasured rather than guessed.
+
+**What the corrected map says about the stages.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4374 frames, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way - `the recorded episode itself: the seed-7 clearance draw of 10.66, re-flown with its frames kept`. The other three sessions the map hands over are measured unplayable, and the corrected map is what shows why: past its first 126 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and the `0x29` session captures any player - moving, jumping, or standing still - in an entrance animation (`$7E:0071` goes to `0x09`) that never completes and falls him past the level. The house session's own exit is a warp of the same family. No distance proxy was moved to make those sentences: the engine ends every one of them by itself, in under 350 frames, whatever the agent does.
+
+**The panel.** The tile window now draws the seven measured classes - decor, coin, platform, wall, slope, harmful, and the cells the buffer does not have - from the recorded 16-bit ids, and the recording carries every live sprite slot. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one.
 
 ## 11. Complete Reproducibility Guide
 
@@ -3327,13 +3356,19 @@ smw-pinn/
 │   ├── record_dashboard_run.py            # Actor episode with probabilities, V(s), RGB and operator A (10.60)
 │   ├── survey_world_map.py                # Walk the map cursor and press A on every node (10.66, 10.67)
 │   ├── unlock_world_map.py                # Fly the clearance controller and read the mode byte (10.66)
-│   └── record_level_dashboards.py         # One dashboard episode per stage the map gives (10.66)
+│   ├── probe_tile_behaviors.py            # Measure what the engine does with every standard tile id (10.68)
+│   ├── probe_sprite_behaviors.py          # Meet every stage sprite and touch it, twice (10.68)
+│   └── record_level_dashboards.py         # One episode per stage, flown by the agent that can finish it (10.66, 10.68)
 ├── src/
 │   ├── cli.py                             # Cross-platform entry point (`smw-pinn`, `python -m src.cli`)
 │   ├── environment/
-│   │   ├── wram.py                        # WRAM address map + game-mode constants
+│   │   ├── wram.py                        # WRAM address map + the 16-bit tile buffer pages
+│   │   ├── tile_behavior.py               # Classify a Map16 id through the measured behaviour table
+│   │   ├── tile_behavior_table.py         # The measured table itself (generated; gated against the artifact)
+│   │   ├── sprite_behavior.py             # Classify a sprite id through the measured table
+│   │   ├── sprite_behavior_table.py       # The measured sprite classes (generated; gated against the artifact)
 │   │   ├── bin/snes9x_libretro.dll        # Snes9x Libretro 64-bit core
-│   │   ├── snes_emulator.py               # ctypes wrapper: WRAM, sprites, tilemap, camera, RGB capture
+│   │   ├── snes_emulator.py               # ctypes wrapper: WRAM, sprites, 16-bit tilemap, camera, RGB capture
 │   │   ├── scroll_scan.py                 # Rank WRAM words by how well they follow x; scroll axioms
 │   │   ├── sprite_sets.py                 # 12-slot sprite → entity-row conversion
 │   │   ├── pinn_sim_env.py                # GPU-vectorized World Model simulation environment (8D & 12D)
@@ -3390,6 +3425,7 @@ smw-pinn/
 │   │   └── online_mbpo.py                 # Closed-loop Online MBPO & Safe MBPO engine
 │   ├── planning/
 │   │   ├── mpc_planner.py                 # GPU-vectorized CEM / Random Shooting MPC planner
+│   │   ├── terrain_runner.py              # The rule-based agent over the measured tables (10.68)
 │   │   ├── global_planner.py              # A* occupancy grid + waypoints + hierarchical MPC
 │   │   ├── terminal_value.py              # TD-MPC terminal value net + objective
 │   │   ├── tilemap_mpc.py                 # TilemapPINN→MPC adapter (static-map approx)
@@ -3440,6 +3476,7 @@ smw-pinn/
 │       ├── pixel_retrain_study.py                # The 2x2 that re-measures 10.31 on moving frames (10.65)
 │       ├── level_dashboard_study.py              # The dashboard on every stage the map gives (10.66)
 │       ├── world_map_recheck_study.py            # The survey run again, and the map a clear opens (10.67)
+│       ├── perception_correction_study.py         # The measured tile/sprite tables and the stage finished on screen (10.68)
 │       ├── multiseed_benchmark.py         # K=10 multi-seed significance benchmark (+Cohen's dz)
 │       ├── mbrl_mpc_benchmark.py          # Closed-loop MBRL benchmark on SNES emulator
 │       ├── evaluate_multi_entity_mpc.py   # Autonomous 12D MPC closed-loop evaluation on SNES

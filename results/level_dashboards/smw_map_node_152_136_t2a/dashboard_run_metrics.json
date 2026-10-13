@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T05:00:04+00:00",
-    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
+    "generated_utc": "2026-10-13T22:09:44+00:00",
+    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -10,7 +10,7 @@
     "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
     "cuda_version": "12.1",
     "numpy": "1.26.4",
-    "command": "python scripts/record_dashboard_run.py --controller dagger"
+    "command": "python scripts/record_dashboard_run.py --controller mpc"
   },
   "study": "One controller episode recorded with everything the README dashboard shows: the actor's per-button probabilities, the critic V(s) fitted on the published clearance returns, the buttons the emulator actually received after the published reflex overrides and the jump edge-trigger pulse, the tile patch and camera the actor does not see, an RGB frame, the section-4.1 identity residue of each step, and the paused-player flag of 10.59 together with the operator's A presses that clear it.",
   "protocol": {
@@ -20,9 +20,12 @@
       "translevel": "0x2A"
     },
     "savestate_route": "entered through the world map; the survey's own capture step saved the state 180 frames after the fade in, before the handoff probes",
-    "controller": "dagger",
-    "controller_kind": "button head",
-    "checkpoint": "dagger_policy_best.pt",
+    "controller": "mpc",
+    "controller_kind": "planner",
+    "checkpoint": "pinn_multi_entity_best.pt",
+    "planner_seed": 7,
+    "goal_px": null,
+    "episode_end_rule": "the engine's own mode byte leaving 0x14",
     "buttons": [
       "B",
       "Y",
@@ -41,7 +44,7 @@
       "WALK_LEFT",
       "RUN_LEFT"
     ],
-    "reflex_overrides": "hazard within 75 px and grounded, or a right wall while grounded",
+    "reflex_overrides": "none: the clearance draw of 10.66 is the planner alone",
     "jump_pulse": "B released on every even frame while held and grounded",
     "value_critic": {
       "checkpoint": "terminal_value_best.pt",
@@ -64,56 +67,49 @@
     ],
     "frame_capture": {
       "requested_pixel_format": 2,
-      "decoded_as_pixel_format": 1,
+      "decoded_as_pixel_format": 2,
       "note": "0 = 0RGB1555, 1 = RGB565, 2 = RGB888; the two differ because the core asks for a 32-bit buffer and hands back a 16-bit one"
     },
     "device": "cuda"
   },
   "run": {
-    "frames": 1268,
-    "ended": "max_frames",
-    "progress_px": 1573.8125,
-    "wall_clock_s": 3.93,
-    "fps": 322.7,
-    "share_of_frames_live": 0.7602523659305994,
-    "camera_travel_px": 1483.0,
+    "frames": 4374,
+    "ended": "engine_left_0x14_to_0x0C",
+    "progress_px": 5010.625,
+    "wall_clock_s": 285.59,
+    "fps": 15.3,
+    "share_of_frames_live": 0.9778235025148605,
+    "camera_travel_px": 4855.0,
     "screen_x_range_px": [
       16.0,
-      141.375
+      170.3125
     ],
-    "mean_max_button_probability": 0.8914848683572342,
-    "frames_with_no_button_above_half": 0,
-    "frames_where_reflex_overrode": 15,
-    "frames_where_pulse_released_B": 14,
-    "frames_under_operator_A": 46,
-    "pauses_observed": 2,
-    "pauses_cleared_by_the_operator": 2,
-    "first_pause_at_progress_px": 952.75,
-    "value_start_px": 201.41863496655105,
-    "value_end_px": 180.10299161794768,
+    "mean_max_button_probability": 0.9919981710105167,
+    "frames_with_no_button_above_half": 35,
+    "frames_where_reflex_overrode": 0,
+    "frames_where_pulse_released_B": 0,
+    "frames_under_operator_A": 55,
+    "pauses_observed": 1,
+    "pauses_cleared_by_the_operator": 1,
+    "first_pause_at_progress_px": 4945.3125,
+    "value_start_px": 201.4052803561727,
+    "value_end_px": 70.93865900355965,
     "value_max_px": 211.17545370514227,
-    "residue_exact_share": 0.7602523659305994,
-    "residue_abs_max_subpixels": 29.0,
+    "residue_exact_share": 0.8084133516232281,
+    "residue_abs_max_subpixels": 48.0,
     "mode_bytes_seen": [
+      12,
       20
     ]
   },
   "dataset": "data\\raw\\smw_dashboard_run_smw_map_node_152_136_t2a.npz",
   "pauses": [
     {
-      "frame": 607,
-      "progress_px": 952.75,
+      "frame": 4278,
+      "progress_px": 4945.3125,
       "mode_byte": 20,
-      "held_frames": 152,
-      "operator_frames": 23,
-      "resumed": true
-    },
-    {
-      "frame": 809,
-      "progress_px": 1031.5,
-      "mode_byte": 20,
-      "held_frames": 152,
-      "operator_frames": 23,
+      "held_frames": 64,
+      "operator_frames": 55,
       "resumed": true
     }
   ]

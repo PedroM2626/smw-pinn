@@ -1,0 +1,198 @@
+{
+  "_meta": {
+    "generated_utc": "2026-10-13T19:53:54+00:00",
+    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+    "git_dirty": true,
+    "python": "3.10.11",
+    "platform": "Windows 10 (AMD64)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cuda_version": "12.1",
+    "numpy": "1.26.4",
+    "command": "python -m scripts.probe_sprite_behaviors"
+  },
+  "study": "What the engine itself does when Mario touches every sprite id the recorded stages spawn, measured by meeting each sprite in its own stage and reading the console's death, power-up, coin and sprite-status responses to a side contact and a stomp.",
+  "protocol": {
+    "stages": [
+      "smw_map_node_152_136_t2a.state",
+      "smw_map_node_68_135_t29.state",
+      "smw_map_round_1_152_104_t27.state",
+      "smw_map_node_116_126_t28.state"
+    ],
+    "walk_frames": 900,
+    "contact_frames": 45,
+    "ids_probed": 4,
+    "class_rule": "hostile: the contact or the stomp killed a small Mario with the sprite present and not with its slot cleared (a fall past the floor kills both runs and says nothing about the sprite); stompable: the stomp bounced Mario or changed the sprite's status byte; platform: the stomp held Mario up where the cleared run fell; neutral: the engine ignored the contact"
+  },
+  "sprites": [
+    {
+      "sprite": "0x05",
+      "met_in_stage": "0x2A",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "sprite_status_before": 9,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "sprite_status_before": 9,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    },
+    {
+      "sprite": "0x8a",
+      "met_in_stage": "0x28",
+      "contact": {
+        "ran": true,
+        "mario_died": true,
+        "final_mode": "0x0b",
+        "final_y": 64.0
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": true,
+        "final_mode": "0x0b",
+        "final_y": 64.0
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": true,
+        "final_mode": "0x0b",
+        "final_y": 64.0,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 64.0,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": true,
+        "final_mode": "0x0b",
+        "final_y": 64.0,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 64.0,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x9f",
+      "met_in_stage": "0x29",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 301.6
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 324.9,
+        "bounced": true,
+        "held_up": false,
+        "rest_y": 324.9,
+        "sprite_status_before": 1,
+        "sprite_status_after": 2,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "sprite_status_before": 1,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    },
+    {
+      "sprite": "0xb9",
+      "met_in_stage": "0x2A",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 305.2,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 305.2,
+        "sprite_status_before": 1,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "sprite_status_before": 1,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    }
+  ],
+  "class_counts": {
+    "stompable": 3,
+    "neutral": 1
+  }
+}

@@ -36,7 +36,7 @@ import json
 import os
 import sys
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -154,7 +154,110 @@ class DaggerButtonActor:
         }
 
 
-ACTORS = {"ppo": PpoPrimitiveActor, "dagger": DaggerButtonActor}
+class MpcClearanceActor:
+    """The published clearance controller of 10.37/10.66, the one that cleared Yoshi's Island 1.
+
+    The planner samples candidate action sequences through the learned world model, so it has no
+    per-button probabilities to show; what it does have is the primitive it committed to, and the
+    panel draws that as a one-hot distribution labelled as the planner's choice.
+    """
+
+    name = "mpc"
+    kind = "planner"
+    checkpoint = "pinn_multi_entity_best.pt"
+
+    def __init__(self, device: str, seed: Optional[int] = None) -> None:
+        import random
+
+        from scripts.unlock_world_map import build_mpc
+
+        # built first, seeded after: the 10.66 flight built its controller once and seeded inside
+        # `fly`, so whatever the construction consumes from the streams happens before the draw
+        # is drawn - seeding in the other order reproduces a different run
+        self.controller = build_mpc(torch.device(device))
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed % (2**32))
+            random.seed(seed)
+
+    def act(self, s_vec: np.ndarray, device: str) -> Tuple[Dict[str, bool], Dict[str, Any]]:
+        from src.evaluation.evaluate_full_level_clearance import action_vector_to_dict
+
+        vec, _info = self.controller.plan(s_vec)
+        vec = np.asarray(vec, dtype=np.float64).ravel()
+        buttons = action_vector_to_dict(vec)
+        # the planner commits to one of the eight primitives; the panel draws that commitment as
+        # the one-hot it is, labelled as the planner's choice rather than a sampled distribution
+        chosen = int(np.argmax(np.abs(np.asarray(ACTION_MATRIX) - vec).sum(axis=1)))
+        onehot = np.zeros(len(ACTION_MATRIX), dtype=np.float32)
+        onehot[chosen] = 1.0
+        return buttons, {
+            "button_probs": np.clip(vec, 0.0, 1.0).astype(np.float32),
+            "primitive_probs": onehot,
+            "chosen_primitive": chosen,
+        }
+
+
+class TerrainRunnerActor:
+    """The 10.68 rule-based agent: measured terrain and sprite tables, six rules, no sampling.
+
+    The runner reads the level buffer and the sprite slots through the emulator, so `record()`
+    binds the emulator once the episode starts. Its message-box A pulses flow through the
+    recorded buttons rather than a hidden channel, and the operator column counts them.
+    """
+
+    name = "terrain-runner"
+    kind = "rule-based agent"
+    checkpoint = "none (the measured behaviour tables)"
+
+    def __init__(self, device: str, direction: str = "RIGHT") -> None:
+        from src.planning.terrain_runner import TerrainRunner
+
+        self.runner = TerrainRunner(direction=direction)
+        self._emu = None
+
+    def bind(self, emu) -> None:
+        self._emu = emu
+
+    def act(self, s_vec: np.ndarray, device: str) -> Tuple[Dict[str, bool], Dict[str, Any]]:
+        state = {
+            "x": float(s_vec[0]),
+            "y": float(s_vec[1]),
+            "vx": float(s_vec[2]),
+            "vy": float(s_vec[3]),
+            "c_ground": float(s_vec[4]),
+            "c_ceiling": float(s_vec[5]),
+            "c_left": float(s_vec[6]),
+            "c_right": float(s_vec[7]),
+        }
+        raw = self.runner.act(self._emu, state)
+        # A stays in the button dict (the operator column records it) but is not part of the
+        # six-button action set the executed vector and the controller graphic index by
+        buttons = {b: bool(raw.get(b, False)) for b in ACTION_BUTTONS}
+        if raw.get("A", False):
+            buttons["A"] = True
+        chosen = 0
+        for index, vec in enumerate(ACTION_MATRIX):
+            if all(
+                bool(vec[i]) == bool(buttons.get(b, False)) for i, b in enumerate(ACTION_BUTTONS)
+            ):
+                chosen = index
+                break
+        onehot = np.zeros(len(ACTION_MATRIX), dtype=np.float32)
+        onehot[chosen] = 1.0
+        return buttons, {
+            "button_probs": np.asarray(ACTION_MATRIX[chosen], dtype=np.float32),
+            "primitive_probs": onehot,
+            "chosen_primitive": chosen,
+        }
+
+
+ACTORS = {
+    "ppo": PpoPrimitiveActor,
+    "dagger": DaggerButtonActor,
+    "mpc": MpcClearanceActor,
+    "terrain-runner": TerrainRunnerActor,
+}
 
 
 def apply_published_overrides(
@@ -261,21 +364,41 @@ def record(
     rgb_height: int,
     operator_limit: int = OPERATOR_A_LIMIT,
     keep_frames: bool = True,
+    goal_px: Optional[float] = 1900.0,
+    seed: Optional[int] = None,
+    runner_direction: str = "RIGHT",
+    apply_overrides: bool = True,
+    operator_delay: int = OPERATOR_A_DELAY,
+    warmup_frames: int = 5,
     savestate_route: str = (
         "entered through the world map with the control-handoff gate of 10.36.3 satisfied"
     ),
     dataset_path: str = DATASET_PATH,
     output_dir: str = "results",
 ) -> Dict[str, Any]:
-    actor = ACTORS[kind](device)
+    """Record one episode with everything the dashboard video shows.
+
+    `goal_px=None` lets the episode run until the engine itself ends it - the mode byte leaving
+    0x14, which is the clear/death discriminator of 10.66 rather than a distance proxy - so the
+    featured completion is the engine's own verdict. `seed` is passed to the planner when the
+    featured arm samples one; seed 7 is the draw that cleared Yoshi's Island 1.
+    """
+    if kind == "mpc":
+        actor = MpcClearanceActor(device, seed=seed)
+    elif kind == "terrain-runner":
+        actor = TerrainRunnerActor(device, direction=runner_direction)
+    else:
+        actor = ACTORS[kind](device)
     value_net, value_stats = load_value_critic(device)
 
     emu = SnesLibretroEmulator(CORE_PATH)
     emu.load_rom(ROM_PATH)
     emu.enable_frame_capture(True)
+    if hasattr(actor, "bind"):
+        actor.bind(emu)
     with open(state_path, "rb") as fh:
         savestate = fh.read()
-    emu.start_episode(savestate)
+    emu.start_episode(savestate, warmup_frames=warmup_frames)
     stage_identity = {
         "mode_at_start": f"0x{emu.get_game_mode():02X}",
         "translevel": f"0x{emu.read_wram_u8(wram.ADDR_TRANSLEVEL):02X}",
@@ -294,6 +417,8 @@ def record(
         "camera",
         "mode",
         "patch",
+        "tile_ids",
+        "sprites",
         "frame_rgb",
         "live",
         "residue",
@@ -336,9 +461,16 @@ def record(
         prev_record = s_vec.copy()
 
         buttons, info = actor.act(s_vec, device)
-        buttons, reflex, pulse = apply_published_overrides(state, buttons, frame, prev_b)
+        if apply_overrides:
+            buttons, reflex, pulse = apply_published_overrides(state, buttons, frame, prev_b)
+        else:
+            # the published clearance draw of 10.66 is the planner alone; layering the reflex
+            # vaults on top of it would fly a different, unaudited controller and call it the
+            # reproduction of a seed whose whole point is that it reproduces
+            reflex = False
+            pulse = False
         operator = False
-        if paused_run >= PAUSE_TRIGGER + OPERATOR_A_DELAY:
+        if paused_run >= PAUSE_TRIGGER + operator_delay:
             # 10.59's frozen player record is the engine's own message box, and the box waits for
             # the A button - which is not in this repository's six-button action set. So no policy
             # here can dismiss it, and an episode that reaches a box ends there unless somebody
@@ -359,8 +491,13 @@ def record(
             buttons = {**buttons, "A": (paused_run % 8) < 4}
             operator = True
             operator_run += 1
+        # a rule-based agent presses A on the same boxes through its own hygiene layer; the
+        # controller graphic must light that A whoever pressed it
+        operator = operator or bool(buttons.get("A", False))
         prev_b = buttons.get("B", False)
-        executed = np.array([1.0 if buttons[b] else 0.0 for b in ACTION_BUTTONS], np.float32)
+        executed = np.array(
+            [1.0 if buttons.get(b, False) else 0.0 for b in ACTION_BUTTONS], np.float32
+        )
 
         emu.set_input(buttons)
         emu.step_frame()
@@ -377,6 +514,21 @@ def record(
             if keep_frames
             else None
         )
+        tile_ids = (
+            emu.read_tile_ids(state["x"], state["y"], radius=PATCH_RADIUS) if keep_frames else None
+        )
+        if keep_frames:
+            from src.environment.sprite_behavior import live_slots
+
+            sprite_rows = np.zeros((12, 4), dtype=np.float32)
+            for sprite in live_slots(emu):
+                if 0 <= sprite["slot"] < 12:
+                    sprite_rows[sprite["slot"]] = (
+                        float(sprite["x"]) - float(state["x"]),
+                        float(sprite["y"]) - float(state["y"]),
+                        float(sprite["id"]),
+                        float(sprite["status"]),
+                    )
 
         rows["frame"].append(frame)
         rows["state"].append(s_vec)
@@ -384,6 +536,8 @@ def record(
         if kind == "ppo":
             primitive_probs.append(info["primitive_probs"])
         rows["chosen"].append(int(info["chosen_primitive"]))
+        if "primitive_probs" in info:
+            primitive_probs.append(info["primitive_probs"])
         rows["value"].append(value_of(value_net, value_stats, s_vec))
         rows["executed"].append(executed)
         rows["reflex"].append(1.0 if reflex else 0.0)
@@ -393,14 +547,22 @@ def record(
         rows["mode"].append(float(emu.get_game_mode()))
         if keep_frames:
             rows["patch"].append(patch)
+            rows["tile_ids"].append(tile_ids)
+            rows["sprites"].append(sprite_rows)
             rows["frame_rgb"].append(rgb)
         rows["live"].append(1.0 if live else 0.0)
         rows["residue"].append(float(residue))
         after = nxt
+        mode_now = emu.get_game_mode()
+        if mode_now != wram.GAME_MODE_INTERACTIVE:
+            # the engine's own verdict: 0x0B is the death animation, anything else is the
+            # stage's exit sequence, and the mode transitions say which (10.66's discriminator)
+            ended = f"engine_left_0x14_to_0x{mode_now:02X}"
+            break
         if after["y"] > wram.DEATH_Y:
             ended = "death"
             break
-        if after["x"] - start_x >= 1900.0:
+        if goal_px is not None and after["x"] - start_x >= goal_px:
             ended = "goal"
             break
 
@@ -428,6 +590,8 @@ def record(
     }
     if keep_frames:
         save["patches"] = np.asarray(rows["patch"], dtype=np.int8)
+        save["tile_ids"] = np.asarray(rows["tile_ids"], dtype=np.int32)
+        save["sprites"] = np.asarray(rows["sprites"], dtype=np.float32)
         save["rgb"] = np.asarray(rows["frame_rgb"], dtype=np.uint8)
     if primitive_probs:
         save["primitive_probs"] = np.asarray(primitive_probs, dtype=np.float32)
@@ -451,9 +615,20 @@ def record(
             "controller": kind,
             "controller_kind": actor.kind,
             "checkpoint": actor.checkpoint,
+            "planner_seed": seed,
+            "goal_px": goal_px,
+            "episode_end_rule": (
+                "the engine's own mode byte leaving 0x14"
+                if goal_px is None
+                else f"the published {goal_px:.0f} px distance proxy"
+            ),
             "buttons": list(ACTION_BUTTONS),
             "primitives": PRIMITIVE_NAMES,
-            "reflex_overrides": "hazard within 75 px and grounded, or a right wall while grounded",
+            "reflex_overrides": (
+                "hazard within 75 px and grounded, or a right wall while grounded"
+                if apply_overrides
+                else "none: the clearance draw of 10.66 is the planner alone"
+            ),
             "jump_pulse": "B released on every even frame while held and grounded",
             "value_critic": {
                 "checkpoint": os.path.basename(VALUE_CKPT),
@@ -530,6 +705,18 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--probe-frames", type=int, default=600)
     parser.add_argument("--max-frames", type=int, default=2000)
     parser.add_argument("--operator-limit", type=int, default=120)
+    parser.add_argument(
+        "--goal-px",
+        type=float,
+        default=1900.0,
+        help="end the episode at the distance proxy; 'none' ends it when the engine leaves 0x14",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="seed the planner's sampling; 7 is the draw that cleared Yoshi's Island 1",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--rgb-width", type=int, default=256)
     parser.add_argument("--rgb-height", type=int, default=224)
@@ -539,6 +726,7 @@ def main(argv: List[str] | None = None) -> int:
         "--selection", default=None, help="where to write the arm probe artifact (scratch/tests)"
     )
     args = parser.parse_args(argv)
+    goal_px: Optional[float] = None if str(args.goal_px).lower() == "none" else float(args.goal_px)
 
     selection_path = os.path.join(args.output_dir, "dashboard_controller_selection.json")
     arms = [
@@ -582,6 +770,8 @@ def main(argv: List[str] | None = None) -> int:
         rgb_width=args.rgb_width,
         rgb_height=args.rgb_height,
         operator_limit=args.operator_limit,
+        goal_px=goal_px,
+        seed=args.seed,
         dataset_path=args.dataset,
         output_dir=args.output_dir,
     )

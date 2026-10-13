@@ -147,10 +147,11 @@ def discover_nodes(
 def terrain_width(emu: SnesLibretroEmulator, subscreens: int = 40) -> Dict[str, Any]:
     """How far the level's own terrain goes, read from the buffer rather than inferred from a run.
 
-    The buffer at $7E:C800 stores one subscreen (16 columns x 27 rows) after another, so the last
-    subscreen holding anything but air bounds the stage's width. This is the measurement the
-    clearance question needed: a controller stopped at 4340 px has not met the end of a level that
-    is 20 subscreens - 5120 px - wide, and it was the frame budget that ended the run.
+    The level buffer stores one subscreen (16 columns x 27 rows) after another, each tile as a
+    16-bit Map16 id (low byte at $7E:C800, high byte at $7F:C800), so the last subscreen holding
+    anything but the blank tile bounds the stage's width. This is the measurement the clearance
+    question needed: a controller stopped at 4340 px has not met the end of a level that is 20
+    subscreens - 5120 px - wide, and it was the frame budget that ended the run.
 
     The count is the leading run of non-empty subscreens, so a stage with a genuinely empty
     subscreen in the middle would read short; the per-subscreen profile is returned beside it for
@@ -160,9 +161,12 @@ def terrain_width(emu: SnesLibretroEmulator, subscreens: int = 40) -> Dict[str, 
     profile: List[int] = []
     for sub in range(subscreens):
         base = wram.ADDR_TILEMAP_BASE + sub * wram.TILEMAP_SUBSCREEN_STRIDE
-        if base + cells > wram.WRAM_SIZE_BYTES:
+        if base + cells > 0x10000:  # the low-byte page ends at $7E:FFFF - 26 subscreens
             break
-        ids = [emu.read_wram_u8(base + i) for i in range(cells)]
+        ids = [
+            emu.read_wram_u8(base + i) | (emu.read_wram_u8(base + i + wram.ADDR_TILEMAP_HIGH) << 8)
+            for i in range(cells)
+        ]
         profile.append(sum(1 for tile in ids if tile != wram.TILE_AIR))
     leading = 0
     while leading < len(profile) and profile[leading] > 0:

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-12T05:00:46+00:00",
-    "git_sha": "6fe631e78470e269e8802b5d6145ebce7db3091d",
+    "generated_utc": "2026-10-13T22:09:46+00:00",
+    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -23,6 +23,9 @@
     "controller": "dagger",
     "controller_kind": "button head",
     "checkpoint": "dagger_policy_best.pt",
+    "planner_seed": null,
+    "goal_px": 1900.0,
+    "episode_end_rule": "the published 1900 px distance proxy",
     "buttons": [
       "B",
       "Y",
@@ -64,39 +67,38 @@
     ],
     "frame_capture": {
       "requested_pixel_format": 2,
-      "decoded_as_pixel_format": 2,
+      "decoded_as_pixel_format": 1,
       "note": "0 = 0RGB1555, 1 = RGB565, 2 = RGB888; the two differ because the core asks for a 32-bit buffer and hands back a 16-bit one"
     },
     "device": "cuda"
   },
   "run": {
-    "frames": 317,
-    "ended": "death",
-    "progress_px": -115.0,
-    "wall_clock_s": 0.94,
-    "fps": 336.2,
-    "share_of_frames_live": 0.22397476340694006,
-    "camera_travel_px": 65519.0,
+    "frames": 221,
+    "ended": "engine_left_0x14_to_0x0B",
+    "progress_px": 126.25,
+    "wall_clock_s": 1.27,
+    "fps": 174.7,
+    "share_of_frames_live": 0.31221719457013575,
+    "camera_travel_px": 0.0,
     "screen_x_range_px": [
-      -65519.0,
-      254.25
+      128.0,
+      252.0625
     ],
-    "mean_max_button_probability": 0.8362323820402946,
+    "mean_max_button_probability": 0.7974811250268065,
     "frames_with_no_button_above_half": 0,
     "frames_where_reflex_overrode": 0,
     "frames_where_pulse_released_B": 0,
     "frames_under_operator_A": 23,
-    "pauses_observed": 2,
-    "pauses_cleared_by_the_operator": 2,
+    "pauses_observed": 1,
+    "pauses_cleared_by_the_operator": 1,
     "first_pause_at_progress_px": 19.375,
     "value_start_px": 207.95786870852896,
-    "value_end_px": 191.53946409551668,
+    "value_end_px": 202.5789026181747,
     "value_max_px": 212.84945016641743,
-    "residue_exact_share": 0.4195583596214511,
-    "residue_abs_max_subpixels": 4104.0,
+    "residue_exact_share": 0.31221719457013575,
+    "residue_abs_max_subpixels": 30.0,
     "mode_bytes_seen": [
       11,
-      12,
       20
     ]
   },
@@ -108,14 +110,6 @@
       "mode_byte": 20,
       "held_frames": 152,
       "operator_frames": 23,
-      "resumed": true
-    },
-    {
-      "frame": 251,
-      "progress_px": -128.0,
-      "mode_byte": 12,
-      "held_frames": 30,
-      "operator_frames": 0,
       "resumed": true
     }
   ]

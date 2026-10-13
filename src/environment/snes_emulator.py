@@ -15,7 +15,7 @@ from typing import Dict, List
 
 import numpy as np
 
-from src.environment import wram
+from src.environment import tile_behavior, wram
 from src.utils.logging import get_logger
 from src.utils.paths import REPO_ROOT, require_core, require_rom
 
@@ -503,13 +503,26 @@ class SnesLibretroEmulator:
         """
         return wram.tilemap_addr(tile_x, tile_y)
 
-    def read_tile_ids(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
-        """The raw tile IDs around Mario, as the buffer stores them, before any classification.
+    def read_tile_id(self, tile_x: int, tile_y: int) -> int | None:
+        """The full 16-bit Map16 id of one buffer cell: low byte at $7E:C800, high at $7F:C800.
 
-        The class patch answers "is it solid"; the ID answers "which tile". For identifying a
-        buffer - whose terrain classes can agree while its tiles do not - the ID is the fingerprint.
-        Cells outside the buffer's rows are -1 rather than 0, because 0 is both a real tile ID (the
-        solid grass top) and the value an unreadable cell would otherwise take.
+        The tile number is what the engine's block system indexes its behaviours by, and it does
+        not fit in one byte: the grass top is 0x0100 and the walkable ramps are 0x0173-0x0176, so
+        a low-byte-only read reports the fill (0x00), the bushes (0x73) and half of everything.
+        None means the buffer has no such cell.
+        """
+        addr = self.tilemap_addr(tile_x, tile_y)
+        if addr is None:
+            return None
+        return self.read_wram_u8(addr) | (self.read_wram_u8(addr + wram.ADDR_TILEMAP_HIGH) << 8)
+
+    def read_tile_ids(self, mario_x: float, mario_y: float, radius: int = 3) -> np.ndarray:
+        """The raw 16-bit tile ids around Mario, as the buffer stores them, before any classification.
+
+        The class patch answers "is it solid"; the id answers "which tile". For identifying a
+        buffer - whose terrain classes can agree while its tiles do not - the id is the fingerprint.
+        Cells outside the buffer's rows are -1 rather than 0, because 0 is a real id (the low byte
+        of every 0x01xx tile) and the value an unreadable cell would otherwise take.
         """
         grid_dim = 2 * radius + 1
         out = np.full((grid_dim, grid_dim), -1, dtype=np.int64)
@@ -517,9 +530,9 @@ class SnesLibretroEmulator:
         cy = int(mario_y) // wram.TILE_SIZE_PX
         for i, dy in enumerate(range(-radius, radius + 1)):
             for j, dx in enumerate(range(-radius, radius + 1)):
-                addr = self.tilemap_addr(cx + dx, cy + dy)
-                if addr is not None:
-                    out[i, j] = self.read_wram_u8(addr)
+                tile_id = self.read_tile_id(cx + dx, cy + dy)
+                if tile_id is not None:
+                    out[i, j] = tile_id
         return out
 
     def get_local_tilemap_patch(
@@ -527,14 +540,20 @@ class SnesLibretroEmulator:
     ) -> np.ndarray:
         """
         Extracts a (2*radius + 1) x (2*radius + 1) tile grid centered at Mario's position
-        directly from the SNES WRAM level block buffer ($7E:C800).
-        Each tile in Super Mario World is 16x16 pixels.
+        directly from the SNES WRAM level block buffer ($7E:C800, with the tile numbers' high
+        bytes at $7F:C800). Each tile in Super Mario World is 16x16 pixels.
 
-        Returns an integer array where:
-            0: Air / Passable space (tile 0x25 or boundary void)
-            1: Solid terrain (Grass top 0x00, earth fill 0x3F, pipes 0x73-0x76, question/turn blocks)
-            2: Dynamic hazards / Spikes
-            3: Slopes / Inclines
+        Every cell is classified the way the engine itself was measured to treat its tile id -
+        `scripts/probe_tile_behaviors` wrote each id into the buffer and read the engine's own
+        collision, death, coin and freeze responses, and `src.environment.tile_behavior` turns
+        that measured table into the classes below. The old hardcoded id lists this method used
+        before 10.68 painted bushes as pipes, ramps as air and half of every tile number wrong.
+
+        Returns an integer array of the level models' four-way vocabulary:
+            0: Air / passable (measured decor, coins, interactions)
+            1: Solid terrain (side-blocking tiles and tiles that hold from above)
+            2: Harmful (contact killed a small Mario)
+            3: Slopes / inclines
         """
         grid_dim = 2 * radius + 1
         patch = np.zeros((grid_dim, grid_dim), dtype=np.int64)
@@ -544,26 +563,12 @@ class SnesLibretroEmulator:
 
         for r_idx, dy in enumerate(range(-radius, radius + 1)):
             target_tile_y = center_tile_y + dy
-
             for c_idx, dx in enumerate(range(-radius, radius + 1)):
                 target_tile_x = center_tile_x + dx
-                addr = self.tilemap_addr(target_tile_x, target_tile_y)
-                if addr is None:
+                tile_id = self.read_tile_id(target_tile_x, target_tile_y)
+                if tile_id is None:
                     continue
-
-                tile_id = self.read_wram_u8(addr)
-
-                if tile_id == wram.TILE_AIR:
-                    patch[r_idx, c_idx] = 0
-                elif tile_id in wram.TILE_SOLID or (
-                    tile_id != wram.TILE_AIR
-                    and target_tile_y >= wram.TILEMAP_ROWS_PER_SUBSCREEN - 5
-                ):
-                    patch[r_idx, c_idx] = 1
-                elif tile_id in wram.TILE_SLOPE:
-                    patch[r_idx, c_idx] = 3
-                else:
-                    patch[r_idx, c_idx] = 1 if tile_id != wram.TILE_AIR else 0
+                patch[r_idx, c_idx] = tile_behavior.patch_class(tile_id)
 
         return patch
 

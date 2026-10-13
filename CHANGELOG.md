@@ -11,6 +11,40 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Added
 
+- **The tile map read the way the engine reads it, and a stage finished on screen** (README 10.68).
+  The dashboard's tile window classified cells from a hardcoded id list that was wrong three ways
+  at once: it read only the low byte of every tile number (the "grass top `0x00`" is `0x0100`; the
+  "pipes `0x73`-`0x76`" are the walkable ramps `0x0173`-`0x0176`, while `0x0073`/`0x0074` are bush
+  pieces with no collision at all), the guesses themselves were wrong (the spikes are `0x013F`,
+  not `0x008C`; the earth fill `0x003F` has no collision), and the fallback painted every non-blank
+  tile solid - 312 of the 512 standard ids, every bush and cloud, as walls. The correction is
+  measurement, not a better guess: `scripts/probe_tile_behaviors.py` (`make probe-tiles`) writes
+  each id into the level buffer at a controlled rig, drops Mario onto it and runs him into it, and
+  reads the engine's own collision, death, coin and freeze answers per id into
+  `results/tile_behavior_probe_metrics.json`; `src/environment/tile_behavior.py` +
+  `tile_behavior_table.py` are the baked table the runtime classifies through, and
+  `tests/test_tile_behavior.py` gates the bake against the artifact. The validation walk: on 1009
+  grounded frames the tile under the feet read solid-or-slope every time, and on 1183 frames
+  through decor the engine never blocked the run. `scripts/probe_sprite_behaviors.py`
+  (`make probe-sprites`) meets every stage sprite and touches it twice - once with the sprite,
+  once with its slot cleared, because a teleport beside the chimney smoke kills by the fall and
+  only the difference is the sprite's doing: the Rex and the Koopas are measured stompable, the
+  bouncing block and the smoke are measured neutral - the "enemy" the old panel drew was a
+  measured nothing. `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
+  33x33 window and every live sprite slot, and the panel draws the seven measured classes and
+  every sprite in the class the engine gave it. Yoshi's Island 1 is completed on screen: the
+  recorder flies the 10.66 seed-7 clearance draw with every frame kept (4374 frames, 5011 px, the
+  mode byte `0x14` -> `0x0C` with no `0x0B`), and the other three sessions the map hands over are
+  measured unplayable - the `0x27` session's row 24 is a stretch of measured decor over air, the
+  `0x29` session's entrance captures any player in an animation (`$7E:0071` -> `0x09`) that never
+  completes, and the house session's exit is a warp of the same family; no distance proxy was
+  moved to say any of that, the engine ends each of them by itself in under 350 frames.
+  `src/environment/sprite_behavior.py` + `sprite_behavior_table.py`, the deterministic
+  `src/planning/terrain_runner.py` built on the measured tables, and
+  `src/evaluation/perception_correction_study.py` (`make perception-correction-study`, README
+  10.68) join with their gates: `tests/test_sprite_behavior.py`, `tests/test_terrain_runner.py`,
+  `tests/test_perception_correction_study.py`, and the recording-channel and still-pixel gates of
+  `tests/test_dashboard_pipeline.py` now hold the measured classes instead of the old guesses.
 - **The README hero dashboard, and the episode behind it.** `scripts/record_dashboard_run.py`
   (`make record-dashboard`) probes both actor checkpoints on the verified level-entry savestate,
   keeps the arm the written rule selects, and records one episode with the actor's per-button

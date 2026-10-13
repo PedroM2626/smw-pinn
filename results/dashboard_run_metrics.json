@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-11T15:59:25+00:00",
-    "git_sha": "5078ea284d070d0e8809851923a81a799dcf7395",
+    "generated_utc": "2026-10-13T21:40:49+00:00",
+    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -15,10 +15,17 @@
   "study": "One controller episode recorded with everything the README dashboard shows: the actor's per-button probabilities, the critic V(s) fitted on the published clearance returns, the buttons the emulator actually received after the published reflex overrides and the jump edge-trigger pulse, the tile patch and camera the actor does not see, an RGB frame, the section-4.1 identity residue of each step, and the paused-player flag of 10.59 together with the operator's A presses that clear it.",
   "protocol": {
     "savestate": "smw_yoshi_island_1_level.state",
+    "stage_identity": {
+      "mode_at_start": "0x14",
+      "translevel": "0x2A"
+    },
     "savestate_route": "entered through the world map with the control-handoff gate of 10.36.3 satisfied",
     "controller": "dagger",
     "controller_kind": "button head",
     "checkpoint": "dagger_policy_best.pt",
+    "planner_seed": null,
+    "goal_px": 1900.0,
+    "episode_end_rule": "the published 1900 px distance proxy",
     "buttons": [
       "B",
       "Y",
@@ -69,8 +76,8 @@
     "frames": 1268,
     "ended": "death",
     "progress_px": 1615.5,
-    "wall_clock_s": 8.12,
-    "fps": 156.2,
+    "wall_clock_s": 6.97,
+    "fps": 181.8,
     "share_of_frames_live": 0.8470031545741324,
     "camera_travel_px": 1525.0,
     "screen_x_range_px": [
