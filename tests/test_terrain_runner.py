@@ -41,8 +41,12 @@ class FakeEmu:
                 return sprite.get("status", 8)
             if addr == wram.ADDR_SPRITE_ID + sprite["slot"]:
                 return sprite["id"]
+            if addr == wram.ADDR_SPRITE_X_LOW + sprite["slot"]:
+                return sprite["x"] & 0xFF
             if addr == wram.ADDR_SPRITE_X_HIGH + sprite["slot"]:
                 return (sprite["x"] >> 8) & 0xFF
+            if addr == wram.ADDR_SPRITE_Y_LOW + sprite["slot"]:
+                return sprite["y"] & 0xFF
             if addr == wram.ADDR_SPRITE_Y_HIGH + sprite["slot"]:
                 return (sprite["y"] >> 8) & 0xFF
         return 0

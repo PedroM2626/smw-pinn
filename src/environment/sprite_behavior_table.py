@@ -9,13 +9,26 @@ An id absent from this table has not been measured yet and is reported as `unpro
 """
 
 BEHAVIOR = {
+    0x00: "stompable",
     0x01: "neutral",
+    0x02: "stompable",
     0x04: "stompable",
     0x05: "stompable",
+    0x2C: "stompable",
+    0x35: "interact",
+    0x3E: "neutral",
     0x4D: "neutral",
     0x4E: "neutral",
+    0x4F: "neutral",
+    0x5F: "neutral",
+    0x79: "neutral",
+    0x7B: "stompable",
+    0x83: "neutral",
     0x8A: "neutral",
+    0x8B: "neutral",
+    0x8C: "neutral",
     0x91: "interact",
-    0x9F: "interact",
+    0x9F: "stompable",
+    0xAB: "neutral",
     0xB9: "neutral",
 }

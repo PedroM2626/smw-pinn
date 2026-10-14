@@ -99,7 +99,7 @@ TILE_LEGEND = (
     "coin",
     "enemy",
 )
-VOID_CLASS = 0
+EMPTY_CLASS = 0
 #: the reference grid's view window: 20 columns x 14 rows, Mario at column 5 / row 8
 GRID_W, GRID_H = 20, 14
 COLS_BEHIND, ROWS_ABOVE = 5, 8
@@ -124,7 +124,6 @@ def _rgb(colour: str) -> Tuple[int, int, int]:
 #: the drawn colours a gate can look for in the rendered still, as raw RGB triples
 GROUND_RGB = _rgb(TILE_COLOURS[1])
 COIN_RGB = _rgb(TILE_COLOURS[2])
-VOID_RGB = _rgb(TILE_COLOURS[VOID_CLASS])
 BG = "#0d1220"
 PANEL = "#161d2e"
 PANEL_EDGE = "#26314a"
@@ -207,21 +206,20 @@ def action_probabilities(data: Dict[str, np.ndarray]) -> Tuple[np.ndarray, str]:
     return joint, "joint of the actor's independent button marginals"
 
 
-def window_view(tile_ids: np.ndarray, sprites: np.ndarray) -> np.ndarray:
-    """The recorded window collapsed to five display classes and cropped to 20x14.
+def window_view(tile_ids: np.ndarray, sprites: np.ndarray, states: np.ndarray) -> np.ndarray:
+    """The measured tile buffer and live sprites in the reference grid's exact geometry.
 
-    The 33x33 recorded grid is classified by the measured behaviour table, collapsed into the
-    five classes the reference grid draws (empty / ground-wall / coin / other block / enemy),
-    then cropped to a 20x14 view with Mario at column 5, row 8 - the same geometry burn-mario-rl
-    uses, which puts more of the level ahead of the player than behind.
-
-    Sprites are drawn INTO the grid the same way: one cell per live engine-running sprite, in
-    the class the probe measured.
+    The recording stores a 33x33 raw-ID window centred on Mario's WRAM position. The displayed
+    20x14 window uses the hitbox anchors from burn-mario-rl: Mario's cell is
+    ``((x + 8) >> 4, (y + 16) >> 4)`` and a sprite's cell is
+    ``((x + 8) >> 4, (y + 8) >> 4)``. This preserves tile-boundary transitions that a rounded
+    relative displacement cannot recover.
     """
     from src.environment import sprite_behavior, tile_behavior
 
     ids = np.asarray(tile_ids, dtype=np.int64)
-    view = np.full(ids.shape, VOID_CLASS, dtype=np.int8)
+    player = np.asarray(states, dtype=np.float64)
+    classified = np.full(ids.shape, EMPTY_CLASS, dtype=np.int8)
     inside = ids >= 0
     collapse = {
         "decor": 0,
@@ -229,31 +227,38 @@ def window_view(tile_ids: np.ndarray, sprites: np.ndarray) -> np.ndarray:
         "platform": 1,
         "solid": 1,
         "slope": 1,
-        "harmful": 4,
+        "harmful": 3,
         "interact": 3,
     }
     for i in np.ndindex(*ids.shape):
         if inside[i]:
             name = tile_behavior.behavior_of(int(ids[i]))
-            view[i] = collapse.get(name, 0)
+            classified[i] = collapse.get(name, 0)
 
     rows = np.asarray(sprites, dtype=np.float64)
     active = rows[:, :, 3] >= sprite_behavior.SPRITE_ACTIVE
     centre = ids.shape[1] // 2
+    view = np.full((ids.shape[0], GRID_H, GRID_W), EMPTY_CLASS, dtype=np.int8)
     for frame in range(view.shape[0]):
+        mario_x, mario_y = float(player[frame, 0]), float(player[frame, 1])
+        raw_tx, raw_ty = int(mario_x) // 16, int(mario_y) // 16
+        mario_tx, mario_ty = int(mario_x + 8.0) // 16, int(mario_y + 16.0) // 16
+        c0 = centre + mario_tx - raw_tx - COLS_BEHIND
+        r0 = centre + mario_ty - raw_ty - ROWS_ABOVE
+        view[frame] = classified[frame, r0 : r0 + GRID_H, c0 : c0 + GRID_W]
+
         for slot in range(rows.shape[1]):
             if not active[frame, slot]:
                 continue
-            dx, dy = rows[frame, slot, 0], rows[frame, slot, 1]
-            col = int(np.rint(dx / 16.0)) + centre
-            row = int(np.rint(dy / 16.0)) + centre
-            if 0 <= row < view.shape[1] and 0 <= col < view.shape[2]:
+            sprite_x = int(np.rint(mario_x + rows[frame, slot, 0]))
+            sprite_y = int(np.rint(mario_y + rows[frame, slot, 1]))
+            col = (sprite_x + 8) // 16 - mario_tx + COLS_BEHIND
+            row = (sprite_y + 8) // 16 - mario_ty + ROWS_ABOVE
+            if 0 <= row < GRID_H and 0 <= col < GRID_W:
                 kind = sprite_behavior.behavior_of(int(rows[frame, slot, 2]))
-                view[frame, row, col] = SPRITE_CELL_CLASSES.get(kind, 3)
-
-    r0 = centre - ROWS_ABOVE
-    c0 = centre - COLS_BEHIND
-    return view[:, r0 : r0 + GRID_H, c0 : c0 + GRID_W]
+                sprite_class = SPRITE_CELL_CLASSES.get(kind, 3)
+                view[frame, row, col] = max(int(view[frame, row, col]), sprite_class)
+    return view
 
 
 def sprite_classes(sprites: np.ndarray) -> np.ndarray:
@@ -308,7 +313,7 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     values = np.asarray(data["values"], dtype=np.float64)
     actions, action_source = action_probabilities(data)
     progress = states[:, 0] - float(states[0, 0])
-    views = window_view(np.asarray(data["tile_ids"]), np.asarray(data["sprites"]))
+    views = window_view(np.asarray(data["tile_ids"]), np.asarray(data["sprites"]), states)
     sprites = np.asarray(data["sprites"], dtype=np.float64)
     #: the progress bar's denominator: the published goal where one exists, the furthest anything
     #: measured otherwise, because a bar scaled to a goal a stage has never been shown to have is a
@@ -343,9 +348,15 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         origin="upper",
     )
     mario_x = (COLS_BEHIND + 0.5) / GRID_W
-    mario_y = (ROWS_ABOVE + 0.5) / GRID_H
+    mario_y = 1.0 - (ROWS_ABOVE + 0.5) / GRID_H
     tile.plot(
-        [mario_x], [mario_y], marker="s", color=INK, markersize=9, fillstyle="none", markeredgewidth=2
+        [mario_x],
+        [mario_y],
+        marker="s",
+        color=INK,
+        markersize=9,
+        fillstyle="none",
+        markeredgewidth=2,
     )
     tile.text(mario_x, mario_y - 0.06, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
     for c in range(1, GRID_W):
@@ -362,7 +373,9 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         legend.add_patch(Rectangle((0.0, y - 0.030), 0.10, 0.060, color=colour))
         legend.text(0.16, y, label, color=INK, fontsize=8.5, va="center")
     y = row - step * len(TILE_LEGEND)
-    legend.plot([0.05], [y], marker="s", color=INK, markersize=9, fillstyle="none", markeredgewidth=2)
+    legend.plot(
+        [0.05], [y], marker="s", color=INK, markersize=9, fillstyle="none", markeredgewidth=2
+    )
     legend.text(0.16, y, "Mario", color=INK, fontsize=8.5, va="center")
 
     think = _panel(fig, RECT_THINK, "what it thinks")
@@ -761,6 +774,15 @@ def run_dashboard_render(
             "action_panel_source": action_source,
             "state_names": list(STATE_NAMES),
             "state_names_on_screen": list(OBS_SHORT),
+            "tile_grid": {
+                "columns": GRID_W,
+                "rows": GRID_H,
+                "mario_column": COLS_BEHIND,
+                "mario_row": ROWS_ABOVE,
+                "mario_cell": "((x + 8) >> 4, (y + 16) >> 4)",
+                "sprite_cell": "((sprite_x + 8) >> 4, (sprite_y + 8) >> 4)",
+                "active_sprite_rule": "status >= 8",
+            },
         },
         "video": video,
         "gif": gif,
@@ -771,7 +793,16 @@ def run_dashboard_render(
         },
         "caption": {
             "episode_frames": n,
-            "tile_void_cell_share": float(np.mean(art["views"] == VOID_CLASS)),
+            "tile_empty_cell_share": float(np.mean(art["views"] == EMPTY_CLASS)),
+            "frames_with_enemy_cells": int(np.any(art["views"] == 4, axis=(1, 2)).sum()),
+            "rendered_frames_with_enemy_cells": int(
+                np.any(art["views"][indices] == 4, axis=(1, 2)).sum()
+            ),
+            "max_enemy_cells_in_frame": int(np.sum(art["views"] == 4, axis=(1, 2)).max()),
+            "active_sprite_rows": int(np.sum(art["sprites"][:, :, 3] >= 8)),
+            "max_active_sprite_slots_in_frame": int(
+                np.sum(art["sprites"][:, :, 3] >= 8, axis=1).max()
+            ),
             "progress_px": float(progress[-1]),
             "camera_travel_px": float(np.ptp(np.asarray(data["camera"], dtype=np.float64))),
             "mean_top_action_probability": float(np.mean(actions.max(axis=1))),

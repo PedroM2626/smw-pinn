@@ -23,14 +23,15 @@ from src.environment import wram
 from src.evaluation.dashboard_study import render_caption, render_section
 from src.evaluation.dashboard_video import (
     COLS_BEHIND,
+    EMPTY_CLASS,
     GRID_H,
     GRID_W,
     GROUND_RGB,
+    INK,
     RECT_TILE,
     ROWS_ABOVE,
-    VOID_CLASS,
-    VOID_RGB,
     action_probabilities,
+    render_indices,
     window_view,
 )
 from src.planning.mpc_planner import ACTION_BUTTONS, ACTION_MATRIX
@@ -148,6 +149,44 @@ def test_the_recording_carries_every_channel_the_dashboard_draws() -> None:
     assert set(np.unique(data["executed"]).tolist()) <= {0.0, 1.0}
 
 
+def test_every_visible_enemy_slot_reaches_the_grid_and_the_reel() -> None:
+    """The WRAM tables, not visual sampling, account for every enemy the panel can show."""
+    from src.environment import sprite_behavior
+
+    data = _recording()
+    states = np.asarray(data["states"], dtype=np.float64)
+    sprites = np.asarray(data["sprites"], dtype=np.float64)
+    view = window_view(data["tile_ids"], sprites, states)
+    visible = 0
+    for frame, slot in zip(*np.nonzero(sprites[:, :, 3] >= sprite_behavior.SPRITE_ACTIVE)):
+        kind = sprite_behavior.behavior_of(int(sprites[frame, slot, 2]))
+        if kind not in sprite_behavior.HURTING:
+            continue
+        mario_x, mario_y = states[frame, :2]
+        mario_tx = int(mario_x + 8.0) // 16
+        mario_ty = int(mario_y + 16.0) // 16
+        sprite_x = int(np.rint(mario_x + sprites[frame, slot, 0]))
+        sprite_y = int(np.rint(mario_y + sprites[frame, slot, 1]))
+        col = (sprite_x + 8) // 16 - mario_tx + COLS_BEHIND
+        row = (sprite_y + 8) // 16 - mario_ty + ROWS_ABOVE
+        if 0 <= row < GRID_H and 0 <= col < GRID_W:
+            visible += 1
+            assert view[frame, row, col] == 4, (
+                f"visible enemy slot {slot} at frame {frame} was overwritten in the grid"
+            )
+
+    assert visible > 100, "the completed-stage recording did not carry its visible enemy population"
+    red_cells = np.sum(view == 4, axis=(1, 2))
+    assert int(red_cells.max()) >= 2, "the grid never shows multiple simultaneous enemies"
+    indices = render_indices(states[:, 0], max(2, -(-len(states) // 700)))
+    assert int(np.any(view[indices] == 4, axis=(1, 2)).sum()) >= 20, (
+        "the reel's sampling removed almost every frame that contained an enemy"
+    )
+    assert int(np.sum(view[indices] == 4, axis=(1, 2)).max()) >= 2, (
+        "no rendered GIF frame carries multiple simultaneous enemies"
+    )
+
+
 def test_the_featured_episode_and_the_learned_arm_probe() -> None:
     """The hero is the completed level; the probe comparison is reported either way.
 
@@ -238,6 +277,16 @@ def test_the_video_numbers_are_the_recording_numbers() -> None:
     )
     assert caption["operator_A_frames"] == int(np.asarray(data["operator"]).sum())
     assert caption["subscreens_reached"] == int(progress[-1] // 256) + 1
+    views = window_view(data["tile_ids"], data["sprites"], states)
+    indices = render_indices(states[:, 0], max(2, -(-len(states) // 700)))
+    assert caption["frames_with_enemy_cells"] == int(np.any(views == 4, axis=(1, 2)).sum())
+    assert caption["rendered_frames_with_enemy_cells"] == int(
+        np.any(views[indices] == 4, axis=(1, 2)).sum()
+    )
+    assert caption["max_enemy_cells_in_frame"] == int(np.sum(views == 4, axis=(1, 2)).max())
+    active = np.asarray(data["sprites"])[:, :, 3] >= 8
+    assert caption["active_sprite_rows"] == int(active.sum())
+    assert caption["max_active_sprite_slots_in_frame"] == int(active.sum(axis=1).max())
 
 
 def test_the_frame_buffer_defect_is_recorded_as_a_fact() -> None:
@@ -267,13 +316,19 @@ def test_window_view_classifies_ids_and_marks_missing_cells() -> None:
                 ids[0, dy + radius, dx + radius] = 0x0025
     ids[0, radius + 2, radius] = 0x0100
     ids[0, radius - 2, radius + 1] = 0x0124
-    view = window_view(ids, np.zeros((1, 12, 4)))
+    ids[0, radius - 1, radius + 2] = 0x013F
+    states = np.zeros((1, 12), dtype=np.float64)
+    states[0, :2] = (centre_x * 16, centre_y * 16)
+    view = window_view(ids, np.zeros((1, 12, 4)), states)
     assert view.shape == (1, GRID_H, GRID_W)
-    assert view[0, ROWS_ABOVE + 2, COLS_BEHIND] == 1, "the grass top is ground/wall"
-    assert view[0, ROWS_ABOVE - 2, COLS_BEHIND + 1] == 1, "the stair corner is ground/wall"
+    assert view[0, ROWS_ABOVE + 1, COLS_BEHIND] == 1, "the grass top is ground/wall"
+    assert view[0, ROWS_ABOVE - 3, COLS_BEHIND + 1] == 1, "the stair corner is ground/wall"
+    assert view[0, ROWS_ABOVE - 2, COLS_BEHIND + 2] == 3, "a harmful tile is not an enemy"
     assert view[0, ROWS_ABOVE, COLS_BEHIND] == 0, "the blank filler is empty"
-    assert int((view[0] == VOID_CLASS).sum()) > 0, "a window centred on the floor must have empty cells"
-    assert int((view[0] == VOID_CLASS).sum()) < view[0].size, "and must not be all empty"
+    assert int((view[0] == EMPTY_CLASS).sum()) > 0, (
+        "a window centred on the floor must have empty cells"
+    )
+    assert int((view[0] == EMPTY_CLASS).sum()) < view[0].size, "and must not be all empty"
 
 
 def test_window_view_draws_live_sprites_as_cells() -> None:
@@ -290,23 +345,40 @@ def test_window_view_draws_live_sprites_as_cells() -> None:
     sprites[0, 1] = (120.0, 0.0, 0x91, 8.0)  # a message block far right
     sprites[0, 2] = (16.0, 0.0, 0x01, 8.0)  # a shell one cell right of Mario
     sprites[0, 3] = (0.0, 0.0, 0x05, 1.0)  # dormant: spawn-list status, no cell
-    view = window_view(ids, sprites)
+    states = np.zeros((1, 12), dtype=np.float64)
+    states[0, :2] = (64.0, 352.0)
+    view = window_view(ids, sprites, states)
     assert view.shape == (1, GRID_H, GRID_W)
-    assert view[0, ROWS_ABOVE + 3, COLS_BEHIND - 1] == SPRITE_CELL_CLASSES["stompable"], (
+    assert view[0, ROWS_ABOVE + 2, COLS_BEHIND - 1] == SPRITE_CELL_CLASSES["stompable"], (
         "the Rex's centre marks its cell as an enemy cell"
     )
     msg_col = COLS_BEHIND + 8
+    sprite_row = ROWS_ABOVE - 1
     if msg_col < GRID_W:
-        assert view[0, ROWS_ABOVE, msg_col] == SPRITE_CELL_CLASSES["interact"], (
-            "the message block marks its cell eight cells right of Mario"
+        assert view[0, sprite_row, msg_col] == SPRITE_CELL_CLASSES["interact"], (
+            "the message block marks its exact hitbox-centre cell eight columns right"
         )
-    assert view[0, ROWS_ABOVE, COLS_BEHIND + 1] == SPRITE_CELL_CLASSES["neutral"], (
-        "the parked shell marks its cell as an other-block sprite"
+    assert view[0, sprite_row, COLS_BEHIND + 1] == SPRITE_CELL_CLASSES["neutral"], (
+        "the parked shell marks its exact hitbox-centre cell one column right"
     )
-    assert view[0, ROWS_ABOVE, COLS_BEHIND - 1 + 1] != SPRITE_CELL_CLASSES["stompable"] or True, (
-        "the dormant slot marks nothing"
+    assert view[0, sprite_row, COLS_BEHIND] == 0, (
+        "the dormant slot at Mario's horizontal cell must not paint an enemy"
     )
-    assert view[0, ROWS_ABOVE, COLS_BEHIND] == 0, "Mario's own cell is terrain, not a sprite"
+
+
+def test_sprite_cells_use_absolute_tile_boundaries_not_rounded_displacements() -> None:
+    """Eight pixels can cross a tile boundary even though round(8 / 16) is zero."""
+    radius = 16
+    ids = np.full((1, 2 * radius + 1, 2 * radius + 1), 0x0025, dtype=np.int64)
+    sprites = np.zeros((1, 12, 4), dtype=np.float64)
+    states = np.zeros((1, 12), dtype=np.float64)
+    states[0, :2] = (7.0, 352.0)
+    sprites[0, 0] = (8.0, 0.0, 0x05, 8.0)
+
+    view = window_view(ids, sprites, states)
+    sprite_row = ROWS_ABOVE - 1
+    assert view[0, sprite_row, COLS_BEHIND + 1] == 4
+    assert view[0, sprite_row, COLS_BEHIND] == 0
 
 
 def test_the_tile_panel_draws_the_ground_below_mario() -> None:
@@ -339,6 +411,32 @@ def test_the_tile_panel_draws_the_ground_below_mario() -> None:
     if counts.sum() > 0:
         centroid = float((np.arange(panel.shape[0]) * counts).sum() / counts.sum())
         assert centroid > panel.shape[0] / 2.0, "the ground band's centre of mass is above Mario"
+
+
+def test_the_mario_marker_occupies_the_declared_grid_row() -> None:
+    """An upper-origin image needs its row index converted back to axes coordinates."""
+    if not STILL.is_file():
+        pytest.skip("the dashboard render has not been run")
+    import imageio.v2 as imageio
+
+    canvas = imageio.imread(STILL)[:, :, :3].astype(int)
+    height, width, _ = canvas.shape
+    x0, y1, w, h = RECT_TILE
+    left, right = int(x0 * width), int((x0 + w) * width)
+    top, bottom = int((1.0 - (y1 + h)) * height), int((1.0 - y1) * height)
+    cell_x = left + int((COLS_BEHIND + 0.5) * (right - left) / GRID_W)
+    cell_y = top + int((ROWS_ABOVE + 0.5) * (bottom - top) / GRID_H)
+    mirrored_y = top + int((GRID_H - ROWS_ABOVE - 0.5) * (bottom - top) / GRID_H)
+    ink = np.asarray(tuple(int(INK[i : i + 2], 16) for i in (1, 3, 5)))
+
+    def ink_pixels(cx: int, cy: int) -> int:
+        block = canvas[cy - 8 : cy + 9, cx - 8 : cx + 9]
+        return int((np.abs(block - ink).sum(axis=2) < 18).sum())
+
+    assert ink_pixels(cell_x, cell_y) > 8, "Mario is not outlined at row 8 of the upper-origin grid"
+    assert ink_pixels(cell_x, mirrored_y) < ink_pixels(cell_x, cell_y), (
+        "the marker is still mirrored vertically above its declared grid row"
+    )
 
 
 @pytest.mark.parametrize("head", ["primitive", "marginal"])

@@ -834,6 +834,21 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **The dashboard lost most sprites and drew Mario three rows too high.** The sprite tables are
+  structure-of-arrays, but `live_slots` read two adjacent low-byte entries as one little-endian
+  word before adding the real high byte; the next slot therefore contaminated X/Y and the
+  plausibility filter discarded almost every active entity. The filter also stopped at 4096 px
+  although the measured stage is 5120 px long. Each slot now combines its own low/high registers,
+  the recorder keeps all twelve engine slots with status >= 8, and the probe accepts the full
+  8192-px horizontal-level range. The 20x14 view now uses the reference implementation's exact
+  hitbox cells - Mario at `((x + 8) >> 4, (y + 16) >> 4)` and sprites at
+  `((x + 8) >> 4, (y + 8) >> 4)` - instead of rounding relative displacement. The Mario marker
+  also converts row 8 through the panel's upper-origin axis; previously it was rendered at the
+  mirrored row 5. The behaviour probe now replays the committed clearance controls through the
+  message box and measures every ID present in all five recordings; stomp evidence is evaluated
+  before a generic frozen-contact signature, so shell-less Koopas remain enemies while the
+  message box remains an interaction. Pixel, tile-boundary, adjacent-slot, full-width, measured-ID
+  coverage and real-recording gates hold the corrections.
 - **Eight bare horizontal rules had accumulated above the first section.** The hero caption is a
   generated block that ends before the rule closing it, so each session that re-spliced it left the
   old rule in place and added another. `tests/test_readme_math_rendering.py` now refuses two

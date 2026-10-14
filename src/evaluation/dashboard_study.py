@@ -334,7 +334,7 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
     forced = payload["forced_mode_check"]
     gif_mb = payload["gif"]["bytes"] / 1e6
     mp4_mb = payload["video"]["bytes"] / 1e6
-    void_share = payload["caption"]["tile_void_cell_share"]
+    empty_share = payload["caption"]["tile_empty_cell_share"]
 
     lines: List[str] = [
         "### 10.60 The Dashboard at the Top of This File, and the Two Instruments It Needed",
@@ -349,16 +349,15 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         f"({mp4_mb:.2f} MB MP4, {gif_mb:.2f} MB GIF), and every number in this section is read out of "
         f"the artifacts those two write.",
         "",
-        "**Two things the first version of that picture got wrong.** The tile window was drawn with "
-        "`extent=(0, 1, 1, 0)`, which puts the array's first row - the tiles *above* Mario - at the "
-        "bottom of the panel, so the committed video showed sky under his feet and ground above his "
-        "head. And the class patch cannot distinguish air from a cell the buffer does not have: "
-        "`get_local_tilemap_patch` stores both as 0, because that is what the level-conditioned "
-        "models are given. The panel now asks `wram.tilemap_addr` for the address of every cell and "
-        f"draws the ones that have none in a fifth colour - {_pct(void_share)} of the cells it paints "
-        "for this episode, all of them below the ground, because Mario runs along the floor of a "
-        "27-row subscreen. Both are the same defect as everywhere else in this file: a picture is a "
-        "claim, and a claim drawn from an array has to say which cells the array actually has.",
+        "**The grid now shares one coordinate system.** The first picture flipped the tile array, "
+        "and the first 20x14 crop then put Mario's marker in upper-origin row 5 while claiming row "
+        "8. The renderer now uses the reference grid's exact hitbox cells - Mario at "
+        "`((x + 8) >> 4, (y + 16) >> 4)`, each sprite at "
+        "`((sprite_x + 8) >> 4, (sprite_y + 8) >> 4)` - and converts row 8 back through the "
+        "upper-origin axis before drawing the marker. The five-colour display intentionally "
+        f"collapses decor and cells outside the buffer into one empty class ({_pct(empty_share)} "
+        "of this episode's displayed cells), while the recording retains every raw 16-bit id so "
+        "that visual simplification cannot change the measured map.",
         "",
         "**Which controller flies it.** Two learned checkpoints claim to be the repository's "
         "controller, so both were probed on the verified level-entry savestate for the same "

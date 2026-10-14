@@ -549,8 +549,8 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
             "",
             f"**Level {record['level_index']}: {record['label']}.** "
             f"{caption['episode_frames']} frames, "
-            f"{caption['progress_px']:.4f} px of progress, the tile window's void class on "
-            f"{_pct(caption['tile_void_cell_share'])} of its cells, "
+            f"{caption['progress_px']:.4f} px of progress, the tile window's empty class on "
+            f"{_pct(caption['tile_empty_cell_share'])} of its cells, "
             f"{record['gif']['bytes'] / 1e6:.2f} MB GIF / "
             f"{record['video']['bytes'] / 1e6:.2f} MB MP4: "
             f"`{_rel(record['video']['mp4'])}`.",

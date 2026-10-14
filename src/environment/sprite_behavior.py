@@ -66,13 +66,13 @@ def live_slots(emu: Any) -> List[Dict[str, Any]]:
         if status < SPRITE_ACTIVE:
             continue
         sprite_id = emu.read_wram_u8(wram.ADDR_SPRITE_ID + slot)
-        x = emu.read_wram_u16_le(wram.ADDR_SPRITE_X_LOW + slot) | (
+        x = emu.read_wram_u8(wram.ADDR_SPRITE_X_LOW + slot) | (
             emu.read_wram_u8(wram.ADDR_SPRITE_X_HIGH + slot) << 8
         )
-        y = emu.read_wram_u16_le(wram.ADDR_SPRITE_Y_LOW + slot) | (
+        y = emu.read_wram_u8(wram.ADDR_SPRITE_Y_LOW + slot) | (
             emu.read_wram_u8(wram.ADDR_SPRITE_Y_HIGH + slot) << 8
         )
-        if not (0 <= x <= 4096 and 0 <= y <= 448):
+        if not (0 <= x < wram.HORIZONTAL_LEVEL_MAX_X_PX and 0 <= y <= 448):
             continue
         out.append({"slot": slot, "id": sprite_id, "status": status, "x": x, "y": y})
     return out

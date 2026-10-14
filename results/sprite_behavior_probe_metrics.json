@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T02:37:43+00:00",
-    "git_sha": "f6cc46828ee5dac257110fb67d570eda13f5967a",
+    "generated_utc": "2026-10-14T20:11:00+00:00",
+    "git_sha": "1ed1255580d2fdb011cd2ca51d836ddc6165c55a",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -22,10 +22,60 @@
     ],
     "walk_frames": 900,
     "contact_frames": 45,
-    "ids_probed": 9,
+    "clearance_collector": {
+      "dataset": "data/raw/smw_dashboard_run.npz",
+      "frames_replayed": 4375,
+      "controls": "the committed executed buttons plus its recorded operator A channel"
+    },
+    "ids_probed": 22,
     "class_rule": "hostile: the contact or the stomp killed a small Mario with the sprite present and not with its slot cleared (a fall past the floor kills both runs and says nothing about the sprite); interact: the engine froze the whole player record with the mode still 0x14 (10.63's box signature) with the sprite present and not with its slot cleared - a teleport that freezes both runs is the landing spot, not a box; stompable: the stomp harmed a running sprite - it died (status below the running band or gone) or changed state inside it, like the Rex flattening; platform: the stomp held Mario up where the cleared run fell; neutral: the engine ignored the contact. Only slots the engine is running (status >= 8) are ever met: the first sweep met dormant slots (status 1) and read their wake-up as a stomp, which painted empty shells and the message block as enemies"
   },
   "sprites": [
+    {
+      "sprite": "0x00",
+      "met_in_stage": "0x2A-clear-draw",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 354.1,
+        "froze_the_player": true
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.9,
+        "bounced": true,
+        "held_up": true,
+        "rest_y": 352.9,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    },
     {
       "sprite": "0x01",
       "met_in_stage": "0x2A-clear-draw",
@@ -33,25 +83,25 @@
         "ran": true,
         "mario_died": false,
         "final_mode": "0x14",
-        "final_y": 16698.2,
+        "final_y": 312.4,
         "froze_the_player": true
       },
       "contact_without_sprite": {
         "ran": true,
         "mario_died": false,
         "final_mode": "0x14",
-        "final_y": 16698.2,
+        "final_y": 305.4,
         "froze_the_player": true
       },
       "stomp": {
         "ran": true,
         "mario_died": false,
         "final_mode": "0x14",
-        "final_y": 16634.2,
+        "final_y": 304.1,
         "bounced": false,
-        "held_up": false,
-        "rest_y": 16634.2,
-        "froze_the_player": true,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
         "sprite_status_before": 8,
         "sprite_status_after": 8,
         "sprite_gone": false
@@ -60,16 +110,61 @@
         "ran": true,
         "mario_died": false,
         "final_mode": "0x14",
-        "final_y": 16634.2,
+        "final_y": 304.1,
         "bounced": false,
-        "held_up": false,
-        "rest_y": 16634.2,
-        "froze_the_player": true,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
         "sprite_status_before": 8,
         "sprite_status_after": null,
         "sprite_gone": true
       },
       "class": "neutral"
+    },
+    {
+      "sprite": "0x02",
+      "met_in_stage": "0x29",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 340.5,
+        "froze_the_player": true
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": true,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
     },
     {
       "sprite": "0x04",
@@ -98,7 +193,7 @@
         "rest_y": 352.1,
         "froze_the_player": false,
         "sprite_status_before": 9,
-        "sprite_status_after": 2,
+        "sprite_status_after": 10,
         "sprite_gone": false
       },
       "stomp_without_sprite": {
@@ -160,6 +255,141 @@
         "sprite_gone": true
       },
       "class": "stompable"
+    },
+    {
+      "sprite": "0x2c",
+      "met_in_stage": "0x2A",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.4,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.4,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
+        "sprite_status_before": 9,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
+        "sprite_status_before": 9,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    },
+    {
+      "sprite": "0x35",
+      "met_in_stage": "0x2A",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 296.0,
+        "froze_the_player": true
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.4,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 232.0,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 232.0,
+        "froze_the_player": true,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "interact"
+    },
+    {
+      "sprite": "0x3e",
+      "met_in_stage": "0x2A-clear-draw",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 224.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 224.1,
+        "froze_the_player": false,
+        "sprite_status_before": 9,
+        "sprite_status_after": 9,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 224.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 224.1,
+        "froze_the_player": false,
+        "sprite_status_before": 9,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
     },
     {
       "sprite": "0x4d",
@@ -252,30 +482,30 @@
       "class": "neutral"
     },
     {
-      "sprite": "0x8a",
-      "met_in_stage": "0x28",
+      "sprite": "0x4f",
+      "met_in_stage": "0x2A-clear-draw",
       "contact": {
         "ran": true,
-        "mario_died": true,
-        "final_mode": "0x0b",
-        "final_y": 64.0,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
         "froze_the_player": false
       },
       "contact_without_sprite": {
         "ran": true,
-        "mario_died": true,
-        "final_mode": "0x0b",
-        "final_y": 64.0,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
         "froze_the_player": false
       },
       "stomp": {
         "ran": true,
-        "mario_died": true,
-        "final_mode": "0x0b",
-        "final_y": 64.0,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
         "bounced": false,
-        "held_up": false,
-        "rest_y": 64.0,
+        "held_up": true,
+        "rest_y": 304.1,
         "froze_the_player": false,
         "sprite_status_before": 8,
         "sprite_status_after": 8,
@@ -283,12 +513,327 @@
       },
       "stomp_without_sprite": {
         "ran": true,
-        "mario_died": true,
-        "final_mode": "0x0b",
-        "final_y": 64.0,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 304.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x5f",
+      "met_in_stage": "0x27",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 425.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 425.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 361.1,
         "bounced": false,
         "held_up": false,
-        "rest_y": 64.0,
+        "rest_y": 361.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 361.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 361.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x79",
+      "met_in_stage": "0x2A-clear-draw",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 304.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 224.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 224.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 224.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 224.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x7b",
+      "met_in_stage": "0x2A-clear-draw",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "stompable"
+    },
+    {
+      "sprite": "0x83",
+      "met_in_stage": "0x29",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 271.9,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 271.9,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "bounced": false,
+        "held_up": true,
+        "rest_y": 352.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x8a",
+      "met_in_stage": "0x28",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 328.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 328.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 328.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 328.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x8b",
+      "met_in_stage": "0x28",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 352.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 305.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 305.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 305.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 305.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
+    },
+    {
+      "sprite": "0x8c",
+      "met_in_stage": "0x28",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 273.1,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 273.1,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 233.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 233.1,
+        "froze_the_player": false,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 233.1,
+        "bounced": false,
+        "held_up": false,
+        "rest_y": 233.1,
         "froze_the_player": false,
         "sprite_status_before": 8,
         "sprite_status_after": null,
@@ -303,7 +848,7 @@
         "ran": true,
         "mario_died": false,
         "final_mode": "0x14",
-        "final_y": 276.1,
+        "final_y": 289.0,
         "froze_the_player": true
       },
       "contact_without_sprite": {
@@ -368,8 +913,8 @@
         "rest_y": 324.9,
         "froze_the_player": false,
         "sprite_status_before": 8,
-        "sprite_status_after": 2,
-        "sprite_gone": false
+        "sprite_status_after": null,
+        "sprite_gone": true
       },
       "stomp_without_sprite": {
         "ran": true,
@@ -384,7 +929,52 @@
         "sprite_status_after": null,
         "sprite_gone": true
       },
-      "class": "interact"
+      "class": "stompable"
+    },
+    {
+      "sprite": "0xab",
+      "met_in_stage": "0x29",
+      "contact": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "contact_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 454.8,
+        "froze_the_player": false
+      },
+      "stomp": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 276.1,
+        "bounced": true,
+        "held_up": false,
+        "rest_y": 276.1,
+        "froze_the_player": true,
+        "sprite_status_before": 8,
+        "sprite_status_after": 8,
+        "sprite_gone": false
+      },
+      "stomp_without_sprite": {
+        "ran": true,
+        "mario_died": false,
+        "final_mode": "0x14",
+        "final_y": 276.1,
+        "bounced": true,
+        "held_up": false,
+        "rest_y": 276.1,
+        "froze_the_player": true,
+        "sprite_status_before": 8,
+        "sprite_status_after": null,
+        "sprite_gone": true
+      },
+      "class": "neutral"
     },
     {
       "sprite": "0xb9",
@@ -433,8 +1023,8 @@
     }
   ],
   "class_counts": {
-    "neutral": 5,
-    "stompable": 2,
+    "stompable": 7,
+    "neutral": 13,
     "interact": 2
   }
 }

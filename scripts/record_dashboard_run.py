@@ -355,6 +355,60 @@ def downscale(frame: np.ndarray, width: int, height: int) -> np.ndarray:
     return frame[np.ix_(rows, cols, [0, 1, 2])].astype(np.uint8)
 
 
+def replay_sprite_channel(
+    state_path: str,
+    dataset_path: str,
+    warmup_frames: int = 0,
+) -> Dict[str, int]:
+    """Re-read every active sprite slot while replaying a recording's executed controls."""
+    with np.load(dataset_path, allow_pickle=False) as blob:
+        data = {key: blob[key] for key in blob.files}
+    states = np.asarray(data["states"], dtype=np.float64)
+    executed = np.asarray(data["executed"], dtype=np.float64)
+    operator = np.asarray(data.get("operator", np.zeros(len(states))), dtype=np.float64)
+    modes = np.asarray(data["mode"], dtype=np.uint8)
+    noninteractive = np.flatnonzero(modes != wram.GAME_MODE_INTERACTIVE)
+    last_gameplay_frame = int(noninteractive[0]) if noninteractive.size else len(states) - 1
+    sprites = np.zeros((len(states), wram.NUM_SPRITE_SLOTS, 4), dtype=np.float32)
+
+    emu = SnesLibretroEmulator(CORE_PATH)
+    emu.load_rom(ROM_PATH)
+    with open(state_path, "rb") as handle:
+        emu.start_episode(handle.read(), warmup_frames=warmup_frames)
+    for frame in range(last_gameplay_frame + 1):
+        current = emu.get_smw_state()
+        observed = np.asarray([current["x"], current["y"]], dtype=np.float64)
+        if not np.allclose(observed, states[frame, :2], atol=1.0 / 128.0):
+            emu.close()
+            raise RuntimeError(
+                f"sprite replay diverged at frame {frame}: {observed.tolist()} != "
+                f"{states[frame, :2].tolist()}"
+            )
+        buttons = {name: bool(value > 0.5) for name, value in zip(ACTION_BUTTONS, executed[frame])}
+        buttons["A"] = bool(operator[frame] > 0.5)
+        emu.set_input(buttons)
+        emu.step_frame()
+        for sprite in emu.get_active_sprites():
+            slot = int(sprite["slot"])
+            sprites[frame, slot] = (
+                float(sprite["x"]) - states[frame, 0],
+                float(sprite["y"]) - states[frame, 1],
+                float(sprite["id"]),
+                float(sprite["status"]),
+            )
+    emu.close()
+
+    data["sprites"] = sprites
+    np.savez_compressed(dataset_path, **data)
+    active = sprites[:, :, 3] >= wram.SPRITE_STATUS_ACTIVE
+    return {
+        "frames": len(states),
+        "active_rows": int(active.sum()),
+        "frames_with_active_sprites": int(active.any(axis=1).sum()),
+        "max_active_slots_in_frame": int(active.sum(axis=1).max()),
+    }
+
+
 def record(
     kind: str,
     state_path: str,
@@ -528,10 +582,8 @@ def record(
             emu.read_tile_ids(state["x"], state["y"], radius=PATCH_RADIUS) if keep_frames else None
         )
         if keep_frames:
-            from src.environment.sprite_behavior import live_slots
-
             sprite_rows = np.zeros((12, 4), dtype=np.float32)
-            for sprite in live_slots(emu):
+            for sprite in emu.get_active_sprites():
                 if 0 <= sprite["slot"] < 12:
                     sprite_rows[sprite["slot"]] = (
                         float(sprite["x"]) - float(state["x"]),

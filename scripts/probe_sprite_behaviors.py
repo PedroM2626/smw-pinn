@@ -32,12 +32,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import torch  # noqa: E402
+import numpy as np  # noqa: E402
 
 from src.environment import wram  # noqa: E402
 from src.environment.snes_emulator import SnesLibretroEmulator  # noqa: E402
+from src.planning.mpc_planner import ACTION_BUTTONS  # noqa: E402
 from src.utils.logging import get_logger  # noqa: E402
-from src.utils.paths import CORE_PATH, ROM_PATH, results_file, state_path  # noqa: E402
+from src.utils.paths import (  # noqa: E402
+    CORE_PATH,
+    ROM_PATH,
+    dataset_path,
+    results_file,
+    state_path,
+)
 from src.utils.provenance import write_metrics  # noqa: E402
 
 logger = get_logger(__name__)
@@ -57,38 +64,11 @@ STAGES = (
 )
 
 
-def sprite_slots(emu: SnesLibretroEmulator, plausible_only: bool = False) -> List[Dict[str, Any]]:
-    """Every live sprite slot, through the one reader the rest of the repository shares.
-
-    `plausible_only` keeps only slots whose position has settled inside a level; a probe that
-    trusted a fresh slot's coordinates would measure the fall out of the world instead of a
-    contact.
-    """
+def sprite_slots(emu: SnesLibretroEmulator) -> List[Dict[str, Any]]:
+    """Every settled, engine-running sprite through the runtime's one shared reader."""
     from src.environment.sprite_behavior import live_slots
 
-    slots = live_slots(emu)
-    return slots if plausible_only else [{**s} for s in _all_slots(emu)]
-
-
-def _all_slots(emu: SnesLibretroEmulator) -> List[Dict[str, Any]]:
-    """Every slot with a nonzero status byte, plausible position or not."""
-    out = []
-    for slot in range(wram.NUM_SPRITE_SLOTS):
-        status = emu.read_wram_u8(wram.ADDR_SPRITE_STATUS + slot)
-        if status == 0:
-            continue
-        out.append(
-            {
-                "slot": slot,
-                "id": emu.read_wram_u8(wram.ADDR_SPRITE_ID + slot),
-                "status": status,
-                "x": emu.read_wram_u16_le(wram.ADDR_SPRITE_X_LOW + slot)
-                | (emu.read_wram_u8(wram.ADDR_SPRITE_X_HIGH + slot) << 8),
-                "y": emu.read_wram_u16_le(wram.ADDR_SPRITE_Y_LOW + slot)
-                | (emu.read_wram_u8(wram.ADDR_SPRITE_Y_HIGH + slot) << 8),
-            }
-        )
-    return out
+    return live_slots(emu)
 
 
 TABLE_PATH = os.path.join(
@@ -120,7 +100,8 @@ def emit_table(records: List[Dict[str, Any]]) -> str:
         "BEHAVIOR = {",
     ]
     for record in sorted(records, key=lambda r: int(r["sprite"], 16)):
-        lines.append(f'    {record["sprite"]}: "{record["class"]}",')
+        sprite_id = int(record["sprite"], 16)
+        lines.append(f'    0x{sprite_id:02X}: "{record["class"]}",')
     lines.append("}")
     lines.append("")
     path = os.path.normpath(TABLE_PATH)
@@ -139,7 +120,7 @@ def teleport(emu: SnesLibretroEmulator, x: int, y: int) -> None:
 
 
 def sprite_at(emu: SnesLibretroEmulator, sprite_id: int) -> Optional[Dict[str, Any]]:
-    """The first live slot holding this id right now, with its position."""
+    """The first settled, engine-running slot holding this id right now."""
     for sprite in sprite_slots(emu):
         if sprite["id"] == sprite_id:
             return sprite
@@ -264,15 +245,16 @@ def classify(
     the terrain killed him. What only the sprite's presence produces is the class:
 
     * ``hostile`` - contact killed a small Mario the cleared run survived;
-    * ``interact`` - the engine opened one of its own boxes and froze the player (10.63's
-      signature, the mode still `0x14`) with the sprite present and not with its slot cleared -
-      the message block. The counterfactual is load-bearing here too: a teleport whose landing
-      spot freezes the record freezes both runs, and that is the terrain, not a box;
     * ``stompable`` - the stomp harmed a *running* sprite: it died (status below the running
-      band, or gone) or changed state inside it (the Rex flattens, `9 -> 8`). A status change
-      out of the spawn list does not count, and meeting only running slots (status >= 8) is
-      what keeps that from ever being read as a stomp - the first sweep met dormant slots and
-      their wake-up (`1 -> 8`) painted empty shells and the message block as enemies;
+      band, or gone) or changed state inside it (the Rex flattens, `9 -> 8`). This evidence is
+      evaluated before a frozen-contact signature because shell-less Koopas both pause Mario on
+      side contact and disappear into their shell when stomped; the stomp is the discriminator.
+      A status change out of the spawn list does not count, and meeting only running slots
+      (status >= 8) keeps a dormant slot's wake-up from reading as a stomp;
+    * ``interact`` - absent stomp harm, the engine opened one of its own boxes and froze the
+      player (10.63's signature, the mode still `0x14`) with the sprite present and not with its
+      slot cleared. The counterfactual is load-bearing: a teleport whose landing spot freezes
+      both runs is the terrain, not a box;
     * ``platform`` - the stomp held Mario up where the cleared run fell: a solid object;
     * ``neutral`` - the engine ignored the contact.
     """
@@ -282,11 +264,6 @@ def classify(
     kills_from_above = stomp.get("mario_died") and not stomp_without.get("mario_died")
     if hurts or kills_from_above:
         return "hostile"
-    froze = (contact.get("froze_the_player") and not contact_without.get("froze_the_player")) or (
-        stomp.get("froze_the_player") and not stomp_without.get("froze_the_player")
-    )
-    if froze:
-        return "interact"
     if stomp.get("ran"):
         before = int(stomp.get("sprite_status_before") or 0)
         after = stomp.get("sprite_status_after")
@@ -294,8 +271,13 @@ def classify(
         harmed = before >= wram.SPRITE_STATUS_ACTIVE and after is not None and after != before
         if (died or harmed) and before >= wram.SPRITE_STATUS_ACTIVE:
             return "stompable"
-        if stomp.get("held_up") and not stomp_without.get("held_up"):
-            return "platform"
+    froze = (contact.get("froze_the_player") and not contact_without.get("froze_the_player")) or (
+        stomp.get("froze_the_player") and not stomp_without.get("froze_the_player")
+    )
+    if froze:
+        return "interact"
+    if stomp.get("ran") and stomp.get("held_up") and not stomp_without.get("held_up"):
+        return "platform"
     return "neutral"
 
 
@@ -320,7 +302,7 @@ def main() -> Dict[str, Any]:
 
     def note_new_sprites(tag: str) -> None:
         missing = (wanted - set(frames)) if wanted is not None else None
-        for sprite in sprite_slots(emu, plausible_only=True):
+        for sprite in sprite_slots(emu):
             sid = sprite["id"]
             if wanted is not None and sid not in missing:
                 continue
@@ -330,29 +312,26 @@ def main() -> Dict[str, Any]:
             where[sid] = tag
             logger.info(f"met sprite {sid:#04x} in stage {tag} at ({sprite['x']}, {sprite['y']})")
 
-    # The held-right walk dies in the first pit of the stages that have one, so the middle of
-    # Yoshi's Island 1 is unreachable to it - and that is where the Koopas are. The clearance
-    # draw of 10.66 crosses the whole stage, so the probe flies it as its second collector:
-    # the same controller, the same seed, the same preamble the recorder reproduces.
-    from scripts.record_dashboard_run import MpcClearanceActor
-    from src.evaluation.evaluate_full_level_clearance import extract_12d_vector
-
+    # A held-right collector dies in the first pit. Replaying the committed seed-7 episode crosses
+    # the whole stage, including the message-box A presses, without recomputing the expensive MPC.
     clearance_tag, clearance_state = "0x2A-clear-draw", STAGES[0][1]
+    clearance_recording = dataset_path("smw_dashboard_run.npz")
     with open(state_path(clearance_state), "rb") as fh:
         clearance_bytes = fh.read()
-    actor = MpcClearanceActor("cuda" if torch.cuda.is_available() else "cpu", seed=7)
+    with np.load(clearance_recording, allow_pickle=False) as episode:
+        executed = np.asarray(episode["executed"], dtype=np.float64)
+        operator = np.asarray(episode["operator"], dtype=np.float64)
     emu.load_state(clearance_bytes)
-    for _ in range(10):
-        emu.set_input({})
-        emu.step_frame()
-    for frame in range(9000):
-        note_new_sprites(clearance_tag)
-        state = emu.get_smw_extended_state()
-        mode = emu.get_game_mode()
-        if mode != wram.GAME_MODE_INTERACTIVE:
+    note_new_sprites(clearance_tag)
+    replay_frames = 0
+    for replay_frames, (action, press_a) in enumerate(zip(executed, operator), start=1):
+        if emu.get_game_mode() != wram.GAME_MODE_INTERACTIVE:
             break
-        emu.set_input(actor.act(extract_12d_vector(state), "cpu")[0])
+        buttons = {name: bool(value > 0.5) for name, value in zip(ACTION_BUTTONS, action)}
+        buttons["A"] = bool(press_a > 0.5)
+        emu.set_input(buttons)
         emu.step_frame()
+        note_new_sprites(clearance_tag)
 
     for tag, name in STAGES:
         if wanted is not None and not (wanted - set(frames)):
@@ -401,6 +380,11 @@ def main() -> Dict[str, Any]:
             "stages": [name for _, name in STAGES],
             "walk_frames": WALK_FRAMES,
             "contact_frames": CONTACT_FRAMES,
+            "clearance_collector": {
+                "dataset": os.path.relpath(clearance_recording, os.getcwd()).replace("\\", "/"),
+                "frames_replayed": replay_frames,
+                "controls": "the committed executed buttons plus its recorded operator A channel",
+            },
             "ids_probed": len(records),
             "class_rule": (
                 "hostile: the contact or the stomp killed a small Mario with the sprite present "

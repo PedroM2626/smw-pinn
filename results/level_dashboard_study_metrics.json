@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T17:36:43+00:00",
-    "git_sha": "d09b17f3958a487c1bcd678e315852ef037e0e13",
+    "generated_utc": "2026-10-14T20:07:53+00:00",
+    "git_sha": "1ed1255580d2fdb011cd2ca51d836ddc6165c55a",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -2067,7 +2067,7 @@
           14,
           20
         ],
-        "wall_clock_s": 287.14,
+        "wall_clock_s": 292.62,
         "frames_under_operator_A": 55
       },
       "clear_evidence": {
@@ -2171,7 +2171,7 @@
           14,
           20
         ],
-        "wall_clock_s": 1.11,
+        "wall_clock_s": 1.03,
         "frames_under_operator_A": 0
       },
       "clear_evidence": {
@@ -2275,7 +2275,7 @@
           14,
           20
         ],
-        "wall_clock_s": 2.43,
+        "wall_clock_s": 2.59,
         "frames_under_operator_A": 0
       },
       "clear_evidence": {
@@ -2377,7 +2377,7 @@
           12,
           20
         ],
-        "wall_clock_s": 2.88,
+        "wall_clock_s": 2.49,
         "frames_under_operator_A": 23
       },
       "clear_evidence": {
@@ -2406,26 +2406,31 @@
       "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 4855577,
+        "bytes": 4904762,
         "frames_written": 320,
         "fps": 30.0,
         "duration_s": 10.67
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 4876483,
+        "bytes": 4873681,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 103014,
+        "bytes": 103053,
         "frame": 1368
       },
       "caption": {
         "episode_frames": 4694,
-        "tile_void_cell_share": 0.9181150709111936,
+        "tile_empty_cell_share": 0.9116227402763406,
+        "frames_with_enemy_cells": 761,
+        "rendered_frames_with_enemy_cells": 72,
+        "max_enemy_cells_in_frame": 8,
+        "active_sprite_rows": 4692,
+        "max_active_sprite_slots_in_frame": 10,
         "progress_px": 5009.3125,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.931827865360034,
@@ -2445,26 +2450,31 @@
       "clear_line": "concluded: out the door and onto the map, no life lost \u00b7 this arm 65405 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 466196,
+        "bytes": 468717,
         "frames_written": 38,
         "fps": 30.0,
         "duration_s": 1.27
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 252016,
+        "bytes": 255843,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 91404,
+        "bytes": 91486,
         "frame": 60
       },
       "caption": {
         "episode_frames": 391,
-        "tile_void_cell_share": 0.9896328096455974,
+        "tile_empty_cell_share": 0.9893131165509682,
+        "frames_with_enemy_cells": 0,
+        "rendered_frames_with_enemy_cells": 0,
+        "max_enemy_cells_in_frame": 0,
+        "active_sprite_rows": 635,
+        "max_active_sprite_slots_in_frame": 9,
         "progress_px": 65406.8125,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1815856777493606,
@@ -2484,26 +2494,31 @@
       "clear_line": "no run has ever finished this session \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 1228458,
+        "bytes": 1221221,
         "frames_written": 101,
         "fps": 30.0,
         "duration_s": 3.37
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1459425,
+        "bytes": 1452613,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 93541,
+        "bytes": 93407,
         "frame": 122
       },
       "caption": {
         "episode_frames": 548,
-        "tile_void_cell_share": 0.9310479666319083,
+        "tile_empty_cell_share": 0.9281152241918665,
+        "frames_with_enemy_cells": 208,
+        "rendered_frames_with_enemy_cells": 43,
+        "max_enemy_cells_in_frame": 1,
+        "active_sprite_rows": 497,
+        "max_active_sprite_slots_in_frame": 3,
         "progress_px": 406.4375,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.16383409197966337,
@@ -2523,26 +2538,31 @@
       "clear_line": "0 of 2 attempts cleared it \u00b7 this arm 373 / 5376 px",
       "video": {
         "mp4": "results/figures/dashboard_level_4.mp4",
-        "bytes": 1115556,
+        "bytes": 1118050,
         "frames_written": 87,
         "fps": 30.0,
         "duration_s": 2.9
       },
       "gif": {
         "gif": "results/figures/dashboard_level_4.gif",
-        "bytes": 1336240,
+        "bytes": 1333681,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_4_still.png",
-        "bytes": 91234,
+        "bytes": 91260,
         "frame": 130
       },
       "caption": {
         "episode_frames": 592,
-        "tile_void_cell_share": 0.9456503378378378,
+        "tile_empty_cell_share": 0.9473817567567567,
+        "frames_with_enemy_cells": 0,
+        "rendered_frames_with_enemy_cells": 0,
+        "max_enemy_cells_in_frame": 0,
+        "active_sprite_rows": 617,
+        "max_active_sprite_slots_in_frame": 2,
         "progress_px": 370.625,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1612803807821856,
@@ -2559,9 +2579,9 @@
     "study": "The README hero dashboard, rendered from the recorded episode: the console's own RGB picture beside the tilemap the level-conditioned models read, with the action distribution the actor holds, the buttons the console received on a controller graphic, the terminal-value critic's prediction, and the stage progress bar.",
     "protocol": {
       "dataset": "data/raw/smw_dashboard_run.npz",
-      "frames_in_episode": 6706,
-      "frames_rendered": 279,
-      "stride": 10,
+      "frames_in_episode": 4694,
+      "frames_rendered": 365,
+      "stride": 7,
       "stall_stride_multiplier": 12,
       "index_rule": "every stride-th frame while the player advances, one frame in twelve of those while a stall holds - the frame counter on the panel shows the jump",
       "context": {
@@ -2569,7 +2589,7 @@
         "level_label": "Yoshi's Island 1",
         "level_index": 1,
         "level_count": 4,
-        "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5010 / 5120 px",
+        "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
         "goal_px": 5120.0
       },
       "goal_px": 5120.0,
@@ -2602,44 +2622,58 @@
         "dy_e",
         "vx_e",
         "haz"
-      ]
+      ],
+      "tile_grid": {
+        "columns": 20,
+        "rows": 14,
+        "mario_column": 5,
+        "mario_row": 8,
+        "mario_cell": "((x + 8) >> 4, (y + 16) >> 4)",
+        "sprite_cell": "((sprite_x + 8) >> 4, (sprite_y + 8) >> 4)",
+        "active_sprite_rule": "status >= 8"
+      }
     },
     "video": {
       "mp4": "results/figures/dashboard_run.mp4",
-      "bytes": 4259594,
-      "frames_written": 279,
+      "bytes": 5417872,
+      "frames_written": 365,
       "fps": 30.0,
-      "duration_s": 9.3
+      "duration_s": 12.17
     },
     "gif": {
       "gif": "results/figures/dashboard_run.gif",
-      "bytes": 3833585,
+      "bytes": 5531926,
       "gif_fps": 12.0,
       "gif_width_px": 900,
       "gif_palette_colors": 96
     },
     "still": {
       "png": "results/figures/dashboard_run_still.png",
-      "bytes": 104309,
-      "frame": 1610
+      "bytes": 102633,
+      "frame": 1505
     },
     "caption": {
-      "episode_frames": 6706,
-      "tile_void_cell_share": 0.9148710110348941,
-      "progress_px": 5008.6875,
+      "episode_frames": 4694,
+      "tile_empty_cell_share": 0.9116227402763406,
+      "frames_with_enemy_cells": 761,
+      "rendered_frames_with_enemy_cells": 88,
+      "max_enemy_cells_in_frame": 8,
+      "active_sprite_rows": 4692,
+      "max_active_sprite_slots_in_frame": 10,
+      "progress_px": 5009.3125,
       "camera_travel_px": 65519.0,
-      "mean_top_action_probability": 0.9522815389203698,
-      "mean_max_button_probability": 0.9460184909036684,
-      "residue_exact_share": 0.7847301021235208,
-      "operator_A_frames": 157,
-      "value_first_px": 201.3851776123047,
+      "mean_top_action_probability": 0.931827865360034,
+      "mean_max_button_probability": 0.9243715381337878,
+      "residue_exact_share": 0.8043020808978256,
+      "operator_A_frames": 55,
+      "value_first_px": 201.4052734375,
       "value_last_px": 70.93865966796875,
       "subscreens_reached": 20
     }
   },
   "conclusion_video": {
     "mp4": "results/figures/all_covered_stages.mp4",
-    "bytes": 1490157,
+    "bytes": 1507244,
     "crf": 27,
     "segments": [
       {

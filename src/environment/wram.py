@@ -85,6 +85,7 @@ TILEMAP_SUBSCREEN_STRIDE = 0x01B0  # Bytes between consecutive subscreen buffers
 TILEMAP_COLUMNS_PER_SUBSCREEN = 16  # A subscreen is 16 tiles wide
 TILEMAP_ROWS_PER_SUBSCREEN = 27  # ... and 27 tiles tall (432 px)
 TILE_SIZE_PX = 16  # SMW tiles are 16x16 pixels
+HORIZONTAL_LEVEL_MAX_X_PX = 32 * 256
 WRAM_SIZE_BYTES = 0x20000  # 128 KB WRAM window exposed by the core
 
 # The buffer's blank filler tile. Whether any other tile is solid, a ramp, harmful or decoration
