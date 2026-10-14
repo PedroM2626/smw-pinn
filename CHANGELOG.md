@@ -42,10 +42,17 @@ numbers* - those are reported here and in README Section 12, never applied silen
   held-right walk dies in the first pit and the Koopas of the stage's middle live past it.
   `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
   33x33 window and every live sprite slot, and the panel draws the seven measured classes and
-  every sprite in the class the engine gave it. Every session the map hands over is then
-  recorded to the verdict the engine itself delivers, and every episode keeps rolling past the
-  verdict (the outro), so the video shows the engine's own exit sequence instead of freezing on
-  the flipped byte. Yoshi's Island 1 is completed on screen: the recorder flies the 10.66
+  every sprite in the class the engine gave it, the markers eleven pixels wide with an ink rim
+  so a shell at the panel's edge is still a dot a reader can see. Every session the map hands
+  over is then recorded to the verdict the engine itself delivers, and every episode keeps
+  rolling past the verdict (the outro), so the video shows the engine's own exit sequence
+  instead of freezing on the flipped byte. The README's own opener changed with it: the hero
+  used to be the distilled arm's episode, which ends in a death at 1615 px, and 10.68's job
+  was that the first picture a reader sees is a level being *completed* - so the hero is now
+  the seed-7 clearance draw from the verified 10.36.3 level entry, which clears too (6386
+  frames to the verdict, 5010 px, `0x14` -> `0x0C`, no `0x0B`, no life lost), and both learned
+  arms stay probed in the selection artifact as the comparison they are. Yoshi's Island 1 is
+  completed on screen twice over: the recorder flies the 10.66
   seed-7 clearance draw with every frame kept (4375 frames to the verdict, 5011 px, the mode
   byte `0x14` -> `0x0C` with no `0x0B`, the lives counter untouched). The house session has no
   goal tape at all and is concluded by walking back out through its door - the engine's own
@@ -59,6 +66,12 @@ numbers* - those are reported here and in README Section 12, never applied silen
   player and drops him past the level with the controls untouched - both end in the death mode
   with a life taken. `results/figures/all_covered_stages.mp4` is the single reel with all four
   episodes in order, each to its verdict. No distance proxy was moved to say any of that.
+  The §4.1 residue reading moved to the per-row identity (`residue = 16 (x_next - x) - vx`,
+  exact on every live row), because the clearance draw runs where the dagger walked: at run
+  speed the engine's pixel byte lags its subpixel accumulator, 10.59's whole-pixel
+  reposition fires on a fifth of the moving frames, and the goal tape walks the player out at
+  half rate - both are the engine's own bookkeeping, and the old held-frame formulation could
+  not tell them from a lie.
   `src/environment/sprite_behavior.py` + `sprite_behavior_table.py`, the deterministic
   `src/planning/terrain_runner.py` built on the measured tables (it flies the house episode,
   direction LEFT), and

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T02:40:56+00:00",
-    "git_sha": "f6cc46828ee5dac257110fb67d570eda13f5967a",
+    "generated_utc": "2026-10-14T04:17:01+00:00",
+    "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -11330,8 +11330,8 @@
   },
   "stages": {
     "_meta": {
-      "generated_utc": "2026-10-14T01:14:01+00:00",
-      "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
+      "generated_utc": "2026-10-14T04:13:37+00:00",
+      "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
       "git_dirty": true,
       "python": "3.10.11",
       "platform": "Windows 10 (AMD64)",
@@ -11471,7 +11471,7 @@
             14,
             20
           ],
-          "wall_clock_s": 264.88,
+          "wall_clock_s": 287.14,
           "frames_under_operator_A": 55
         },
         "clear_evidence": {
@@ -11575,7 +11575,7 @@
             14,
             20
           ],
-          "wall_clock_s": 0.9,
+          "wall_clock_s": 1.11,
           "frames_under_operator_A": 0
         },
         "clear_evidence": {
@@ -11679,7 +11679,7 @@
             14,
             20
           ],
-          "wall_clock_s": 2.05,
+          "wall_clock_s": 2.43,
           "frames_under_operator_A": 0
         },
         "clear_evidence": {
@@ -11781,7 +11781,7 @@
             12,
             20
           ],
-          "wall_clock_s": 2.43,
+          "wall_clock_s": 2.88,
           "frames_under_operator_A": 23
         },
         "clear_evidence": {
@@ -11805,7 +11805,7 @@
   },
   "conclusion_video": {
     "mp4": "results/figures/all_covered_stages.mp4",
-    "bytes": 3477960,
+    "bytes": 3494915,
     "crf": 27,
     "segments": [
       {
@@ -11859,7 +11859,7 @@
     "",
     "**What the corrected map says about the sessions.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4375 frames to the verdict, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way and the lives counter untouched. The house session (`0x28`) has no goal tape at all, and is concluded by walking back out through its door: the engine performs the left-edge exit itself - the mode marching `0x14` -> `0x0B` -> `0x0C` -> `0x0D` -> `0x0E` back onto the map with the lives byte never moving. That march is why the discriminator now reads two bytes: `0x0B` is the byte the death animation owns, and the house's exit passes through it on the way out, so the byte alone would call a walk out the door a death. The lives counter (`$7E:0DBE`) settles it - an exit leaves it put, a death decrements it. The other two sessions are measured dead under every route, fresh entry or restored savestate alike: past its first 369 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and walking west stops at a wall - every run ends in the death mode with a life taken; the `0x29` session is a scripted pipe ride whose own machinery lifts the player and drops him past the level with the controls untouched, the same death with the same life taken even on a fresh entry that never touched a button. No distance proxy was moved to make any of those sentences.",
     "",
-    "**One reel with every session.** `results/figures/all_covered_stages.mp4` is the single video: all four episodes in order, each flown by the agent that can conclude that session and kept recording through the engine's own exit sequence - the mode march and the map settling - so the reel shows the clear, the walk out the door, and the two measured deaths, each to the verdict the engine itself delivered. 3.48 MB, 4 segments.",
+    "**One reel with every session.** `results/figures/all_covered_stages.mp4` is the single video: all four episodes in order, each flown by the agent that can conclude that session and kept recording through the engine's own exit sequence - the mode march and the map settling - so the reel shows the clear, the walk out the door, and the two measured deaths, each to the verdict the engine itself delivered. 3.49 MB, 4 segments.",
     "",
     "**The panel.** The tile window now draws the seven measured classes - decor, coin, platform, wall, slope, harmful, and the cells the buffer does not have - from the recorded 16-bit ids, and the recording carries every live sprite slot. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one.",
     ""

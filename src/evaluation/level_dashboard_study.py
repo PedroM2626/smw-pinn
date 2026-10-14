@@ -27,6 +27,8 @@ import os
 import subprocess
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 from src.evaluation.dashboard_video import level_label, run_dashboard_render
 from src.utils.logging import get_logger
 from src.utils.paths import REPO_ROOT, dataset_path, figure_file, results_file
@@ -561,8 +563,16 @@ def main() -> Dict[str, Any]:
     from src.utils.provenance import write_metrics
 
     payload = gather()
+    # the hero reel's stride: the featured episode is the clearance draw now (4375 frames plus
+    # the outro), and a 700-frame render keeps its GIF inside what a README can carry; the old
+    # 1268-frame dagger episode rendered every second frame, and that rule degenerates to it
+    with np.load(dataset_path("smw_dashboard_run.npz")) as hero_blob:
+        hero_frames = int(hero_blob["states"].shape[0])
+    hero_stride = max(2, -(-hero_frames // 700))
     hero = run_dashboard_render(
-        context=hero_context(payload), metrics_command="make level-dashboard-study"
+        context=hero_context(payload),
+        stride=hero_stride,
+        metrics_command="make level-dashboard-study",
     )
     payload["hero"] = hero
     payload["rendered"] = render_level_videos(payload)

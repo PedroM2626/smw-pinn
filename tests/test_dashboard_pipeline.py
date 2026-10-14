@@ -121,24 +121,43 @@ def test_the_recording_carries_every_channel_the_dashboard_draws() -> None:
     # says it does not
     inside = data["tile_ids"][data["tile_ids"] >= 0]
     assert int(inside.max(initial=0)) < 0x200, "per-level ids at 0x200+ would need their own probe"
-    # A button-headed actor emits six independent sigmoids, so the channel that must be normalised
-    # is a primitive head's, and this recording has one only when the PPO arm was the one recorded.
+    # A planner-headed recording commits to whole primitives: its button probabilities are the
+    # chosen row, and an all-zero row is the honest idle - a frame with no button at all. What
+    # the gate holds is the recording against its own summary, so a frame the summary counts as
+    # having no likely button must be on the recording.
     probs = np.asarray(data["button_probs"], dtype=np.float64)
     assert probs.min() >= 0.0 and probs.max() <= 1.0
-    assert (probs.max(axis=1) >= 0.5).all(), "the caption claims no frame had no likely button"
+    run = json.loads(RUN_ARTIFACT.read_text(encoding="utf-8"))
+    no_likely = int(np.sum((probs < 0.5).all(axis=1)))
+    assert no_likely == run["run"]["frames_with_no_button_above_half"], (
+        "the summary's count of frames with no likely button disagrees with the recording"
+    )
     if "primitive_probs" in data:
+        # the live rows carry the actor's one-hot commitment; the outro rows are the actor-less
+        # epilogue (all zeros, honestly) and the recording stays rectangular through them
+        live = np.asarray(data["live"], dtype=np.float64) > 0.5
         np.testing.assert_allclose(
-            np.asarray(data["primitive_probs"], dtype=np.float64).sum(axis=1), 1.0, atol=1e-4
+            np.asarray(data["primitive_probs"], dtype=np.float64)[live].sum(axis=1),
+            1.0,
+            atol=1e-4,
         )
     assert set(np.unique(data["executed"]).tolist()) <= {0.0, 1.0}
 
 
-def test_the_selected_arm_is_the_one_that_traversed() -> None:
-    """The rule is stated before the run; this re-runs it on the published probe."""
+def test_the_featured_episode_and_the_learned_arm_probe() -> None:
+    """The hero is the completed level; the probe comparison is reported either way.
+
+    10.68 changed what the README opens with: a level being completed, flown by the one
+    controller that finishes it. The two learned arms are still probed under the rule that was
+    written before the run, and the gate holds both facts: the featured episode is the seeded
+    clearance draw, and the probe's own winner is the distilled actor.
+    """
     selection = json.loads(SELECTION_ARTIFACT.read_text(encoding="utf-8"))
+    assert selection["featured"] == "mpc", "the hero shows a completed level"
+    assert selection["featured_seed"] == 7, "the 10.66 clearance draw itself"
     arms = selection["arms"]
     best = max(arms, key=lambda a: a["max_progress_px"])
-    assert selection["selected"] == best["arm"] == "dagger"
+    assert selection["learned_arm_selected"] == best["arm"] == "dagger"
     ppo = next(a for a in arms if a["arm"] == "ppo")
     assert ppo["progress_px"] < 0.0, "the section's claim is that the PPO arm walks backwards"
     assert ppo["mean_top_probability"] < 0.5, "and that its distribution has not decided anything"
@@ -151,24 +170,34 @@ def test_the_selected_arm_is_the_one_that_traversed() -> None:
 
 
 def test_held_frames_are_the_residue_exceptions() -> None:
-    """The section's central reading, re-derived: on a held frame the identity reads minus the velocity.
+    """The section's central reading, re-derived per row: residue = 16(x_next - x) - vx.
 
-    Two edges keep this from being a set equality. The frame a hold releases on steps and moves, so
-    its residue is not minus the velocity it held; and 10.59's whole-pixel repositions stay among
-    the frames where the player did move.
+    The live flag describes the step *before* a row (its record against its predecessor) and
+    the residue the step *after* it, so a row can carry a held flag and a moving identity at
+    once - which is exactly what the engine's one-frame holds and the goal tape's half-rate
+    walk produce. The identity itself has to hold on every row with a successor except the one
+    whose step crossed the exit (its post-read is the warp), the rows whose step did not move
+    have to read exactly minus the velocity, and the whole-pixel re-anchoring 10.59 called a
+    reposition stays among the moving rows, where the per-row identity holds by construction.
     """
     data = _recording()
-    held = data["live"] < 0.5
+    run = json.loads(RUN_ARTIFACT.read_text(encoding="utf-8"))
+    states = np.asarray(data["states"], dtype=np.float64)
     residue = np.asarray(data["residue_subpixels"], dtype=np.float64)
-    vx = np.asarray(data["states"], dtype=np.float64)[:, 2]
-    disagree = held & (np.abs(residue + vx) > 1e-4)
-    assert int(disagree.sum()) <= 1, (
-        f"{int(disagree.sum())} held frames do not read minus the velocity; the most one can is the "
-        "frame a hold releases on"
+    vx = states[:, 2]
+    steps = states[1:, 0] - states[:-1, 0]
+    identity = 16.0 * steps - vx[:-1]
+    exit_frame = int(run["run"]["engine_exit_frame"])
+    bad = np.nonzero(np.abs(residue[:-1] - identity) > 1e-6)[0]
+    assert all(int(i) in (exit_frame - 1, exit_frame) for i in bad), (
+        f"{len(bad)} rows break the per-row identity outside the exit step: {bad[:4].tolist()}"
     )
-    live_exceptions = (~held) & (np.abs(residue) > 1e-6)
-    share = float(live_exceptions.sum()) / float((~held).sum())
-    assert share < 0.01, f"{share:.4f} of moving frames break the identity, which is not a rounding"
+    frozen = np.abs(steps) < 1e-9
+    nonzero = np.abs(residue[:-1]) > 1e-6
+    assert np.allclose(residue[:-1][nonzero & frozen], -vx[:-1][nonzero & frozen], atol=1e-6), (
+        "a row whose step did not move must read exactly minus the velocity - the holds and the "
+        "goal tape's half-rate walk are the exceptions the section names"
+    )
 
 
 def test_the_operator_pressed_a_button_no_policy_has() -> None:
@@ -193,11 +222,15 @@ def test_the_video_numbers_are_the_recording_numbers() -> None:
     data = _recording()
     states = np.asarray(data["states"], dtype=np.float64)
     progress = states[:, 0] - states[0, 0]
+    live = np.asarray(data["live"], dtype=np.float64) > 0.5
     caption = payload["caption"]
     assert caption["episode_frames"] == states.shape[0]
     assert caption["progress_px"] == pytest.approx(float(progress[-1]), abs=1e-3)
+    # the residue share is quoted over the frames the player was live: the outro that follows
+    # the engine's verdict is a held epilogue, and folding it in would quote the exit sequence
+    # as if the identity were failing on it
     assert caption["residue_exact_share"] == pytest.approx(
-        float(np.mean(np.abs(data["residue_subpixels"]) < 1e-6)), abs=1e-9
+        float(np.mean(np.abs(data["residue_subpixels"][live]) < 1e-6)), abs=1e-9
     )
     assert caption["operator_A_frames"] == int(np.asarray(data["operator"]).sum())
     assert caption["subscreens_reached"] == int(progress[-1] // 256) + 1

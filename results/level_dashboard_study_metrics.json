@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T02:43:43+00:00",
-    "git_sha": "f6cc46828ee5dac257110fb67d570eda13f5967a",
+    "generated_utc": "2026-10-14T04:16:48+00:00",
+    "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -2067,7 +2067,7 @@
           14,
           20
         ],
-        "wall_clock_s": 264.88,
+        "wall_clock_s": 287.14,
         "frames_under_operator_A": 55
       },
       "clear_evidence": {
@@ -2171,7 +2171,7 @@
           14,
           20
         ],
-        "wall_clock_s": 0.9,
+        "wall_clock_s": 1.11,
         "frames_under_operator_A": 0
       },
       "clear_evidence": {
@@ -2275,7 +2275,7 @@
           14,
           20
         ],
-        "wall_clock_s": 2.05,
+        "wall_clock_s": 2.43,
         "frames_under_operator_A": 0
       },
       "clear_evidence": {
@@ -2377,7 +2377,7 @@
           12,
           20
         ],
-        "wall_clock_s": 2.43,
+        "wall_clock_s": 2.88,
         "frames_under_operator_A": 23
       },
       "clear_evidence": {
@@ -2406,21 +2406,21 @@
       "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 6993940,
+        "bytes": 7006696,
         "frames_written": 587,
         "fps": 30.0,
         "duration_s": 19.57
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 6168994,
+        "bytes": 6124520,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 128135,
+        "bytes": 129336,
         "frame": 2344
       },
       "caption": {
@@ -2430,7 +2430,7 @@
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.931827865360034,
         "mean_max_button_probability": 0.9243715381337878,
-        "residue_exact_share": 0.8214742224115893,
+        "residue_exact_share": 0.8043020808978256,
         "operator_A_frames": 55,
         "value_first_px": 201.4052734375,
         "value_last_px": 70.93865966796875,
@@ -2445,21 +2445,21 @@
       "clear_line": "concluded: out the door and onto the map, no life lost \u00b7 this arm 65405 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 1264203,
+        "bytes": 1263727,
         "frames_written": 196,
         "fps": 30.0,
         "duration_s": 6.53
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 912121,
+        "bytes": 920330,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 123840,
+        "bytes": 125016,
         "frame": 196
       },
       "caption": {
@@ -2469,7 +2469,7 @@
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1815856777493606,
         "mean_max_button_probability": 0.17902813299232737,
-        "residue_exact_share": 0.9974424552429667,
+        "residue_exact_share": 0.9859154929577465,
         "operator_A_frames": 0,
         "value_first_px": 207.95787048339844,
         "value_last_px": 89.06458282470703,
@@ -2484,21 +2484,21 @@
       "clear_line": "no run has ever finished this session \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 2181876,
+        "bytes": 2150467,
         "frames_written": 274,
         "fps": 30.0,
         "duration_s": 9.13
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1857549,
+        "bytes": 1808165,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 120677,
+        "bytes": 122113,
         "frame": 274
       },
       "caption": {
@@ -2508,7 +2508,7 @@
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.16383409197966337,
         "mean_max_button_probability": 0.5004326097504066,
-        "residue_exact_share": 0.9197080291970803,
+        "residue_exact_share": 0.9962264150943396,
         "operator_A_frames": 0,
         "value_first_px": 201.41864013671875,
         "value_last_px": 195.16087341308594,
@@ -2523,21 +2523,21 @@
       "clear_line": "0 of 2 attempts cleared it \u00b7 this arm 373 / 5376 px",
       "video": {
         "mp4": "results/figures/dashboard_level_4.mp4",
-        "bytes": 1883983,
+        "bytes": 1887296,
         "frames_written": 296,
         "fps": 30.0,
         "duration_s": 9.87
       },
       "gif": {
         "gif": "results/figures/dashboard_level_4.gif",
-        "bytes": 2037365,
+        "bytes": 1994150,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_4_still.png",
-        "bytes": 120443,
+        "bytes": 121718,
         "frame": 296
       },
       "caption": {
@@ -2547,7 +2547,7 @@
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1612803807821856,
         "mean_max_button_probability": 0.5043146127482524,
-        "residue_exact_share": 0.7398648648648649,
+        "residue_exact_share": 0.985,
         "operator_A_frames": 23,
         "value_first_px": 201.41864013671875,
         "value_last_px": 198.32931518554688,
@@ -2559,20 +2559,20 @@
     "study": "The README hero dashboard, rendered from the recorded episode: the console's own RGB picture beside the tilemap the level-conditioned models read, with the action distribution the actor holds, the buttons the console received on a controller graphic, the terminal-value critic's prediction, and the stage progress bar.",
     "protocol": {
       "dataset": "data/raw/smw_dashboard_run.npz",
-      "frames_in_episode": 1268,
-      "frames_rendered": 634,
-      "stride": 2,
+      "frames_in_episode": 6706,
+      "frames_rendered": 671,
+      "stride": 10,
       "context": {
         "title": "Reinforcement learning in Super Mario World",
         "level_label": "Yoshi's Island 1",
         "level_index": 1,
         "level_count": 4,
-        "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 1616 / 5120 px",
+        "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5010 / 5120 px",
         "goal_px": 5120.0
       },
       "goal_px": 5120.0,
       "subscreen_px": 256.0,
-      "action_panel_source": "joint of the actor's independent button marginals",
+      "action_panel_source": "the actor's own distribution",
       "state_names": [
         "x",
         "y",
@@ -2604,40 +2604,40 @@
     },
     "video": {
       "mp4": "results/figures/dashboard_run.mp4",
-      "bytes": 6407573,
-      "frames_written": 634,
+      "bytes": 6350630,
+      "frames_written": 671,
       "fps": 30.0,
-      "duration_s": 21.13
+      "duration_s": 22.37
     },
     "gif": {
       "gif": "results/figures/dashboard_run.gif",
-      "bytes": 7301767,
+      "bytes": 5362601,
       "gif_fps": 12.0,
       "gif_width_px": 900,
       "gif_palette_colors": 96
     },
     "still": {
       "png": "results/figures/dashboard_run_still.png",
-      "bytes": 121776,
-      "frame": 634
+      "bytes": 130008,
+      "frame": 3350
     },
     "caption": {
-      "episode_frames": 1268,
-      "tile_void_cell_share": 0.3154443778189118,
-      "progress_px": 1615.5,
-      "camera_travel_px": 1525.0,
-      "mean_top_action_probability": 0.15619760421887777,
-      "mean_max_button_probability": 0.9001203140343778,
-      "residue_exact_share": 0.8430599369085173,
-      "operator_A_frames": 23,
-      "value_first_px": 201.39859008789062,
-      "value_last_px": 211.1752471923828,
-      "subscreens_reached": 7
+      "episode_frames": 6706,
+      "tile_void_cell_share": 0.311153176972118,
+      "progress_px": 5008.6875,
+      "camera_travel_px": 65519.0,
+      "mean_top_action_probability": 0.9522815389203698,
+      "mean_max_button_probability": 0.9460184909036684,
+      "residue_exact_share": 0.7847301021235208,
+      "operator_A_frames": 157,
+      "value_first_px": 201.3851776123047,
+      "value_last_px": 70.93865966796875,
+      "subscreens_reached": 20
     }
   },
   "conclusion_video": {
     "mp4": "results/figures/all_covered_stages.mp4",
-    "bytes": 3487342,
+    "bytes": 3494915,
     "crf": 27,
     "segments": [
       {

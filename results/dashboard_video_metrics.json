@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T02:41:50+00:00",
-    "git_sha": "f6cc46828ee5dac257110fb67d570eda13f5967a",
+    "generated_utc": "2026-10-14T04:14:53+00:00",
+    "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -15,20 +15,20 @@
   "study": "The README hero dashboard, rendered from the recorded episode: the console's own RGB picture beside the tilemap the level-conditioned models read, with the action distribution the actor holds, the buttons the console received on a controller graphic, the terminal-value critic's prediction, and the stage progress bar.",
   "protocol": {
     "dataset": "data/raw/smw_dashboard_run.npz",
-    "frames_in_episode": 1268,
-    "frames_rendered": 634,
-    "stride": 2,
+    "frames_in_episode": 6706,
+    "frames_rendered": 671,
+    "stride": 10,
     "context": {
       "title": "Reinforcement learning in Super Mario World",
       "level_label": "Yoshi's Island 1",
       "level_index": 1,
       "level_count": 4,
-      "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 1616 / 5120 px",
+      "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5010 / 5120 px",
       "goal_px": 5120.0
     },
     "goal_px": 5120.0,
     "subscreen_px": 256.0,
-    "action_panel_source": "joint of the actor's independent button marginals",
+    "action_panel_source": "the actor's own distribution",
     "state_names": [
       "x",
       "y",
@@ -60,34 +60,34 @@
   },
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6407573,
-    "frames_written": 634,
+    "bytes": 6350630,
+    "frames_written": 671,
     "fps": 30.0,
-    "duration_s": 21.13
+    "duration_s": 22.37
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 7301767,
+    "bytes": 5362601,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "still": {
     "png": "results/figures/dashboard_run_still.png",
-    "bytes": 121776,
-    "frame": 634
+    "bytes": 130008,
+    "frame": 3350
   },
   "caption": {
-    "episode_frames": 1268,
-    "tile_void_cell_share": 0.3154443778189118,
-    "progress_px": 1615.5,
-    "camera_travel_px": 1525.0,
-    "mean_top_action_probability": 0.15619760421887777,
-    "mean_max_button_probability": 0.9001203140343778,
-    "residue_exact_share": 0.8430599369085173,
-    "operator_A_frames": 23,
-    "value_first_px": 201.39859008789062,
-    "value_last_px": 211.1752471923828,
-    "subscreens_reached": 7
+    "episode_frames": 6706,
+    "tile_void_cell_share": 0.311153176972118,
+    "progress_px": 5008.6875,
+    "camera_travel_px": 65519.0,
+    "mean_top_action_probability": 0.9522815389203698,
+    "mean_max_button_probability": 0.9460184909036684,
+    "residue_exact_share": 0.7847301021235208,
+    "operator_A_frames": 157,
+    "value_first_px": 201.3851776123047,
+    "value_last_px": 70.93865966796875,
+    "subscreens_reached": 20
   }
 }

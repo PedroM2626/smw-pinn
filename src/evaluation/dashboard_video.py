@@ -332,7 +332,16 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     tile.plot([0.5], [0.5], marker="s", color=INK, markersize=7, fillstyle="none")
     tile.text(0.5, 0.44, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
     sprite_marks = [
-        tile.plot([], [], marker="o", color=MUTED, markersize=6, linestyle="none")[0]
+        tile.plot(
+            [],
+            [],
+            marker="o",
+            color=MUTED,
+            markersize=11,
+            markeredgecolor=INK,
+            markeredgewidth=0.9,
+            linestyle="none",
+        )[0]
         for _ in range(sprites.shape[1])
     ]
 
@@ -349,7 +358,14 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     for j, (kind, label) in enumerate(SPRITE_LEGEND):
         y = row - step * (8 + j)
         legend.plot(
-            [0.027], [y], marker="o", color=SPRITE_COLOURS[kind], markersize=6, linestyle="none"
+            [0.027],
+            [y],
+            marker="o",
+            color=SPRITE_COLOURS[kind],
+            markersize=11,
+            markeredgecolor=INK,
+            markeredgewidth=0.9,
+            linestyle="none",
         )
         legend.text(0.095, y, label, color=INK, fontsize=8, va="center")
     legend.text(
@@ -759,7 +775,9 @@ def run_dashboard_render(
             "camera_travel_px": float(np.ptp(np.asarray(data["camera"], dtype=np.float64))),
             "mean_top_action_probability": float(np.mean(actions.max(axis=1))),
             "mean_max_button_probability": float(np.mean(probs.max(axis=1))),
-            "residue_exact_share": float(np.mean(np.abs(residue) < 1e-6)),
+            "residue_exact_share": float(
+                np.mean(np.abs(residue[np.asarray(data["live"], dtype=bool)]) < 1e-6)
+            ),
             "operator_A_frames": int(operator.sum()),
             "value_first_px": float(values[0]),
             "value_last_px": float(values[-1]),

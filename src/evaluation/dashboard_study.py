@@ -223,11 +223,13 @@ def gather(
             "pause_trigger_frames": run["protocol"]["pause_trigger_frames"],
             "frame_capture": run["protocol"]["frame_capture"],
             "probe_frames": selection["protocol"]["probe_frames"],
-            "selection_rule": selection["protocol"]["selection_rule"],
+            "learned_arm_rule": selection["protocol"]["learned_arm_rule"],
+            "featured_rule": selection["protocol"]["featured_rule"],
         },
         "arms": selection["arms"],
         "override_control": selection.get("override_control", []),
-        "selected": selection["selected"],
+        "learned_arm_selected": selection.get("learned_arm_selected"),
+        "featured": selection.get("featured"),
         "episode": run["run"],
         "pauses": run.get("pauses", []),
         "video": {**video["video"], "mp4": _rel(video["video"]["mp4"])},
@@ -294,24 +296,24 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
     return [
         "## What the Actor Sees, and What It Believed",
         "",
-        "![One DAgger-actor episode on the live console: the emulator's own RGB picture filling the "
-        "left, and on the right the tile window the level-conditioned models read, what the actor "
-        "thinks as eight named actions, the buttons the console actually received, the terminal-value "
-        "critic's prediction, and along the bottom the twelve numbers the actor sees and the stage "
-        f"progress bar]({gif})",
+        "![One clearance-draw episode on the live console: the emulator's own RGB picture filling "
+        "the left, and on the right the tile window the level-conditioned models read, what the "
+        "actor thinks as eight named actions, the buttons the console actually received, the "
+        "terminal-value critic's prediction, and along the bottom the twelve numbers the actor "
+        "sees and the stage progress bar](" + gif + ")",
         "",
-        f"*One episode of the `{payload['protocol']['controller']}` actor, recorded frame by frame from "
+        f"*One episode of the `{payload['protocol']['controller']}` controller, recorded frame by frame from "
         f"the verified level entry of 10.36.3: {ep['frames']} frames, {ep['progress_px']:.4f} px of "
-        f"forward progress, ending as `{ep['ended']}`. The engine mode byte reads {modes} on every "
-        f"frame; the mean top button probability is {ep['mean_max_button_probability']:.4f}; the "
-        f"section-4.1 identity holds exactly on {_pct(ep['residue_exact_share'])} of the frames and "
-        f"the exceptions are the {len(payload['pauses'])} intervals where the engine holds the player "
+        f"forward progress, ending as `{ep['ended']}`. The engine mode byte reads {modes} on the "
+        f"frames the player was live; the mean top button probability is {ep['mean_max_button_probability']:.4f}; "
+        f"the section-4.1 identity holds exactly on {_pct(ep['residue_exact_share'])} of the live "
+        f"frames and the exceptions are the {len(payload['pauses'])} intervals where the engine holds the player "
         f"still, which 10.60 "
         f"identifies as the level's own message box. Full quality: "
         f"[`{mp4}`]({mp4}) ({payload['video']['bytes'] / 1e6:.2f} MB, "
         f"{payload['video']['duration_s']:.2f} s) - a download, not a player: GitHub serves a "
         f"committed `.mp4` as a file, which is why the inline copy above is a GIF. 10.60 says "
-        f"which actor flies this, and why.{elsewhere}*",
+        f"which controller flies this, and why.{elsewhere}*",
         "",
     ]
 
@@ -358,10 +360,15 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "27-row subscreen. Both are the same defect as everywhere else in this file: a picture is a "
         "claim, and a claim drawn from an array has to say which cells the array actually has.",
         "",
-        "**Which actor flies it.** Two checkpoints claim to be the repository's controller, so both "
-        "were probed on the verified level-entry savestate for the same "
-        f"{proto['probe_frames']}-frame horizon, and the rule was written down before the run: the "
-        "arm that reaches the largest forward progress is the one the video shows.",
+        "**Which controller flies it.** Two learned checkpoints claim to be the repository's "
+        "controller, so both were probed on the verified level-entry savestate for the same "
+        f"{proto['probe_frames']}-frame horizon, and the rule was written down before the run: "
+        "the arm that reaches the largest forward progress is the better of the two. That "
+        "comparison is reported below either way - but the episode the README opens with is a "
+        "different question, and 10.68 changed its answer: the hero shows a level being "
+        "completed, so it is flown by the one controller this repository has that finishes the "
+        "stage - the 10.66 seed-7 clearance draw, run until the engine itself ends it and kept "
+        "recording through the exit sequence.",
         "",
         *render_arms_table(
             {"arms": payload["arms"], "override_control": payload["override_control"]}
@@ -371,8 +378,9 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         f"{abs(ppo['progress_px']):.4f} px behind where it started, at a mean top-1 probability of "
         f"{ppo['mean_top_probability']:.4f} - a distribution that has not decided anything. The "
         f"distilled DAgger actor traverses {dag['progress_px']:.4f} px of the level with a mean top-1 "
-        f"button probability of {dag['mean_top_probability']:.4f}, so the video is DAgger's and the "
-        f"PPO arm stays in the artifact as the measured fact it is. The third row is the same actor "
+        f"button probability of {dag['mean_top_probability']:.4f}, so it stays the better of the "
+        f"two learned arms - and neither is the featured episode, because neither finishes the "
+        f"stage within any horizon this repository has flown it. The third row is the same actor "
         f"with the published reflex vaults and jump pulse removed: "
         + (
             f"it reaches {raw['progress_px']:.4f} px, "
@@ -385,8 +393,9 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "",
         f"**The episode the video shows.** {ep['frames']} frames, "
         f"{ep['progress_px']:.4f} px of forward progress, ending as `{ep['ended']}`, with the mode "
-        f"byte reading {', '.join(f'0x{m:02X}' for m in ep['mode_bytes_seen'])} throughout - the "
-        f"interactive mode, which is the point of the savestate 10.36.3 had to build. The "
+        f"byte reading {', '.join(f'0x{m:02X}' for m in ep['mode_bytes_seen'])} - `0x14` for every "
+        f"frame the player was live, then the exit sequence's own march once the engine delivered "
+        f"its verdict, which the outro keeps recording. The "
         f"camera travels {ep['camera_travel_px']:.0f} px, Mario's screen position stays inside "
         f"[{ep['screen_x_range_px'][0]:.2f}, {ep['screen_x_range_px'][1]:.2f}] px of the 256 px "
         f"window, and the critic's prediction moves from {ep['value_start_px']:.2f} px to "
@@ -399,20 +408,34 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "",
         *render_pause_table({"pauses": payload["pauses"]}),
         "",
-        f"A is not one of the six channels in `ACTION_BUTTONS`, so no policy in this repository can "
-        f"dismiss the box it just walked into - the action space has no answer to the level's "
-        f"instruction. The recorder therefore lets an operator press it, holding the frozen player "
-        f"for {proto['operator_delay_frames']} extra frames first so the text finishes printing, and "
-        f"marks every one of those {ep['frames_under_operator_A']} frames in the recording and on the "
-        f"dashboard. The frame the video holds on is cut out of the committed recording as "
+        "A is not one of the six channels in `ACTION_BUTTONS`, so no policy in this repository can "
+        "dismiss the box it just walked into - the action space has no answer to the level's "
+        "instruction. The recorder therefore lets an operator press it"
+        + (
+            f", holding the frozen player for {proto['operator_delay_frames']} extra frames first so "
+            f"the text finishes printing, and"
+            if int(proto["operator_delay_frames"]) > 0
+            else " - immediately, with no extra hold, because the featured episode is the 10.66 "
+            "clearance draw and its own hygiene layer waits only for the frozen record - and"
+        )
+        + f" marks every one of those {ep['frames_under_operator_A']} frames in the recording and on "
+        f"the dashboard. The frame the video holds on is cut out of the committed recording as "
         f"`{_md(evidence['figure'])}` (frame {evidence['frame']}, "
-        f"{evidence['progress_px']:.4f} px into the level). The second pause in that table is not a "
-        f"box: it is the death sequence, which holds the player record the same way and releases it "
-        f"on its own - which is also how the episode ends. The residue is no longer drawn as a panel; "
-        f"it is in the recording, and {_pct(ep['residue_exact_share'])} of the episode's frames "
-        f"satisfy §4.1 exactly, "
-        f"and the rest are held frames, where the identity is exactly minus the velocity because "
-        f"nothing moved. 10.58 called the residue a clamp with a memory; here it is a picture that "
+        f"{evidence['progress_px']:.4f} px into the level). The episode itself ends the way the "
+        f"featured controller's episodes now end: the mode byte leaves `0x14` for the engine's own "
+        f"exit sequence, and the outro keeps recording through it - the mode march and the map "
+        f"settling - so the video shows the level being completed rather than freezing on the "
+        f"flipped byte. The residue is no longer drawn as a panel; "
+        f"it is in the recording, and it satisfies the per-row identity exactly - "
+        f"`residue = 16 (x_(i+1) - x_i) - vx_i` - on every frame the player was live. The frames "
+        f"where the reading is not zero are the frames the engine itself did not move the position "
+        f"at the velocity's rate: {_pct(ep['residue_exact_share'])} of the live frames move exactly "
+        f"as §4.1 says, and the exceptions are the holds and the goal tape's half-rate walk - which "
+        f"read exactly minus the velocity, because the position stood still while the speed byte "
+        f"did not - plus, at the clearance draw's run speed, the whole-pixel re-anchoring 10.59 "
+        f"found at the dagger's walk speed and called a reposition: at run speed the pixel byte "
+        f"lags the subpixel accumulator, and the reading comes back a whole pixel off until the "
+        f"carry lands. 10.58 called the residue a clamp with a memory; here it is a picture that "
         f"does not change.",
         "",
         f"![The engine's message box, held by the player record]({_rel(EVIDENCE_FIGURE)})",

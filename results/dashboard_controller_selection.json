@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T21:40:40+00:00",
-    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+    "generated_utc": "2026-10-14T03:59:51+00:00",
+    "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -12,11 +12,12 @@
     "numpy": "1.26.4",
     "command": "python scripts/record_dashboard_run.py"
   },
-  "study": "Which actor the dashboard video features. Both arms are probed on the same savestate for the same horizon with the published override loop; the rule is the largest forward progress reached within the probe. The losing arm is reported as measured, not dropped, and the winning actor is re-probed with the override layer off so the reflexes' own contribution is on the record next to the run that keeps them.",
+  "study": "What the dashboard video flies, and what both learned arms did about it. The two learned checkpoints are probed on the same savestate for the same horizon with the published override loop, and the probe rule - written before the run - is the largest forward progress reached within it; that comparison is reported either way. The episode the README opens with is a different question, and 10.68 changed its answer: the hero shows a level being completed, so it is flown by the one arm this repository has that finishes the stage - the 10.66 seed-7 clearance draw, run until the engine itself ends it and kept recording through the exit sequence.",
   "protocol": {
     "savestate": "smw_yoshi_island_1_level.state",
     "probe_frames": 600,
-    "selection_rule": "max(max_progress_px) over the arms",
+    "learned_arm_rule": "max(max_progress_px) over the probed arms",
+    "featured_rule": "the README opens with a completed level (10.68): the featured episode is the seed-7 clearance draw of 10.66, ended by the engine's own verdict",
     "device": "cuda"
   },
   "arms": [
@@ -35,7 +36,7 @@
       ],
       "mean_top_probability": 0.1957,
       "frames_where_reflex_overrode": 0,
-      "wall_clock_s": 1.04
+      "wall_clock_s": 1.03
     },
     {
       "arm": "dagger",
@@ -60,7 +61,7 @@
       ],
       "mean_top_probability": 0.9068,
       "frames_where_reflex_overrode": 13,
-      "wall_clock_s": 0.66
+      "wall_clock_s": 0.67
     }
   ],
   "override_control": [
@@ -90,7 +91,7 @@
       "wall_clock_s": 0.65
     }
   ],
-  "selected": "dagger",
-  "selected_by_rule": "dagger",
-  "rule_agrees_with_override": true
+  "learned_arm_selected": "dagger",
+  "featured": "mpc",
+  "featured_seed": 7
 }

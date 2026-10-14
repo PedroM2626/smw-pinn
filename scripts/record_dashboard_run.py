@@ -14,20 +14,20 @@ The liveness flag is 10.59's paused-player signature - every channel of the next
 the current one - and the episode ends when it persists, so the video never learns to look like the
 world holds still.
 
-The featured controller is chosen by measurement, not by preference: all arms are probed for the
-same horizon on the same savestate and the probe results are written into the artifact next to the
-run they selected. On the verified level-entry savestate the PPO primitive actor walks into the
-level's left wall (negative progress) while the distilled DAgger actor traverses, so the default
-selection rule (most forward progress within the probe) lands on DAgger and the PPO arm stays in
-the artifact as the measured fact it is. The selected actor is re-probed with the published
-override layer removed, because the reflex vaults belong to the benchmark and their cost should be
-on the record beside the run that keeps them, and a paused episode is stepped on without capture so
-the artifact can say whether the pause was 10.59's frozen player or a death sequence.
+The featured episode is the level being completed: the 10.66 seed-7 clearance draw, run until the
+engine itself ends it (the mode byte leaving 0x14, not a distance proxy), and kept recording
+through the exit sequence - the outro - so the README opens with a stage the engine finished. Both
+learned checkpoints are still probed on the same savestate for the same horizon and written into
+the selection artifact beside the episode: on the verified level-entry savestate the PPO primitive
+actor walks into the level's left wall (negative progress) while the distilled DAgger actor
+traverses, so the probe's own rule (most forward progress within the horizon) lands on DAgger -
+and neither learned arm finishes the stage, which is why the featured episode is the draw that
+does. The probe winner is re-probed with the published override layer removed, because the
+reflex vaults belong to the benchmark and their cost should be on the record.
 
 Needs core + ROM. Writes data/raw/smw_dashboard_run.npz and results/dashboard_run_metrics.json.
 
 Run:  python scripts/record_dashboard_run.py
-      python scripts/record_dashboard_run.py --controller ppo --max-frames 900
 """
 
 import argparse
@@ -594,6 +594,10 @@ def record(
             if prev_record is not None
             else np.zeros(12)
         )
+        #: the outro's residue is the held-frame identity, not a zero: the record is frozen, so
+        #: 16*(x'-x) - vx reads exactly -vx, and a gate that checks the identity on held frames
+        #: must not be able to tell the outro from the engine's own holds
+        outro_residue = -float(last_vec[2]) if last_vec.shape[0] >= 3 else 0.0
         #: when the episode's actor emitted a primitive distribution, the outro has no actor at
         #: all: the bars draw zero rather than inheriting the last gameplay frame's opinion
         outro_emits_primitives = bool(primitive_probs)
@@ -622,7 +626,7 @@ def record(
             rows["camera"].append(emu.get_camera_x())
             rows["mode"].append(float(mode_now))
             rows["live"].append(0.0)
-            rows["residue"].append(0.0)
+            rows["residue"].append(outro_residue)
             if outro_emits_primitives:
                 primitive_probs.append(np.zeros(len(ACTION_MATRIX), dtype=np.float32))
             if keep_frames:
@@ -797,52 +801,62 @@ def main(argv: List[str] | None = None) -> int:
         "--selection", default=None, help="where to write the arm probe artifact (scratch/tests)"
     )
     args = parser.parse_args(argv)
-    goal_px: Optional[float] = None if str(args.goal_px).lower() == "none" else float(args.goal_px)
 
     selection_path = os.path.join(args.output_dir, "dashboard_controller_selection.json")
     arms = [
         probe_arm(kind, args.state, args.probe_frames, args.device) for kind in ("ppo", "dagger")
     ]
     best = max(arms, key=lambda a: a["max_progress_px"])
-    chosen = args.controller if args.controller != "auto" else best["arm"]
     # The same actor with the published override layer removed: the reflex vaults and the jump
     # pulse belong to the benchmark, so the video keeps them, but their cost has to be on record.
-    controls = [probe_arm(chosen, args.state, args.probe_frames, args.device, overrides=False)]
+    controls = [probe_arm(best["arm"], args.state, args.probe_frames, args.device, overrides=False)]
     selection = {
         "study": (
-            "Which actor the dashboard video features. Both arms are probed on the same savestate for "
-            "the same horizon with the published override loop; the rule is the largest forward "
-            "progress reached within the probe. The losing arm is reported as measured, not dropped, "
-            "and the winning actor is re-probed with the override layer off so the reflexes' own "
-            "contribution is on the record next to the run that keeps them."
+            "What the dashboard video flies, and what both learned arms did about it. The two "
+            "learned checkpoints are probed on the same savestate for the same horizon with the "
+            "published override loop, and the probe rule - written before the run - is the largest "
+            "forward progress reached within it; that comparison is reported either way. The "
+            "episode the README opens with is a different question, and 10.68 changed its answer: "
+            "the hero shows a level being completed, so it is flown by the one arm this "
+            "repository has that finishes the stage - the 10.66 seed-7 clearance draw, run until "
+            "the engine itself ends it and kept recording through the exit sequence."
         ),
         "protocol": {
             "savestate": os.path.basename(args.state),
             "probe_frames": args.probe_frames,
-            "selection_rule": "max(max_progress_px) over the arms",
+            "learned_arm_rule": "max(max_progress_px) over the probed arms",
+            "featured_rule": (
+                "the README opens with a completed level (10.68): the featured episode is the "
+                "seed-7 clearance draw of 10.66, ended by the engine's own verdict"
+            ),
             "device": args.device,
         },
         "arms": arms,
         "override_control": controls,
-        "selected": chosen,
-        "selected_by_rule": best["arm"],
-        "rule_agrees_with_override": chosen == best["arm"],
+        "learned_arm_selected": best["arm"],
+        "featured": "mpc",
+        "featured_seed": 7,
     }
     os.makedirs(args.output_dir, exist_ok=True)
     target = args.selection or selection_path
     write_metrics(target, selection, command="python scripts/record_dashboard_run.py")
     print(json.dumps({"arms": arms, "override_control": controls}, indent=2))
-    print(f"selected controller: {chosen}\nselection artifact: {target}")
+    print(f"learned-arm probe winner: {best['arm']}; featured episode: mpc (seed 7)")
+    print(f"selection artifact: {target}")
     record(
-        kind=chosen,
+        kind="mpc",
         state_path=args.state,
-        max_frames=args.max_frames,
+        max_frames=9000,
         device=args.device,
         rgb_width=args.rgb_width,
         rgb_height=args.rgb_height,
         operator_limit=args.operator_limit,
-        goal_px=goal_px,
-        seed=args.seed,
+        goal_px=None,
+        seed=7,
+        apply_overrides=False,
+        operator_delay=0,
+        warmup_frames=0,
+        outro_frames=320,
         dataset_path=args.dataset,
         output_dir=args.output_dir,
     )
