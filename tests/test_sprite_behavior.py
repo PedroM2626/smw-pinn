@@ -39,18 +39,37 @@ def test_the_baked_table_is_the_probe_artifact() -> None:
 def test_the_classes_the_section_quotes() -> None:
     """The headline ids of 10.68, gated so the prose cannot drift from the measurement."""
     assert sprite_behavior.behavior_of(0x05) == sprite_behavior.STOMPABLE, (
-        "the Rex: stomped, bounces Mario"
+        "the Rex: stomped, the status byte moves inside the running band"
     )
     assert sprite_behavior.behavior_of(0x04) == sprite_behavior.STOMPABLE, (
-        "the Koopa the clear draw passes on screen - met by flying the draw as the collector"
+        "the Koopa the clear draw passes on screen"
     )
-    assert sprite_behavior.behavior_of(0x9F) == sprite_behavior.STOMPABLE, "the Koopa of stage 0x29"
+    assert sprite_behavior.behavior_of(0x91) == sprite_behavior.INTERACT, (
+        "the message block: touching it opened the engine's own box and froze the player - "
+        "with the sprite present and not with its slot cleared, which is the counterfactual "
+        "that separates a box from a bad teleport"
+    )
     assert sprite_behavior.behavior_of(0x8A) == sprite_behavior.NEUTRAL, (
         "the chimney smoke the old panel drew as an enemy"
     )
     assert sprite_behavior.behavior_of(0x01) == sprite_behavior.NEUTRAL, (
-        "the empty shell: touching a parked shell hurts nobody, whatever it looks like"
+        "the parked shell: touching it hurts nobody, whatever it looks like"
     )
+
+
+def test_the_objects_the_panel_once_painted_red_are_not_enemies() -> None:
+    """The first sweep's wake-up artifact, corrected and gated: shells are not enemies.
+
+    The probe met these ids in dormant slots (status 1), the teleport woke them (1 -> 8), and
+    the wake-up read as a stomp - which painted the empty shells and the message block as
+    enemies. Only running slots are met now, and these are what the engine actually does with
+    them.
+    """
+    for shell in (0x01, 0x4D, 0x4E, 0xB9):
+        kind = sprite_behavior.behavior_of(shell)
+        assert kind not in (sprite_behavior.STOMPABLE, sprite_behavior.HOSTILE), (
+            f"{shell:#04x} is measured {kind}: a parked shell is an object, not an enemy"
+        )
 
 
 def test_an_id_the_probe_has_not_met_is_reported_unprobed() -> None:

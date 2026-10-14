@@ -148,6 +148,10 @@ def sprite_at(emu: SnesLibretroEmulator, sprite_id: int) -> Optional[Dict[str, A
 
 #: the death animation's mode byte - the one mode that means contact killed the player
 DEATH_MODE = 0x0B
+#: the eight channels of the player record, for the 10.63 held-player signature
+HOLD_KEYS = ("x", "y", "vx", "vy", "c_ground", "c_ceiling", "c_left", "c_right")
+#: consecutive identical player records that mean the engine opened one of its own boxes
+FROZEN_RUN = 30
 
 
 def contact_probe(
@@ -158,7 +162,9 @@ def contact_probe(
     The probe runs twice - once with the sprite and once with its slot cleared - because a
     teleport next to a sprite that floats past the stage's floor (the chimney smoke over the
     Yoshi's House roof) kills Mario by the fall, not by the contact, and only the difference
-    between the two runs is the sprite's doing.
+    between the two runs is the sprite's doing. It also watches for the 10.63 held-player
+    signature: the engine's own message boxes freeze the whole player record with the mode still
+    `0x14`, which is what touching the message block does.
     """
     emu.load_state(frame_bytes)
     sprite = sprite_at(emu, sprite_id)
@@ -167,9 +173,21 @@ def contact_probe(
     if not with_sprite:
         emu.write_wram_u8(wram.ADDR_SPRITE_STATUS + sprite["slot"], 0)
     teleport(emu, sprite["x"] - 12, sprite["y"] - 8)
+
+    last = None
+    run = 0
+    frozen = False
     for _ in range(CONTACT_FRAMES):
         emu.set_input({})
         emu.step_frame()
+        state = emu.get_smw_state()
+        record = tuple(round(float(state[k]), 4) for k in HOLD_KEYS)
+        if record == last:
+            run += 1
+        else:
+            run = 0
+        last = record
+        frozen = frozen or run >= FROZEN_RUN
         if emu.get_game_mode() == DEATH_MODE:
             break
     return {
@@ -177,6 +195,7 @@ def contact_probe(
         "mario_died": emu.get_game_mode() == DEATH_MODE,
         "final_mode": f"{emu.get_game_mode():#04x}",
         "final_y": round(float(emu.get_smw_state()["y"]), 1),
+        "froze_the_player": bool(frozen),
     }
 
 
@@ -186,7 +205,8 @@ def stomp_probe(
     """Fall onto the sprite from above and read what the engine did to both of them.
 
     Runs with and without the sprite for the same reason the contact probe does: a stomp that
-    lands past the floor kills by the fall, and only the difference is the sprite's.
+    lands past the floor kills by the fall, and only the difference is the sprite's. The frozen
+    watch is here too - landing on the message block opens its box.
     """
     emu.load_state(frame_bytes)
     sprite = sprite_at(emu, sprite_id)
@@ -197,11 +217,22 @@ def stomp_probe(
         emu.write_wram_u8(wram.ADDR_SPRITE_STATUS + sprite["slot"], 0)
     teleport(emu, sprite["x"] - 4, sprite["y"] - 72)
     bounced = False
+    last = None
+    run = 0
+    frozen = False
     for _ in range(CONTACT_FRAMES):
         emu.set_input({})
         emu.step_frame()
-        vy = emu.get_smw_state()["vy"]
+        state = emu.get_smw_state()
+        vy = state["vy"]
         bounced = bounced or vy < -2.0
+        record = tuple(round(float(state[k]), 4) for k in HOLD_KEYS)
+        if record == last:
+            run += 1
+        else:
+            run = 0
+        last = record
+        frozen = frozen or run >= FROZEN_RUN
         if emu.get_game_mode() == DEATH_MODE:
             break
     after = sprite_at(emu, sprite_id) if with_sprite else None
@@ -214,6 +245,7 @@ def stomp_probe(
         "bounced": bool(bounced),
         "held_up": bool(state["c_ground"] > 0.5),
         "rest_y": round(float(state["y"]), 1),
+        "froze_the_player": bool(frozen),
         "sprite_status_before": status_before,
         "sprite_status_after": None if after is None else int(after["status"]),
         "sprite_gone": after is None,
@@ -229,8 +261,20 @@ def classify(
     """The behaviour class the panel draws, derived only from the measured difference.
 
     A run that kills Mario with the sprite and without it alike says nothing about the sprite:
-    the terrain killed him. Hostile, stompable, platform and neutral are what only the sprite's
-    presence produces.
+    the terrain killed him. What only the sprite's presence produces is the class:
+
+    * ``hostile`` - contact killed a small Mario the cleared run survived;
+    * ``interact`` - the engine opened one of its own boxes and froze the player (10.63's
+      signature, the mode still `0x14`) with the sprite present and not with its slot cleared -
+      the message block. The counterfactual is load-bearing here too: a teleport whose landing
+      spot freezes the record freezes both runs, and that is the terrain, not a box;
+    * ``stompable`` - the stomp harmed a *running* sprite: it died (status below the running
+      band, or gone) or changed state inside it (the Rex flattens, `9 -> 8`). A status change
+      out of the spawn list does not count, and meeting only running slots (status >= 8) is
+      what keeps that from ever being read as a stomp - the first sweep met dormant slots and
+      their wake-up (`1 -> 8`) painted empty shells and the message block as enemies;
+    * ``platform`` - the stomp held Mario up where the cleared run fell: a solid object;
+    * ``neutral`` - the engine ignored the contact.
     """
     if not contact.get("ran") and not stomp.get("ran"):
         return "unprobed"
@@ -238,10 +282,17 @@ def classify(
     kills_from_above = stomp.get("mario_died") and not stomp_without.get("mario_died")
     if hurts or kills_from_above:
         return "hostile"
-    if contact.get("ran") and stomp.get("ran"):
-        if stomp.get("bounced") and not stomp_without.get("bounced"):
-            return "stompable"
-        if stomp.get("sprite_status_after") != stomp.get("sprite_status_before"):
+    froze = (contact.get("froze_the_player") and not contact_without.get("froze_the_player")) or (
+        stomp.get("froze_the_player") and not stomp_without.get("froze_the_player")
+    )
+    if froze:
+        return "interact"
+    if stomp.get("ran"):
+        before = int(stomp.get("sprite_status_before") or 0)
+        after = stomp.get("sprite_status_after")
+        died = stomp.get("sprite_gone") or (after is not None and after < wram.SPRITE_STATUS_ACTIVE)
+        harmed = before >= wram.SPRITE_STATUS_ACTIVE and after is not None and after != before
+        if (died or harmed) and before >= wram.SPRITE_STATUS_ACTIVE:
             return "stompable"
         if stomp.get("held_up") and not stomp_without.get("held_up"):
             return "platform"
@@ -354,9 +405,16 @@ def main() -> Dict[str, Any]:
             "class_rule": (
                 "hostile: the contact or the stomp killed a small Mario with the sprite present "
                 "and not with its slot cleared (a fall past the floor kills both runs and says "
-                "nothing about the sprite); stompable: the stomp bounced Mario or changed the "
-                "sprite's status byte; platform: the stomp held Mario up where the cleared run "
-                "fell; neutral: the engine ignored the contact"
+                "nothing about the sprite); interact: the engine froze the whole player record "
+                "with the mode still 0x14 (10.63's box signature) with the sprite present and "
+                "not with its slot cleared - a teleport that freezes both runs is the landing "
+                "spot, not a box; "
+                "stompable: the stomp harmed a running sprite - it died (status below the "
+                "running band or gone) or changed state inside it, like the Rex flattening; "
+                "platform: the stomp held Mario up where the cleared run fell; neutral: the "
+                "engine ignored the contact. Only slots the engine is running (status >= 8) are "
+                "ever met: the first sweep met dormant slots (status 1) and read their wake-up "
+                "as a stomp, which painted empty shells and the message block as enemies"
             ),
         },
         "sprites": records,

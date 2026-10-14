@@ -31,11 +31,18 @@ HOSTILE = "hostile"
 STOMPABLE = "stompable"
 PLATFORM = "platform"
 COLLECTIBLE = "collectible"
+INTERACT = "interact"
 NEUTRAL = "neutral"
 UNPROBED = "unprobed"
 
 #: the ids whose contact hurts, for the reflex layers and the runner
 HURTING = frozenset({HOSTILE, STOMPABLE})
+
+#: the status byte the engine itself calls "running normally" ($7E:14C8 >= 8). A slot below it is
+#: not in the world yet (1 is the spawn list, and the dying states are under it), and reading a
+#: dormant slot is how a shell came to be measured as an enemy: the probe met it at status 1,
+#: the teleport woke it (1 -> 8), and the wake-up read as a stomp
+SPRITE_ACTIVE = 8
 
 
 def behavior_of(sprite_id: int) -> str:
@@ -44,16 +51,19 @@ def behavior_of(sprite_id: int) -> str:
 
 
 def live_slots(emu: Any) -> List[Dict[str, Any]]:
-    """Every live sprite slot with a settled position, in slot order.
+    """Every sprite slot the engine is actually running, with a settled position, in slot order.
 
-    A slot's status byte is written before its position settles, so a freshly loaded slot can
-    report coordinates far outside any level; those are dropped here - a probe, a runner or a
-    panel that trusted them would measure the fall out of the world instead of a sprite.
+    Two filters, both load-bearing. A slot's status byte is written before its position settles,
+    so a freshly loaded slot can report coordinates far outside any level; and a slot in the
+    spawn list (status < 8) is not in the world yet at all - the probe's first sweep met
+    dormant slots and measured their wake-up, which is how empty shells and the message block
+    came to be classified as enemies. A probe, a runner or a panel that trusted either would
+    measure the fall out of the world or a spawn list instead of a sprite.
     """
     out: List[Dict[str, Any]] = []
     for slot in range(wram.NUM_SPRITE_SLOTS):
         status = emu.read_wram_u8(wram.ADDR_SPRITE_STATUS + slot)
-        if status == 0:
+        if status < SPRITE_ACTIVE:
             continue
         sprite_id = emu.read_wram_u8(wram.ADDR_SPRITE_ID + slot)
         x = emu.read_wram_u16_le(wram.ADDR_SPRITE_X_LOW + slot) | (

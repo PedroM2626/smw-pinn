@@ -28,9 +28,17 @@ numbers* - those are reported here and in README Section 12, never applied silen
   through decor the engine never blocked the run. `scripts/probe_sprite_behaviors.py`
   (`make probe-sprites`) meets every stage sprite and touches it twice - once with the sprite,
   once with its slot cleared, because a teleport beside the chimney smoke kills by the fall and
-  only the difference is the sprite's doing: the Rex and the Koopas are measured stompable, the
-  empty parked shell and the smoke are measured neutral - the "enemy" the old panel drew was a
-  measured nothing. The probe's collector is the seed-7 clearance draw itself, because the
+  only the difference is the sprite's doing: the Rex and the Koopa are measured stompable (the
+  stomp moves a *running* sprite's status byte), the parked shells `0x01`/`0x4D`/`0x4E`/`0xB9`
+  and the chimney smoke are measured neutral, and the message block `0x91` is measured
+  interact - touching it opened the engine's own box and froze the player, 10.63's signature,
+  with the sprite present and not with its slot cleared. The probe's own first sweep is part of
+  the corrected record: it met those ids in dormant slots (status 1), the teleport woke them
+  (1 -> 8), and the wake-up read as a stomp, painting the shells and the message block as
+  enemies on the first render. The probe, the runner and the panel now read only slots the
+  engine is running (status >= 8), and the frozen-player check is counterfactual too - a
+  teleport whose landing spot freezes the record freezes both runs, and that is the terrain,
+  not a box. The probe's collector is the seed-7 clearance draw itself, because the
   held-right walk dies in the first pit and the Koopas of the stage's middle live past it.
   `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
   33x33 window and every live sprite slot, and the panel draws the seven measured classes and

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T01:16:56+00:00",
-    "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
+    "generated_utc": "2026-10-14T02:43:43+00:00",
+    "git_sha": "f6cc46828ee5dac257110fb67d570eda13f5967a",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -2406,21 +2406,21 @@
       "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 7001193,
+        "bytes": 6993940,
         "frames_written": 587,
         "fps": 30.0,
         "duration_s": 19.57
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 6082175,
+        "bytes": 6168994,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 124647,
+        "bytes": 128135,
         "frame": 2344
       },
       "caption": {
@@ -2445,21 +2445,21 @@
       "clear_line": "concluded: out the door and onto the map, no life lost \u00b7 this arm 65405 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 1250878,
+        "bytes": 1264203,
         "frames_written": 196,
         "fps": 30.0,
         "duration_s": 6.53
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 929745,
+        "bytes": 912121,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 120374,
+        "bytes": 123840,
         "frame": 196
       },
       "caption": {
@@ -2484,21 +2484,21 @@
       "clear_line": "no run has ever finished this session \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 2143597,
+        "bytes": 2181876,
         "frames_written": 274,
         "fps": 30.0,
         "duration_s": 9.13
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1845436,
+        "bytes": 1857549,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 117145,
+        "bytes": 120677,
         "frame": 274
       },
       "caption": {
@@ -2523,21 +2523,21 @@
       "clear_line": "0 of 2 attempts cleared it \u00b7 this arm 373 / 5376 px",
       "video": {
         "mp4": "results/figures/dashboard_level_4.mp4",
-        "bytes": 1880709,
+        "bytes": 1883983,
         "frames_written": 296,
         "fps": 30.0,
         "duration_s": 9.87
       },
       "gif": {
         "gif": "results/figures/dashboard_level_4.gif",
-        "bytes": 2045659,
+        "bytes": 2037365,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_4_still.png",
-        "bytes": 117099,
+        "bytes": 120443,
         "frame": 296
       },
       "caption": {
@@ -2604,21 +2604,21 @@
     },
     "video": {
       "mp4": "results/figures/dashboard_run.mp4",
-      "bytes": 6405045,
+      "bytes": 6407573,
       "frames_written": 634,
       "fps": 30.0,
       "duration_s": 21.13
     },
     "gif": {
       "gif": "results/figures/dashboard_run.gif",
-      "bytes": 7421438,
+      "bytes": 7301767,
       "gif_fps": 12.0,
       "gif_width_px": 900,
       "gif_palette_colors": 96
     },
     "still": {
       "png": "results/figures/dashboard_run_still.png",
-      "bytes": 118376,
+      "bytes": 121776,
       "frame": 634
     },
     "caption": {
@@ -2637,7 +2637,7 @@
   },
   "conclusion_video": {
     "mp4": "results/figures/all_covered_stages.mp4",
-    "bytes": 3477960,
+    "bytes": 3487342,
     "crf": 27,
     "segments": [
       {

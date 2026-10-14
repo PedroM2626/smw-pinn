@@ -107,19 +107,22 @@ TILE_LEGEND = (
 )
 VOID_CLASS = 6
 #: the measured sprite classes, drawn as one marker per live slot: hostile and stompable are
-#: what can hurt, neutral is the smoke and the bouncing blocks the old panel drew as enemies
+#: what can hurt, neutral is the smoke and the parked shells the old panel drew as enemies, and
+#: interact is the engine's own message box - touching the block opens it and freezes the player
 SPRITE_COLOURS = {
     "hostile": "#ff6b5e",
     "stompable": "#ff6b5e",
     "collectible": "#5aa9e6",
     "platform": "#63d68a",
+    "interact": "#f2a541",
     "neutral": "#8794ab",
     "unprobed": "#b06fd4",
 }
 SPRITE_LEGEND = (
     ("hostile", "enemy (hurts or is stompable)"),
     ("collectible", "collectible"),
-    ("platform", "platform sprite"),
+    ("platform", "solid object you can stand on"),
+    ("interact", "message block (opens a box)"),
     ("neutral", "no effect"),
     ("unprobed", "not yet measured"),
 )
@@ -240,7 +243,12 @@ def window_view(tile_ids: np.ndarray) -> np.ndarray:
 
 
 def sprite_classes(sprites: np.ndarray) -> np.ndarray:
-    """The measured class name of every recorded sprite slot, per frame."""
+    """The measured class name of every recorded sprite slot, per frame.
+
+    Only slots the engine was actually running (status >= 8) carry a class: the recordings
+    faithfully keep spawn-list rows too, but a dormant slot is not in the world yet, and the
+    panel that drew one would mark a shell that has not spawned.
+    """
     from src.environment import sprite_behavior
 
     ids = np.asarray(sprites, dtype=np.int64)
@@ -249,7 +257,7 @@ def sprite_classes(sprites: np.ndarray) -> np.ndarray:
         for slot in range(ids.shape[1]):
             out[frame, slot] = (
                 sprite_behavior.behavior_of(int(ids[frame, slot, 2]))
-                if ids[frame, slot, 3] > 0
+                if ids[frame, slot, 3] >= sprite_behavior.SPRITE_ACTIVE
                 else ""
             )
     return out
@@ -579,12 +587,14 @@ def draw_frame(art: Dict[str, Any], i: int) -> None:
 
     half = art["views"].shape[1] // 2
     span = (half + 0.5) * 16.0
+    from src.environment.sprite_behavior import SPRITE_ACTIVE
+
     sprites = art["sprites"][i]
     kinds = art["sprite_kinds"][i]
     for slot, mark in enumerate(art["sprite_marks"]):
         dx, dy, sprite_id, status = sprites[slot]
         kind = kinds[slot]
-        if status <= 0 or kind == "":
+        if status < SPRITE_ACTIVE or kind == "":
             mark.set_data([], [])
             continue
         if abs(float(dx)) <= span and abs(float(dy)) <= span:
