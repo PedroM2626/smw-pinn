@@ -3,8 +3,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Reproduction & usage questions
-    url: https://github.com/PedroM2626/smw-pinn/discussions
+    url: https://github.com/PedroM2626/smw-sciml/discussions
     about: How do I run X / my numbers differ - ask here first (README Section 11).
   - name: Security report
-    url: https://github.com/PedroM2626/smw-pinn/blob/main/SECURITY.md
+    url: https://github.com/PedroM2626/smw-sciml/blob/master/SECURITY.md
     about: Please report vulnerabilities privately, never as a public issue.

@@ -1183,5 +1183,5 @@ tilemap world models, DAgger, distillation, cross-stage generalization).
 - `results/MANIFEST.md` artifact index with CI-enforced provenance (`_meta`), writer,
   command, README-section mapping and checkpoint-freshness gates.
 
-[Unreleased]: https://github.com/PedroM2626/smw-pinn/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/PedroM2626/smw-pinn/releases/tag/v0.1.0
+[Unreleased]: https://github.com/PedroM2626/smw-sciml/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/PedroM2626/smw-sciml/releases/tag/v0.1.0

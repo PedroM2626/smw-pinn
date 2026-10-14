@@ -9,8 +9,8 @@ authors:
 version: 0.1.0
 date-released: 2026-09-22
 license: MIT
-repository-code: "https://github.com/PedroM2626/smw-pinn"
-url: "https://github.com/PedroM2626/smw-pinn"
+repository-code: "https://github.com/PedroM2626/smw-sciml"
+url: "https://github.com/PedroM2626/smw-sciml"
 keywords:
   - physics-informed-neural-networks
   - model-based-reinforcement-learning

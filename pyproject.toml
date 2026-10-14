@@ -63,9 +63,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PedroM2626/smw-pinn"
-Repository = "https://github.com/PedroM2626/smw-pinn"
-Issues = "https://github.com/PedroM2626/smw-pinn/issues"
+Homepage = "https://github.com/PedroM2626/smw-sciml"
+Repository = "https://github.com/PedroM2626/smw-sciml"
+Issues = "https://github.com/PedroM2626/smw-sciml/issues"
 
 [project.scripts]
 # Cross-platform task runner (the Makefile stays canonical on Linux/macOS):
