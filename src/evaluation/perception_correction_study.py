@@ -19,11 +19,14 @@ cleared, because a teleport next to the chimney smoke kills by the fall, not by 
 only the difference is the sprite's doing. The measured tables are baked where the runtime reads
 them and gated against the artifacts here.
 
-The section also settles what the corrected map says about the stages: Yoshi's Island 1 is
-completed by an agent on screen (the 10.66 clearance draw, re-flown with every frame kept), and
-the other three sessions the map hands over are measured to be unplayable - their floors stop
-holding where the buffer has a decor row over air, and their entrances capture the player in an
-animation that never completes.
+The section also settles what the corrected map says about the sessions: Yoshi's Island 1 is
+completed by an agent on screen (the 10.66 clearance draw, re-flown with every frame kept), the
+house session has no goal tape and is concluded by walking back out through its door - the
+left-edge exit the engine performs, marching through the death animation's own byte on the way
+while the lives counter proves no death happened - and the remaining two sessions are measured
+dead under every route, fresh entry or restored savestate alike. The recorder keeps rolling past
+each verdict, and `results/figures/all_covered_stages.mp4` is the single reel with every
+session's ending on it.
 
 Run:  python -m src.evaluation.perception_correction_study
       make perception-correction-study
@@ -42,6 +45,7 @@ logger = get_logger(__name__)
 TILE_PROBE_ARTIFACT = "results/tile_behavior_probe_metrics.json"
 SPRITE_PROBE_ARTIFACT = "results/sprite_behavior_probe_metrics.json"
 STAGES_ARTIFACT = "results/level_dashboards_cleared.json"
+DASHBOARDS_ARTIFACT = "results/level_dashboard_study_metrics.json"
 
 #: the old hardcoded lists, quoted here because the correction is only as good as its record of
 #: what it corrected: every id below was painted with the wrong class by the pre-10.68 classifier
@@ -81,23 +85,26 @@ def gather() -> Dict[str, Any]:
     tile_probe = _read(TILE_PROBE_ARTIFACT)
     sprite_probe = _read(SPRITE_PROBE_ARTIFACT)
     stages = _read(STAGES_ARTIFACT)
+    dashboards = _read(DASHBOARDS_ARTIFACT)
     corrected = {key: _class_of(tile_probe["tiles"], key) for key in CORRECTED}
     return {
         "study": (
             "The tile map and the sprite slots read the way the engine reads them: every standard "
             "Map16 id measured off the console by writing it into the level buffer, every stage "
             "sprite met and touched twice, the dashboard panel redrawn from the measured classes, "
-            "and the one stage an agent can finish recorded finishing it."
+            "and every session the map hands over recorded to the verdict the engine itself "
+            "delivered."
         ),
         "protocol": {
             "tile_probe": tile_probe["protocol"],
             "sprite_probe": sprite_probe["protocol"],
             "episode_plans": stages["protocol"]["episode_plans"],
-            "clear_definition": stages["protocol"]["clear_definition"],
+            "conclusion_definition": stages["protocol"]["conclusion_definition"],
         },
         "tile_probe": tile_probe,
         "sprite_probe": sprite_probe,
         "stages": stages,
+        "conclusion_video": dashboards.get("conclusion_video") or {},
         "corrected_headline_ids": corrected,
     }
 
@@ -109,7 +116,9 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
     sprite_counts = sprite_probe["class_counts"]
     stages = payload["stages"]
     yoshi = next(s for s in stages["stages"] if str(s["identity"]["translevel"]).lower() == "0x2a")
-    unplayable = [s for s in stages["stages"] if str(s["identity"]["translevel"]).lower() != "0x2a"]
+    session_27 = next(
+        s for s in stages["stages"] if str(s["identity"]["translevel"]).lower() == "0x27"
+    )
     corrected = payload["corrected_headline_ids"]
 
     lines: List[str] = [
@@ -169,21 +178,36 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "draws every live slot in the class the engine gave it, and an id the probe has not met "
         "yet draws as unmeasured rather than guessed.",
         "",
-        "**What the corrected map says about the stages.** Yoshi's Island 1 (`0x2A`) is completed "
-        "on screen, by the same seeded clearance draw 10.66 published - flown again with every "
-        f"frame kept: {yoshi['episode']['frames']} frames, "
-        f"{yoshi['episode']['progress_px']:.0f} px of the "
+        "**What the corrected map says about the sessions.** Yoshi's Island 1 (`0x2A`) is "
+        "completed on screen, by the same seeded clearance draw 10.66 published - flown again "
+        f"with every frame kept: {yoshi['episode']['engine_exit_frame'] + 1} frames to the "
+        f"verdict, {yoshi['episode']['progress_px']:.0f} px of the "
         f"{yoshi['terrain']['terrain_px']:.0f} px the buffer holds, the mode byte going `0x14` to "
-        f"`{yoshi['clear_evidence']['exit_mode']}` with no `0x0B` on the way - "
-        f"`{yoshi['mpc']['source']}`. The other three sessions the map hands over are measured "
-        "unplayable, and the corrected map is what shows why: past its first "
-        f"{unplayable[0]['walk_right_frontier']['frontier_px']:.0f} px the `0x27` session's row 24 "
-        "is a stretch of measured decor (message-block ids) over air, and the "
-        "`0x29` session captures any player - moving, jumping, or standing still - in an entrance "
-        "animation (`$7E:0071` goes to `0x09`) that never completes and falls him past the level. "
-        "The house session's own exit is a warp of the same family. No distance proxy was moved "
-        "to make those sentences: the engine ends every one of them by itself, in under 350 "
-        "frames, whatever the agent does.",
+        f"`{yoshi['clear_evidence']['exit_mode']}` with no `0x0B` on the way and the lives "
+        "counter untouched. The house session (`0x28`) has no goal tape at all, and is "
+        "concluded by walking back out through its door: the engine performs the left-edge exit "
+        "itself - the mode marching `0x14` -> `0x0B` -> `0x0C` -> `0x0D` -> `0x0E` back onto the "
+        "map with the lives byte never moving. That march is why the discriminator now reads two "
+        "bytes: `0x0B` is the byte the death animation owns, and the house's exit passes through "
+        "it on the way out, so the byte alone would call a walk out the door a death. The lives "
+        "counter (`$7E:0DBE`) settles it - an exit leaves it put, a death decrements it. The "
+        "other two sessions are measured dead under every route, fresh entry or restored "
+        f"savestate alike: past its first {session_27['walk_right_frontier']['frontier_px']:.0f} "
+        "px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over "
+        "air, and walking west stops at a wall - every run ends in the death mode with a life "
+        "taken; the `0x29` session is a scripted pipe ride whose own machinery lifts the player "
+        "and drops him past the level with the controls untouched, the same death with the same "
+        "life taken even on a fresh entry that never touched a button. No distance proxy was "
+        "moved to make any of those sentences.",
+        "",
+        "**One reel with every session.** "
+        f"`{payload['conclusion_video']['mp4']}` is the "
+        "single video: all four episodes in order, each flown by the agent that can conclude "
+        "that session and kept recording through the engine's own exit sequence - the mode "
+        "march and the map settling - so the reel shows the clear, the walk out the door, and "
+        "the two measured deaths, each to the verdict the engine itself delivered. "
+        f"{payload['conclusion_video']['bytes'] / 1e6:.2f} MB, "
+        f"{len(payload['conclusion_video']['segments'])} segments.",
         "",
         "**The panel.** The tile window now draws the seven measured classes - decor, coin, "
         "platform, wall, slope, harmful, and the cells the buffer does not have - from the "

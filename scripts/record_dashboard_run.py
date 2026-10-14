@@ -370,6 +370,7 @@ def record(
     apply_overrides: bool = True,
     operator_delay: int = OPERATOR_A_DELAY,
     warmup_frames: int = 5,
+    outro_frames: int = 0,
     savestate_route: str = (
         "entered through the world map with the control-handoff gate of 10.36.3 satisfied"
     ),
@@ -381,7 +382,10 @@ def record(
     `goal_px=None` lets the episode run until the engine itself ends it - the mode byte leaving
     0x14, which is the clear/death discriminator of 10.66 rather than a distance proxy - so the
     featured completion is the engine's own verdict. `seed` is passed to the planner when the
-    featured arm samples one; seed 7 is the draw that cleared Yoshi's Island 1.
+    featured arm samples one; seed 7 is the draw that cleared Yoshi's Island 1. `outro_frames`
+    keeps recording past the engine's verdict with the controls released, so the video shows the
+    exit sequence itself - the mode march to the map and the map settling - instead of freezing
+    on the frame the byte flipped.
     """
     if kind == "mpc":
         actor = MpcClearanceActor(device, seed=seed)
@@ -434,6 +438,12 @@ def record(
     t0 = time.time()
     ended = "max_frames"
     after: Dict[str, float] = {}
+    #: the lives counter ($7E:0DBE, BCD) is what separates an exit from a death: the house's
+    #: left-edge walk-out passes through the death mode *byte*, and the byte alone would call
+    #: it a death - a life that stays put says it is the exit's own path
+    ADDR_LIVES = 0x0DBE
+    lives_before = int(emu.read_wram_u8(ADDR_LIVES))
+    engine_exit_frame: Optional[int] = None
 
     for frame in range(max_frames):
         state = emu.get_smw_extended_state()
@@ -558,6 +568,7 @@ def record(
             # the engine's own verdict: 0x0B is the death animation, anything else is the
             # stage's exit sequence, and the mode transitions say which (10.66's discriminator)
             ended = f"engine_left_0x14_to_0x{mode_now:02X}"
+            engine_exit_frame = len(rows["frame"])
             break
         if after["y"] > wram.DEATH_Y:
             ended = "death"
@@ -566,9 +577,65 @@ def record(
             ended = "goal"
             break
 
+    #: the progress the run reached when the engine delivered its verdict - the outro that
+    #: follows teleports the player (the warp markers are $FFFC/$FFFE), and a progress read
+    #: after that would quote the teleport, not the run
+    exit_progress = float(after["x"]) - float(start_x or 0.0)
+
+    if outro_frames > 0 and (ended.startswith("engine_left") or ended == "death"):
+        # the outro: the controls are released, the actor and the operator are off, and the
+        # camera keeps recording the engine's own exit sequence - the mode march (0x0B ->
+        # 0x0C -> 0x0D -> 0x0E for the door, 0x0C onward for the goal tape) and the map
+        # settling on the node the session ended at. The telemetry panels freeze on the last
+        # gameplay frame (the engine is teleporting the player; a "residue" of a warp is not a
+        # number), and the console's own RGB window is what carries the epilogue.
+        last_vec = (
+            np.asarray(prev_record, dtype=np.float64).copy()
+            if prev_record is not None
+            else np.zeros(12)
+        )
+        #: when the episode's actor emitted a primitive distribution, the outro has no actor at
+        #: all: the bars draw zero rather than inheriting the last gameplay frame's opinion
+        outro_emits_primitives = bool(primitive_probs)
+        for _ in range(outro_frames):
+            emu.set_input({})
+            emu.step_frame()
+            nxt = emu.get_smw_state()
+            mode_now = emu.get_game_mode()
+            if engine_exit_frame is None and mode_now != wram.GAME_MODE_INTERACTIVE:
+                engine_exit_frame = len(rows["frame"])
+            shot = emu.get_frame() if keep_frames else None
+            rgb = (
+                downscale(shot, rgb_width, rgb_height)
+                if shot is not None
+                else np.zeros((rgb_height, rgb_width, 3), np.uint8)
+            )
+            rows["frame"].append(len(rows["frame"]))
+            rows["state"].append(last_vec)
+            rows["button_probs"].append(np.zeros(len(ACTION_BUTTONS), np.float32))
+            rows["chosen"].append(-1)
+            rows["value"].append(rows["value"][-1] if rows["value"] else 0.0)
+            rows["executed"].append(np.zeros(len(ACTION_BUTTONS), np.float32))
+            rows["reflex"].append(0.0)
+            rows["pulse"].append(0.0)
+            rows["operator"].append(0.0)
+            rows["camera"].append(emu.get_camera_x())
+            rows["mode"].append(float(mode_now))
+            rows["live"].append(0.0)
+            rows["residue"].append(0.0)
+            if outro_emits_primitives:
+                primitive_probs.append(np.zeros(len(ACTION_MATRIX), dtype=np.float32))
+            if keep_frames:
+                rows["patch"].append(rows["patch"][-1])
+                rows["tile_ids"].append(rows["tile_ids"][-1])
+                rows["sprites"].append(np.zeros((12, 4), dtype=np.float32))
+                rows["frame_rgb"].append(rgb)
+            after = nxt
+    lives_after = int(emu.read_wram_u8(ADDR_LIVES))
+
     emu.close()
     elapsed = time.time() - t0
-    progress = float(after["x"] - start_x)
+    progress = exit_progress
     camera = np.asarray(rows["camera"], dtype=np.float64)
     states = np.asarray(rows["state"], dtype=np.float64)
     screen = states[:, 0] - camera[: states.shape[0]]
@@ -660,6 +727,10 @@ def record(
         "run": {
             "frames": len(rows["frame"]),
             "ended": ended,
+            "engine_exit_frame": engine_exit_frame,
+            "outro_frames": outro_frames if outro_frames else 0,
+            "lives_before": lives_before,
+            "lives_after": lives_after,
             "progress_px": progress,
             "wall_clock_s": round(elapsed, 2),
             "fps": round(len(rows["frame"]) / max(elapsed, 1e-6), 1),

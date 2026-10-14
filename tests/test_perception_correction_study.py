@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from src.environment import wram
 from src.evaluation.perception_correction_study import gather, render_section
 
 REPO = Path(__file__).resolve().parents[1]
@@ -89,19 +90,48 @@ def test_the_finished_stage_was_finished_by_the_engine() -> None:
     yoshi = next(s for s in stages["stages"] if str(s["identity"]["translevel"]).lower() == "0x2a")
     assert yoshi["episode"]["controller"] == "mpc"
     assert yoshi["episode"]["planner_seed"] == 7, "the 10.66 clearance draw itself"
-    assert yoshi["clear_evidence"]["cleared"]
+    assert yoshi["clear_evidence"]["concluded"]
     assert yoshi["clear_evidence"]["exit_mode"] == "0x0C", "0x14 -> 0x0C with no 0x0B on the way"
+    assert not yoshi["clear_evidence"]["lives_lost"], "a clear does not take a life"
 
 
-def test_the_unplayable_sessions_are_reported_with_evidence() -> None:
-    """Every other session is measured unplayable, and its record says why."""
+def test_every_session_ends_with_the_engines_own_verdict() -> None:
+    """Each of the four sessions is recorded to the verdict the engine itself delivered.
+
+    The verdict is two bytes now: the mode byte and the lives counter. The house's walk out the
+    door passes through the death animation's own byte on its way to the map, so the byte alone
+    would call an exit a death - the lives counter settles it, and the two measured-dead
+    sessions show the counter doing the other job.
+    """
     stages = _load(STAGES)
-    others = [s for s in stages["stages"] if str(s["identity"]["translevel"]).lower() != "0x2a"]
-    assert len(others) == 3
-    for stage in others:
-        assert not stage["clear_evidence"]["cleared"]
-        assert stage["clear_evidence"]["reason"], "a no without a measured reason is an opinion"
-        assert stage["episode"]["frames"] <= 1268, (
-            "the sessions end by themselves; an episode that ran its whole budget did not measure "
-            "the engine's verdict"
+    by_id = {str(s["identity"]["translevel"]).lower(): s for s in stages["stages"]}
+    assert len(by_id) == 4
+    house = by_id["0x28"]
+    assert house["episode"]["controller"] == "terrain-runner", "the house is walked out, not flown"
+    assert house["clear_evidence"]["concluded"], house["clear_evidence"]["reason"]
+    assert house["clear_evidence"]["reached_map"], "the walk out the door ends on the map"
+    assert house["episode"]["lives_before"] == house["episode"]["lives_after"], (
+        "the exit marches through 0x0B, the death animation's own byte - a life that stays put is "
+        "what separates that march from a death"
+    )
+    assert wram.GAME_MODE_WORLD_MAP in house["episode"]["mode_bytes_seen"]
+    for dead in ("0x27", "0x29"):
+        session = by_id[dead]
+        assert not session["clear_evidence"]["concluded"]
+        assert session["episode"]["lives_after"] != session["episode"]["lives_before"], (
+            f"{dead}: the measured death must show the engine taking a life, or the verdict is a "
+            "guess about the byte it never read"
         )
+        assert session["clear_evidence"]["reason"]
+
+
+def test_the_conclusion_reel_exists_and_is_carried() -> None:
+    """The single video with every session: on disk, inside what a README can carry, referenced."""
+    payload = _load(REPO / "results" / "level_dashboard_study_metrics.json")
+    reel = payload.get("conclusion_video") or {}
+    assert reel.get("mp4"), "the study was gathered without stitching the reel"
+    file = REPO / reel["mp4"]
+    assert file.is_file(), f"{file} is quoted by the README and not committed"
+    assert file.stat().st_size < 10_000_000, "the reel is over GitHub's per-file comfort limit"
+    assert len(reel["segments"]) == 4, "one segment per session the map hands over"
+    assert reel["mp4"] in _readme(), "the README must link the reel, not merely own it"

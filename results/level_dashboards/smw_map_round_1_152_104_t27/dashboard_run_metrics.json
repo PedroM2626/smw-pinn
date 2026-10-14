@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T22:09:51+00:00",
-    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+    "generated_utc": "2026-10-14T01:14:01+00:00",
+    "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -67,25 +67,29 @@
     ],
     "frame_capture": {
       "requested_pixel_format": 2,
-      "decoded_as_pixel_format": 1,
+      "decoded_as_pixel_format": 2,
       "note": "0 = 0RGB1555, 1 = RGB565, 2 = RGB888; the two differ because the core asks for a 32-bit buffer and hands back a 16-bit one"
     },
     "device": "cuda"
   },
   "run": {
-    "frames": 352,
+    "frames": 592,
     "ended": "death",
+    "engine_exit_frame": 542,
+    "outro_frames": 240,
+    "lives_before": 4,
+    "lives_after": 3,
     "progress_px": 372.875,
-    "wall_clock_s": 2.01,
-    "fps": 175.2,
-    "share_of_frames_live": 0.5681818181818182,
-    "camera_travel_px": 280.0,
+    "wall_clock_s": 2.43,
+    "fps": 243.5,
+    "share_of_frames_live": 0.33783783783783783,
+    "camera_travel_px": 65519.0,
     "screen_x_range_px": [
-      16.0,
-      142.1875
+      -65132.375,
+      386.625
     ],
-    "mean_max_button_probability": 0.8481654850766063,
-    "frames_with_no_button_above_half": 1,
+    "mean_max_button_probability": 0.5043146127482524,
+    "frames_with_no_button_above_half": 241,
     "frames_where_reflex_overrode": 4,
     "frames_where_pulse_released_B": 1,
     "frames_under_operator_A": 23,
@@ -95,9 +99,11 @@
     "value_start_px": 201.41863496655105,
     "value_end_px": 198.3293167058795,
     "value_max_px": 207.2785286071887,
-    "residue_exact_share": 0.5625,
+    "residue_exact_share": 0.7398648648648649,
     "residue_abs_max_subpixels": 35.0,
     "mode_bytes_seen": [
+      11,
+      12,
       20
     ]
   },

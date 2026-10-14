@@ -148,7 +148,10 @@ def test_the_kept_episode_is_the_attempt_it_replaces() -> None:
 
     The old recorder flew each episode twice (cheap, then kept) and compared; the 10.68 recorder
     flies the seeded draw once with everything kept, so the control that replaces the comparison is
-    the seed: the draw that cleared 0x2A in the campaign must clear the recorded episode too.
+    the seed: the draw that cleared 0x2A in the campaign must conclude the recorded episode too.
+    The frame to compare is the engine's exit, not the episode's length - the episode keeps
+    recording past the verdict now (the outro), and only the gameplay up to the exit was the
+    flight.
     """
     study = _load(STUDY)
     clearance = _load(CLEARANCE)
@@ -163,12 +166,12 @@ def test_the_kept_episode_is_the_attempt_it_replaces() -> None:
         "the cleared stage is flown by its clearance draw"
     )
     assert recorded["episode"]["planner_seed"] == clearance["protocol"]["seed"]
-    assert recorded["clear_evidence"]["cleared"], (
+    assert recorded["clear_evidence"]["concluded"], (
         "the campaign cleared this stage and the recorded episode did not - the draw is not the draw"
     )
-    assert abs(recorded["episode"]["frames"] - attempt["frames"]) <= 1, (
-        f"{recorded['episode']['frames']} frames recorded against {attempt['frames']} flown: the "
-        "same seed from the same state is a different run"
+    assert abs(recorded["episode"]["engine_exit_frame"] - attempt["frames"]) <= 1, (
+        f"{recorded['episode']['engine_exit_frame']} frames to the verdict against "
+        f"{attempt['frames']} flown: the same seed from the same state is a different run"
     )
     assert abs(recorded["episode"]["progress_px"] - attempt["max_progress_px"]) < 1.0, (
         "the recorded episode and the published attempt disagree about how far the draw went"
@@ -184,7 +187,9 @@ def test_the_picture_line_quotes_the_recording() -> None:
         line = bottom_line(stage)
         assert f"{stage['episode']['progress_px']:.0f} / {stage_width_px(stage):.0f} px" in line
         evidence = stage["clear_evidence"]
-        if evidence["cleared"]:
+        if evidence["concluded"] and str(evidence["exit_mode"]) == "0x0B":
+            assert "concluded: out the door and onto the map, no life lost" in line
+        elif evidence["concluded"]:
             assert "cleared: the engine ended the stage" in line
         elif int(stage["mpc"]["tries"]) > 0:
             assert f"{stage['mpc']['clears']} of {stage['mpc']['tries']} attempts" in line

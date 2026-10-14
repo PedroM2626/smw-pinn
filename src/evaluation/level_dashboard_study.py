@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from typing import Any, Dict, List, Optional
 
 from src.evaluation.dashboard_video import level_label, run_dashboard_render
@@ -79,16 +80,19 @@ def stage_width_px(stage: Dict[str, Any]) -> float:
 def bottom_line(stage: Dict[str, Any], progress: Optional[float] = None) -> str:
     """The corner the mock puts a clearance rate in, with the verdict the engine itself gave.
 
-    Two numbers share the line because one of them is about the stage and the other is about the
-    policy on screen: whether the engine ended the stage without the death mode - the 10.66
-    discriminator, read off the episode's own mode channel - and how far the actor the dashboard
-    is actually showing got against the width the stage's buffer holds.
+    Two numbers share the line because one of them is about the session and the other is about the
+    policy on screen: whether the engine concluded the session - the 10.66/10.68 discriminator,
+    mode byte and lives counter together, read off the episode's own recording - and how far the
+    actor the dashboard is actually showing got against the width the session's buffer holds.
     """
     value = float(stage["episode"]["progress_px"]) if progress is None else float(progress)
     width = stage_width_px(stage)
     evidence = stage.get("clear_evidence") or {}
-    if evidence.get("cleared"):
-        rate = "cleared: the engine ended the stage without the death mode"
+    if evidence.get("concluded"):
+        if str(evidence.get("exit_mode", "")) == "0x0B":
+            rate = "concluded: out the door and onto the map, no life lost"
+        else:
+            rate = "cleared: the engine ended the stage without the death mode"
     elif int(stage["mpc"]["tries"]) > 0:
         clears = int(stage["mpc"]["clears"])
         tries = int(stage["mpc"]["tries"])
@@ -206,6 +210,79 @@ def render_level_videos(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     return rendered
 
 
+def stitch_conclusion_video(rendered: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """One MP4 with every session's episode in order, each flown to its engine verdict.
+
+    The per-session renders are already the same codec, size and frame rate, so this is a
+    straight concat through the bundled ffmpeg, re-encoded once at a quality that keeps the
+    whole reel inside what a README can carry. The reel is the single video 10.68 points at:
+    every session the map hands over, each shown to the verdict the engine itself delivered.
+    """
+    import tempfile
+
+    import imageio_ffmpeg
+
+    ordered = sorted(rendered, key=lambda r: int(r["level_index"]))
+    if not ordered:
+        return {}
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    out = figure_file("all_covered_stages.mp4")
+    listing = tempfile.NamedTemporaryFile(
+        "w", suffix=".txt", delete=False, encoding="utf-8", newline="\n"
+    )
+    with listing:
+        for record in ordered:
+            path = str((REPO_ROOT / record["video"]["mp4"]).resolve()).replace("\\", "/")
+            listing.write(f"file '{path}'\n")
+    chosen_crf = None
+    for crf in (27, 30, 33):
+        result = subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                listing.name,
+                "-c:v",
+                "libx264",
+                "-crf",
+                str(crf),
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+                str(REPO_ROOT / out),
+            ],
+            capture_output=True,
+        )
+        if result.returncode == 0 and (REPO_ROOT / out).stat().st_size < 9_500_000:
+            chosen_crf = crf
+            break
+    os.unlink(listing.name)
+    size = os.path.getsize(REPO_ROOT / out)
+    if chosen_crf is None:
+        raise RuntimeError(
+            f"the stitched reel would not fit a README at any tried quality: {size} bytes"
+        )
+    return {
+        "mp4": _rel(out),
+        "bytes": size,
+        "crf": chosen_crf,
+        "segments": [
+            {
+                "level_index": record["level_index"],
+                "label": record["label"],
+                "dataset": record["dataset"],
+                "mp4": record["video"]["mp4"],
+            }
+            for record in ordered
+        ],
+    }
+
+
 def render_survey_table(survey: Dict[str, Any]) -> List[str]:
     lines = [
         "| map cursor | reached by | translevel | timer | right-press dx | the engine gave a stage |",
@@ -272,11 +349,14 @@ def render_stage_table(payload: Dict[str, Any]) -> List[str]:
         evidence = stage["clear_evidence"]
         width = stage_width_px(stage)
         share = episode["progress_px"] / width if width > 0 else float("nan")
-        verdict = (
-            f"**cleared** (left `0x14` for `{evidence['exit_mode']}`)"
-            if evidence["cleared"]
-            else f"no ({evidence['reason']})"
-        )
+        if evidence["concluded"]:
+            verdict = (
+                "**concluded** (out the door, `0x0E`, no life lost)"
+                if str(evidence.get("exit_mode")) == "0x0B"
+                else f"**cleared** (left `0x14` for `{evidence['exit_mode']}`, no `0x0B`)"
+            )
+        else:
+            verdict = f"no ({evidence['reason']})"
         lines.append(
             f"| `{stage_name(stage['identity'], stage['map_node'])}` | "
             f"`{stage['identity']['translevel']}` | {width:.0f} px "
@@ -434,20 +514,27 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "",
         f"{cleared} of {len(progression['rounds'])} rounds cleared. " + clearance_sentence,
         "",
-        "**One episode per stage, flown by the agent that can finish it.** "
+        "**One episode per session, flown by the agent that can conclude it.** "
         "`scripts/record_level_dashboards.py` records the same channels 10.60 records at each "
-        "stage the map hands over - surveyed or unlocked - plus the two channels 10.68 added: "
+        "session the map hands over - surveyed or unlocked - plus the two channels 10.68 added: "
         "the full 16-bit tile ids of the window and every live sprite slot. Yoshi's Island 1 is "
         "flown by the published clearance controller on its seed-7 draw until the engine itself "
-        "ends the stage; the blank house session is walked back out through its door by the "
-        "rule-based runner of 10.68; the other two sessions are documented by the distilled actor "
-        "for a fixed horizon, because 10.68 measured no agent can finish them at all.",
+        "ends the stage; the blank house session has no goal tape at all and is concluded by "
+        "walking back out through its door - the left-edge exit the engine performs on its own; "
+        "the other two sessions are documented by the distilled actor for a fixed horizon, "
+        "because 10.68 measured no agent concludes them at all. Every episode keeps recording "
+        "past the verdict with the controls released, so each video shows the engine's own exit "
+        "sequence - the mode march and the map settling - instead of freezing on the flipped "
+        "byte.",
         "",
         *render_stage_table(payload),
         "",
-        "The verdict column is the engine's own: the mode byte leaving `0x14` for anything other "
-        "than the death animation is a stage the engine ended without losing the player, and "
-        "`0x0B` is a death. No distance proxy appears in that column, on purpose.",
+        "The verdict column is the engine's own, and the lives counter completes it: a session "
+        "is concluded when the engine returned the player to the map without taking a life. The "
+        "mode byte alone cannot say that - the house's walk out the door marches through `0x0B`, "
+        "the byte the death animation owns, and the byte would call an exit a death - so the "
+        "lives counter (`$7E:0DBE`) settles it: an exit leaves it put, a death decrements it. No "
+        "distance proxy appears in that column, on purpose.",
         "",
     ]
     for index in sorted(rendered):
@@ -479,9 +566,12 @@ def main() -> Dict[str, Any]:
     )
     payload["hero"] = hero
     payload["rendered"] = render_level_videos(payload)
+    payload["conclusion_video"] = stitch_conclusion_video(payload["rendered"])
     write = results_file("level_dashboard_study_metrics.json")
     write_metrics(write, payload, command="make level-dashboard-study")
     logger.info(f"level dashboard study: {write}")
+    if payload.get("conclusion_video"):
+        logger.info(f"conclusion reel: {payload['conclusion_video']['mp4']}")
     return payload
 
 

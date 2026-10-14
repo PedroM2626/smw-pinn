@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T23:38:32+00:00",
-    "git_sha": "f3df8a67794222697cd245d734c3dfaa96a695de",
+    "generated_utc": "2026-10-14T01:16:56+00:00",
+    "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -61,29 +61,35 @@
           "goal_px": null,
           "operator_delay": 0,
           "warmup_frames": 0,
-          "render_stride": 8
+          "render_stride": 8,
+          "outro_frames": 320
         },
         "0x28": {
-          "kind": "dagger",
+          "kind": "terrain-runner",
+          "direction": "LEFT",
           "seed": null,
-          "frames": 1268,
-          "goal_px": 1900.0
+          "frames": 1500,
+          "goal_px": null,
+          "outro_frames": 320
         },
         "0x27": {
           "kind": "dagger",
           "seed": null,
           "frames": 1268,
-          "goal_px": 1900.0
+          "goal_px": 1900.0,
+          "outro_frames": 240
         },
         "0x29": {
           "kind": "dagger",
           "seed": null,
           "frames": 1268,
-          "goal_px": 1900.0
+          "goal_px": 1900.0,
+          "outro_frames": 240
         }
       },
-      "clear_definition": "the engine left interactive mode (0x14) for anything other than the death mode (0x0B) - the discriminator 10.66 read off the byte and 10.67 re-checked",
-      "unplayable_sessions": "0x27 and 0x29: 10.68 measured their floors to stop holding (a measured decor row over air) and their entrances to capture the player in an animation that never completes; no agent finishes them, and the episode documents what the engine does",
+      "conclusion_definition": "the engine returned the player to the map (0x0E) without taking a life. The mode byte alone cannot say it: the house session's left-edge exit marches through 0x0B - the byte the death animation owns - on its way out the door, and the byte would call that a death. The lives counter ($7E:0DBE) settles it: an exit leaves it put, a death decrements it, and reaching the map while losing a life is the game-over sequence, not a conclusion",
+      "outro": "every episode keeps recording past the verdict with the controls released, so the video shows the mode march and the map settling instead of freezing on the flipped byte; the telemetry panels freeze on the last gameplay frame because a warp has no residue",
+      "unplayable_sessions": "0x27 and 0x29: 10.68 measured their floors to stop holding (a measured decor row over air) and 0x29's own scripted pipe ride to lift the player and drop him past the level with the controls untouched - fresh entry or restored savestate alike - so no agent concludes them, and the episodes document what the engine does",
       "frontier_rule": "RIGHT+Y with the B pulse, stopped at 90 frames of no advance, a spent hold, death, or the frame budget",
       "goal_proxy_px": 1900.0,
       "device": "cuda"
@@ -2048,20 +2054,28 @@
         "controller_kind": "planner",
         "planner_seed": 7,
         "episode_end_rule": "the engine's own mode byte leaving 0x14",
-        "frames": 4374,
+        "frames": 4694,
+        "engine_exit_frame": 4374,
+        "outro_frames": 320,
+        "lives_before": 4,
+        "lives_after": 4,
         "progress_px": 5010.625,
         "ended": "engine_left_0x14_to_0x0C",
         "mode_bytes_seen": [
           12,
+          13,
+          14,
           20
         ],
-        "wall_clock_s": 285.59,
+        "wall_clock_s": 264.88,
         "frames_under_operator_A": 55
       },
       "clear_evidence": {
-        "cleared": true,
+        "concluded": true,
+        "reached_map": true,
+        "lives_lost": false,
         "exit_mode": "0x0C",
-        "reason": "the engine ended the stage without the death mode"
+        "reason": "the engine ended the session through its exit sequence, no death mode, no life lost"
       },
       "mpc": {
         "clears": 1,
@@ -2139,24 +2153,33 @@
       },
       "episode": {
         "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
-        "controller": "dagger",
-        "controller_kind": "button head",
+        "controller": "terrain-runner",
+        "controller_kind": "rule-based agent",
         "planner_seed": null,
-        "episode_end_rule": "the published 1900 px distance proxy",
-        "frames": 221,
-        "progress_px": 126.25,
+        "episode_end_rule": "the engine's own mode byte leaving 0x14",
+        "frames": 391,
+        "engine_exit_frame": 71,
+        "outro_frames": 320,
+        "lives_before": 4,
+        "lives_after": 4,
+        "progress_px": 65404.625,
         "ended": "engine_left_0x14_to_0x0B",
         "mode_bytes_seen": [
           11,
+          12,
+          13,
+          14,
           20
         ],
-        "wall_clock_s": 1.27,
-        "frames_under_operator_A": 23
+        "wall_clock_s": 0.9,
+        "frames_under_operator_A": 0
       },
       "clear_evidence": {
-        "cleared": false,
+        "concluded": true,
+        "reached_map": true,
+        "lives_lost": false,
         "exit_mode": "0x0B",
-        "reason": "the engine entered the death mode"
+        "reason": "the engine walked the player out and back onto the map without taking a life - the 0x0B on the way is the door's own exit march, not a death (the lives byte stays put)"
       },
       "mpc": {
         "clears": 0,
@@ -2238,19 +2261,29 @@
         "controller_kind": "button head",
         "planner_seed": null,
         "episode_end_rule": "the published 1900 px distance proxy",
-        "frames": 308,
+        "frames": 548,
+        "engine_exit_frame": 385,
+        "outro_frames": 240,
+        "lives_before": 4,
+        "lives_after": 3,
         "progress_px": 406.4375,
         "ended": "death",
         "mode_bytes_seen": [
+          11,
+          12,
+          13,
+          14,
           20
         ],
-        "wall_clock_s": 1.8,
+        "wall_clock_s": 2.05,
         "frames_under_operator_A": 0
       },
       "clear_evidence": {
-        "cleared": false,
-        "exit_mode": null,
-        "reason": "the player fell past the death line before the mode byte moved"
+        "concluded": false,
+        "reached_map": true,
+        "lives_lost": true,
+        "exit_mode": "0x0B",
+        "reason": "the engine ended the session in the death mode and took a life"
       },
       "mpc": {
         "clears": 0,
@@ -2332,19 +2365,27 @@
         "controller_kind": "button head",
         "planner_seed": null,
         "episode_end_rule": "the published 1900 px distance proxy",
-        "frames": 352,
+        "frames": 592,
+        "engine_exit_frame": 542,
+        "outro_frames": 240,
+        "lives_before": 4,
+        "lives_after": 3,
         "progress_px": 372.875,
         "ended": "death",
         "mode_bytes_seen": [
+          11,
+          12,
           20
         ],
-        "wall_clock_s": 2.01,
+        "wall_clock_s": 2.43,
         "frames_under_operator_A": 23
       },
       "clear_evidence": {
-        "cleared": false,
-        "exit_mode": null,
-        "reason": "the player fell past the death line before the mode byte moved"
+        "concluded": false,
+        "reached_map": false,
+        "lives_lost": true,
+        "exit_mode": "0x0B",
+        "reason": "the engine ended the session in the death mode and took a life"
       },
       "mpc": {
         "clears": 0,
@@ -2365,31 +2406,31 @@
       "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 6559775,
-        "frames_written": 547,
+        "bytes": 7001193,
+        "frames_written": 587,
         "fps": 30.0,
-        "duration_s": 18.23
+        "duration_s": 19.57
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 5860094,
+        "bytes": 6082175,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 125060,
-        "frame": 2184
+        "bytes": 124647,
+        "frame": 2344
       },
       "caption": {
-        "episode_frames": 4374,
-        "tile_void_cell_share": 0.30449273883617317,
+        "episode_frames": 4694,
+        "tile_void_cell_share": 0.3085246859891474,
         "progress_px": 5009.3125,
-        "camera_travel_px": 4855.0,
-        "mean_top_action_probability": 1.0,
-        "mean_max_button_probability": 0.9919981710105167,
-        "residue_exact_share": 0.8084133516232281,
+        "camera_travel_px": 65519.0,
+        "mean_top_action_probability": 0.931827865360034,
+        "mean_max_button_probability": 0.9243715381337878,
+        "residue_exact_share": 0.8214742224115893,
         "operator_A_frames": 55,
         "value_first_px": 201.4052734375,
         "value_last_px": 70.93865966796875,
@@ -2401,38 +2442,38 @@
       "label": "level 0x28 at node [116, 126]",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
       "goal_px": 256.0,
-      "clear_line": "no run has ever finished this session \u00b7 this arm 126 / 256 px",
+      "clear_line": "concluded: out the door and onto the map, no life lost \u00b7 this arm 65405 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 385081,
-        "frames_written": 111,
+        "bytes": 1250878,
+        "frames_written": 196,
         "fps": 30.0,
-        "duration_s": 3.7
+        "duration_s": 6.53
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 294895,
+        "bytes": 929745,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 118732,
-        "frame": 110
+        "bytes": 120374,
+        "frame": 196
       },
       "caption": {
-        "episode_frames": 221,
-        "tile_void_cell_share": 0.440056675350793,
-        "progress_px": 124.0625,
-        "camera_travel_px": 0.0,
-        "mean_top_action_probability": 0.15812675301264548,
-        "mean_max_button_probability": 0.7974811250268065,
-        "residue_exact_share": 0.31221719457013575,
-        "operator_A_frames": 23,
+        "episode_frames": 391,
+        "tile_void_cell_share": 0.926275073450149,
+        "progress_px": 65406.8125,
+        "camera_travel_px": 65519.0,
+        "mean_top_action_probability": 0.1815856777493606,
+        "mean_max_button_probability": 0.17902813299232737,
+        "residue_exact_share": 0.9974424552429667,
+        "operator_A_frames": 0,
         "value_first_px": 207.95787048339844,
-        "value_last_px": 202.5789031982422,
-        "subscreens_reached": 1
+        "value_last_px": 89.06458282470703,
+        "subscreens_reached": 256
       }
     },
     {
@@ -2443,31 +2484,31 @@
       "clear_line": "no run has ever finished this session \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 1216834,
-        "frames_written": 154,
+        "bytes": 2143597,
+        "frames_written": 274,
         "fps": 30.0,
-        "duration_s": 5.13
+        "duration_s": 9.13
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1441021,
+        "bytes": 1845436,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 118980,
-        "frame": 154
+        "bytes": 117145,
+        "frame": 274
       },
       "caption": {
-        "episode_frames": 308,
-        "tile_void_cell_share": 0.3696260121879957,
+        "episode_frames": 548,
+        "tile_void_cell_share": 0.4333598091063254,
         "progress_px": 406.4375,
-        "camera_travel_px": 316.0,
-        "mean_top_action_probability": 0.16162689092485566,
-        "mean_max_button_probability": 0.8903800978676065,
-        "residue_exact_share": 0.8571428571428571,
+        "camera_travel_px": 65519.0,
+        "mean_top_action_probability": 0.16383409197966337,
+        "mean_max_button_probability": 0.5004326097504066,
+        "residue_exact_share": 0.9197080291970803,
         "operator_A_frames": 0,
         "value_first_px": 201.41864013671875,
         "value_last_px": 195.16087341308594,
@@ -2482,31 +2523,31 @@
       "clear_line": "0 of 2 attempts cleared it \u00b7 this arm 373 / 5376 px",
       "video": {
         "mp4": "results/figures/dashboard_level_4.mp4",
-        "bytes": 1384040,
-        "frames_written": 176,
+        "bytes": 1880709,
+        "frames_written": 296,
         "fps": 30.0,
-        "duration_s": 5.87
+        "duration_s": 9.87
       },
       "gif": {
         "gif": "results/figures/dashboard_level_4.gif",
-        "bytes": 1722921,
+        "bytes": 2045659,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_4_still.png",
-        "bytes": 118056,
-        "frame": 176
+        "bytes": 117099,
+        "frame": 296
       },
       "caption": {
-        "episode_frames": 352,
-        "tile_void_cell_share": 0.379682673845897,
+        "episode_frames": 592,
+        "tile_void_cell_share": 0.44688748666021394,
         "progress_px": 370.625,
-        "camera_travel_px": 280.0,
-        "mean_top_action_probability": 0.15760791313367573,
-        "mean_max_button_probability": 0.8481654850766063,
-        "residue_exact_share": 0.5625,
+        "camera_travel_px": 65519.0,
+        "mean_top_action_probability": 0.1612803807821856,
+        "mean_max_button_probability": 0.5043146127482524,
+        "residue_exact_share": 0.7398648648648649,
         "operator_A_frames": 23,
         "value_first_px": 201.41864013671875,
         "value_last_px": 198.32931518554688,
@@ -2593,5 +2634,36 @@
       "value_last_px": 211.1752471923828,
       "subscreens_reached": 7
     }
+  },
+  "conclusion_video": {
+    "mp4": "results/figures/all_covered_stages.mp4",
+    "bytes": 3477960,
+    "crf": 27,
+    "segments": [
+      {
+        "level_index": 1,
+        "label": "Yoshi's Island 1",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
+        "mp4": "results/figures/dashboard_level_1.mp4"
+      },
+      {
+        "level_index": 2,
+        "label": "level 0x28 at node [116, 126]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
+        "mp4": "results/figures/dashboard_level_2.mp4"
+      },
+      {
+        "level_index": 3,
+        "label": "level 0x29 at node [68, 135]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
+        "mp4": "results/figures/dashboard_level_3.mp4"
+      },
+      {
+        "level_index": 4,
+        "label": "level 0x27 at node [152, 104]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
+        "mp4": "results/figures/dashboard_level_4.mp4"
+      }
+    ]
   }
 }

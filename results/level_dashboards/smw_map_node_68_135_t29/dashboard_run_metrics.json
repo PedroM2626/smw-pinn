@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T22:09:48+00:00",
-    "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+    "generated_utc": "2026-10-14T01:13:57+00:00",
+    "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -73,19 +73,23 @@
     "device": "cuda"
   },
   "run": {
-    "frames": 308,
+    "frames": 548,
     "ended": "death",
+    "engine_exit_frame": 385,
+    "outro_frames": 240,
+    "lives_before": 4,
+    "lives_after": 3,
     "progress_px": 406.4375,
-    "wall_clock_s": 1.8,
-    "fps": 171.1,
-    "share_of_frames_live": 0.8603896103896104,
-    "camera_travel_px": 316.0,
+    "wall_clock_s": 2.05,
+    "fps": 267.8,
+    "share_of_frames_live": 0.4835766423357664,
+    "camera_travel_px": 65519.0,
     "screen_x_range_px": [
-      16.0,
-      142.0625
+      -65096.5625,
+      422.4375
     ],
-    "mean_max_button_probability": 0.8903800978676065,
-    "frames_with_no_button_above_half": 0,
+    "mean_max_button_probability": 0.5004326097504066,
+    "frames_with_no_button_above_half": 240,
     "frames_where_reflex_overrode": 4,
     "frames_where_pulse_released_B": 1,
     "frames_under_operator_A": 0,
@@ -95,9 +99,13 @@
     "value_start_px": 201.41863496655105,
     "value_end_px": 195.16087914099873,
     "value_max_px": 207.17749053105226,
-    "residue_exact_share": 0.8571428571428571,
+    "residue_exact_share": 0.9197080291970803,
     "residue_abs_max_subpixels": 35.0,
     "mode_bytes_seen": [
+      11,
+      12,
+      13,
+      14,
       20
     ]
   },

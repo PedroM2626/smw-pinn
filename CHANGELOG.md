@@ -34,15 +34,26 @@ numbers* - those are reported here and in README Section 12, never applied silen
   held-right walk dies in the first pit and the Koopas of the stage's middle live past it.
   `scripts/record_dashboard_run.py` now records the full 16-bit tile ids of the
   33x33 window and every live sprite slot, and the panel draws the seven measured classes and
-  every sprite in the class the engine gave it. Yoshi's Island 1 is completed on screen: the
-  recorder flies the 10.66 seed-7 clearance draw with every frame kept (4374 frames, 5011 px, the
-  mode byte `0x14` -> `0x0C` with no `0x0B`), and the other three sessions the map hands over are
-  measured unplayable - the `0x27` session's row 24 is a stretch of measured decor over air, the
-  `0x29` session's entrance captures any player in an animation (`$7E:0071` -> `0x09`) that never
-  completes, and the house session's exit is a warp of the same family; no distance proxy was
-  moved to say any of that, the engine ends each of them by itself in under 350 frames.
+  every sprite in the class the engine gave it. Every session the map hands over is then
+  recorded to the verdict the engine itself delivers, and every episode keeps rolling past the
+  verdict (the outro), so the video shows the engine's own exit sequence instead of freezing on
+  the flipped byte. Yoshi's Island 1 is completed on screen: the recorder flies the 10.66
+  seed-7 clearance draw with every frame kept (4375 frames to the verdict, 5011 px, the mode
+  byte `0x14` -> `0x0C` with no `0x0B`, the lives counter untouched). The house session has no
+  goal tape at all and is concluded by walking back out through its door - the engine's own
+  left-edge exit, marching `0x14` -> `0x0B` -> `0x0C` -> `0x0D` -> `0x0E` onto the map with the
+  lives byte never moving - which is why the discriminator now reads two bytes: `0x0B` is the
+  byte the death animation owns, the door's march passes through it, and the lives counter
+  (`$7E:0DBE`) settles what the byte cannot - an exit leaves it put, a death decrements it. The
+  other two sessions are measured dead under every route, fresh map entry or restored savestate
+  alike: the `0x27` session's row 24 is a stretch of measured decor over air and walking west
+  stops at a wall, and the `0x29` session is a scripted pipe ride whose own machinery lifts the
+  player and drops him past the level with the controls untouched - both end in the death mode
+  with a life taken. `results/figures/all_covered_stages.mp4` is the single reel with all four
+  episodes in order, each to its verdict. No distance proxy was moved to say any of that.
   `src/environment/sprite_behavior.py` + `sprite_behavior_table.py`, the deterministic
-  `src/planning/terrain_runner.py` built on the measured tables, and
+  `src/planning/terrain_runner.py` built on the measured tables (it flies the house episode,
+  direction LEFT), and
   `src/evaluation/perception_correction_study.py` (`make perception-correction-study`, README
   10.68) join with their gates: `tests/test_sprite_behavior.py`, `tests/test_terrain_runner.py`,
   `tests/test_perception_correction_study.py`, and the recording-channel and still-pixel gates of

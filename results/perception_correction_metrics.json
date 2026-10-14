@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-13T23:36:25+00:00",
-    "git_sha": "f3df8a67794222697cd245d734c3dfaa96a695de",
+    "generated_utc": "2026-10-14T01:18:08+00:00",
+    "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -12,7 +12,7 @@
     "numpy": "1.26.4",
     "command": "make perception-correction-study"
   },
-  "study": "The tile map and the sprite slots read the way the engine reads them: every standard Map16 id measured off the console by writing it into the level buffer, every stage sprite met and touched twice, the dashboard panel redrawn from the measured classes, and the one stage an agent can finish recorded finishing it.",
+  "study": "The tile map and the sprite slots read the way the engine reads them: every standard Map16 id measured off the console by writing it into the level buffer, every stage sprite met and touched twice, the dashboard panel redrawn from the measured classes, and every session the map hands over recorded to the verdict the engine itself delivered.",
   "protocol": {
     "tile_probe": {
       "savestate": "smw_yoshi_island_1_level.state",
@@ -58,28 +58,33 @@
         "goal_px": null,
         "operator_delay": 0,
         "warmup_frames": 0,
-        "render_stride": 8
+        "render_stride": 8,
+        "outro_frames": 320
       },
       "0x28": {
-        "kind": "dagger",
+        "kind": "terrain-runner",
+        "direction": "LEFT",
         "seed": null,
-        "frames": 1268,
-        "goal_px": 1900.0
+        "frames": 1500,
+        "goal_px": null,
+        "outro_frames": 320
       },
       "0x27": {
         "kind": "dagger",
         "seed": null,
         "frames": 1268,
-        "goal_px": 1900.0
+        "goal_px": 1900.0,
+        "outro_frames": 240
       },
       "0x29": {
         "kind": "dagger",
         "seed": null,
         "frames": 1268,
-        "goal_px": 1900.0
+        "goal_px": 1900.0,
+        "outro_frames": 240
       }
     },
-    "clear_definition": "the engine left interactive mode (0x14) for anything other than the death mode (0x0B) - the discriminator 10.66 read off the byte and 10.67 re-checked"
+    "conclusion_definition": "the engine returned the player to the map (0x0E) without taking a life. The mode byte alone cannot say it: the house session's left-edge exit marches through 0x0B - the byte the death animation owns - on its way out the door, and the byte would call that a death. The lives counter ($7E:0DBE) settles it: an exit leaves it put, a death decrements it, and reaching the map while losing a life is the game-over sequence, not a conclusion"
   },
   "tile_probe": {
     "_meta": {
@@ -11288,8 +11293,8 @@
   },
   "stages": {
     "_meta": {
-      "generated_utc": "2026-10-13T22:09:51+00:00",
-      "git_sha": "9a8caceb08c0d98ff627b3580424043c73554ce3",
+      "generated_utc": "2026-10-14T01:14:01+00:00",
+      "git_sha": "af50404240ac5fb6b526997aa2da049a4f7a6a5c",
       "git_dirty": true,
       "python": "3.10.11",
       "platform": "Windows 10 (AMD64)",
@@ -11300,7 +11305,7 @@
       "numpy": "1.26.4",
       "command": "python -m scripts.record_level_dashboards"
     },
-    "study": "One dashboard episode per stage the world map hands over, flown by the agent that can finish that stage, with the 10.66 mode-byte clear discriminator and the two perception channels 10.68 added: 16-bit tile ids and every live sprite slot.",
+    "study": "One dashboard episode per session the world map hands over, flown by the agent that can conclude that session and kept recording through the engine's own exit sequence, with the refined mode-byte-and-lives discriminator and the two perception channels 10.68 added: 16-bit tile ids and every live sprite slot.",
     "protocol": {
       "recorder": "scripts/record_dashboard_run.py, through scripts/record_level_dashboards.py",
       "episode_plans": {
@@ -11311,29 +11316,35 @@
           "goal_px": null,
           "operator_delay": 0,
           "warmup_frames": 0,
-          "render_stride": 8
+          "render_stride": 8,
+          "outro_frames": 320
         },
         "0x28": {
-          "kind": "dagger",
+          "kind": "terrain-runner",
+          "direction": "LEFT",
           "seed": null,
-          "frames": 1268,
-          "goal_px": 1900.0
+          "frames": 1500,
+          "goal_px": null,
+          "outro_frames": 320
         },
         "0x27": {
           "kind": "dagger",
           "seed": null,
           "frames": 1268,
-          "goal_px": 1900.0
+          "goal_px": 1900.0,
+          "outro_frames": 240
         },
         "0x29": {
           "kind": "dagger",
           "seed": null,
           "frames": 1268,
-          "goal_px": 1900.0
+          "goal_px": 1900.0,
+          "outro_frames": 240
         }
       },
-      "clear_definition": "the engine left interactive mode (0x14) for anything other than the death mode (0x0B) - the discriminator 10.66 read off the byte and 10.67 re-checked",
-      "unplayable_sessions": "0x27 and 0x29: 10.68 measured their floors to stop holding (a measured decor row over air) and their entrances to capture the player in an animation that never completes; no agent finishes them, and the episode documents what the engine does",
+      "conclusion_definition": "the engine returned the player to the map (0x0E) without taking a life. The mode byte alone cannot say it: the house session's left-edge exit marches through 0x0B - the byte the death animation owns - on its way out the door, and the byte would call that a death. The lives counter ($7E:0DBE) settles it: an exit leaves it put, a death decrements it, and reaching the map while losing a life is the game-over sequence, not a conclusion",
+      "outro": "every episode keeps recording past the verdict with the controls released, so the video shows the mode march and the map settling instead of freezing on the flipped byte; the telemetry panels freeze on the last gameplay frame because a warp has no residue",
+      "unplayable_sessions": "0x27 and 0x29: 10.68 measured their floors to stop holding (a measured decor row over air) and 0x29's own scripted pipe ride to lift the player and drop him past the level with the controls untouched - fresh entry or restored savestate alike - so no agent concludes them, and the episodes document what the engine does",
       "frontier_rule": "RIGHT+Y with the B pulse, stopped at 90 frames of no advance, a spent hold, death, or the frame budget",
       "goal_proxy_px": 1900.0,
       "device": "cuda"
@@ -11410,20 +11421,28 @@
           "controller_kind": "planner",
           "planner_seed": 7,
           "episode_end_rule": "the engine's own mode byte leaving 0x14",
-          "frames": 4374,
+          "frames": 4694,
+          "engine_exit_frame": 4374,
+          "outro_frames": 320,
+          "lives_before": 4,
+          "lives_after": 4,
           "progress_px": 5010.625,
           "ended": "engine_left_0x14_to_0x0C",
           "mode_bytes_seen": [
             12,
+            13,
+            14,
             20
           ],
-          "wall_clock_s": 285.59,
+          "wall_clock_s": 264.88,
           "frames_under_operator_A": 55
         },
         "clear_evidence": {
-          "cleared": true,
+          "concluded": true,
+          "reached_map": true,
+          "lives_lost": false,
           "exit_mode": "0x0C",
-          "reason": "the engine ended the stage without the death mode"
+          "reason": "the engine ended the session through its exit sequence, no death mode, no life lost"
         },
         "mpc": {
           "clears": 1,
@@ -11501,24 +11520,33 @@
         },
         "episode": {
           "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
-          "controller": "dagger",
-          "controller_kind": "button head",
+          "controller": "terrain-runner",
+          "controller_kind": "rule-based agent",
           "planner_seed": null,
-          "episode_end_rule": "the published 1900 px distance proxy",
-          "frames": 221,
-          "progress_px": 126.25,
+          "episode_end_rule": "the engine's own mode byte leaving 0x14",
+          "frames": 391,
+          "engine_exit_frame": 71,
+          "outro_frames": 320,
+          "lives_before": 4,
+          "lives_after": 4,
+          "progress_px": 65404.625,
           "ended": "engine_left_0x14_to_0x0B",
           "mode_bytes_seen": [
             11,
+            12,
+            13,
+            14,
             20
           ],
-          "wall_clock_s": 1.27,
-          "frames_under_operator_A": 23
+          "wall_clock_s": 0.9,
+          "frames_under_operator_A": 0
         },
         "clear_evidence": {
-          "cleared": false,
+          "concluded": true,
+          "reached_map": true,
+          "lives_lost": false,
           "exit_mode": "0x0B",
-          "reason": "the engine entered the death mode"
+          "reason": "the engine walked the player out and back onto the map without taking a life - the 0x0B on the way is the door's own exit march, not a death (the lives byte stays put)"
         },
         "mpc": {
           "clears": 0,
@@ -11600,19 +11628,29 @@
           "controller_kind": "button head",
           "planner_seed": null,
           "episode_end_rule": "the published 1900 px distance proxy",
-          "frames": 308,
+          "frames": 548,
+          "engine_exit_frame": 385,
+          "outro_frames": 240,
+          "lives_before": 4,
+          "lives_after": 3,
           "progress_px": 406.4375,
           "ended": "death",
           "mode_bytes_seen": [
+            11,
+            12,
+            13,
+            14,
             20
           ],
-          "wall_clock_s": 1.8,
+          "wall_clock_s": 2.05,
           "frames_under_operator_A": 0
         },
         "clear_evidence": {
-          "cleared": false,
-          "exit_mode": null,
-          "reason": "the player fell past the death line before the mode byte moved"
+          "concluded": false,
+          "reached_map": true,
+          "lives_lost": true,
+          "exit_mode": "0x0B",
+          "reason": "the engine ended the session in the death mode and took a life"
         },
         "mpc": {
           "clears": 0,
@@ -11694,19 +11732,27 @@
           "controller_kind": "button head",
           "planner_seed": null,
           "episode_end_rule": "the published 1900 px distance proxy",
-          "frames": 352,
+          "frames": 592,
+          "engine_exit_frame": 542,
+          "outro_frames": 240,
+          "lives_before": 4,
+          "lives_after": 3,
           "progress_px": 372.875,
           "ended": "death",
           "mode_bytes_seen": [
+            11,
+            12,
             20
           ],
-          "wall_clock_s": 2.01,
+          "wall_clock_s": 2.43,
           "frames_under_operator_A": 23
         },
         "clear_evidence": {
-          "cleared": false,
-          "exit_mode": null,
-          "reason": "the player fell past the death line before the mode byte moved"
+          "concluded": false,
+          "reached_map": false,
+          "lives_lost": true,
+          "exit_mode": "0x0B",
+          "reason": "the engine ended the session in the death mode and took a life"
         },
         "mpc": {
           "clears": 0,
@@ -11719,6 +11765,37 @@
       }
     ],
     "stages_recorded": 4
+  },
+  "conclusion_video": {
+    "mp4": "results/figures/all_covered_stages.mp4",
+    "bytes": 3477960,
+    "crf": 27,
+    "segments": [
+      {
+        "level_index": 1,
+        "label": "Yoshi's Island 1",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_152_136_t2a.npz",
+        "mp4": "results/figures/dashboard_level_1.mp4"
+      },
+      {
+        "level_index": 2,
+        "label": "level 0x28 at node [116, 126]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
+        "mp4": "results/figures/dashboard_level_2.mp4"
+      },
+      {
+        "level_index": 3,
+        "label": "level 0x29 at node [68, 135]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
+        "mp4": "results/figures/dashboard_level_3.mp4"
+      },
+      {
+        "level_index": 4,
+        "label": "level 0x27 at node [152, 104]",
+        "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
+        "mp4": "results/figures/dashboard_level_4.mp4"
+      }
+    ]
   },
   "corrected_headline_ids": {
     "0x0025": "decor",
@@ -11743,7 +11820,9 @@
     "",
     "**The sprites.** The old panel drew one marker - whichever sprite the hazard probe found nearest, whatever it held. Measured per id: 7 stompable (the Rex `0x05` and the Koopas - stomping bounced Mario and changed the sprite's status byte), 0 hostile, 0 platform sprites, and 2 neutral - the empty shell `0x01` (a parked shell hurts nobody, whatever it looks like) and the chimney smoke `0x8A` that the old marker drew as enemies. The probe's collector is the clearance draw itself: the held-right walk dies in the first pit, so the Koopas of the stage's middle are met by flying the seed-7 draw that finishes it. The panel now draws every live slot in the class the engine gave it, and an id the probe has not met yet draws as unmeasured rather than guessed.",
     "",
-    "**What the corrected map says about the stages.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4374 frames, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way - `the recorded episode itself: the seed-7 clearance draw of 10.66, re-flown with its frames kept`. The other three sessions the map hands over are measured unplayable, and the corrected map is what shows why: past its first 126 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and the `0x29` session captures any player - moving, jumping, or standing still - in an entrance animation (`$7E:0071` goes to `0x09`) that never completes and falls him past the level. The house session's own exit is a warp of the same family. No distance proxy was moved to make those sentences: the engine ends every one of them by itself, in under 350 frames, whatever the agent does.",
+    "**What the corrected map says about the sessions.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4375 frames to the verdict, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way and the lives counter untouched. The house session (`0x28`) has no goal tape at all, and is concluded by walking back out through its door: the engine performs the left-edge exit itself - the mode marching `0x14` -> `0x0B` -> `0x0C` -> `0x0D` -> `0x0E` back onto the map with the lives byte never moving. That march is why the discriminator now reads two bytes: `0x0B` is the byte the death animation owns, and the house's exit passes through it on the way out, so the byte alone would call a walk out the door a death. The lives counter (`$7E:0DBE`) settles it - an exit leaves it put, a death decrements it. The other two sessions are measured dead under every route, fresh entry or restored savestate alike: past its first 369 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and walking west stops at a wall - every run ends in the death mode with a life taken; the `0x29` session is a scripted pipe ride whose own machinery lifts the player and drops him past the level with the controls untouched, the same death with the same life taken even on a fresh entry that never touched a button. No distance proxy was moved to make any of those sentences.",
+    "",
+    "**One reel with every session.** `results/figures/all_covered_stages.mp4` is the single video: all four episodes in order, each flown by the agent that can conclude that session and kept recording through the engine's own exit sequence - the mode march and the map settling - so the reel shows the clear, the walk out the door, and the two measured deaths, each to the verdict the engine itself delivered. 3.48 MB, 4 segments.",
     "",
     "**The panel.** The tile window now draws the seven measured classes - decor, coin, platform, wall, slope, harmful, and the cells the buffer does not have - from the recorded 16-bit ids, and the recording carries every live sprite slot. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one.",
     ""
