@@ -576,7 +576,13 @@ def main() -> Dict[str, Any]:
     )
     payload["hero"] = hero
     payload["rendered"] = render_level_videos(payload)
-    payload["conclusion_video"] = stitch_conclusion_video(payload["rendered"])
+    concluded_indices = {
+        i + 1
+        for i, s in enumerate(payload["stages"])
+        if (s.get("clear_evidence") or {}).get("concluded")
+    }
+    concluded = [r for r in payload["rendered"] if int(r["level_index"]) in concluded_indices]
+    payload["conclusion_video"] = stitch_conclusion_video(concluded)
     write = results_file("level_dashboard_study_metrics.json")
     write_metrics(write, payload, command="make level-dashboard-study")
     logger.info(f"level dashboard study: {write}")

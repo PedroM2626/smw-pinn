@@ -3228,27 +3228,27 @@ The hero is one stage, and one stage is what the repository had: 10.36.3 built a
 | stage | translevel | terrain the buffer holds | rightward walk reaches | flown by | the episode | share | the engine's verdict |
 |---|---|---|---|---|---|---|---|
 | `Yoshi's Island 1` | `0x2A` | 5120 px (20 subscreens) | 974.1250 px (stall) | `mpc` | 5010.6250 px in 4694 frames | 97.86% | **cleared** (left `0x14` for `0x0C`, no `0x0B`) |
-| `level 0x28 at node [116, 126]` | `0x28` | 256 px (1 subscreen) | 126.1875 px (stall) | `terrain-runner` | 65404.6250 px in 391 frames | 25548.68% | **concluded** (out the door, `0x0E`, no life lost) |
-| `level 0x29 at node [68, 135]` | `0x29` | 5120 px (20 subscreens) | 412.5625 px (stall) | `dagger` | 406.4375 px in 548 frames | 7.94% | no (the engine ended the session in the death mode and took a life) |
-| `level 0x27 at node [152, 104]` | `0x27` | 5376 px (21 subscreens) | 369.0000 px (death) | `dagger` | 372.8750 px in 592 frames | 6.94% | no (the engine ended the session in the death mode and took a life) |
+| `Yoshi's House` | `0x28` | 256 px (1 subscreen) | 126.1875 px (stall) | `terrain-runner` | 65404.6250 px in 391 frames | 25548.68% | **concluded** (out the door, `0x0E`, no life lost) |
+| `Yoshi's Island 2` | `0x29` | 5120 px (20 subscreens) | 412.5625 px (stall) | `dagger` | 406.4375 px in 548 frames | 7.94% | no (the engine ended the session in the death mode and took a life) |
+| `Yoshi's Island 3` | `0x27` | 5376 px (21 subscreens) | 369.0000 px (death) | `dagger` | 372.8750 px in 592 frames | 6.94% | no (the engine ended the session in the death mode and took a life) |
 
 The verdict column is the engine's own, and the lives counter completes it: a session is concluded when the engine returned the player to the map without taking a life. The mode byte alone cannot say that - the house's walk out the door marches through `0x0B`, the byte the death animation owns, and the byte would call an exit a death - so the lives counter (`$7E:0DBE`) settles it: an exit leaves it put, a death decrements it. No distance proxy appears in that column, on purpose.
 
 ![The dashboard on Yoshi's Island 1: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_1.gif)
 
-**Level 1: Yoshi's Island 1.** 4694 frames, 5009.3125 px of progress, the tile window's void class on 30.85% of its cells, 4.32 MB GIF / 4.85 MB MP4: `results/figures/dashboard_level_1.mp4`.
+**Level 1: Yoshi's Island 1.** 4694 frames, 5009.3125 px of progress, the tile window's void class on 91.81% of its cells, 4.88 MB GIF / 4.86 MB MP4: `results/figures/dashboard_level_1.mp4`.
 
-![The dashboard on level 0x28 at node [116, 126]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_2.gif)
+![The dashboard on Yoshi's House: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_2.gif)
 
-**Level 2: level 0x28 at node [116, 126].** 391 frames, 65406.8125 px of progress, the tile window's void class on 92.62% of its cells, 0.26 MB GIF / 0.48 MB MP4: `results/figures/dashboard_level_2.mp4`.
+**Level 2: Yoshi's House.** 391 frames, 65406.8125 px of progress, the tile window's void class on 98.96% of its cells, 0.25 MB GIF / 0.47 MB MP4: `results/figures/dashboard_level_2.mp4`.
 
-![The dashboard on level 0x29 at node [68, 135]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_3.gif)
+![The dashboard on Yoshi's Island 2: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_3.gif)
 
-**Level 3: level 0x29 at node [68, 135].** 548 frames, 406.4375 px of progress, the tile window's void class on 43.34% of its cells, 1.36 MB GIF / 1.22 MB MP4: `results/figures/dashboard_level_3.mp4`.
+**Level 3: Yoshi's Island 2.** 548 frames, 406.4375 px of progress, the tile window's void class on 93.10% of its cells, 1.46 MB GIF / 1.23 MB MP4: `results/figures/dashboard_level_3.mp4`.
 
-![The dashboard on level 0x27 at node [152, 104]: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_4.gif)
+![The dashboard on Yoshi's Island 3: the console's own picture, the tile window that stage's models read, and what the actor believed on every frame](results/figures/dashboard_level_4.gif)
 
-**Level 4: level 0x27 at node [152, 104].** 592 frames, 370.6250 px of progress, the tile window's void class on 44.69% of its cells, 1.30 MB GIF / 1.12 MB MP4: `results/figures/dashboard_level_4.mp4`.
+**Level 4: Yoshi's Island 3.** 592 frames, 370.6250 px of progress, the tile window's void class on 94.57% of its cells, 1.34 MB GIF / 1.12 MB MP4: `results/figures/dashboard_level_4.mp4`.
 
 ### 10.67 Re-running the Map Survey, and the Map a Clear Opens
 
@@ -3286,9 +3286,9 @@ The dashboard's tile window told the reader three things that were not true: tha
 
 **What the corrected map says about the sessions.** Yoshi's Island 1 (`0x2A`) is completed on screen, by the same seeded clearance draw 10.66 published - flown again with every frame kept: 4375 frames to the verdict, 5011 px of the 5120 px the buffer holds, the mode byte going `0x14` to `0x0C` with no `0x0B` on the way and the lives counter untouched. The house session (`0x28`) has no goal tape at all, and is concluded by walking back out through its door: the engine performs the left-edge exit itself - the mode marching `0x14` -> `0x0B` -> `0x0C` -> `0x0D` -> `0x0E` back onto the map with the lives byte never moving. That march is why the discriminator now reads two bytes: `0x0B` is the byte the death animation owns, and the house's exit passes through it on the way out, so the byte alone would call a walk out the door a death. The lives counter (`$7E:0DBE`) settles it - an exit leaves it put, a death decrements it. The other two sessions are measured dead under every route, fresh entry or restored savestate alike: past its first 369 px the `0x27` session's row 24 is a stretch of measured decor (message-block ids) over air, and walking west stops at a wall - every run ends in the death mode with a life taken; the `0x29` session is a scripted pipe ride whose own machinery lifts the player and drops him past the level with the controls untouched, the same death with the same life taken even on a fresh entry that never touched a button. No distance proxy was moved to make any of those sentences.
 
-**One reel with every session.** `results/figures/all_covered_stages.mp4` is the single video: all four episodes in order, each flown by the agent that can conclude that session and kept recording through the engine's own exit sequence - the mode march and the map settling - so the reel shows the clear, the walk out the door, and the two measured deaths, each to the verdict the engine itself delivered. 2.20 MB, 4 segments.
+**One reel with the concluded sessions.** `results/figures/all_covered_stages.mp4` is the single video: the 2 sessions the engine concluded, each flown by the agent that can finish that session and kept recording through the engine's own exit sequence - the mode march and the map settling - so the reel shows the clear and the walk out the door, each to the verdict the engine itself delivered. 1.49 MB, 2 segments.
 
-**The panel.** The tile window draws the eleven measured classes - decor, coin, platform, wall, slope, harmful, the cells the buffer does not have, and the four sprite cells: enemy, message block, friendly, unmeasured - from the recorded 16-bit ids and the recorded sprite slots, one cell per live engine-running sprite the way the reference grid draws its hostile plane. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one. The reel keeps the moving episode at its stride and compresses a stall twelve-fold - every drawn frame is a recorded frame, and the frame counter on the panel shows the jump - so the planner's long pause at the level's pipe is on screen without being most of the video.
+**The panel.** The tile window draws five collapsed classes - ground and wall, coin, other block, enemy, and empty - from the recorded 16-bit ids classified by the measured behaviour table, with one cell per live engine-running sprite drawn into the grid the way the reference grid draws its hostile plane. The 33x33 recorded window is cropped to 20x14 with Mario at column 5, row 8: the same geometry the reference repository uses, which puts more of the level ahead of the player than behind. Both channels are gated: an id the table does not know cannot reach the panel as a guess, and a recording whose window holds a per-level id the probe never measured fails its gate instead of drawing one. The reel keeps the moving episode at its stride and compresses a stall twelve-fold - every drawn frame is a recorded frame, and the frame counter on the panel shows the jump - so the planner's long pause at the level's pipe is on screen without being most of the video.
 
 ## 11. Complete Reproducibility Guide
 

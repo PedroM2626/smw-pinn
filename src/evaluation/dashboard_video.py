@@ -83,51 +83,36 @@ ACTION_WORDS = (
     "walk left",
     "run left",
 )
-#: the measured tile classes the window draws, one colour each: 10.68's behaviour table, not a
-#: guess. The old four-way legend called every non-blank tile solid - bushes as walls, ramps as
-#: air - and this is the panel that stops doing it. The last four are the sprite cells: the
-#: reference grid draws the engine's own entities INTO the map (hostile and friendly planes),
-#: and this panel does the same - the cell a live sprite occupies carries its class, so an
-#: enemy is a full cell in the window, not a dot at the edge of it
-#: 0 decor, 1 coin, 2 platform, 3 solid, 4 slope, 5 harmful, 6 no cell in the buffer,
-#: 7 enemy sprite, 8 interact sprite, 9 friendly sprite, 10 unmeasured sprite
+#: five display classes, matching burn-mario-rl's grid: the measured behaviour table collapsed
+#: into the classes a reader can tell apart at GIF resolution. 0 empty (dark), 1 ground and
+#: wall (blue), 2 coin (yellow), 3 other block (brown), 4 enemy (red).
 TILE_COLOURS = (
-    "#141b26",
-    "#e6c84a",
-    "#3a7d44",
-    "#8a5a2b",
-    "#c8a02b",
-    "#c8322b",
-    "#243352",
-    "#ff6b5e",
-    "#f2a541",
-    "#8794ab",
-    "#b06fd4",
+    "#222638",
+    "#6078be",
+    "#ffcd3c",
+    "#aa7846",
+    "#f04646",
 )
 TILE_LEGEND = (
-    "decor (no collision)",
+    "ground and wall",
+    "other block",
     "coin",
-    "platform (holds from above)",
-    "wall (blocks a run)",
-    "slope",
-    "harmful",
-    "no cell in the buffer",
-    "enemy (sprite)",
-    "message block (sprite)",
-    "friendly sprite",
-    "sprite not yet measured",
+    "enemy",
 )
-VOID_CLASS = 6
+VOID_CLASS = 0
+#: the reference grid's view window: 20 columns x 14 rows, Mario at column 5 / row 8
+GRID_W, GRID_H = 20, 14
+COLS_BEHIND, ROWS_ABOVE = 5, 8
 #: the sprite classes, drawn as the cell the sprite occupies - burn-mario-rl's hostile and
 #: friendly planes, one cell per live sprite, in the panel the terrain classes share
 SPRITE_CELL_CLASSES = {
-    "hostile": 7,
-    "stompable": 7,
-    "interact": 8,
-    "platform": 9,
-    "collectible": 9,
-    "neutral": 9,
-    "unprobed": 10,
+    "hostile": 4,
+    "stompable": 4,
+    "interact": 3,
+    "platform": 3,
+    "collectible": 3,
+    "neutral": 3,
+    "unprobed": 3,
 }
 
 
@@ -137,8 +122,8 @@ def _rgb(colour: str) -> Tuple[int, int, int]:
 
 
 #: the drawn colours a gate can look for in the rendered still, as raw RGB triples
-FLOOR_RGB = _rgb(TILE_COLOURS[3])
-PLATFORM_RGB = _rgb(TILE_COLOURS[2])
+GROUND_RGB = _rgb(TILE_COLOURS[1])
+COIN_RGB = _rgb(TILE_COLOURS[2])
 VOID_RGB = _rgb(TILE_COLOURS[VOID_CLASS])
 BG = "#0d1220"
 PANEL = "#161d2e"
@@ -151,25 +136,33 @@ GREEN = "#63d68a"
 RED = "#ff6b5e"
 IDLE_PIP = "#2f3a52"
 
-#: the layout, in figure fractions of a 1280x720 canvas. The two picture panels are sized so that
-#: their box aspect equals the array aspect (256x224 frames, 33x33 square tiles), which is what lets
-#: `imshow` fill the box with `aspect="auto"` instead of letterboxing inside it.
+#: the layout, in figure fractions of a 1280x720 canvas. The tile panel is sized for a 20x14
+#: grid, and the legend sits inside a narrow strip to its right.
 RECT_TITLE = [0.010, 0.945, 0.978, 0.040]
 RECT_RGB = [0.010, 0.200, 0.463, 0.720]
 RECT_PROGRESS = [0.010, 0.150, 0.463, 0.035]
 RECT_TIME = [0.010, 0.078, 0.463, 0.064]
-RECT_TILE = [0.490, 0.565, 0.186, 0.330]
-RECT_LEGEND = [0.690, 0.565, 0.298, 0.330]
+RECT_TILE = [0.490, 0.565, 0.280, 0.330]
+RECT_LEGEND = [0.790, 0.565, 0.198, 0.330]
 RECT_THINK = [0.490, 0.235, 0.330, 0.280]
 RECT_PAD = [0.835, 0.235, 0.153, 0.280]
 RECT_REWARD = [0.490, 0.090, 0.498, 0.095]
 RECT_CLEAR = [0.490, 0.030, 0.498, 0.045]
 
 
-#: the one stage this repository can name from its own evidence: 10.36.3 built the savestate by
-#: walking the map from the node a fresh file starts on, and 10.66 reads that node's translevel as
-#: 0x2A. Anything else is drawn by the identity the engine gave it, not by a guessed title.
-LEVEL_NAMES = {"yoshi_island_1": "Yoshi's Island 1", "0x2a": "Yoshi's Island 1"}
+#: the standard SMW translevel-to-name mapping for the Yoshi's Island submap, verified against
+#: the ROM's translevel table (SMWCentral thread #23605, Lunar Magic vanilla level list, and
+#: the snesrev/smw C decompilation). The key is the hex translevel byte at $7E:13BF; the name
+#: is the stage's own identity in every official guide.
+LEVEL_NAMES = {
+    "0x25": "#1 Iggy's Castle",
+    "0x26": "Yoshi's Island 4",
+    "0x27": "Yoshi's Island 3",
+    "0x28": "Yoshi's House",
+    "0x29": "Yoshi's Island 2",
+    "0x2a": "Yoshi's Island 1",
+    "yoshi_island_1": "Yoshi's Island 1",
+}
 DEFAULT_TITLE = "Reinforcement learning in Super Mario World"
 
 
@@ -215,44 +208,39 @@ def action_probabilities(data: Dict[str, np.ndarray]) -> Tuple[np.ndarray, str]:
 
 
 def window_view(tile_ids: np.ndarray, sprites: np.ndarray) -> np.ndarray:
-    """The recorded window with every tile in its measured class and every live sprite a cell.
+    """The recorded window collapsed to five display classes and cropped to 20x14.
 
-    `read_tile_ids` stores the full Map16 number of every cell and -1 where the buffer has none.
-    Each id goes through `tile_behavior.behavior_of`, never a second classifier, and cells the
-    buffer does not have keep their own class so the panel can say both things the old one
-    folded together - the model is shown air there, and the buffer simply has no cell.
+    The 33x33 recorded grid is classified by the measured behaviour table, collapsed into the
+    five classes the reference grid draws (empty / ground-wall / coin / other block / enemy),
+    then cropped to a 20x14 view with Mario at column 5, row 8 - the same geometry burn-mario-rl
+    uses, which puts more of the level ahead of the player than behind.
 
-    The sprites are drawn the way the reference grid draws them: INTO the map, one cell per live
-    engine-running sprite, in the plane the terrain classes share. A dot at the panel's edge was
-    the old presentation, and an enemy that enters the window at its edge was a dot nobody could
-    see; a cell is sixteen pixels of the window, in the class colour the probe measured. The
-    sprite's cell is the one its centre occupies, offset from the window centre by its own
-    recorded displacement - the same arithmetic the reference uses for its hostile plane.
+    Sprites are drawn INTO the grid the same way: one cell per live engine-running sprite, in
+    the class the probe measured.
     """
     from src.environment import sprite_behavior, tile_behavior
 
     ids = np.asarray(tile_ids, dtype=np.int64)
     view = np.full(ids.shape, VOID_CLASS, dtype=np.int8)
     inside = ids >= 0
-    classes = np.empty(ids.shape, dtype=object)
-    for i in np.ndindex(*ids.shape):
-        classes[i] = tile_behavior.behavior_of(int(ids[i])) if inside[i] else None
-    order = {
-        name: index
-        for index, name in enumerate(
-            ("decor", "coin", "platform", "solid", "slope", "harmful", "interact")
-        )
+    collapse = {
+        "decor": 0,
+        "coin": 2,
+        "platform": 1,
+        "solid": 1,
+        "slope": 1,
+        "harmful": 4,
+        "interact": 3,
     }
     for i in np.ndindex(*ids.shape):
         if inside[i]:
-            name = classes[i]
-            index = order.get(name, 0)
-            view[i] = 0 if name == "interact" else index
+            name = tile_behavior.behavior_of(int(ids[i]))
+            view[i] = collapse.get(name, 0)
 
     rows = np.asarray(sprites, dtype=np.float64)
     active = rows[:, :, 3] >= sprite_behavior.SPRITE_ACTIVE
+    centre = ids.shape[1] // 2
     for frame in range(view.shape[0]):
-        centre = view.shape[1] // 2
         for slot in range(rows.shape[1]):
             if not active[frame, slot]:
                 continue
@@ -261,8 +249,11 @@ def window_view(tile_ids: np.ndarray, sprites: np.ndarray) -> np.ndarray:
             row = int(np.rint(dy / 16.0)) + centre
             if 0 <= row < view.shape[1] and 0 <= col < view.shape[2]:
                 kind = sprite_behavior.behavior_of(int(rows[frame, slot, 2]))
-                view[frame, row, col] = SPRITE_CELL_CLASSES.get(kind, 10)
-    return view
+                view[frame, row, col] = SPRITE_CELL_CLASSES.get(kind, 3)
+
+    r0 = centre - ROWS_ABOVE
+    c0 = centre - COLS_BEHIND
+    return view[:, r0 : r0 + GRID_H, c0 : c0 + GRID_W]
 
 
 def sprite_classes(sprites: np.ndarray) -> np.ndarray:
@@ -345,42 +336,34 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         views[0],
         cmap=ListedColormap(TILE_COLOURS),
         vmin=-0.5,
-        vmax=10.5,
+        vmax=len(TILE_COLOURS) - 0.5,
         aspect="auto",
         interpolation="nearest",
         extent=(0, 1, 0, 1),
         origin="upper",
     )
-    tile.plot([0.5], [0.5], marker="s", color=INK, markersize=7, fillstyle="none")
-    tile.text(0.5, 0.44, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
+    mario_x = (COLS_BEHIND + 0.5) / GRID_W
+    mario_y = (ROWS_ABOVE + 0.5) / GRID_H
+    tile.plot(
+        [mario_x], [mario_y], marker="s", color=INK, markersize=9, fillstyle="none", markeredgewidth=2
+    )
+    tile.text(mario_x, mario_y - 0.06, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
+    for c in range(1, GRID_W):
+        tile.axvline(c / GRID_W, color="#1a1e2e", linewidth=0.4, zorder=0.5)
+    for r in range(1, GRID_H):
+        tile.axhline(r / GRID_H, color="#1a1e2e", linewidth=0.4, zorder=0.5)
 
     legend = _panel(fig, RECT_LEGEND, card=False)
-    row = 0.97
-    step = 0.058
-    for i, (colour, label) in enumerate(zip(TILE_COLOURS, TILE_LEGEND)):
+    legend_colours = [TILE_COLOURS[1], TILE_COLOURS[3], TILE_COLOURS[2], TILE_COLOURS[4]]
+    row = 0.92
+    step = 0.12
+    for i, (colour, label) in enumerate(zip(legend_colours, TILE_LEGEND)):
         y = row - step * i
-        legend.add_patch(Rectangle((0.0, y - 0.020), 0.055, 0.040, color=colour))
-        legend.text(0.095, y, label, color=INK, fontsize=8, va="center")
-    y = row - step * 7
-    legend.plot([0.027], [y], marker="s", color=INK, markersize=7, fillstyle="none")
-    legend.text(0.095, y, "Mario (window centre)", color=INK, fontsize=8, va="center")
-    legend.text(
-        0.0,
-        0.30 - step * 2,
-        "33x33 tile window of 16-bit Map16 ids\n"
-        "from $7E:C800 + $7F:C800, classified\n"
-        "by the measured behaviour table of\n"
-        "10.68 - not by a guessed id list. The\n"
-        "sprite cells are drawn into the grid the\n"
-        "way the reference grid draws its hostile\n"
-        "plane. The actor sees no picture: only\n"
-        "the twelve numbers on the strip below.",
-        color=MUTED,
-        fontsize=7.2,
-        va="top",
-        family="monospace",
-        linespacing=1.55,
-    )
+        legend.add_patch(Rectangle((0.0, y - 0.030), 0.10, 0.060, color=colour))
+        legend.text(0.16, y, label, color=INK, fontsize=8.5, va="center")
+    y = row - step * len(TILE_LEGEND)
+    legend.plot([0.05], [y], marker="s", color=INK, markersize=9, fillstyle="none", markeredgewidth=2)
+    legend.text(0.16, y, "Mario", color=INK, fontsize=8.5, va="center")
 
     think = _panel(fig, RECT_THINK, "what it thinks")
     rows = len(ACTION_WORDS)

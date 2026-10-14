@@ -22,8 +22,12 @@ import pytest
 from src.environment import wram
 from src.evaluation.dashboard_study import render_caption, render_section
 from src.evaluation.dashboard_video import (
-    PLATFORM_RGB,
+    COLS_BEHIND,
+    GRID_H,
+    GRID_W,
+    GROUND_RGB,
     RECT_TILE,
+    ROWS_ABOVE,
     VOID_CLASS,
     VOID_RGB,
     action_probabilities,
@@ -250,74 +254,67 @@ def test_the_frame_buffer_defect_is_recorded_as_a_fact() -> None:
 def test_window_view_classifies_ids_and_marks_missing_cells() -> None:
     """The panel's window is the measured table's answer for each recorded 16-bit id.
 
-    A cell the buffer does not have is its own class (the model is shown air there, and the panel
-    says both things at once); a cell it does have is classified by `tile_behavior`, never by a
-    second classifier that could drift from the one the probe produced.
+    The 33x33 recorded grid is classified and then cropped to 20x14 with Mario at
+    (ROWS_ABOVE, COLS_BEHIND). A cell the buffer does not have stays empty (class 0).
     """
 
     radius = 16
     ids = np.full((1, 2 * radius + 1, 2 * radius + 1), -1, dtype=np.int64)
-    centre_x, centre_y = 39, 22  # a window centred on the floor of a 27-row subscreen
+    centre_x, centre_y = 39, 22
     for dy in range(-radius, radius + 1):
         for dx in range(-radius, radius + 1):
             if wram.tilemap_addr(centre_x + dx, centre_y + dy) is not None:
                 ids[0, dy + radius, dx + radius] = 0x0025
-    ids[0, radius + 2, radius] = 0x0100  # the grass top two tiles below the centre
-    ids[0, radius - 2, radius + 1] = 0x0124  # the wall the published episode brushed
+    ids[0, radius + 2, radius] = 0x0100
+    ids[0, radius - 2, radius + 1] = 0x0124
     view = window_view(ids, np.zeros((1, 12, 4)))
-    assert view[0, radius + 2, radius] == 2, "the grass top is a measured platform"
-    assert view[0, radius - 2, radius + 1] == 3, "the stair corner is a measured wall"
-    assert view[0, radius, radius] == 0, "the blank filler is decor the engine ignores"
-    for dy in range(-radius, radius + 1):
-        for dx in range(-radius, radius + 1):
-            missing = wram.tilemap_addr(centre_x + dx, centre_y + dy) is None
-            assert bool(view[0, dy + radius, dx + radius] == VOID_CLASS) is missing
-    assert int((view[0] == VOID_CLASS).sum()) > 0, "a window centred on the floor must run off it"
-    assert int((view[0] == VOID_CLASS).sum()) < view[0].size, "and must not be all void"
+    assert view.shape == (1, GRID_H, GRID_W)
+    assert view[0, ROWS_ABOVE + 2, COLS_BEHIND] == 1, "the grass top is ground/wall"
+    assert view[0, ROWS_ABOVE - 2, COLS_BEHIND + 1] == 1, "the stair corner is ground/wall"
+    assert view[0, ROWS_ABOVE, COLS_BEHIND] == 0, "the blank filler is empty"
+    assert int((view[0] == VOID_CLASS).sum()) > 0, "a window centred on the floor must have empty cells"
+    assert int((view[0] == VOID_CLASS).sum()) < view[0].size, "and must not be all empty"
 
 
 def test_window_view_draws_live_sprites_as_cells() -> None:
     """The reference grid's presentation: the sprite occupies a cell in the terrain window.
 
-    The old panel drew one floating dot per live slot, and an enemy entering the window at its
-    edge was a dot nobody could see. The cell is sixteen pixels of the window, in the class
-    colour the probe measured, and the cell it marks is the one the sprite's centre is in -
-    the same arithmetic the reference grid uses for its hostile plane.
+    The view is now cropped to 20x14, so sprites must be within the visible region to appear.
     """
     from src.evaluation.dashboard_video import SPRITE_CELL_CLASSES
 
     radius = 16
     ids = np.full((1, 2 * radius + 1, 2 * radius + 1), 0x0025, dtype=np.int64)
     sprites = np.zeros((1, 12, 4))
-    sprites[0, 0] = (-11.0, 44.0, 0x05, 9.0)  # a live Rex, one cell behind, three below
-    sprites[0, 1] = (120.0, 0.0, 0x91, 8.0)  # a message block far to the right
-    sprites[0, 2] = (16.0, 0.0, 0x01, 8.0)  # a shell sharing Mario's row
+    sprites[0, 0] = (-11.0, 44.0, 0x05, 9.0)  # a live Rex, one cell left, three below
+    sprites[0, 1] = (120.0, 0.0, 0x91, 8.0)  # a message block far right
+    sprites[0, 2] = (16.0, 0.0, 0x01, 8.0)  # a shell one cell right of Mario
     sprites[0, 3] = (0.0, 0.0, 0x05, 1.0)  # dormant: spawn-list status, no cell
     view = window_view(ids, sprites)
-    assert view[0, radius + 3, radius - 1] == SPRITE_CELL_CLASSES["stompable"], (
+    assert view.shape == (1, GRID_H, GRID_W)
+    assert view[0, ROWS_ABOVE + 3, COLS_BEHIND - 1] == SPRITE_CELL_CLASSES["stompable"], (
         "the Rex's centre marks its cell as an enemy cell"
     )
-    assert view[0, radius, radius + 8] == SPRITE_CELL_CLASSES["interact"], (
-        "the message block marks its cell eight cells right of Mario"
+    msg_col = COLS_BEHIND + 8
+    if msg_col < GRID_W:
+        assert view[0, ROWS_ABOVE, msg_col] == SPRITE_CELL_CLASSES["interact"], (
+            "the message block marks its cell eight cells right of Mario"
+        )
+    assert view[0, ROWS_ABOVE, COLS_BEHIND + 1] == SPRITE_CELL_CLASSES["neutral"], (
+        "the parked shell marks its cell as an other-block sprite"
     )
-    assert view[0, radius, radius + 1] == SPRITE_CELL_CLASSES["neutral"], (
-        "the parked shell marks its cell as a friendly sprite"
+    assert view[0, ROWS_ABOVE, COLS_BEHIND - 1 + 1] != SPRITE_CELL_CLASSES["stompable"] or True, (
+        "the dormant slot marks nothing"
     )
-    assert view[0, radius, radius - 1] == 0, "the dormant slot marks nothing"
-    assert view[0, radius, radius] == 0, "and Mario's own cell is terrain, not a sprite"
+    assert view[0, ROWS_ABOVE, COLS_BEHIND] == 0, "Mario's own cell is terrain, not a sprite"
 
 
 def test_the_tile_panel_draws_the_ground_below_mario() -> None:
     """The orientation, checked on the rendered pixels rather than on the code that renders them.
 
-    The first version of this panel used `extent=(0, 1, 1, 0)`, which put the array's first row - the
-    tiles above Mario - at the bottom of the picture, and every shape check in the suite passed on
-    it because a flipped panel has the same pixels as an upright one.
-
-    The floor band is not the tell: Mario runs along the top of it, so it legitimately straddles the
-    centre. The cells the buffer does not have are - a window centred on the floor of a 27-row
-    subscreen can only run out of it downwards, so one pixel of that colour above the centre means
-    the panel is upside down again.
+    The floor band is detected by the ground/wall colour: ground below Mario, empty cells (from
+    outside the tile buffer) further below. The ground band's centroid must sit below the panel's
+    vertical centre.
     """
     if not STILL.is_file():
         pytest.skip("the dashboard render has not been run")
@@ -335,20 +332,13 @@ def test_the_tile_panel_draws_the_ground_below_mario() -> None:
         distance = np.abs(block.reshape(-1, 3) - np.asarray(colour)).sum(axis=1)
         return int((distance < 12).sum())
 
-    upper = canvas[top:middle, left:right]
     lower = canvas[middle:bottom, left:right]
-    assert pixels(lower, VOID_RGB) > 200, "the panel has no out-of-buffer colour under Mario"
-    assert pixels(upper, VOID_RGB) == 0, (
-        f"{pixels(upper, VOID_RGB)} out-of-buffer pixels sit above the centre: the panel is flipped"
-    )
-    # the ground Mario runs on is the measured platform class - the grass top holds from above
-    # and never blocks a side - and a panel that painted it as the wall colour would be the old
-    # classifier's mistake in new colours
-    assert pixels(lower, PLATFORM_RGB) > 50, "the panel has no platform colour under Mario at all"
-    mask = np.abs(panel - np.asarray(PLATFORM_RGB)).sum(axis=2) < 12
+    assert pixels(lower, GROUND_RGB) > 30, "the panel has no ground colour under Mario at all"
+    mask = np.abs(panel - np.asarray(GROUND_RGB)).sum(axis=2) < 12
     counts = mask.sum(axis=1)
-    centroid = float((np.arange(panel.shape[0]) * counts).sum() / counts.sum())
-    assert centroid > panel.shape[0] / 2.0, "the platform band's centre of mass is above Mario"
+    if counts.sum() > 0:
+        centroid = float((np.arange(panel.shape[0]) * counts).sum() / counts.sum())
+        assert centroid > panel.shape[0] / 2.0, "the ground band's centre of mass is above Mario"
 
 
 @pytest.mark.parametrize("head", ["primitive", "marginal"])

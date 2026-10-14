@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T15:30:30+00:00",
-    "git_sha": "151cfbbc82ec554d2328c811dc9e0406106aba0e",
+    "generated_utc": "2026-10-14T17:36:43+00:00",
+    "git_sha": "d09b17f3958a487c1bcd678e315852ef037e0e13",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -2406,26 +2406,26 @@
       "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_1.mp4",
-        "bytes": 4851891,
+        "bytes": 4855577,
         "frames_written": 320,
         "fps": 30.0,
         "duration_s": 10.67
       },
       "gif": {
         "gif": "results/figures/dashboard_level_1.gif",
-        "bytes": 4316795,
+        "bytes": 4876483,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_1_still.png",
-        "bytes": 123961,
+        "bytes": 103014,
         "frame": 1368
       },
       "caption": {
         "episode_frames": 4694,
-        "tile_void_cell_share": 0.3085246859891474,
+        "tile_void_cell_share": 0.9181150709111936,
         "progress_px": 5009.3125,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.931827865360034,
@@ -2439,32 +2439,32 @@
     },
     {
       "level_index": 2,
-      "label": "level 0x28 at node [116, 126]",
+      "label": "Yoshi's House",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
       "goal_px": 256.0,
       "clear_line": "concluded: out the door and onto the map, no life lost \u00b7 this arm 65405 / 256 px",
       "video": {
         "mp4": "results/figures/dashboard_level_2.mp4",
-        "bytes": 480429,
+        "bytes": 466196,
         "frames_written": 38,
         "fps": 30.0,
         "duration_s": 1.27
       },
       "gif": {
         "gif": "results/figures/dashboard_level_2.gif",
-        "bytes": 264807,
+        "bytes": 252016,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_2_still.png",
-        "bytes": 114649,
+        "bytes": 91404,
         "frame": 60
       },
       "caption": {
         "episode_frames": 391,
-        "tile_void_cell_share": 0.9262351485090383,
+        "tile_void_cell_share": 0.9896328096455974,
         "progress_px": 65406.8125,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1815856777493606,
@@ -2478,32 +2478,32 @@
     },
     {
       "level_index": 3,
-      "label": "level 0x29 at node [68, 135]",
+      "label": "Yoshi's Island 2",
       "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
       "goal_px": 5120.0,
       "clear_line": "no run has ever finished this session \u00b7 this arm 406 / 5120 px",
       "video": {
         "mp4": "results/figures/dashboard_level_3.mp4",
-        "bytes": 1223941,
+        "bytes": 1228458,
         "frames_written": 101,
         "fps": 30.0,
         "duration_s": 3.37
       },
       "gif": {
         "gif": "results/figures/dashboard_level_3.gif",
-        "bytes": 1357493,
+        "bytes": 1459425,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_3_still.png",
-        "bytes": 116437,
+        "bytes": 93541,
         "frame": 122
       },
       "caption": {
         "episode_frames": 548,
-        "tile_void_cell_share": 0.4333598091063254,
+        "tile_void_cell_share": 0.9310479666319083,
         "progress_px": 406.4375,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.16383409197966337,
@@ -2517,32 +2517,32 @@
     },
     {
       "level_index": 4,
-      "label": "level 0x27 at node [152, 104]",
+      "label": "Yoshi's Island 3",
       "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
       "goal_px": 5376.0,
       "clear_line": "0 of 2 attempts cleared it \u00b7 this arm 373 / 5376 px",
       "video": {
         "mp4": "results/figures/dashboard_level_4.mp4",
-        "bytes": 1123423,
+        "bytes": 1115556,
         "frames_written": 87,
         "fps": 30.0,
         "duration_s": 2.9
       },
       "gif": {
         "gif": "results/figures/dashboard_level_4.gif",
-        "bytes": 1298155,
+        "bytes": 1336240,
         "gif_fps": 12.0,
         "gif_width_px": 900,
         "gif_palette_colors": 96
       },
       "still": {
         "png": "results/figures/dashboard_level_4_still.png",
-        "bytes": 113848,
+        "bytes": 91234,
         "frame": 130
       },
       "caption": {
         "episode_frames": 592,
-        "tile_void_cell_share": 0.44688748666021394,
+        "tile_void_cell_share": 0.9456503378378378,
         "progress_px": 370.625,
         "camera_travel_px": 65519.0,
         "mean_top_action_probability": 0.1612803807821856,
@@ -2606,26 +2606,26 @@
     },
     "video": {
       "mp4": "results/figures/dashboard_run.mp4",
-      "bytes": 4266646,
+      "bytes": 4259594,
       "frames_written": 279,
       "fps": 30.0,
       "duration_s": 9.3
     },
     "gif": {
       "gif": "results/figures/dashboard_run.gif",
-      "bytes": 3757406,
+      "bytes": 3833585,
       "gif_fps": 12.0,
       "gif_width_px": 900,
       "gif_palette_colors": 96
     },
     "still": {
       "png": "results/figures/dashboard_run_still.png",
-      "bytes": 125305,
+      "bytes": 104309,
       "frame": 1610
     },
     "caption": {
       "episode_frames": 6706,
-      "tile_void_cell_share": 0.311153176972118,
+      "tile_void_cell_share": 0.9148710110348941,
       "progress_px": 5008.6875,
       "camera_travel_px": 65519.0,
       "mean_top_action_probability": 0.9522815389203698,
@@ -2639,7 +2639,7 @@
   },
   "conclusion_video": {
     "mp4": "results/figures/all_covered_stages.mp4",
-    "bytes": 2201157,
+    "bytes": 1490157,
     "crf": 27,
     "segments": [
       {
@@ -2650,21 +2650,9 @@
       },
       {
         "level_index": 2,
-        "label": "level 0x28 at node [116, 126]",
+        "label": "Yoshi's House",
         "dataset": "data/raw/smw_dashboard_run_smw_map_node_116_126_t28.npz",
         "mp4": "results/figures/dashboard_level_2.mp4"
-      },
-      {
-        "level_index": 3,
-        "label": "level 0x29 at node [68, 135]",
-        "dataset": "data/raw/smw_dashboard_run_smw_map_node_68_135_t29.npz",
-        "mp4": "results/figures/dashboard_level_3.mp4"
-      },
-      {
-        "level_index": 4,
-        "label": "level 0x27 at node [152, 104]",
-        "dataset": "data/raw/smw_dashboard_run_smw_map_round_1_152_104_t27.npz",
-        "mp4": "results/figures/dashboard_level_4.mp4"
       }
     ]
   }
