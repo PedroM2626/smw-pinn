@@ -43,6 +43,20 @@ SPRITE_REACH_PX = 48.0
 SPRITE_REACH_Y = 48.0
 #: frames without forward progress after which the agent jumps anyway
 STUCK_FRAMES = 24
+#: frames a fired jump holds B: SMW scales the jump with the hold, and a 1-frame tap is a
+#: minimum-height hop - too short for the wide pits and the tall pipes of the later level
+JUMP_HOLD_FRAMES = 12
+#: an enemy on the ground needs a tap, not an arc: the tap clears the enemy and lands where
+#: the runner already was, while anything taller also clears the terrain behind it - on this
+#: level that is the raised plateau, whose far end is flush with a pipe mouth the core
+#: auto-captures on contact (the same capture that hangs the 0x29 session)
+ENEMY_HOP_HOLD = 1
+#: the pole-climb: the engine carries the player up with x frozen and vx at zero while the
+#: rise speed decays from -112 toward zero at the top ($7E:007D reads -112, -106, -100, -94,
+#: ... frame by frame). Jumping on a pole lets go of it, so the stuck rule must not fire
+#: mid-climb: the whole rise is the engine making progress of its own kind, and only the
+#: frozen position with zero horizontal speed tells it from a jump - a jump always advances x
+POLE_CLIMB_VY = -4.0
 #: the eight channels `PlayerHold` watches, in the order the recorders use
 HOLD_KEYS = ("x", "y", "vx", "vy", "c_ground", "c_ceiling", "c_left", "c_right")
 
@@ -62,8 +76,10 @@ class TerrainRunner:
         assert direction in ("RIGHT", "LEFT")
         self._heading = direction
         self._jump_held = False
+        self._jump_hold = 0
         self._best_x = 0.0
         self._stalled = 0
+        self._last_x = float("inf")
         self._hold = PlayerHold(limit=240)
 
     @property
@@ -110,6 +126,7 @@ class TerrainRunner:
 
         buttons: Dict[str, bool] = {self._heading: True, "Y": True, "B": False, "A": False}
         jump = False
+        jump_hold = JUMP_HOLD_FRAMES
 
         # Rule 2: a pit opens ahead - no tile that holds from above within the look-ahead.
         for column in range(1, LOOKAHEAD_COLUMNS + 2):
@@ -132,14 +149,39 @@ class TerrainRunner:
                 if jump:
                     break
 
-        # Rule 5: a hostile or stompable sprite close ahead at the player's height.
+        # Rule 5: a hostile or stompable sprite close ahead at the player's height. The hop is
+        # deliberately short: the enemy sits on the ground the runner is already running on,
+        # and a full arc would clear it *and* the terrain behind it - on this level that is
+        # the raised plateau, whose far end is flush with a pipe mouth the core captures on
+        # contact. The hop clears the enemy and lands where the runner was.
         if not jump:
             for sprite in sprites:
                 if sprite["kind"] not in (sprite_behavior.HOSTILE, sprite_behavior.STOMPABLE):
                     continue
                 if 0.0 < sprite["dx"] <= SPRITE_REACH_PX and abs(sprite["dy"]) <= SPRITE_REACH_Y:
                     jump = True
+                    jump_hold = ENEMY_HOP_HOLD
                     break
+
+        # The climbable pole: the engine carries the player up at a constant speed with the
+        # collision flags reading "grounded", which fools every rule into thinking a wall has
+        # stalled the run - and rule 6's jump would let go of the pole over whatever lies
+        # below it. On the climb the only honest action is to keep heading and let the
+        # engine finish its own animation: at the top the flip deposits the player on the
+        # other side, and the rules resume on their own.
+        on_pole = (
+            abs(float(state["vx"])) < 0.5
+            and float(state["vy"]) <= POLE_CLIMB_VY
+            and abs(mario_x - self._last_x) < 0.5
+        )
+        self._last_x = mario_x
+        if on_pole:
+            self._stalled = 0
+            self._jump_hold = 0
+            buttons = {self._heading: True, "Y": True, "B": False, "A": False}
+            self._jump_held = False
+            self._hold.observe(np.asarray([state[k] for k in HOLD_KEYS], dtype=np.float64))
+            return self._hold.buttons(buttons)
 
         # Rule 6: stuck against something the rules above missed.
         progress = mario_x - self._best_x if self._heading == "RIGHT" else self._best_x - mario_x
@@ -148,12 +190,17 @@ class TerrainRunner:
         if self._stalled >= STUCK_FRAMES:
             jump = True
 
-        # The published recorders pulse B because a held B never re-triggers a jump; the pulse is
-        # one frame, and the latch below releases the frame after whichever way `jump` went, so a
-        # rule that stays true across a whole descent cannot silence the next platform's jump.
+        # A fired jump holds B: SMW scales the jump's height with the hold, so a one-frame
+        # pulse is a hop and the wide pits need the full arc. The hold releases on its own
+        # after JUMP_HOLD_FRAMES, and the edge latch keeps a rule that stays true from
+        # re-triggering before the landing.
         grounded = float(state["c_ground"]) > 0.5
         if jump and grounded and not self._jump_held:
             buttons["B"] = True
+            self._jump_hold = jump_hold
+        if self._jump_hold > 0:
+            buttons["B"] = True
+            self._jump_hold -= 1
         self._jump_held = bool(buttons["B"])
 
         # The engine's own message boxes suspend the player until A arrives (10.60); the operator

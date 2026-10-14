@@ -132,13 +132,17 @@ def test_the_jump_pulse_is_edge_triggered_across_a_whole_descent() -> None:
     """The latch: a rule that stays true must not silence the next platform's jump.
 
     The failure this gates was measured live: crossing one pit left the latch set, and the
-    runner never jumped again.
+    runner never jumped again. The hold that fires a jump now lasts JUMP_HOLD_FRAMES (a full
+    arc for the wide pits - a 1-frame tap is a hop), so the latch is exercised through the
+    hold, not around it: while the hold counts down, no new jump may latch.
     """
     emu = FakeEmu(ground_row(range(-1, 8), 24))
     runner = TerrainRunner()
-    # one jump fires and latches
+    # one jump fires and latches for the whole hold
     runner.act(emu, state(x=7 * 16 - 8))
     assert runner._jump_held
+    while runner._jump_hold > 0:
+        runner.act(emu, state(x=64.0))
     # the rule goes quiet; the latch releases on its own
     runner.act(emu, state(x=64.0))
     assert not runner._jump_held

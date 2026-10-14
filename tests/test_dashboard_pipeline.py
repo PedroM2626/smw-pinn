@@ -264,7 +264,7 @@ def test_window_view_classifies_ids_and_marks_missing_cells() -> None:
                 ids[0, dy + radius, dx + radius] = 0x0025
     ids[0, radius + 2, radius] = 0x0100  # the grass top two tiles below the centre
     ids[0, radius - 2, radius + 1] = 0x0124  # the wall the published episode brushed
-    view = window_view(ids)
+    view = window_view(ids, np.zeros((1, 12, 4)))
     assert view[0, radius + 2, radius] == 2, "the grass top is a measured platform"
     assert view[0, radius - 2, radius + 1] == 3, "the stair corner is a measured wall"
     assert view[0, radius, radius] == 0, "the blank filler is decor the engine ignores"
@@ -274,6 +274,37 @@ def test_window_view_classifies_ids_and_marks_missing_cells() -> None:
             assert bool(view[0, dy + radius, dx + radius] == VOID_CLASS) is missing
     assert int((view[0] == VOID_CLASS).sum()) > 0, "a window centred on the floor must run off it"
     assert int((view[0] == VOID_CLASS).sum()) < view[0].size, "and must not be all void"
+
+
+def test_window_view_draws_live_sprites_as_cells() -> None:
+    """The reference grid's presentation: the sprite occupies a cell in the terrain window.
+
+    The old panel drew one floating dot per live slot, and an enemy entering the window at its
+    edge was a dot nobody could see. The cell is sixteen pixels of the window, in the class
+    colour the probe measured, and the cell it marks is the one the sprite's centre is in -
+    the same arithmetic the reference grid uses for its hostile plane.
+    """
+    from src.evaluation.dashboard_video import SPRITE_CELL_CLASSES
+
+    radius = 16
+    ids = np.full((1, 2 * radius + 1, 2 * radius + 1), 0x0025, dtype=np.int64)
+    sprites = np.zeros((1, 12, 4))
+    sprites[0, 0] = (-11.0, 44.0, 0x05, 9.0)  # a live Rex, one cell behind, three below
+    sprites[0, 1] = (120.0, 0.0, 0x91, 8.0)  # a message block far to the right
+    sprites[0, 2] = (16.0, 0.0, 0x01, 8.0)  # a shell sharing Mario's row
+    sprites[0, 3] = (0.0, 0.0, 0x05, 1.0)  # dormant: spawn-list status, no cell
+    view = window_view(ids, sprites)
+    assert view[0, radius + 3, radius - 1] == SPRITE_CELL_CLASSES["stompable"], (
+        "the Rex's centre marks its cell as an enemy cell"
+    )
+    assert view[0, radius, radius + 8] == SPRITE_CELL_CLASSES["interact"], (
+        "the message block marks its cell eight cells right of Mario"
+    )
+    assert view[0, radius, radius + 1] == SPRITE_CELL_CLASSES["neutral"], (
+        "the parked shell marks its cell as a friendly sprite"
+    )
+    assert view[0, radius, radius - 1] == 0, "the dormant slot marks nothing"
+    assert view[0, radius, radius] == 0, "and Mario's own cell is terrain, not a sprite"
 
 
 def test_the_tile_panel_draws_the_ground_below_mario() -> None:

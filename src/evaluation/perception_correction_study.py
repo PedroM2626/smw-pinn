@@ -180,8 +180,11 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "now meets only slots the engine is running (status >= 8), and the runner and the panel "
         "read the same filter. The probe's collector is the clearance draw itself - the held-right "
         "walk dies in the first pit, so the Koopas of the stage's middle are met by flying the "
-        "seed-7 draw that finishes it. The panel draws every live slot in the class the engine "
-        "gave it, and an id the probe has not met yet draws as unmeasured rather than guessed.",
+        "seed-7 draw that finishes it. The panel draws the sprites the way the reference grid "
+        "draws them - INTO the map, one cell per live engine-running sprite, in the plane the "
+        "terrain classes share - so an enemy entering the window at its edge is a full cell of "
+        "the window rather than a dot at the edge of it, and an id the probe has not met yet "
+        "draws its cell as unmeasured rather than guessed.",
         "",
         "**What the corrected map says about the sessions.** Yoshi's Island 1 (`0x2A`) is "
         "completed on screen, by the same seeded clearance draw 10.66 published - flown again "
@@ -214,12 +217,17 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         f"{payload['conclusion_video']['bytes'] / 1e6:.2f} MB, "
         f"{len(payload['conclusion_video']['segments'])} segments.",
         "",
-        "**The panel.** The tile window now draws the seven measured classes - decor, coin, "
-        "platform, wall, slope, harmful, and the cells the buffer does not have - from the "
-        "recorded 16-bit ids, and the recording carries every live sprite slot. Both channels "
-        "are gated: an id the table does not know cannot reach the panel as a guess, and a "
-        "recording whose window holds a per-level id the probe never measured fails its gate "
-        "instead of drawing one.",
+        "**The panel.** The tile window draws the eleven measured classes - decor, coin, "
+        "platform, wall, slope, harmful, the cells the buffer does not have, and the four "
+        "sprite cells: enemy, message block, friendly, unmeasured - from the recorded 16-bit "
+        "ids and the recorded sprite slots, one cell per live engine-running sprite the way "
+        "the reference grid draws its hostile plane. Both channels are gated: an id the table "
+        "does not know cannot reach the panel as a guess, and a recording whose window holds "
+        "a per-level id the probe never measured fails its gate instead of drawing one. The "
+        "reel keeps the moving episode at its stride and compresses a stall twelve-fold - "
+        "every drawn frame is a recorded frame, and the frame counter on the panel shows the "
+        "jump - so the planner's long pause at the level's pipe is on screen without being "
+        "most of the video.",
         "",
     ]
     return lines

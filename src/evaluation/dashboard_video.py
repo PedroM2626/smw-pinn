@@ -85,8 +85,12 @@ ACTION_WORDS = (
 )
 #: the measured tile classes the window draws, one colour each: 10.68's behaviour table, not a
 #: guess. The old four-way legend called every non-blank tile solid - bushes as walls, ramps as
-#: air - and this is the panel that stops doing it.
-#: 0 decor, 1 coin, 2 platform, 3 solid, 4 slope, 5 harmful, 6 no cell in the buffer
+#: air - and this is the panel that stops doing it. The last four are the sprite cells: the
+#: reference grid draws the engine's own entities INTO the map (hostile and friendly planes),
+#: and this panel does the same - the cell a live sprite occupies carries its class, so an
+#: enemy is a full cell in the window, not a dot at the edge of it
+#: 0 decor, 1 coin, 2 platform, 3 solid, 4 slope, 5 harmful, 6 no cell in the buffer,
+#: 7 enemy sprite, 8 interact sprite, 9 friendly sprite, 10 unmeasured sprite
 TILE_COLOURS = (
     "#141b26",
     "#e6c84a",
@@ -95,6 +99,10 @@ TILE_COLOURS = (
     "#c8a02b",
     "#c8322b",
     "#243352",
+    "#ff6b5e",
+    "#f2a541",
+    "#8794ab",
+    "#b06fd4",
 )
 TILE_LEGEND = (
     "decor (no collision)",
@@ -104,28 +112,23 @@ TILE_LEGEND = (
     "slope",
     "harmful",
     "no cell in the buffer",
+    "enemy (sprite)",
+    "message block (sprite)",
+    "friendly sprite",
+    "sprite not yet measured",
 )
 VOID_CLASS = 6
-#: the measured sprite classes, drawn as one marker per live slot: hostile and stompable are
-#: what can hurt, neutral is the smoke and the parked shells the old panel drew as enemies, and
-#: interact is the engine's own message box - touching the block opens it and freezes the player
-SPRITE_COLOURS = {
-    "hostile": "#ff6b5e",
-    "stompable": "#ff6b5e",
-    "collectible": "#5aa9e6",
-    "platform": "#63d68a",
-    "interact": "#f2a541",
-    "neutral": "#8794ab",
-    "unprobed": "#b06fd4",
+#: the sprite classes, drawn as the cell the sprite occupies - burn-mario-rl's hostile and
+#: friendly planes, one cell per live sprite, in the panel the terrain classes share
+SPRITE_CELL_CLASSES = {
+    "hostile": 7,
+    "stompable": 7,
+    "interact": 8,
+    "platform": 9,
+    "collectible": 9,
+    "neutral": 9,
+    "unprobed": 10,
 }
-SPRITE_LEGEND = (
-    ("hostile", "enemy (hurts or is stompable)"),
-    ("collectible", "collectible"),
-    ("platform", "solid object you can stand on"),
-    ("interact", "message block (opens a box)"),
-    ("neutral", "no effect"),
-    ("unprobed", "not yet measured"),
-)
 
 
 def _rgb(colour: str) -> Tuple[int, int, int]:
@@ -211,16 +214,22 @@ def action_probabilities(data: Dict[str, np.ndarray]) -> Tuple[np.ndarray, str]:
     return joint, "joint of the actor's independent button marginals"
 
 
-def window_view(tile_ids: np.ndarray) -> np.ndarray:
-    """The recorded 16-bit tile ids, drawn as the classes the engine was measured to give them.
+def window_view(tile_ids: np.ndarray, sprites: np.ndarray) -> np.ndarray:
+    """The recorded window with every tile in its measured class and every live sprite a cell.
 
     `read_tile_ids` stores the full Map16 number of every cell and -1 where the buffer has none.
-    This view is the one source of truth the panel draws: each id through
-    `tile_behavior.behavior_of`, never a second classifier, and cells the buffer does not have
-    keep their own class so the panel can say both things the old one folded together - the model
-    is shown air there, and the buffer simply has no cell.
+    Each id goes through `tile_behavior.behavior_of`, never a second classifier, and cells the
+    buffer does not have keep their own class so the panel can say both things the old one
+    folded together - the model is shown air there, and the buffer simply has no cell.
+
+    The sprites are drawn the way the reference grid draws them: INTO the map, one cell per live
+    engine-running sprite, in the plane the terrain classes share. A dot at the panel's edge was
+    the old presentation, and an enemy that enters the window at its edge was a dot nobody could
+    see; a cell is sixteen pixels of the window, in the class colour the probe measured. The
+    sprite's cell is the one its centre occupies, offset from the window centre by its own
+    recorded displacement - the same arithmetic the reference uses for its hostile plane.
     """
-    from src.environment import tile_behavior
+    from src.environment import sprite_behavior, tile_behavior
 
     ids = np.asarray(tile_ids, dtype=np.int64)
     view = np.full(ids.shape, VOID_CLASS, dtype=np.int8)
@@ -239,6 +248,20 @@ def window_view(tile_ids: np.ndarray) -> np.ndarray:
             name = classes[i]
             index = order.get(name, 0)
             view[i] = 0 if name == "interact" else index
+
+    rows = np.asarray(sprites, dtype=np.float64)
+    active = rows[:, :, 3] >= sprite_behavior.SPRITE_ACTIVE
+    for frame in range(view.shape[0]):
+        centre = view.shape[1] // 2
+        for slot in range(rows.shape[1]):
+            if not active[frame, slot]:
+                continue
+            dx, dy = rows[frame, slot, 0], rows[frame, slot, 1]
+            col = int(np.rint(dx / 16.0)) + centre
+            row = int(np.rint(dy / 16.0)) + centre
+            if 0 <= row < view.shape[1] and 0 <= col < view.shape[2]:
+                kind = sprite_behavior.behavior_of(int(rows[frame, slot, 2]))
+                view[frame, row, col] = SPRITE_CELL_CLASSES.get(kind, 10)
     return view
 
 
@@ -294,9 +317,8 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     values = np.asarray(data["values"], dtype=np.float64)
     actions, action_source = action_probabilities(data)
     progress = states[:, 0] - float(states[0, 0])
-    views = window_view(np.asarray(data["tile_ids"]))
+    views = window_view(np.asarray(data["tile_ids"]), np.asarray(data["sprites"]))
     sprites = np.asarray(data["sprites"], dtype=np.float64)
-    kinds = sprite_classes(sprites)
     #: the progress bar's denominator: the published goal where one exists, the furthest anything
     #: measured otherwise, because a bar scaled to a goal a stage has never been shown to have is a
     #: claim about the level rather than a picture of the episode
@@ -323,7 +345,7 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         views[0],
         cmap=ListedColormap(TILE_COLOURS),
         vmin=-0.5,
-        vmax=6.5,
+        vmax=10.5,
         aspect="auto",
         interpolation="nearest",
         extent=(0, 1, 0, 1),
@@ -331,19 +353,6 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     )
     tile.plot([0.5], [0.5], marker="s", color=INK, markersize=7, fillstyle="none")
     tile.text(0.5, 0.44, "Mario", color=INK, fontsize=7.5, ha="center", va="top")
-    sprite_marks = [
-        tile.plot(
-            [],
-            [],
-            marker="o",
-            color=MUTED,
-            markersize=11,
-            markeredgecolor=INK,
-            markeredgewidth=0.9,
-            linestyle="none",
-        )[0]
-        for _ in range(sprites.shape[1])
-    ]
 
     legend = _panel(fig, RECT_LEGEND, card=False)
     row = 0.97
@@ -355,19 +364,6 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
     y = row - step * 7
     legend.plot([0.027], [y], marker="s", color=INK, markersize=7, fillstyle="none")
     legend.text(0.095, y, "Mario (window centre)", color=INK, fontsize=8, va="center")
-    for j, (kind, label) in enumerate(SPRITE_LEGEND):
-        y = row - step * (8 + j)
-        legend.plot(
-            [0.027],
-            [y],
-            marker="o",
-            color=SPRITE_COLOURS[kind],
-            markersize=11,
-            markeredgecolor=INK,
-            markeredgewidth=0.9,
-            linestyle="none",
-        )
-        legend.text(0.095, y, label, color=INK, fontsize=8, va="center")
     legend.text(
         0.0,
         0.30 - step * 2,
@@ -375,8 +371,10 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         "from $7E:C800 + $7F:C800, classified\n"
         "by the measured behaviour table of\n"
         "10.68 - not by a guessed id list. The\n"
-        "actor sees no picture: only the twelve\n"
-        "numbers on the strip below.",
+        "sprite cells are drawn into the grid the\n"
+        "way the reference grid draws its hostile\n"
+        "plane. The actor sees no picture: only\n"
+        "the twelve numbers on the strip below.",
         color=MUTED,
         fontsize=7.2,
         va="top",
@@ -527,7 +525,6 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         "level_text": level_text,
         "rgb_img": rgb_img,
         "tile_img": tile_img,
-        "sprite_marks": sprite_marks,
         "think_bars": think_bars,
         "think_values": think_values,
         "pips": pips,
@@ -552,7 +549,6 @@ def build_figure(data: Dict[str, np.ndarray], context: Dict[str, Any]) -> Dict[s
         "patches": data["patches"],
         "views": views,
         "sprites": sprites,
-        "sprite_kinds": kinds,
         "goal_px": goal_px,
     }
 
@@ -600,26 +596,8 @@ def draw_frame(art: Dict[str, Any], i: int) -> None:
     art["obs_text"].set_text(
         "state: " + " ".join(f"{name} {state[k]:.0f}" for k, name in enumerate(OBS_SHORT))
     )
-
-    half = art["views"].shape[1] // 2
-    span = (half + 0.5) * 16.0
-    from src.environment.sprite_behavior import SPRITE_ACTIVE
-
-    sprites = art["sprites"][i]
-    kinds = art["sprite_kinds"][i]
-    for slot, mark in enumerate(art["sprite_marks"]):
-        dx, dy, sprite_id, status = sprites[slot]
-        kind = kinds[slot]
-        if status < SPRITE_ACTIVE or kind == "":
-            mark.set_data([], [])
-            continue
-        if abs(float(dx)) <= span and abs(float(dy)) <= span:
-            # The panel is drawn with the array's first row at the top, so a positive dy - a
-            # sprite below Mario - goes to a smaller axis height, not a larger one.
-            mark.set_data([0.5 + 0.5 * float(dx) / span], [0.5 - 0.5 * float(dy) / span])
-            mark.set_color(SPRITE_COLOURS.get(kind, SPRITE_COLOURS["unprobed"]))
-        else:
-            mark.set_data([], [])
+    # the sprites are already part of the view: the window carries their cells, drawn the way
+    # the reference grid draws its hostile plane, and nothing needs moving here
 
 
 def render_video(
@@ -697,6 +675,40 @@ def still_preview(art: Dict[str, Any], frame: int, out_png: str) -> str:
     return out_png
 
 
+def render_indices(states_x: np.ndarray, stride: int) -> List[int]:
+    """The frames the reel draws: the moving episode at `stride`, a stall at 12x that.
+
+    The clearance draw clears Yoshi's Island 1 with two long pauses at the pipes - 3357 frames
+    in the featured episode, more than half the flight - and a reel that draws them at the
+    moving stride is a reel that watches Mario stand still for most of its length. A dashboard
+    is a picture of the recording, not a clock: the moving stretch keeps every `stride`-th frame
+    and a stretch where the player has not advanced keeps one frame in twelve of those, so the
+    stall is still on screen - the frame counter jumps, visibly, and the viewer sees the wait
+    happen - without being most of the video. Every kept frame is a recorded frame; nothing is
+    drawn that the emulator did not produce.
+    """
+    stride = max(1, stride)
+    stall_stride = 12 * stride
+    indices: List[int] = []
+    last = -1
+    n = int(states_x.shape[0])
+    i = 0
+    while i < n:
+        if last < 0 or abs(float(states_x[i]) - float(states_x[last])) > 2.0:
+            indices.append(i)
+            last = i
+            i += stride
+        else:
+            # no advance since the last kept frame: skip ahead in stall-sized steps, keeping
+            # one frame per step so the pause reads as a pause and not as a dropped scene
+            i = min(last + stall_stride, n)
+            if i < n:
+                indices.append(i)
+                last = i
+                i += stride
+    return indices
+
+
 def run_dashboard_render(
     dataset_path: str = DATASET_DASHBOARD,
     output_mp4: str = figure_file("dashboard_run.mp4"),
@@ -726,7 +738,8 @@ def run_dashboard_render(
     ctx.setdefault("level_count", 1)
     ctx.setdefault("clear_line", "")
     n = int(data["states"].shape[0])
-    indices = list(range(0, n, max(1, stride)))
+    states_x = np.asarray(data["states"], dtype=np.float64)[:, 0]
+    indices = render_indices(states_x, stride)
     art = build_figure(data, ctx)
     still_frame = indices[len(indices) // 2]
     still_preview(art, still_frame, output_still)
@@ -754,6 +767,11 @@ def run_dashboard_render(
             "frames_in_episode": n,
             "frames_rendered": len(indices),
             "stride": stride,
+            "stall_stride_multiplier": 12,
+            "index_rule": (
+                "every stride-th frame while the player advances, one frame in twelve of those "
+                "while a stall holds - the frame counter on the panel shows the jump"
+            ),
             "context": ctx,
             "goal_px": float(art["goal_px"]),
             "subscreen_px": SUBSCREEN_PX,

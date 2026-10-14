@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T04:14:53+00:00",
-    "git_sha": "b53e02e9a2d8a2c097790ec8e759be4cebdbbafb",
+    "generated_utc": "2026-10-14T15:29:36+00:00",
+    "git_sha": "151cfbbc82ec554d2328c811dc9e0406106aba0e",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -16,8 +16,10 @@
   "protocol": {
     "dataset": "data/raw/smw_dashboard_run.npz",
     "frames_in_episode": 6706,
-    "frames_rendered": 671,
+    "frames_rendered": 279,
     "stride": 10,
+    "stall_stride_multiplier": 12,
+    "index_rule": "every stride-th frame while the player advances, one frame in twelve of those while a stall holds - the frame counter on the panel shows the jump",
     "context": {
       "title": "Reinforcement learning in Super Mario World",
       "level_label": "Yoshi's Island 1",
@@ -60,22 +62,22 @@
   },
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 6350630,
-    "frames_written": 671,
+    "bytes": 4266646,
+    "frames_written": 279,
     "fps": 30.0,
-    "duration_s": 22.37
+    "duration_s": 9.3
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 5362601,
+    "bytes": 3757406,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "still": {
     "png": "results/figures/dashboard_run_still.png",
-    "bytes": 130008,
-    "frame": 3350
+    "bytes": 125305,
+    "frame": 1610
   },
   "caption": {
     "episode_frames": 6706,
