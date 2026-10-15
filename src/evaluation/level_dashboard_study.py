@@ -422,14 +422,16 @@ def render_name_evidence(payload: Dict[str, Any]) -> List[str]:
         "`snesrev/smw` decompilation) shifted to agree with the anchor, and that table is not "
         "consistent with it - it names `0x29` Yoshi's Island 1 and `0x2A` Yoshi's Island 2, while "
         "the map position and the game's own progression make `0x2A` the first stage. The "
-        "measurement that would settle the question was tried and is unavailable: entering the "
-        "known `0x2A` from the map draws no title card either - the timer is already at 400 and "
-        "counting on the first interactive frame, with the HUD drawn, under both a pulsed and a "
-        "single A press - so the instrument cannot see the case whose answer is already known, and "
-        "a null from it says nothing about the cases whose answers are not. `results/"
-        "dashboard_video_metrics.json` carries `protocol.level_name_source` per render, and "
-        "`tests/test_dashboard_pipeline.py` refuses a row that claims to be measured when it is "
-        "not.",
+        "measurement that would settle the question was run and is unavailable on this console "
+        "route: entering the known `0x2A` draws no title card under any of four attempts - from "
+        "the restored map state and from a genuine power-on boot walked through the menus, each "
+        "with a pulsed A and with a single deliberate press. Capturing every frame of the load "
+        "sequence shows the null is blind rather than informative: modes `0x10` and `0x12` are the "
+        "black fade and `0x13` already holds the drawn level, HUD up and timer at 400 counting, so "
+        "the instrument never sees the case whose answer is known and cannot clear the cases whose "
+        "answers are not. `results/dashboard_video_metrics.json` carries "
+        "`protocol.level_name_source` per render, and `tests/test_dashboard_pipeline.py` refuses a "
+        "row that claims to be measured when it is not.",
         "",
     ]
 

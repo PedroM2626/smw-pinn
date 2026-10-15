@@ -162,11 +162,14 @@ RECT_CLEAR = [0.490, 0.030, 0.498, 0.045]
 #:   position and the game's own progression make `0x2A` the first stage. The rows below keep the
 #:   table's ordering relative to the anchor, which is an inference, not a measurement.
 #:
-#: The measurement that would settle it - the level's own title card - is not available on this
-#: route: entering `0x2A`, whose name is known, draws no card either. The timer is already at 400
-#: and counting on the first interactive frame, with the HUD drawn, on both the pulse-A and the
-#: single-A entry. A null from an instrument that cannot see the known case proves nothing about
-#: the unknown ones, so the inferred rows stay labelled as inferred.
+#: The measurement that would settle it - the level's own title card - was run and is not
+#: available on this console route. Entering `0x2A`, whose name is already known, draws no card
+#: under any of four attempts: from the restored map state and from a genuine power-on boot walked
+#: through the menus, each with a pulsed A and with a single deliberate press. Capturing every
+#: frame of the load sequence shows why the null is blind rather than informative - modes `0x10`
+#: and `0x12` are the black fade and `0x13` already holds the drawn level with its HUD and its
+#: timer at 400 and counting, so the instrument never sees the case whose answer is known and
+#: cannot clear the cases whose answers are not. The inferred rows stay labelled as inferred.
 LEVEL_NAMES = {
     "0x25": "#1 Iggy's Castle",
     "0x26": "Yoshi's Island 4",
