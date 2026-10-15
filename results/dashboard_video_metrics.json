@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T20:07:03+00:00",
-    "git_sha": "1ed1255580d2fdb011cd2ca51d836ddc6165c55a",
+    "generated_utc": "2026-10-15T03:36:48+00:00",
+    "git_sha": "62bbc65f833fbe8e8f933cd30c44d6d7cb0e59a7",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -15,9 +15,9 @@
   "study": "The README hero dashboard, rendered from the recorded episode: the console's own RGB picture beside the tilemap the level-conditioned models read, with the action distribution the actor holds, the buttons the console received on a controller graphic, the terminal-value critic's prediction, and the stage progress bar.",
   "protocol": {
     "dataset": "data/raw/smw_dashboard_run.npz",
-    "frames_in_episode": 4694,
-    "frames_rendered": 365,
-    "stride": 7,
+    "frames_in_episode": 6706,
+    "frames_rendered": 279,
+    "stride": 10,
     "stall_stride_multiplier": 12,
     "index_rule": "every stride-th frame while the player advances, one frame in twelve of those while a stall holds - the frame counter on the panel shows the jump",
     "context": {
@@ -25,7 +25,7 @@
       "level_label": "Yoshi's Island 1",
       "level_index": 1,
       "level_count": 4,
-      "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5011 / 5120 px",
+      "clear_line": "cleared: the engine ended the stage without the death mode \u00b7 this arm 5010 / 5120 px",
       "goal_px": 5120.0
     },
     "goal_px": 5120.0,
@@ -71,38 +71,38 @@
   },
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 5417872,
-    "frames_written": 365,
+    "bytes": 4282855,
+    "frames_written": 279,
     "fps": 30.0,
-    "duration_s": 12.17
+    "duration_s": 9.3
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 5531926,
+    "bytes": 3910586,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "still": {
     "png": "results/figures/dashboard_run_still.png",
-    "bytes": 102633,
-    "frame": 1505
+    "bytes": 104333,
+    "frame": 1610
   },
   "caption": {
-    "episode_frames": 4694,
-    "tile_empty_cell_share": 0.9116227402763406,
-    "frames_with_enemy_cells": 761,
-    "rendered_frames_with_enemy_cells": 88,
+    "episode_frames": 6706,
+    "tile_empty_cell_share": 0.9107254697286012,
+    "frames_with_enemy_cells": 591,
+    "rendered_frames_with_enemy_cells": 59,
     "max_enemy_cells_in_frame": 8,
-    "active_sprite_rows": 4692,
+    "active_sprite_rows": 9982,
     "max_active_sprite_slots_in_frame": 10,
-    "progress_px": 5009.3125,
+    "progress_px": 5008.6875,
     "camera_travel_px": 65519.0,
-    "mean_top_action_probability": 0.931827865360034,
-    "mean_max_button_probability": 0.9243715381337878,
-    "residue_exact_share": 0.8043020808978256,
-    "operator_A_frames": 55,
-    "value_first_px": 201.4052734375,
+    "mean_top_action_probability": 0.9522815389203698,
+    "mean_max_button_probability": 0.9460184909036684,
+    "residue_exact_share": 0.7847301021235208,
+    "operator_A_frames": 157,
+    "value_first_px": 201.3851776123047,
     "value_last_px": 70.93865966796875,
     "subscreens_reached": 20
   }

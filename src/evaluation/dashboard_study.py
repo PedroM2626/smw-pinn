@@ -278,6 +278,11 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
     gif = _rel(payload["gif"]["gif"])
     mp4 = _rel(payload["video"]["mp4"])
     modes = ", ".join(f"`0x{m:02X}`" for m in ep["mode_bytes_seen"])
+    #: the caption names the file the episode was actually recorded from, because the sentence
+    #: used to assert a provenance ("the verified level entry of 10.36.3") it never read: when the
+    #: hero was re-recorded from the survey's node capture the claim stayed behind, published and
+    #: false, and no gate could see it
+    savestate = payload["protocol"]["savestate"]
     levels = payload.get("levels")
     elsewhere = ""
     if levels and levels["stages"] > 1:
@@ -303,7 +308,7 @@ def render_caption(payload: Dict[str, Any]) -> List[str]:
         "sees and the stage progress bar](" + gif + ")",
         "",
         f"*One episode of the `{payload['protocol']['controller']}` controller, recorded frame by frame from "
-        f"the verified level entry of 10.36.3: {ep['frames']} frames, {ep['progress_px']:.4f} px of "
+        f"the committed level-entry savestate `{savestate}`: {ep['frames']} frames, {ep['progress_px']:.4f} px of "
         f"forward progress, ending as `{ep['ended']}`. The engine mode byte reads {modes} on the "
         f"frames the player was live; the mean top button probability is {ep['mean_max_button_probability']:.4f}; "
         f"the section-4.1 identity holds exactly on {_pct(ep['residue_exact_share'])} of the live "

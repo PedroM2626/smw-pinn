@@ -834,6 +834,19 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **The hero caption asserted a provenance it never read.** Its opening sentence named "the
+  verified level entry of 10.36.3" as a literal, so when the featured episode was re-recorded
+  from the world-map survey's node capture the claim stayed published beside numbers that
+  described a different file - and every numeric gate still passed, because each number was
+  correct about the new recording and only the origin was wrong. The caption now derives the
+  filename from `protocol.savestate`, and `tests/test_dashboard_pipeline.py` holds the two facts
+  the prose relies on: the featured episode and the arm probes name one instrument, and that
+  instrument is `smw_yoshi_island_1_level.state`. The hero was then re-recorded on it and
+  reproduced the previously published episode exactly - 6706 frames, the verdict at frame 6386,
+  5010.0 px, `0x14 -> 0x0C`, the two message-box pauses both cleared by 157 operator A frames,
+  and the residue identity on 73.7548464062034% of live frames to fourteen decimal places. The
+  sprite channel of that same recording is the corrected one: 9982 active slot-rows over 6308
+  frames where the broken reader recorded 989.
 - **The dashboard lost most sprites and drew Mario three rows too high.** The sprite tables are
   structure-of-arrays, but `live_slots` read two adjacent low-byte entries as one little-endian
   word before adding the real high byte; the next slot therefore contaminated X/Y and the

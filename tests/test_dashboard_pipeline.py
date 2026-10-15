@@ -212,6 +212,35 @@ def test_the_featured_episode_and_the_learned_arm_probe() -> None:
     )
 
 
+def test_the_hero_names_the_instrument_it_was_recorded_on() -> None:
+    """The caption's provenance is read, not asserted.
+
+    The hero sentence used to state "the verified level entry of 10.36.3" as a literal, so
+    re-recording the episode from another savestate left the claim standing and false, and every
+    numeric gate still passed: the numbers were right about the new file and only the origin was
+    wrong. The caption now derives the filename from the recording, and this gate holds the two
+    facts the prose depends on - the featured episode and the arm probes ran on one instrument,
+    and that instrument is the level-entry state every picture claim of 10.36.3 rests on.
+    """
+    run = json.loads(RUN_ARTIFACT.read_text(encoding="utf-8"))
+    selection = json.loads(SELECTION_ARTIFACT.read_text(encoding="utf-8"))
+    hero_state = run["protocol"]["savestate"]
+    assert hero_state == selection["protocol"]["savestate"], (
+        "10.60 probes the learned arms and flies the hero on one savestate; the artifacts disagree"
+    )
+    assert hero_state == "smw_yoshi_island_1_level.state", (
+        f"the hero is recorded from {hero_state}, not the 10.36.3 level-entry state that the "
+        "repository's picture claims are anchored to"
+    )
+    caption = "\n".join(render_caption(_payload()))
+    assert f"`{hero_state}`" in caption, (
+        "the hero caption must name the file the episode was recorded from"
+    )
+    assert "10.36.3" not in caption, (
+        "the caption carries a section number where it should carry the instrument's name"
+    )
+
+
 def test_held_frames_are_the_residue_exceptions() -> None:
     """The section's central reading, re-derived per row: residue = 16(x_next - x) - vx.
 

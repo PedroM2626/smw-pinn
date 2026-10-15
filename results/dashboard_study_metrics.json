@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "generated_utc": "2026-10-14T20:08:08+00:00",
-    "git_sha": "1ed1255580d2fdb011cd2ca51d836ddc6165c55a",
+    "generated_utc": "2026-10-15T03:38:41+00:00",
+    "git_sha": "62bbc65f833fbe8e8f933cd30c44d6d7cb0e59a7",
     "git_dirty": true,
     "python": "3.10.11",
     "platform": "Windows 10 (AMD64)",
@@ -16,7 +16,7 @@
   "protocol": {
     "recorder": "scripts/record_dashboard_run.py",
     "renderer": "src/evaluation/dashboard_video.py",
-    "savestate": "smw_map_node_152_136_t2a.state",
+    "savestate": "smw_yoshi_island_1_level.state",
     "controller": "mpc",
     "checkpoint": "pinn_multi_entity_best.pt",
     "value_critic": {
@@ -58,7 +58,7 @@
       ],
       "mean_top_probability": 0.1957,
       "frames_where_reflex_overrode": 0,
-      "wall_clock_s": 2.11
+      "wall_clock_s": 1.09
     },
     {
       "arm": "dagger",
@@ -83,7 +83,7 @@
       ],
       "mean_top_probability": 0.9068,
       "frames_where_reflex_overrode": 13,
-      "wall_clock_s": 0.97
+      "wall_clock_s": 0.99
     }
   ],
   "override_control": [
@@ -110,40 +110,40 @@
       ],
       "mean_top_probability": 0.916,
       "frames_where_reflex_overrode": 0,
-      "wall_clock_s": 0.89
+      "wall_clock_s": 1.02
     }
   ],
   "learned_arm_selected": "dagger",
   "featured": "mpc",
   "episode": {
-    "frames": 4694,
+    "frames": 6706,
     "ended": "engine_left_0x14_to_0x0C",
-    "engine_exit_frame": 4374,
+    "engine_exit_frame": 6386,
     "outro_frames": 320,
     "lives_before": 4,
     "lives_after": 4,
-    "progress_px": 5010.625,
-    "wall_clock_s": 265.39,
-    "fps": 17.7,
-    "share_of_frames_live": 0.9111631870472944,
+    "progress_px": 5010.0,
+    "wall_clock_s": 360.87,
+    "fps": 18.6,
+    "share_of_frames_live": 0.9199224575007456,
     "camera_travel_px": 65519.0,
     "screen_x_range_px": [
-      -60493.6875,
-      5025.3125
+      -60494.3125,
+      5024.6875
     ],
-    "mean_max_button_probability": 0.9243715381337878,
-    "frames_with_no_button_above_half": 355,
+    "mean_max_button_probability": 0.9460184909036684,
+    "frames_with_no_button_above_half": 362,
     "frames_where_reflex_overrode": 0,
     "frames_where_pulse_released_B": 0,
-    "frames_under_operator_A": 55,
-    "pauses_observed": 1,
-    "pauses_cleared_by_the_operator": 1,
-    "first_pause_at_progress_px": 4945.3125,
-    "value_start_px": 201.4052803561727,
+    "frames_under_operator_A": 157,
+    "pauses_observed": 2,
+    "pauses_cleared_by_the_operator": 2,
+    "first_pause_at_progress_px": 977.4375,
+    "value_start_px": 201.38517662875512,
     "value_end_px": 70.93865900355965,
     "value_max_px": 211.17545370514227,
-    "residue_exact_share": 0.7533020877716233,
-    "residue_abs_max_subpixels": 48.0,
+    "residue_exact_share": 0.737548464062034,
+    "residue_abs_max_subpixels": 36.0,
     "mode_bytes_seen": [
       12,
       13,
@@ -153,56 +153,64 @@
   },
   "pauses": [
     {
-      "frame": 4278,
-      "progress_px": 4945.3125,
+      "frame": 637,
+      "progress_px": 977.4375,
       "mode_byte": 20,
-      "held_frames": 64,
-      "operator_frames": 55,
+      "held_frames": 110,
+      "operator_frames": 101,
+      "resumed": true
+    },
+    {
+      "frame": 6286,
+      "progress_px": 4944.6875,
+      "mode_byte": 20,
+      "held_frames": 65,
+      "operator_frames": 56,
       "resumed": true
     }
   ],
   "video": {
     "mp4": "results/figures/dashboard_run.mp4",
-    "bytes": 5417872,
-    "frames_written": 365,
+    "bytes": 4282855,
+    "frames_written": 279,
     "fps": 30.0,
-    "duration_s": 12.17
+    "duration_s": 9.3
   },
   "gif": {
     "gif": "results/figures/dashboard_run.gif",
-    "bytes": 5531926,
+    "bytes": 3910586,
     "gif_fps": 12.0,
     "gif_width_px": 900,
     "gif_palette_colors": 96
   },
   "caption": {
-    "episode_frames": 4694,
-    "tile_empty_cell_share": 0.9116227402763406,
-    "frames_with_enemy_cells": 761,
-    "rendered_frames_with_enemy_cells": 88,
+    "episode_frames": 6706,
+    "tile_empty_cell_share": 0.9107254697286012,
+    "frames_with_enemy_cells": 591,
+    "rendered_frames_with_enemy_cells": 59,
     "max_enemy_cells_in_frame": 8,
-    "active_sprite_rows": 4692,
+    "active_sprite_rows": 9982,
     "max_active_sprite_slots_in_frame": 10,
-    "progress_px": 5009.3125,
+    "progress_px": 5008.6875,
     "camera_travel_px": 65519.0,
-    "mean_top_action_probability": 0.931827865360034,
-    "mean_max_button_probability": 0.9243715381337878,
-    "residue_exact_share": 0.8043020808978256,
-    "operator_A_frames": 55,
-    "value_first_px": 201.4052734375,
+    "mean_top_action_probability": 0.9522815389203698,
+    "mean_max_button_probability": 0.9460184909036684,
+    "residue_exact_share": 0.7847301021235208,
+    "operator_A_frames": 157,
+    "value_first_px": 201.3851776123047,
     "value_last_px": 70.93865966796875,
     "subscreens_reached": 20
   },
   "evidence_figure": {
     "figure": "results/figures/dashboard_message_box.png",
-    "frame": 4222,
-    "progress_px": 4945.3125,
+    "frame": 535,
+    "progress_px": 975.5,
     "source_shape": [
       224,
       256
     ],
     "scale": 2,
-    "bytes": 8635
+    "bytes": 9038
   },
   "forced_mode_check": {
     "savestate": "smw_yoshi_island_1.state",
