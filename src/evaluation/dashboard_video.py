@@ -149,10 +149,24 @@ RECT_REWARD = [0.490, 0.090, 0.498, 0.095]
 RECT_CLEAR = [0.490, 0.030, 0.498, 0.045]
 
 
-#: the standard SMW translevel-to-name mapping for the Yoshi's Island submap, verified against
-#: the ROM's translevel table (SMWCentral thread #23605, Lunar Magic vanilla level list, and
-#: the snesrev/smw C decompilation). The key is the hex translevel byte at $7E:13BF; the name
-#: is the stage's own identity in every official guide.
+#: the translevel byte at $7E:13BF and the name each stage is drawn under. The rows carry their
+#: evidence in LEVEL_NAME_SOURCES, because they do not share one kind.
+#:
+#: * `0x2A` and `0x28` are anchored by this repository's own measurements: 10.36.3 walked the map
+#:   from the node a fresh file starts on and read `0x2A` there, and 10.66/10.68 measured `0x28`
+#:   as the session with no timer, one subscreen of terrain and a door the engine walks the player
+#:   out through - Yoshi's House is the only stage in the world with all three.
+#: * the rest come from the community's translevel table (SMWCentral thread #23605, the Lunar
+#:   Magic vanilla level list, the snesrev/smw decompilation), and that table is *not* consistent
+#:   with the anchor: it names `0x29` Yoshi's Island 1 and `0x2A` Yoshi's Island 2, while the map
+#:   position and the game's own progression make `0x2A` the first stage. The rows below keep the
+#:   table's ordering relative to the anchor, which is an inference, not a measurement.
+#:
+#: The measurement that would settle it - the level's own title card - is not available on this
+#: route: entering `0x2A`, whose name is known, draws no card either. The timer is already at 400
+#: and counting on the first interactive frame, with the HUD drawn, on both the pulse-A and the
+#: single-A entry. A null from an instrument that cannot see the known case proves nothing about
+#: the unknown ones, so the inferred rows stay labelled as inferred.
 LEVEL_NAMES = {
     "0x25": "#1 Iggy's Castle",
     "0x26": "Yoshi's Island 4",
@@ -162,12 +176,27 @@ LEVEL_NAMES = {
     "0x2a": "Yoshi's Island 1",
     "yoshi_island_1": "Yoshi's Island 1",
 }
+#: how each key above was identified; anything not "measured here" is a table reading
+LEVEL_NAME_SOURCES = {
+    "0x25": "translevel table",
+    "0x26": "translevel table",
+    "0x27": "translevel table, shifted to the anchor",
+    "0x28": "measured here",
+    "0x29": "translevel table, shifted to the anchor",
+    "0x2a": "measured here",
+    "yoshi_island_1": "measured here",
+}
 DEFAULT_TITLE = "Reinforcement learning in Super Mario World"
 
 
 def level_label(key: str) -> str:
     """The name of a stage when the repository has evidence for one, its identifier otherwise."""
     return LEVEL_NAMES.get(str(key).lower(), str(key))
+
+
+def level_name_source(key: str) -> str:
+    """Whether a stage's drawn name was measured by this repository or read off a table."""
+    return LEVEL_NAME_SOURCES.get(str(key).lower(), "unnamed")
 
 
 def load_recording(path: str = DATASET_DASHBOARD) -> Dict[str, np.ndarray]:
@@ -783,6 +812,9 @@ def run_dashboard_render(
                 "sprite_cell": "((sprite_x + 8) >> 4, (sprite_y + 8) >> 4)",
                 "active_sprite_rule": "status >= 8",
             },
+            # the drawn stage name is a claim, so the artifact records what kind of evidence it
+            # rests on: this repository measured some of these bytes and read the rest off a table
+            "level_name_source": level_name_source(str(ctx.get("translevel", ""))),
         },
         "video": video,
         "gif": gif,

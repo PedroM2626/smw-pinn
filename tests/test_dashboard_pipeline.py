@@ -28,6 +28,8 @@ from src.evaluation.dashboard_video import (
     GRID_W,
     GROUND_RGB,
     INK,
+    LEVEL_NAME_SOURCES,
+    LEVEL_NAMES,
     RECT_TILE,
     ROWS_ABOVE,
     action_probabilities,
@@ -39,6 +41,7 @@ from src.planning.mpc_planner import ACTION_BUTTONS, ACTION_MATRIX
 REPO = Path(__file__).resolve().parents[1]
 STUDY_ARTIFACT = REPO / "results" / "dashboard_study_metrics.json"
 RUN_ARTIFACT = REPO / "results" / "dashboard_run_metrics.json"
+VIDEO_ARTIFACT = REPO / "results" / "dashboard_video_metrics.json"
 SELECTION_ARTIFACT = REPO / "results" / "dashboard_controller_selection.json"
 RECORDING = REPO / "data" / "raw" / "smw_dashboard_run.npz"
 STILL = REPO / "results" / "figures" / "dashboard_run_still.png"
@@ -238,6 +241,33 @@ def test_the_hero_names_the_instrument_it_was_recorded_on() -> None:
     )
     assert "10.36.3" not in caption, (
         "the caption carries a section number where it should carry the instrument's name"
+    )
+
+
+def test_every_drawn_level_name_declares_its_evidence() -> None:
+    """A stage name is a claim, and the table says which rows it measured and which it copied.
+
+    The community's translevel table names `0x29` Yoshi's Island 1 and `0x2A` Yoshi's Island 2,
+    while this repository's own anchor - the node a fresh file starts on, walked to by 10.36.3 -
+    reads `0x2A` there. The rows are therefore not all the same kind of statement, and the panel
+    must not let them read as if they were. The measurement that would settle it is unavailable:
+    entering the known `0x2A` draws no title card either, so the null cannot clear the guess.
+    """
+    assert set(LEVEL_NAME_SOURCES) == set(LEVEL_NAMES), (
+        "every drawn name needs an evidence label, and no label may point at a name that is gone"
+    )
+    assert LEVEL_NAME_SOURCES["0x2a"] == "measured here"
+    assert LEVEL_NAME_SOURCES["0x28"] == "measured here", (
+        "the house is identified by its own measurements: no timer, one subscreen, door exit"
+    )
+    for inferred in ("0x27", "0x29"):
+        assert LEVEL_NAME_SOURCES[inferred] != "measured here", (
+            f"{inferred} is a table reading shifted to the anchor, not a measurement"
+        )
+        assert "table" in LEVEL_NAME_SOURCES[inferred]
+    video = json.loads(VIDEO_ARTIFACT.read_text(encoding="utf-8"))
+    assert video["protocol"]["level_name_source"] == "measured here", (
+        "the hero is drawn from the stage this repository identified itself"
     )
 
 

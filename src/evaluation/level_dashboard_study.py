@@ -122,6 +122,7 @@ def render_contexts(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
             {
                 "title": "Reinforcement learning in Super Mario World",
                 "level_label": stage_name(stage["identity"], stage["map_node"]),
+                "translevel": str(stage["identity"]["translevel"]).lower(),
                 "level_index": index,
                 "level_count": count,
                 "clear_line": bottom_line(stage),
@@ -400,6 +401,39 @@ def gather(rendered: List[Dict[str, Any]] | None = None) -> Dict[str, Any]:
     }
 
 
+def render_name_evidence(payload: Dict[str, Any]) -> List[str]:
+    r"""How each drawn stage name was identified, built from the mapping the panel renders from."""
+    from src.evaluation.dashboard_video import LEVEL_NAME_SOURCES, LEVEL_NAMES
+
+    keys = sorted(k for k in LEVEL_NAME_SOURCES if k.startswith("0x"))
+    measured = [k for k in keys if LEVEL_NAME_SOURCES[k] == "measured here"]
+    inferred = [k for k in keys if LEVEL_NAME_SOURCES[k] != "measured here"]
+
+    def listed(items: List[str]) -> str:
+        return ", ".join(f"`{k}` {LEVEL_NAMES[k]}" for k in items)
+
+    return [
+        "**What the names in the tables and on the panels are worth.** "
+        f"{listed(measured)} are identified by measurements this repository made: "
+        "10.36.3 walked the map from the node a fresh file starts on and read `0x2A` there, and "
+        "10.66/10.68 measured `0x28` as the session with no timer, one subscreen of terrain and a "
+        f"door the engine walks the player out through. {listed(inferred)} are not: they are the "
+        "community's translevel table (SMWCentral thread #23605, the Lunar Magic vanilla list, the "
+        "`snesrev/smw` decompilation) shifted to agree with the anchor, and that table is not "
+        "consistent with it - it names `0x29` Yoshi's Island 1 and `0x2A` Yoshi's Island 2, while "
+        "the map position and the game's own progression make `0x2A` the first stage. The "
+        "measurement that would settle the question was tried and is unavailable: entering the "
+        "known `0x2A` from the map draws no title card either - the timer is already at 400 and "
+        "counting on the first interactive frame, with the HUD drawn, under both a pulsed and a "
+        "single A press - so the instrument cannot see the case whose answer is already known, and "
+        "a null from it says nothing about the cases whose answers are not. `results/"
+        "dashboard_video_metrics.json` carries `protocol.level_name_source` per render, and "
+        "`tests/test_dashboard_pipeline.py` refuses a row that claims to be measured when it is "
+        "not.",
+        "",
+    ]
+
+
 def render_section(payload: Dict[str, Any]) -> List[str]:
     r"""The whole of README section 10.66, generated from the artifacts."""
     survey = payload["survey"]
@@ -538,6 +572,7 @@ def render_section(payload: Dict[str, Any]) -> List[str]:
         "lives counter (`$7E:0DBE`) settles it: an exit leaves it put, a death decrements it. No "
         "distance proxy appears in that column, on purpose.",
         "",
+        *render_name_evidence(payload),
     ]
     for index in sorted(rendered):
         record = rendered[index]
