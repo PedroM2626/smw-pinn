@@ -844,6 +844,19 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Fixed
 
+- **Nine published URLs still named the pre-rename repository.** The project moved from
+  `smw-pinn` to `smw-sciml`, and the citation record, the package metadata, the changelog link
+  definitions and the issue-template contacts kept the old path - reachable only because GitHub
+  answers it with a 301. The `origin` remote was repointed too, which removes the "repository
+  moved" notice every push used to print. Two of them were broken for reasons unrelated to the
+  rename and are measured, not assumed: the SECURITY contact pointed at `blob/main/` while the
+  default branch is `master`, and the changelog's release links had no tag behind them -
+  `v0.1.0` now exists, anchored at the last commit on the date `CITATION.cff` declares released
+  rather than at the tip, since the version was never bumped. Discussions was enabled so the
+  contact link that says "ask here first" lands somewhere. `tests/test_repository_metadata.py`
+  keeps the three offline invariants that broke: no metadata file may name the old path, the
+  citation and the package must declare one version, and every address under this owner must be
+  the one repository. All six published URLs return 200.
 - **The hero caption asserted a provenance it never read.** Its opening sentence named "the
   verified level entry of 10.36.3" as a literal, so when the featured episode was re-recorded
   from the world-map survey's node capture the claim stayed published beside numbers that
