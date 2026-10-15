@@ -51,7 +51,17 @@ pytest>=7.0.0
 pytest-cov>=5.0.0
 # Pinned to the rev in .pre-commit-config.yaml: the formatter that writes a file
 # must be the same version that checks it, or every file looks dirty.
-ruff>=0.16.0,<0.17
+# Band <0.18 accepted from Dependabot PR #9, and the four pins move together or that
+# invariant breaks: this line, pyproject [dev] and [all], the rev in
+# .pre-commit-config.yaml (v0.17.0) and requirements.lock (0.17.0) - a gate in
+# tests/test_dependency_parity.py refuses a partial bump. Both sides of the band were run
+# over the tree: 0.17.0 and 0.16.6 each pass `ruff check src tests scripts` and
+# `ruff format --check` on it, so the widening costs nothing and the two versions do not
+# disagree about this codebase's shape. The ubuntu 3.10/3.11/3.12 and native-Windows legs
+# are the run that merge commit triggers, and a red one of those re-tightens this line
+# rather than being ignored. Worth recording because the PR's own CI was red and the bump
+# was innocent: the branch was cut from a master commit that had already failed the gate.
+ruff>=0.16.0,<0.18
 # mypy is pinned to the validated minor band, exactly like ruff: an unpinned
 # `>=1.0.0` let CI resolve a newer interpreter that crashes the typecheck gate
 # (run #14, exit code 2). Keep it locked to what makes `make typecheck` green;

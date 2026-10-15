@@ -10,9 +10,10 @@ repos:
       - id: check-merge-conflict
   # Same ruff version as requirements.txt and CI, so a hook can never disagree
   # with `make check-all` (this repo was briefly formatted by one and checked by
-  # another, which made every file look dirty).
+  # another, which made every file look dirty). Rev matches the <0.18 band:
+  # 0.17.0 re-ran both gates it owns and reported no findings and no reformat.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.6
+    rev: v0.17.0
     hooks:
       - id: ruff
         args: ["--fix"]

@@ -811,6 +811,16 @@ numbers* - those are reported here and in README Section 12, never applied silen
 
 ### Changed
 
+- **The validated `ruff` band moved from `<0.17` to `<0.18`, with all four pins that name it
+  moved together** (`requirements.txt`, `pyproject.toml` `[dev]` and `[all]`,
+  `.pre-commit-config.yaml` rev `v0.17.0`, `requirements.lock` `0.17.0`), accepted from
+  Dependabot PR #9 rather than merged blind: 0.17.0 and 0.16.6 were each run over the tree and
+  both pass `ruff check src tests scripts` and `ruff format --check`, so the widening costs no
+  reformatting and the two versions do not disagree about this codebase's shape. The PR's own CI
+  was red, and the bump was innocent - the branch was cut from a `master` commit that had already
+  failed the same gate. A gate in `tests/test_dependency_parity.py` now refuses a partial bump:
+  the hook's `rev:` and the lock pin must be the same version, because one formats the tree and
+  the other judges it.
 - The validated `mypy` band moved from `>=2.3.1,<2.4` to `>=2.3.1,<2.5` (`pyproject.toml`,
   `requirements.txt`), accepting Dependabot PR #8 rather than merging it blind: `mypy 2.4.0`
   was pointed at the exact typed-core gate `src/cli.py` passes (the same 52 modules) and
